@@ -1,7 +1,9 @@
 #include "WindowsWindow.h"
+#ifdef WIN32Window
 #include <Windows.h>
 #include <Application.h>
 #include <string>
+
 
 LRESULT CALLBACK WndProc(HWND window, UINT msg, WPARAM wparam, LPARAM lparam) {
 	
@@ -58,3 +60,5 @@ WindowsWindow::~WindowsWindow() {
     DestroyWindow(m_Window);
     UnregisterClassW(L"Window_Class", GetModuleHandle(NULL));
 }
+
+#endif
