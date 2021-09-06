@@ -2,7 +2,7 @@
 #include "OpenGLDrawCommand.h"
 #include "OpenGLRenderCommand.h"
 #include <Renderer/Renderer.h>
-
+#include <Utility/Profiler.h>
 
 OpenGLRenderQueue::OpenGLRenderQueue(std::shared_ptr<Renderer> renderer)
     : RenderQueue(renderer)
@@ -19,7 +19,8 @@ void OpenGLRenderQueue::Submit() {
 
 void OpenGLRenderQueue::Execute()
 {
-    for (auto command : m_Commands) {
+    for (auto command: m_Commands) {
+        PROFILE("Command Execution");
         command->Execute();
         delete command;
     }

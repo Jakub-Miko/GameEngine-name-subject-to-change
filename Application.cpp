@@ -2,7 +2,7 @@
 #include "Window.h"
 #include <Renderer/Renderer.h>
 #include "Layer.h"
-
+#include <Utility/Profiler.h>
 
 Application *Application::Get()
 {
@@ -38,6 +38,7 @@ void Application::Run()
     m_running = true;
     while (m_running)
     {
+        PROFILE("Update");
         Update();
     }
     OnGameStop();
@@ -48,8 +49,10 @@ void Application::Update()
     m_Window->PollEvents();
     for (auto layer : m_Layers)
     {
+        PROFILE("Layer Update");
         layer->OnUpdate();
     }
+    PROFILE("Render");
     m_Renderer->Render();
 }
 

@@ -3,19 +3,25 @@
 #include <platform/GLFW/GlfwWindow.h>
 
 
-#ifdef WIN32Window
+#ifdef DirectX12
 #include <platform/Windows/WindowsWindow.h>
-#elif defined Glfw_Window
+#elif defined OpenGL
 #include <platform/GLFW/GlfwWindow.h>
 #endif
 
 
 
-Window* Window::CreateWindow() {
-    #ifdef WIN32Window
-    return new WindowsWindow;
-    #elif defined Glfw_Window
-    return new GlfwWindow;
+Window::Window(const Properties& props)
+    :m_Properties(props)
+{
+
+}
+
+Window* Window::CreateWindow(const Properties& props) {
+    #ifdef DirectX12
+    return new WindowsWindow(props);
+    #elif defined OpenGL
+    return new GlfwWindow(props);
     #else
     static_assert(false, "Wrong Window Type");
     #endif

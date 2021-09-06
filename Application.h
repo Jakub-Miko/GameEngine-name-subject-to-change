@@ -2,6 +2,7 @@
 #include <vector>
 #include <memory>
 #include <Renderer/Renderer.h>
+#include <Utility/Profiler.h>
 
 class Window;
 class Renderer;

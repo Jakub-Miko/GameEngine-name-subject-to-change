@@ -7,7 +7,9 @@ Renderer* Renderer::CreateRenderer() {
 }
 
 void Renderer::PreInit() {
-    RenderContext::Get()->PreInit();
+    if(RenderContext::Get()) {
+        RenderContext::Get()->PreInit();
+    }
 }
 
 RenderQueue* Renderer::GetRenderQueue()
@@ -16,7 +18,9 @@ RenderQueue* Renderer::GetRenderQueue()
 }
 
 void Renderer::Init() {
-    RenderContext::Get()->Init();
+    if (RenderContext::Get()) {
+        RenderContext::Get()->Init();
+    }
 }
 
 void Renderer::SubmitQueue(RenderQueue* queue)

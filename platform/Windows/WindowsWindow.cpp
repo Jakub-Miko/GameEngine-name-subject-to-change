@@ -1,5 +1,5 @@
 #include "WindowsWindow.h"
-#ifdef WIN32Window
+#ifdef DirectX12
 #include <Windows.h>
 #include <Application.h>
 #include <string>
@@ -16,6 +16,12 @@ LRESULT CALLBACK WndProc(HWND window, UINT msg, WPARAM wparam, LPARAM lparam) {
 	return DefWindowProcW(window, msg, wparam, lparam);
 }
 
+
+WindowsWindow::WindowsWindow(const Properties& props)
+	: Window(props)
+{
+
+}
 
 void WindowsWindow::Init() {
     ShowWindow(m_Window, SW_NORMAL);
@@ -38,15 +44,23 @@ void WindowsWindow::PreInit() {
 
 	RegisterClassExW(&window_class);
 
-	const wchar_t* name = L"Window";
+	auto name = std::wstring(m_Properties.name.cbegin(), m_Properties.name.cend());
 
-	m_Window = CreateWindowExW(NULL, L"Window_Class", name, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, 
-		CW_USEDEFAULT, 1920, 1080, nullptr, nullptr, instance, nullptr);
+	RECT rect;
+	rect.left = rect.top = 100;
+	rect.right = m_Properties.resolution_x + 100;
+	rect.bottom = m_Properties.resolution_y + 100;
+	::AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, false);
+
+
+	m_Window = CreateWindowExW(NULL, L"Window_Class", name.c_str(), WS_OVERLAPPEDWINDOW, rect.left, rect.top, 
+		rect.right - rect.left, rect.bottom - rect.top, nullptr, nullptr, instance, nullptr);
 
 }
 
 void WindowsWindow::PollEvents() {
-    MSG msg = {};
+	PROFILE("Poll Events");
+	MSG msg = {};
     if(GetMessage(&msg,NULL,0,0)) {
     TranslateMessage(&msg);
 	DispatchMessageW(&msg);

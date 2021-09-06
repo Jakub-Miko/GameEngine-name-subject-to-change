@@ -6,6 +6,8 @@ typedef HWND__* HWND;
 
 class WindowsWindow : public Window {
 public:
+    WindowsWindow(const Properties& props);
+
     virtual void Init() override;
     virtual void PreInit() override;
 

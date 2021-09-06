@@ -1,14 +1,14 @@
 cmake_minimum_required(VERSION 3.0.0)
 project(PseudoTest VERSION 0.1.0)
 
-set(WINDOW_TYPE "" CACHE STRING "")
-set_property(CACHE WINDOW_TYPE PROPERTY STRINGS "WIN32Window" "Glfw_Window")
+set(RENDER_API "" CACHE STRING "")
+set_property(CACHE RENDER_API PROPERTY STRINGS "OpenGL" "DirectX12")
 
 file(GLOB SRCS "./*.cpp" "./*.h" "./*/*/*.h" "./*/*/*.cpp" "./*/*.h" "./*/*.cpp")
 
 add_executable(PseudoTest ${SRCS})
 
-if("${WINDOW_TYPE}" STREQUAL "Glfw_Window")
+if("${RENDER_API}" STREQUAL "OpenGL")
 
 add_subdirectory("./dependencies/glfw")
 
@@ -22,4 +22,4 @@ endif()
 
 target_include_directories(PseudoTest PRIVATE .)
 
-target_compile_definitions(PseudoTest PRIVATE ${WINDOW_TYPE})
+target_compile_definitions(PseudoTest PRIVATE ${RENDER_API})
