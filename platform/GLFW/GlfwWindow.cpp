@@ -4,7 +4,7 @@
 #include <GLFW/glfw3.h>
 #include <Application.h>
 
-GlfwWindow::GlfwWindow(const Properties& props)
+GlfwWindow::GlfwWindow(const WindowProperties& props)
     : Window(props)
 {
 

@@ -11,13 +11,13 @@
 
 
 
-Window::Window(const Properties& props)
+Window::Window(const WindowProperties& props)
     :m_Properties(props)
 {
 
 }
 
-Window* Window::CreateWindow(const Properties& props) {
+Window* Window::CreateWindow(const WindowProperties& props) {
     #ifdef DirectX12
     return new WindowsWindow(props);
     #elif defined OpenGL

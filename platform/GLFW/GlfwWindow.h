@@ -5,7 +5,7 @@ struct GLFWwindow;
 
 class GlfwWindow : public Window {
 public:
-    GlfwWindow(const Properties& props);
+    GlfwWindow(const WindowProperties& props);
     
     virtual void Init() override;
     virtual void PreInit() override;

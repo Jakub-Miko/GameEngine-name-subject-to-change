@@ -17,7 +17,7 @@ LRESULT CALLBACK WndProc(HWND window, UINT msg, WPARAM wparam, LPARAM lparam) {
 }
 
 
-WindowsWindow::WindowsWindow(const Properties& props)
+WindowsWindow::WindowsWindow(const WindowProperties& props)
 	: Window(props)
 {
 

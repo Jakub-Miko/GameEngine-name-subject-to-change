@@ -1,14 +1,15 @@
 #pragma once
 #include <string>
 
+struct WindowProperties {
+    int resolution_x = 800, resolution_y = 600;
+    std::string name = "Hello World";
+};
+
 class Window {
 public: 
-    struct Properties {
-        int resolution_x = 800, resolution_y = 600;
-        std::string name = "Hello World";
-    };
 public:
-    Window(const Properties& props);
+    Window(const WindowProperties& props);
     
     virtual void PreInit() = 0;
 
@@ -19,7 +20,7 @@ public:
     virtual ~Window() {};
 public:
 
-    Properties m_Properties;
+    WindowProperties m_Properties;
 
-    static Window* CreateWindow(const Properties& props = Properties());
+    static Window* CreateWindow(const WindowProperties& props = WindowProperties());
 };
