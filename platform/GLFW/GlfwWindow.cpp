@@ -14,6 +14,7 @@ void GlfwWindow::Init()
 {
     /* Make the window's context current */
     glfwMakeContextCurrent(m_Window);
+    glfwSwapInterval(0);
 }
 
 void GlfwWindow::PreInit()
@@ -21,6 +22,8 @@ void GlfwWindow::PreInit()
     /* Initialize the library */
     if (!glfwInit())
         Application::Get()->Exit();
+    
+    
     
     /* Create a windowed mode window and its OpenGL context */
     m_Window = glfwCreateWindow(m_Properties.resolution_x, m_Properties.resolution_y, m_Properties.name.c_str(), NULL, NULL);
@@ -39,7 +42,7 @@ void GlfwWindow::PollEvents()
         glClear(GL_COLOR_BUFFER_BIT);
 
         /* Swap front and back buffers */
-        glfwSwapBuffers(m_Window);
+        
 
         /* Poll for and process events */
         glfwPollEvents();
@@ -47,6 +50,11 @@ void GlfwWindow::PollEvents()
     else {
         Application::Get()->Exit();
     }
+}
+
+void GlfwWindow::SwapBuffers()
+{
+    glfwSwapBuffers(m_Window);
 }
 
 GlfwWindow::~GlfwWindow()

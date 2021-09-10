@@ -12,6 +12,8 @@ public:
 
     virtual void PollEvents() override;
 
+    virtual void SwapBuffers() override;
+
     virtual ~GlfwWindow();
 public:
     GLFWwindow* m_Window;

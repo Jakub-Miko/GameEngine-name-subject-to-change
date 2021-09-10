@@ -10,6 +10,7 @@ OpenGLRenderQueue::OpenGLRenderQueue(std::shared_ptr<Renderer> renderer)
 }
 
 void OpenGLRenderQueue::DrawSquare(float pos_x, float pos_y, float size_x, float size_y) {
+    PROFILE("Draw Square Command");
     m_Commands.push_back(new OpenGLDrawCommand(pos_x, pos_y, size_x, size_y));
 }
 

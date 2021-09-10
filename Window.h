@@ -17,6 +17,8 @@ public:
 
     virtual void PollEvents() = 0;
 
+    virtual void SwapBuffers() = 0;
+
     virtual ~Window() {};
 public:
 

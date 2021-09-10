@@ -1,9 +1,9 @@
 #include "Application.h"
 #include "GameLayer.h"
 #include <Utility/Profiler.h>
-#define _CRTDBG_MAP_ALLOC
-#include <stdlib.h>
-#include <crtdbg.h>
+//#define _CRTDBG_MAP_ALLOC
+//#include <stdlib.h>
+//#include <crtdbg.h>
 
 int main() {
     {
@@ -16,5 +16,5 @@ int main() {
         delete app;
         END_PROFILING();
     }
-    _CrtDumpMemoryLeaks();
+    //_CrtDumpMemoryLeaks();
 }

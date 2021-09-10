@@ -52,8 +52,12 @@ void Application::Update()
         PROFILE("Layer Update");
         layer->OnUpdate();
     }
-    PROFILE("Render");
-    m_Renderer->Render();
+    {
+        PROFILE("Render");
+        m_Renderer->Render();
+    }
+    PROFILE("SwapBuffers");
+    m_Window->SwapBuffers();
 }
 
 void Application::OnGameStop()

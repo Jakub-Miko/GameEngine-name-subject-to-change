@@ -4,9 +4,17 @@ project(PseudoTest VERSION 0.1.0)
 set(RENDER_API "" CACHE STRING "")
 set_property(CACHE RENDER_API PROPERTY STRINGS "OpenGL" "DirectX12")
 
+option(ENABLE_PROFILING OFF)
+
+
 file(GLOB SRCS "./*.cpp" "./*.h" "./*/*/*.h" "./*/*/*.cpp" "./*/*.h" "./*/*.cpp")
 
 add_executable(PseudoTest ${SRCS})
+if(ENABLE_PROFILING)
+
+target_compile_definitions(PseudoTest PRIVATE ENABLE_PROFILING)
+
+endif()
 
 if("${RENDER_API}" STREQUAL "OpenGL")
 

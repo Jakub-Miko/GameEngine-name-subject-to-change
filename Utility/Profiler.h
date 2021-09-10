@@ -147,7 +147,7 @@ public:
 
 // Macros for easy placement of timers and maintaining sessions, as well as for striping the code from release builds.
 
-#define ENABLE_PROFILING
+
 #ifdef ENABLE_PROFILING
 	
 		#ifndef COMBINE
