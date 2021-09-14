@@ -1,8 +1,7 @@
 #include "RenderContext.h"
 
-#ifdef OpenGL
-#include <R_API/OpenGL/OpenGLRenderContext.h>
-#endif
+#include <platform/OpenGL/OpenGLRenderContext.h>
+
 
 RenderContext* RenderContext::instance = nullptr;
 

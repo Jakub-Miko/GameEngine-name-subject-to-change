@@ -1,5 +1,4 @@
 #include "WindowsWindow.h"
-#ifdef DirectX12
 #include <Windows.h>
 #include <Application.h>
 #include <string>
@@ -74,5 +73,3 @@ WindowsWindow::~WindowsWindow() {
     DestroyWindow(m_Window);
     UnregisterClassW(L"Window_Class", GetModuleHandle(NULL));
 }
-
-#endif

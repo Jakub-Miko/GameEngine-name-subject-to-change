@@ -1,9 +1,10 @@
 #pragma once
-#include <R_API/OpenGL/OpenGLRenderCommand.h>
+#include <platform/OpenGL/OpenGLRenderCommand.h>
+#include <glm/glm.hpp>
 
 class OpenGLDrawCommand : public OpenGLRenderCommand {
 public:
-	OpenGLDrawCommand(float pos_x, float pos_y, float size_x, float size_y);
+	OpenGLDrawCommand(glm::vec2 pos, glm::vec2 size, glm::vec4 color = { 1.f,1.f,1.f,1.f });
 	virtual void Execute() override;
 private:
 	struct QuadData {
@@ -11,8 +12,7 @@ private:
 	};
 	static bool initialized;
 	static QuadData quad_data;
-	float pos_x;
-	float pos_y;
-	float size_x;
-	float size_y;
+	glm::vec2 pos;
+	glm::vec2 size;
+	glm::vec4 color;
 };

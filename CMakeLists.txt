@@ -2,31 +2,59 @@ cmake_minimum_required(VERSION 3.0.0)
 project(PseudoTest VERSION 0.1.0)
 
 set(RENDER_API "" CACHE STRING "")
-set_property(CACHE RENDER_API PROPERTY STRINGS "OpenGL" "DirectX12")
 
 option(ENABLE_PROFILING OFF)
 
 
-file(GLOB SRCS "./*.cpp" "./*.h" "./*/*/*.h" "./*/*/*.cpp" "./*/*.h" "./*/*.cpp")
+file(GLOB SRCS 
+"./*.cpp" "./*.h" 
+"./Utility/*.cpp" "./Utility/*.h"
+"./Renderer/*.cpp" "./Renderer/*.h")
 
 add_executable(PseudoTest ${SRCS})
+
+file(GLOB OPENGL_SRC 
+"./platform/OpenGL/*.cpp" "./platform/OpenGL/*.h"
+"./platform/OpenGL/*/*.cpp" "./platform/OpenGL/*/*.h"
+"./platform/GLFW/*.cpp" "./platform/GLFW/*.h" )
+
+add_subdirectory("./dependencies/glfw")
+
+add_subdirectory("./dependencies/glew/build/cmake")
+
+add_subdirectory("./dependencies/glm")
+
+target_include_directories(glew_s PUBLIC "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/dependencies/glew/include>")
+
+target_link_libraries(PseudoTest PRIVATE glfw glew_s glm)
+
+if(WIN32) 
+
+set_property(CACHE RENDER_API PROPERTY STRINGS "OpenGL" "DirectX12")
+
+file(GLOB DIRECTX_SRC
+"./platform/DirectX/*.cpp" "./platform/DirectX/*.h"
+"./platform/DirectX/*/*.cpp" "./platform/DirectX/*/*.h"
+"./platform/Windows/*.cpp" "./platform/Windows/*.h" )
+
+target_sources(PseudoTest PRIVATE ${DIRECTX_SRC} ${OPENGL_SRC})
+
+else()
+
+set_property(CACHE RENDER_API PROPERTY STRINGS "OpenGL")
+
+target_sources(PseudoTest PRIVATE ${OPENGL_SRC})
+
+endif()
+
+
+
 if(ENABLE_PROFILING)
 
 target_compile_definitions(PseudoTest PRIVATE ENABLE_PROFILING)
 
 endif()
 
-if("${RENDER_API}" STREQUAL "OpenGL")
-
-add_subdirectory("./dependencies/glfw")
-
-add_subdirectory("./dependencies/glew/build/cmake")
-
-target_include_directories(glew_s PUBLIC "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/dependencies/glew/include>")
-
-target_link_libraries(PseudoTest PRIVATE glfw glew_s)
-
-endif()
 
 target_include_directories(PseudoTest PRIVATE .)
 

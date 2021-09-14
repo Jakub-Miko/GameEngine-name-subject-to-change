@@ -13,8 +13,9 @@ public:
     virtual void OnUpdate() override {
         auto queue = Application::Get()->GetRenderer()->GetRenderQueue();
         
-        queue->DrawSquare(5, 2, 3, 4);
-        queue->DrawSquare(8, 541, 12, 7);
+        queue->DrawSquare({ -0.5,0.5 }, { 0.75,0.5 }, {1,0,0,1});
+        queue->DrawSquare({ 0.5,-0.5 }, { 0.5,0.75 });
+        queue->DrawSquare({ 0.5,0.5 }, { 0.75,0.25 }, { 1,0,1,1 });
         PROFILE("Submittion");
         queue->Submit();
     }

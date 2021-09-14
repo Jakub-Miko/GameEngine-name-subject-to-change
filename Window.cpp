@@ -3,14 +3,6 @@
 #include <platform/GLFW/GlfwWindow.h>
 
 
-#ifdef DirectX12
-#include <platform/Windows/WindowsWindow.h>
-#elif defined OpenGL
-#include <platform/GLFW/GlfwWindow.h>
-#endif
-
-
-
 Window::Window(const WindowProperties& props)
     :m_Properties(props)
 {

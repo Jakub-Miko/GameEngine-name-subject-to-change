@@ -2,9 +2,12 @@
 #include <iostream>
 #include <GL/glew.h>
 #include <Utility/Profiler.h>
+#include <platform/OpenGL/Shaders/OpenGLShader.h>
+#include <fstream>
 
-OpenGLDrawCommand::OpenGLDrawCommand(float pos_x, float pos_y, float size_x, float size_y)
-	: pos_x(pos_x), pos_y(pos_y), size_x(size_x), size_y(size_y)
+
+OpenGLDrawCommand::OpenGLDrawCommand(glm::vec2 pos, glm::vec2 size, glm::vec4 color)
+	: pos(pos), size(size), color(color)
 {
 	
 }
@@ -16,6 +19,12 @@ bool OpenGLDrawCommand::initialized = false;
 void OpenGLDrawCommand::Execute()
 {
 	PROFILE("DrawExecution");
+
+	static OpenGLShader shader = OpenGLShader::LoadFromFile(
+		"C:/Users/mainm/Desktop/GameEngine/PseudoCode/assets/shaders/OpenGL/Vertex_Shader.glsl",
+		"C:/Users/mainm/Desktop/GameEngine/PseudoCode/assets/shaders/OpenGL/Fragment_Shader.glsl"
+	);
+	
 
 	if (!initialized) {
 		float quad[4 * 2] =
@@ -49,8 +58,16 @@ void OpenGLDrawCommand::Execute()
 		glBindVertexArray(0);
 		initialized = true;
 	}
-
+	int location_pos = glGetUniformLocation(shader.GetHandle(), "position");
+	int location_size = glGetUniformLocation(shader.GetHandle(), "size");
+	int location_color = glGetUniformLocation(shader.GetHandle(), "in_color");
+	shader.Bind();
+	glUniform2f(location_pos, pos.x, pos.y);
+	glUniform2f(location_size, size.x, size.y);
+	glUniform4f(location_color, color.r,color.g,color.b,color.a);
 	glBindVertexArray(quad_data.vertex_array);
+
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+	shader.Unbind();
 	glBindVertexArray(0);
 }

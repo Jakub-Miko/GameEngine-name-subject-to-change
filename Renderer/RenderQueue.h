@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include <glm/glm.hpp>
 
 class Renderer;
 
@@ -10,7 +11,7 @@ public:
 
     RenderQueue(std::shared_ptr<Renderer> renderer);
 
-    virtual void DrawSquare(float pos_x, float pos_y, float size_x, float size_y) = 0;
+    virtual void DrawSquare(glm::vec2 pos, glm::vec2 size, glm::vec4 color = {1.f,1.f,1.f,1.f}) = 0;
 
     virtual void Submit() = 0;
 

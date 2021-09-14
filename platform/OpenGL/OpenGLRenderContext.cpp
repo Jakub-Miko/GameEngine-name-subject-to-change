@@ -1,4 +1,3 @@
-#ifdef OpenGL
 #include "OpenGLRenderContext.h"
 #include <GL/glew.h>
 #include <Application.h>
@@ -18,4 +17,3 @@ void OpenGLRenderContext::PreInit()
 
 }
 
-#endif
