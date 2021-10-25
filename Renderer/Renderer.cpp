@@ -1,9 +1,14 @@
 #include "Renderer.h"
-#include <platform/OpenGL/OpenGLRenderQueue.h>
+#include <platform/OpenGL/OpenGLRenderCommandList.h>
 #include <Renderer/RenderContext.h>
 
-Renderer* Renderer::CreateRenderer() {
-    return new Renderer();
+Renderer* Renderer::instance = nullptr;
+
+Renderer* Renderer::Get() {
+    if (!instance) {
+        instance = new Renderer();
+    }
+    return instance;
 }
 
 void Renderer::PreInit() {
@@ -12,9 +17,23 @@ void Renderer::PreInit() {
     }
 }
 
-RenderQueue* Renderer::GetRenderQueue()
+RenderCommandList* Renderer::GetRenderCommandList()
 {
-    return new OpenGLRenderQueue(shared_from_this());
+    return RenderCommandList::CreateQueue(this,GetCommandAllocator());
+}
+
+RenderCommandAllocator* Renderer::GetCommandAllocator()
+{
+    if (m_FreeAllocators.empty()) {
+        RenderCommandAllocator* new_alloc = RenderCommandAllocator::CreateAllocator(1024);
+        m_Allocators.push_back(new_alloc);
+        return new_alloc;
+    }
+    else {
+        RenderCommandAllocator* reused_alloc = m_FreeAllocators.back();
+        m_FreeAllocators.pop_back();
+        return reused_alloc;
+    }
 }
 
 void Renderer::Init() {
@@ -23,27 +42,37 @@ void Renderer::Init() {
     }
 }
 
-void Renderer::SubmitQueue(RenderQueue* queue)
+void Renderer::SubmitQueue(RenderCommandList* queue)
 {
-    std::lock_guard<std::mutex> lock(m_Queue_mutex);
-    m_Queues.push_back(queue);
+    std::lock_guard<std::mutex> lock(m_List_mutex);
+    m_Lists.push_back(queue);
 }
 
+//TODO: Synchronize queue reuse instead of clearing it rigth away!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 void Renderer::Render()
 {
-    std::lock_guard<std::mutex> lock(m_Queue_mutex);
-    for (auto queue : m_Queues) {
+    std::lock_guard<std::mutex> lock(m_List_mutex);
+    for (auto queue : m_Lists) {
         queue->Execute();
+        queue->m_Alloc->clear();
+        m_FreeAllocators.push_back(queue->m_Alloc);
         delete queue;
     }
-    m_Queues.clear();
+    m_Lists.clear();
 }
 
-Renderer::~Renderer()
+void Renderer::Destroy()
 {
-    delete RenderContext::Get();
-    for (auto queue : m_Queues) {
+    RenderContext::Get()->Destroy();
+    for (auto queue : m_Lists) {
         delete queue;
     }
-    m_Queues.clear();
+    for (auto alloc : m_Allocators) {
+        delete alloc;
+    }
+    m_Lists.clear();
+    m_FreeAllocators.clear();
+    m_Allocators.clear();
+    delete instance;
+    instance = nullptr;
 }

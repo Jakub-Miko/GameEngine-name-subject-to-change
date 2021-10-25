@@ -13,6 +13,8 @@ public:
 
     virtual void PollEvents() override;
 
+    virtual void SwapBuffers() override;
+
     virtual ~WindowsWindow();
 public:
     HWND m_Window;

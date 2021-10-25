@@ -17,3 +17,8 @@ void OpenGLRenderContext::PreInit()
 
 }
 
+void OpenGLRenderContext::Destroy()
+{
+
+}
+

@@ -2,35 +2,44 @@
 #include "Window.h"
 #include <Renderer/Renderer.h>
 #include "Layer.h"
-#include <Utility/Profiler.h>
+#include <Profiler.h>
+#include <TaskSystem.h>
+#include <stdexcept>
 
 Application *Application::Get()
 {
-    static Application* Instance = new Application();
+    static Application* Instance = new Application;
     return Instance;
 }
 
 Application::Application()
-    :m_Renderer(nullptr), m_Window(nullptr)
+    : m_Window(nullptr)
 {
 
 }
 
 void Application::Init()
 {
+    TaskSystem::Initialize(TaskSystemProps{ 0 });
+    TaskSystem::Get()->Run();
+
     m_Window = Window::CreateWindow();
-    m_Renderer = std::shared_ptr<Renderer>(Renderer::CreateRenderer());
 
     m_Window->PreInit();
-    m_Renderer->PreInit();
+    Renderer::Get()->PreInit();
 
     m_Window->Init();
-    m_Renderer->Init();
+    Renderer::Get()->Init();
 }
 
 void Application::Exit()
 {
-    m_running = false;
+    if (m_running) {
+        m_running = false;
+    }
+    else {
+        throw std::runtime_error("Application exited at initialization");
+    }
 }
 
 void Application::Run()
@@ -47,15 +56,16 @@ void Application::Run()
 void Application::Update()
 {
     m_Window->PollEvents();
-    for (auto layer : m_Layers)
+    for (auto layer : m_Layers) 
     {
         PROFILE("Layer Update");
         layer->OnUpdate();
     }
     {
         PROFILE("Render");
-        m_Renderer->Render();
+        Renderer::Get()->Render();
     }
+    TaskSystem::Get()->FlushDeallocations();
     PROFILE("SwapBuffers");
     m_Window->SwapBuffers();
 }
@@ -63,6 +73,7 @@ void Application::Update()
 void Application::OnGameStop()
 {
     delete m_Window;
+    Renderer::Get()->Destroy();
     for (auto Layer : m_Layers)
     {
         if (Layer)
@@ -70,6 +81,8 @@ void Application::OnGameStop()
             delete Layer;
         }
     }
+    m_Layers.clear();
+    TaskSystem::Shutdown();
 }
 
 void Application::PushLayer(Layer *layer)

@@ -1,14 +1,14 @@
 cmake_minimum_required(VERSION 3.0.0)
 project(PseudoTest VERSION 0.1.0)
 
+set(CMAKE_CXX_STANDARD 17)
+
 set(RENDER_API "" CACHE STRING "")
 
 option(ENABLE_PROFILING OFF)
 
-
 file(GLOB SRCS 
 "./*.cpp" "./*.h" 
-"./Utility/*.cpp" "./Utility/*.h"
 "./Renderer/*.cpp" "./Renderer/*.h")
 
 add_executable(PseudoTest ${SRCS})
@@ -24,9 +24,13 @@ add_subdirectory("./dependencies/glew/build/cmake")
 
 add_subdirectory("./dependencies/glm")
 
+add_subdirectory("./Utilities")
+
 target_include_directories(glew_s PUBLIC "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/dependencies/glew/include>")
 
-target_link_libraries(PseudoTest PRIVATE glfw glew_s glm)
+target_link_libraries(PseudoTest PRIVATE glfw glew_s glm Profiler MemoryManagement TaskSystem LuaEngine RuntimeTypeIdentifier)
+
+
 
 if(WIN32) 
 
@@ -54,7 +58,6 @@ if(ENABLE_PROFILING)
 target_compile_definitions(PseudoTest PRIVATE ENABLE_PROFILING)
 
 endif()
-
 
 target_include_directories(PseudoTest PRIVATE .)
 

@@ -1,10 +1,23 @@
 #include "OpenGLDrawCommand.h"
 #include <iostream>
 #include <GL/glew.h>
-#include <Utility/Profiler.h>
+#include <Profiler.h>
 #include <platform/OpenGL/Shaders/OpenGLShader.h>
 #include <fstream>
 
+
+
+struct QuadData {
+	unsigned int vertex_array;
+	OpenGLShader shader;
+	int location_pos;
+	int size_pos;
+	int color_pos;
+};
+
+bool initialized = false;
+
+static QuadData quad_data;
 
 OpenGLDrawCommand::OpenGLDrawCommand(glm::vec2 pos, glm::vec2 size, glm::vec4 color)
 	: pos(pos), size(size), color(color)
@@ -12,21 +25,19 @@ OpenGLDrawCommand::OpenGLDrawCommand(glm::vec2 pos, glm::vec2 size, glm::vec4 co
 	
 }
 
-OpenGLDrawCommand::QuadData OpenGLDrawCommand::quad_data;
-
-bool OpenGLDrawCommand::initialized = false;
-
 void OpenGLDrawCommand::Execute()
 {
 	PROFILE("DrawExecution");
 
-	static OpenGLShader shader = OpenGLShader::LoadFromFile(
-		"C:/Users/mainm/Desktop/GameEngine/PseudoCode/assets/shaders/OpenGL/Vertex_Shader.glsl",
-		"C:/Users/mainm/Desktop/GameEngine/PseudoCode/assets/shaders/OpenGL/Fragment_Shader.glsl"
-	);
 	
 
 	if (!initialized) {
+	
+		quad_data.shader = OpenGLShader::LoadFromFile(
+			"C:/Users/mainm/Desktop/GameEngine/PseudoCode/assets/shaders/OpenGL/Vertex_Shader.glsl",
+			"C:/Users/mainm/Desktop/GameEngine/PseudoCode/assets/shaders/OpenGL/Fragment_Shader.glsl"
+		);
+
 		float quad[4 * 2] =
 		{
 			-0.5f,-0.5f,
@@ -40,7 +51,10 @@ void OpenGLDrawCommand::Execute()
 			0,3,1
 		};
 
-		
+		quad_data.location_pos= glGetUniformLocation(quad_data.shader.GetHandle(), "position");
+		quad_data.size_pos = glGetUniformLocation(quad_data.shader.GetHandle(), "size");
+		quad_data.color_pos= glGetUniformLocation(quad_data.shader.GetHandle(), "in_color");
+
 		glGenVertexArrays(1, &quad_data.vertex_array);
 		glBindVertexArray(quad_data.vertex_array);
 
@@ -58,16 +72,16 @@ void OpenGLDrawCommand::Execute()
 		glBindVertexArray(0);
 		initialized = true;
 	}
-	int location_pos = glGetUniformLocation(shader.GetHandle(), "position");
-	int location_size = glGetUniformLocation(shader.GetHandle(), "size");
-	int location_color = glGetUniformLocation(shader.GetHandle(), "in_color");
-	shader.Bind();
-	glUniform2f(location_pos, pos.x, pos.y);
-	glUniform2f(location_size, size.x, size.y);
-	glUniform4f(location_color, color.r,color.g,color.b,color.a);
+	
+	quad_data.shader.Bind();
 	glBindVertexArray(quad_data.vertex_array);
 
+	glUniform2f(quad_data.location_pos, pos.x, pos.y);
+	glUniform2f(quad_data.size_pos, size.x, size.y);
+	glUniform4f(quad_data.color_pos, color.r,color.g,color.b,color.a);
+
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
-	shader.Unbind();
+	
+	quad_data.shader.Unbind();
 	glBindVertexArray(0);
 }

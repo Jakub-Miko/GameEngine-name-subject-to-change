@@ -7,7 +7,6 @@ struct WindowProperties {
 };
 
 class Window {
-public: 
 public:
     Window(const WindowProperties& props);
     

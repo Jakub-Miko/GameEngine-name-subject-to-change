@@ -61,11 +61,16 @@ void WindowsWindow::PollEvents() {
 	PROFILE("Poll Events");
 	MSG msg = {};
     if(GetMessage(&msg,NULL,0,0)) {
-    TranslateMessage(&msg);
-	DispatchMessageW(&msg);
+		TranslateMessage(&msg);
+		DispatchMessageW(&msg);
     } else {
         Application::Get()->Exit();
     }
+
+}
+
+void WindowsWindow::SwapBuffers()
+{
 
 }
 

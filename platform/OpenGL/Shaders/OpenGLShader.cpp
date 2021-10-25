@@ -29,6 +29,8 @@ OpenGLShader& OpenGLShader::operator=(OpenGLShader&& ref) noexcept
 	return *this;
 }
 
+
+//TODO: Rework error checkiong
 bool OpenGLShader::CreateShader(const std::string& vertex_shader, const std::string& fragment_shader)
 {
 	unsigned int vertex_shader_handle;

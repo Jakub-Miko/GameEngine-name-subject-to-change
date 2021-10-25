@@ -3,17 +3,13 @@
 #include <platform/OpenGL/OpenGLRenderContext.h>
 
 
-RenderContext* RenderContext::instance = nullptr;
-
 
 RenderContext* RenderContext::Get()
 {
-	if (!instance) {
 #ifdef OpenGL
-		instance = new OpenGLRenderContext;
+	static OpenGLRenderContext instance;
+	return &instance;
 #else
-		instance = nullptr;
+	return nullptr;
 #endif
-	}
-	return instance;
 }
