@@ -1,4 +1,5 @@
 #pragma once
+#include <cstddef>
 
 class RenderCommandAllocator {
 public:
