@@ -6,24 +6,41 @@
 #include <TaskSystem.h>
 #include <stdexcept>
 
+Application* Application::instance = nullptr;
+
 Application *Application::Get()
 {
-    static Application* Instance = new Application;
-    return Instance;
+    return instance;
+}
+
+Application::~Application()
+{
+    delete m_Window;
+    Renderer::Shutdown();
+    for (auto Layer : m_Layers)
+    {
+        if (Layer)
+        {
+            delete Layer;
+        }
+    }
+    m_Layers.clear();
+    TaskSystem::Shutdown();
 }
 
 Application::Application()
     : m_Window(nullptr)
 {
-
+    InitInstance();
 }
 
-void Application::Init()
+void Application::InitInstance()
 {
     TaskSystem::Initialize(TaskSystemProps{ 0 });
     TaskSystem::Get()->Run();
 
     m_Window = Window::CreateWindow();
+    Renderer::Create();
 
     m_Window->PreInit();
     Renderer::Get()->PreInit();
@@ -70,19 +87,23 @@ void Application::Update()
     m_Window->SwapBuffers();
 }
 
+void Application::Init()
+{
+    if (!instance) {
+        instance = new Application();
+    }
+}
+
+void Application::ShutDown()
+{
+    if (instance) {
+        delete instance;
+    }
+}
+
 void Application::OnGameStop()
 {
-    delete m_Window;
-    Renderer::Get()->Destroy();
-    for (auto Layer : m_Layers)
-    {
-        if (Layer)
-        {
-            delete Layer;
-        }
-    }
-    m_Layers.clear();
-    TaskSystem::Shutdown();
+
 }
 
 void Application::PushLayer(Layer *layer)

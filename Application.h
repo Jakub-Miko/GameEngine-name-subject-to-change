@@ -10,6 +10,7 @@ class Layer;
 
 class Application {
 private:
+    static Application* instance;
     Window* m_Window;
     std::vector<Layer*> m_Layers;
     bool m_running = false;
@@ -25,15 +26,22 @@ public:
 
     void PushLayer(Layer* layer);
 
-    void Init();
-
     void Exit();
 
     void Run();
 
     void Update();
 
+    static void Init();
+
+    static void ShutDown();
+
 private:
+
+
+    void InitInstance();
+
+    ~Application();
     Application();
 
     void OnGameStop();

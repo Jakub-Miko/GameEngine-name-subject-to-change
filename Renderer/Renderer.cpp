@@ -5,13 +5,11 @@
 Renderer* Renderer::instance = nullptr;
 
 Renderer* Renderer::Get() {
-    if (!instance) {
-        instance = new Renderer();
-    }
     return instance;
 }
 
 void Renderer::PreInit() {
+    RenderContext::Create();
     if(RenderContext::Get()) {
         RenderContext::Get()->PreInit();
     }
@@ -61,9 +59,17 @@ void Renderer::Render()
     m_Lists.clear();
 }
 
+void Renderer::Shutdown()
+{
+    if (instance) {
+        instance->Destroy();
+        delete instance;
+    }
+}
+
 void Renderer::Destroy()
 {
-    RenderContext::Get()->Destroy();
+    RenderContext::Shutdown();
     for (auto queue : m_Lists) {
         delete queue;
     }
@@ -73,6 +79,11 @@ void Renderer::Destroy()
     m_Lists.clear();
     m_FreeAllocators.clear();
     m_Allocators.clear();
-    delete instance;
-    instance = nullptr;
+}
+
+void Renderer::Create()
+{
+    if (!instance) {
+        instance = new Renderer();
+    }
 }

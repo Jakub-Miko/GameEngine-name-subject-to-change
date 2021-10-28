@@ -16,7 +16,13 @@ public:
 
 public:
 	static RenderContext* Get();
-	virtual void Destroy() = 0;
+
+	static void Create();
+
+	static void Shutdown();
+
 protected:
+	virtual void Destroy() = 0;
+	static RenderContext* instance;
 	RenderContext() = default;
 };

@@ -8,11 +8,10 @@
 int main() {
     {
         BEGIN_PROFILING("Profile", "C:/Users/mainm/Desktop/GameEngine/PseudoCode/Profile_Result1.json");
-        Application* app = Application::Get();
-        app->PushLayer(new GameLayer());
-        app->Init();
-        app->Run(); 
-        delete app;
+        Application::Init();
+        Application::Get()->PushLayer(new GameLayer());
+        Application::Get()->Run();
+        Application::ShutDown();
         END_PROFILING();
     }
     _CrtDumpMemoryLeaks();

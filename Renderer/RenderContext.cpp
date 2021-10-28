@@ -2,14 +2,24 @@
 
 #include <platform/OpenGL/OpenGLRenderContext.h>
 
-
+RenderContext* RenderContext::instance = nullptr;
 
 RenderContext* RenderContext::Get()
 {
-#ifdef OpenGL
-	static OpenGLRenderContext instance;
-	return &instance;
-#else
-	return nullptr;
-#endif
+	return instance;
+}
+
+void RenderContext::Create()
+{
+	if (!instance) {
+		instance = new OpenGLRenderContext();
+	}
+}
+
+void RenderContext::Shutdown()
+{
+	if (instance) {
+		instance->Destroy();
+		delete instance;
+	}
 }

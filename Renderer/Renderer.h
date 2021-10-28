@@ -25,10 +25,14 @@ public:
 
     void Render();
 
-    void Destroy();
+    static void Shutdown();
+
+    static void Create();
 
 private:
     Renderer() = default;
+
+    void Destroy();
     
     std::vector<RenderCommandList*> m_Lists;
     std::vector<RenderCommandAllocator*> m_Allocators;
