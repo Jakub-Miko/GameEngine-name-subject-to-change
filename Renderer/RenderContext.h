@@ -1,6 +1,6 @@
 #pragma once
-
-;
+#include <Renderer/RenderCommandQueue.h>
+#include <Renderer/Renderer.h>
 
 class RenderContext {
 public:
@@ -12,6 +12,7 @@ public:
 	RenderContext& operator=(const RenderContext& ref) = delete;
 	RenderContext& operator=(RenderContext&& ref) = delete;
 
+
 	virtual ~RenderContext() {};
 
 public:
@@ -22,6 +23,7 @@ public:
 	static void Shutdown();
 
 protected:
+	void SetRenderQueue(RenderCommandQueue* queue, RenderQueueTypes type);
 	virtual void Destroy() = 0;
 	static RenderContext* instance;
 	RenderContext() = default;

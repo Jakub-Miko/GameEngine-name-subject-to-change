@@ -1,5 +1,6 @@
 #include "Application.h"
 #include "Window.h"
+
 #include <Renderer/Renderer.h>
 #include "Layer.h"
 #include <Profiler.h>
@@ -11,6 +12,11 @@ Application* Application::instance = nullptr;
 Application *Application::Get()
 {
     return instance;
+}
+
+Window* Application::GetWindow() const
+{
+    return m_Window;
 }
 
 Application::~Application()
@@ -26,6 +32,9 @@ Application::~Application()
     }
     m_Layers.clear();
     TaskSystem::Shutdown();
+    m_TaskThreads.clear();
+    m_MainThread.reset();
+    ThreadManager::Shutdown();
 }
 
 Application::Application()
@@ -36,15 +45,29 @@ Application::Application()
 
 void Application::InitInstance()
 {
-    TaskSystem::Initialize(TaskSystemProps{ 0 });
-    TaskSystem::Get()->Run();
-
+    //ThreadManagerStartup
+    ThreadManager::Init();
+    
+    //Claim MainThread
+    m_MainThread = ThreadManager::GetThreadManager()->GetThread();
+    
+    //Create window and Renderer
     m_Window = Window::CreateWindow();
     Renderer::Create();
 
+    //Window and renderer Pre-initialization phase
     m_Window->PreInit();
     Renderer::Get()->PreInit();
+    
+    //TaskSystem Startup
+    int task_threads = ThreadManager::GetThreadManager()->GetAvailableThreadCount();
+    for (int i = 0; i < task_threads; i++) {
+        m_TaskThreads.push_back(ThreadManager::GetThreadManager()->GetThread());
+    }
+    TaskSystem::Initialize(TaskSystemProps{ task_threads });
+    TaskSystem::Get()->Run();
 
+    //Window and renderer Initialization phase
     m_Window->Init();
     Renderer::Get()->Init();
 }
@@ -77,10 +100,6 @@ void Application::Update()
     {
         PROFILE("Layer Update");
         layer->OnUpdate();
-    }
-    {
-        PROFILE("Render");
-        Renderer::Get()->Render();
     }
     TaskSystem::Get()->FlushDeallocations();
     PROFILE("SwapBuffers");

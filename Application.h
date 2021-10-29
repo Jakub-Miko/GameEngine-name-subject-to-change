@@ -3,6 +3,7 @@
 #include <memory>
 #include <Renderer/Renderer.h>
 #include <Profiler.h>
+#include <ThreadManager.h>
 
 class Window;
 class Renderer;
@@ -13,6 +14,8 @@ private:
     static Application* instance;
     Window* m_Window;
     std::vector<Layer*> m_Layers;
+    std::vector<std::shared_ptr<ThreadObject>> m_TaskThreads;
+    std::shared_ptr<ThreadObject> m_MainThread;
     bool m_running = false;
 
 public:
@@ -23,6 +26,8 @@ public:
     Application& operator=(Application&& ref) = delete;
 
     static Application* Get();
+
+    Window* GetWindow() const;
 
     void PushLayer(Layer* layer);
 

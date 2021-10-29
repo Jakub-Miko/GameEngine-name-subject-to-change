@@ -17,7 +17,8 @@ void Renderer::PreInit() {
 
 RenderCommandList* Renderer::GetRenderCommandList()
 {
-    return RenderCommandList::CreateQueue(this,GetCommandAllocator());
+    return RenderCommandList::CreateQueue(this, std::shared_ptr<RenderCommandAllocator>(GetCommandAllocator(), 
+        [this](RenderCommandAllocator* ptr) { ReuseAllocator(ptr); }));
 }
 
 RenderCommandAllocator* Renderer::GetCommandAllocator()
@@ -40,23 +41,10 @@ void Renderer::Init() {
     }
 }
 
-void Renderer::SubmitQueue(RenderCommandList* queue)
-{
-    std::lock_guard<std::mutex> lock(m_List_mutex);
-    m_Lists.push_back(queue);
-}
 
-//TODO: Synchronize queue reuse instead of clearing it rigth away!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-void Renderer::Render()
+RenderCommandQueue* Renderer::GetCommandQueue(RenderQueueTypes type)
 {
-    std::lock_guard<std::mutex> lock(m_List_mutex);
-    for (auto queue : m_Lists) {
-        queue->Execute();
-        queue->m_Alloc->clear();
-        m_FreeAllocators.push_back(queue->m_Alloc);
-        delete queue;
-    }
-    m_Lists.clear();
+    return m_CommandQueues[type];
 }
 
 void Renderer::Shutdown()
@@ -67,16 +55,18 @@ void Renderer::Shutdown()
     }
 }
 
+void Renderer::SetRenderQueue(RenderCommandQueue* queue, RenderQueueTypes type)
+{
+    m_CommandQueues[type] = queue;
+}
+
 void Renderer::Destroy()
 {
     RenderContext::Shutdown();
-    for (auto queue : m_Lists) {
-        delete queue;
-    }
+
     for (auto alloc : m_Allocators) {
         delete alloc;
     }
-    m_Lists.clear();
     m_FreeAllocators.clear();
     m_Allocators.clear();
 }
@@ -86,4 +76,9 @@ void Renderer::Create()
     if (!instance) {
         instance = new Renderer();
     }
+}
+
+void Renderer::ReuseAllocator(RenderCommandAllocator* alloc)
+{
+    m_FreeAllocators.push_back(alloc);
 }

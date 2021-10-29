@@ -23,3 +23,8 @@ void RenderContext::Shutdown()
 		delete instance;
 	}
 }
+
+void RenderContext::SetRenderQueue(RenderCommandQueue* queue, RenderQueueTypes type)
+{
+	Renderer::Get()->SetRenderQueue(queue, type);
+}

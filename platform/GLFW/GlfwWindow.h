@@ -2,6 +2,7 @@
 #include <Window.h>
 
 struct GLFWwindow;
+class OpenGLRenderContext;
 
 class GlfwWindow : public Window {
 public:
@@ -15,6 +16,8 @@ public:
     virtual void SwapBuffers() override;
 
     virtual ~GlfwWindow();
-public:
+
+    GLFWwindow* GetHandle() const { return m_Window; }
+private:
     GLFWwindow* m_Window;
 };

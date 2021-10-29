@@ -1,14 +1,16 @@
 #include "OpenGLRenderCommandList.h"
 #include "OpenGLDrawCommand.h"
+#include "OpenGLBindOpenGLContextCommand.h"
 #include "OpenGLRenderCommand.h"
 #include "OpenGLRenderCommandAllocator.h"
 #include <memory>
+
 #include <memory_resource>
 #include <type_traits>
 #include <Renderer/Renderer.h>
 #include <Profiler.h>
 
-OpenGLRenderCommandList::OpenGLRenderCommandList(Renderer* renderer, RenderCommandAllocator* alloc)
+OpenGLRenderCommandList::OpenGLRenderCommandList(Renderer* renderer, std::shared_ptr<RenderCommandAllocator> alloc)
     : RenderCommandList(renderer, alloc)
 {
 
@@ -21,24 +23,33 @@ void OpenGLRenderCommandList::DrawSquare(glm::vec2 pos, glm::vec2 size, glm::vec
 
     OpenGLDrawCommand* cmd = std::allocator_traits<decltype(alloc)>::allocate(alloc, 1);
     std::allocator_traits<decltype(alloc)>::construct(alloc, cmd, pos, size, color);
-
-    m_Commands.push_back(cmd);
+    cmd->next = m_Commands;
+    m_Commands = cmd;
 }
 
-void OpenGLRenderCommandList::Submit() {
-    m_Renderer->SubmitQueue(this);
+void OpenGLRenderCommandList::BindOpenGLContext()
+{
+    OpenGLRenderCommandAllocator::Pool* pool = reinterpret_cast<OpenGLRenderCommandAllocator::Pool*>(m_Alloc->Get());
+    std::pmr::polymorphic_allocator<OpenGLBindOpenGLContextCommand> alloc(pool);
+
+    OpenGLBindOpenGLContextCommand* cmd = std::allocator_traits<decltype(alloc)>::allocate(alloc, 1);
+    std::allocator_traits<decltype(alloc)>::construct(alloc, cmd);
+    cmd->next = m_Commands;
+    m_Commands = cmd;
 }
 
 void OpenGLRenderCommandList::Execute()
 {
-    for (auto command: m_Commands) {
+    OpenGLRenderCommand* next = m_Commands;
+    while(next) {
         PROFILE("Command Execution");
-        command->Execute();
+        next->Execute();
+        next = next->next;
     }
-    m_Commands.clear();
+    m_Commands = nullptr;
 }
 
 OpenGLRenderCommandList::~OpenGLRenderCommandList()
 {
-    m_Commands.clear();
+    m_Commands = nullptr;
 }

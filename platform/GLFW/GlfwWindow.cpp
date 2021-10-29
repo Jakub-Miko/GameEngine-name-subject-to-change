@@ -1,5 +1,7 @@
 #include "GlfwWindow.h"
 #include <GL/glew.h>
+#include <Renderer/Renderer.h>
+#include <platform/OpenGL/OpenGLRenderCommandList.h>
 #include <GLFW/glfw3.h>
 #include <Application.h>
 
@@ -11,9 +13,9 @@ GlfwWindow::GlfwWindow(const WindowProperties& props)
 
 void GlfwWindow::Init()
 {
-    /* Make the window's context current */
-    glfwMakeContextCurrent(m_Window);
-    glfwSwapInterval(0);
+    auto list = reinterpret_cast<OpenGLRenderCommandList*>(Renderer::Get()->GetRenderCommandList());
+    list->BindOpenGLContext();
+    Renderer::Get()->GetCommandQueue()->ExecuteRenderCommandList( reinterpret_cast<RenderCommandList*>(list) );
 }
 
 void GlfwWindow::PreInit()
