@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.0.0)
 project(PseudoTest VERSION 0.1.0)
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/out")
 
 set(RENDER_API "" CACHE STRING "")
 
@@ -28,7 +29,7 @@ add_subdirectory("./Utilities")
 
 target_include_directories(glew_s PUBLIC "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/dependencies/glew/include>")
 
-target_link_libraries(PseudoTest PRIVATE glfw glew_s glm Profiler MemoryManagement TaskSystem LuaEngine RuntimeTypeIdentifier ThreadManager)
+target_link_libraries(PseudoTest PRIVATE glfw glew_s glm Profiler MemoryManagement TaskSystem LuaEngine RuntimeTypeIdentifier ThreadManager FileManager)
 
 
 

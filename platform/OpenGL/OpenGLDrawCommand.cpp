@@ -1,6 +1,7 @@
 #include "OpenGLDrawCommand.h"
 #include <iostream>
 #include <GL/glew.h>
+#include <FileManager.h>
 #include <Profiler.h>
 #include <platform/OpenGL/Shaders/OpenGLShader.h>
 #include <fstream>
@@ -34,8 +35,8 @@ void OpenGLDrawCommand::Execute()
 	if (!initialized) {
 	
 		quad_data.shader = OpenGLShader::LoadFromFile(
-			"C:/Users/mainm/Desktop/GameEngine/PseudoCode/assets/shaders/OpenGL/Vertex_Shader.glsl",
-			"C:/Users/mainm/Desktop/GameEngine/PseudoCode/assets/shaders/OpenGL/Fragment_Shader.glsl"
+			FileManager::Get()->GetRenderApiAssetFilePath("shaders/Vertex_Shader.glsl"),
+			FileManager::Get()->GetRenderApiAssetFilePath("shaders/Fragment_Shader.glsl")
 		);
 
 		float quad[4 * 2] =

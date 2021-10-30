@@ -1,6 +1,6 @@
 #include "Application.h"
 #include "Window.h"
-
+#include <FileManager.h>
 #include <Renderer/Renderer.h>
 #include "Layer.h"
 #include <Profiler.h>
@@ -35,6 +35,7 @@ Application::~Application()
     m_TaskThreads.clear();
     m_MainThread.reset();
     ThreadManager::Shutdown();
+    FileManager::Shutdown();
 }
 
 Application::Application()
@@ -45,6 +46,8 @@ Application::Application()
 
 void Application::InitInstance()
 {
+    FileManager::Init();
+    
     //ThreadManagerStartup
     ThreadManager::Init();
     
