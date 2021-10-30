@@ -1,4 +1,5 @@
 #pragma once
+#include <atomic>
 #include <Renderer/RenderCommandQueue.h>
 #include "OpenGLRenderCommandList.h"
 #include <ThreadManager.h>
