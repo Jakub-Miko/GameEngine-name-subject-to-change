@@ -80,5 +80,6 @@ void Renderer::Create()
 
 void Renderer::ReuseAllocator(RenderCommandAllocator* alloc)
 {
+    std::lock_guard<std::mutex> lock(m_List_mutex);
     m_FreeAllocators.push_back(alloc);
 }

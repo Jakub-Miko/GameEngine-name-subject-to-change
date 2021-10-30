@@ -47,6 +47,7 @@ private:
     std::vector<RenderCommandAllocator*> m_FreeAllocators;
     std::array<RenderCommandQueue*, 3> m_CommandQueues;
     std::mutex m_List_mutex;
+
     static Renderer* instance;
 public:
     

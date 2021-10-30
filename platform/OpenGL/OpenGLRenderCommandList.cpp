@@ -9,6 +9,21 @@
 #include <type_traits>
 #include <Renderer/Renderer.h>
 #include <Profiler.h>
+#include <utility>
+
+
+template<typename T, typename ...Args>
+void OpenGLRenderCommandList::PushCommand(Args&& ...args)
+{
+    OpenGLRenderCommandAllocator::Pool* pool = reinterpret_cast<OpenGLRenderCommandAllocator::Pool*>(m_Alloc->Get());
+    std::pmr::polymorphic_allocator<T> alloc(pool);
+
+    T* cmd = std::allocator_traits<decltype(alloc)>::allocate(alloc, 1);
+    std::allocator_traits<decltype(alloc)>::construct(alloc, cmd, std::forward<Args>(args)...);
+    cmd->next = m_Commands;
+    m_Commands = cmd;
+}
+
 
 OpenGLRenderCommandList::OpenGLRenderCommandList(Renderer* renderer, std::shared_ptr<RenderCommandAllocator> alloc)
     : RenderCommandList(renderer, alloc)
@@ -18,24 +33,12 @@ OpenGLRenderCommandList::OpenGLRenderCommandList(Renderer* renderer, std::shared
 
 void OpenGLRenderCommandList::DrawSquare(glm::vec2 pos, glm::vec2 size, glm::vec4 color) {
     PROFILE("Draw Square Command");
-    OpenGLRenderCommandAllocator::Pool* pool = reinterpret_cast<OpenGLRenderCommandAllocator::Pool*>(m_Alloc->Get());
-    std::pmr::polymorphic_allocator<OpenGLDrawCommand> alloc(pool);
-
-    OpenGLDrawCommand* cmd = std::allocator_traits<decltype(alloc)>::allocate(alloc, 1);
-    std::allocator_traits<decltype(alloc)>::construct(alloc, cmd, pos, size, color);
-    cmd->next = m_Commands;
-    m_Commands = cmd;
+    PushCommand<OpenGLDrawCommand>(pos, size, color);
 }
 
 void OpenGLRenderCommandList::BindOpenGLContext()
 {
-    OpenGLRenderCommandAllocator::Pool* pool = reinterpret_cast<OpenGLRenderCommandAllocator::Pool*>(m_Alloc->Get());
-    std::pmr::polymorphic_allocator<OpenGLBindOpenGLContextCommand> alloc(pool);
-
-    OpenGLBindOpenGLContextCommand* cmd = std::allocator_traits<decltype(alloc)>::allocate(alloc, 1);
-    std::allocator_traits<decltype(alloc)>::construct(alloc, cmd);
-    cmd->next = m_Commands;
-    m_Commands = cmd;
+    PushCommand<OpenGLBindOpenGLContextCommand>();
 }
 
 void OpenGLRenderCommandList::Execute()
