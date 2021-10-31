@@ -24,18 +24,29 @@ RenderCommandList* Renderer::GetRenderCommandList()
 RenderCommandAllocator* Renderer::GetCommandAllocator()
 {
     if (m_FreeAllocators.empty()) {
-        RenderCommandAllocator* new_alloc = RenderCommandAllocator::CreateAllocator(1024);
-        m_Allocators.push_back(new_alloc);
-        return new_alloc;
+        if (m_Allocators.size() >= max_allocators) {
+            std::unique_lock<std::mutex> lock(m_List_mutex);
+            m_List_cond.wait(lock, [this]() {return !m_FreeAllocators.empty(); });
+            RenderCommandAllocator* reused_alloc = m_FreeAllocators.back();
+            m_FreeAllocators.pop_back();
+            return reused_alloc;
+        }
+        else {
+            RenderCommandAllocator* new_alloc = RenderCommandAllocator::CreateAllocator(1024);
+            m_Allocators.push_back(new_alloc);
+            return new_alloc;
+        }
     }
     else {
+        std::lock_guard<std::mutex> lock(m_List_mutex);
         RenderCommandAllocator* reused_alloc = m_FreeAllocators.back();
         m_FreeAllocators.pop_back();
         return reused_alloc;
     }
 }
 
-void Renderer::Init() {
+void Renderer::Init(int max_allocators) {
+    this->max_allocators = max_allocators;
     if (RenderContext::Get()) {
         RenderContext::Get()->Init();
     }
@@ -82,4 +93,5 @@ void Renderer::ReuseAllocator(RenderCommandAllocator* alloc)
 {
     std::lock_guard<std::mutex> lock(m_List_mutex);
     m_FreeAllocators.push_back(alloc);
+    m_List_cond.notify_one();
 }

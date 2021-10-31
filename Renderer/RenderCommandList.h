@@ -13,6 +13,8 @@ public:
     RenderCommandList(Renderer* renderer, std::shared_ptr<RenderCommandAllocator> alloc);
 
     virtual void DrawSquare(glm::vec2 pos, glm::vec2 size, glm::vec4 color = {1.f,1.f,1.f,1.f}) = 0;
+    virtual void SwapBuffers() = 0;
+
 
     virtual ~RenderCommandList() {};
 protected:

@@ -92,6 +92,7 @@ void Application::Exit()
 void Application::Run()
 {
     m_running = true;
+    last_time_point = std::chrono::high_resolution_clock::now();
     while (m_running)
     {
         PROFILE("Update");
@@ -102,15 +103,23 @@ void Application::Run()
 
 void Application::Update()
 {
+    std::chrono::nanoseconds time_diff = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - last_time_point);
+    float delta_time = (double)time_diff.count() / 1000000;
+    last_time_point = std::chrono::high_resolution_clock::now();
+    if (delta_time == 0) {
+        delta_time = 1;
+    }
     m_Window->PollEvents();
     for (auto layer : m_Layers) 
     {
         PROFILE("Layer Update");
-        layer->OnUpdate();
+        layer->OnUpdate(delta_time);
     }
-    TaskSystem::Get()->FlushDeallocations();
     PROFILE("SwapBuffers");
-    m_Window->SwapBuffers();
+    auto list = Renderer::Get()->GetRenderCommandList();
+    list->SwapBuffers();
+    Renderer::Get()->GetCommandQueue()->ExecuteRenderCommandList(list);
+    TaskSystem::Get()->FlushDeallocations();
 }
 
 void Application::Init()

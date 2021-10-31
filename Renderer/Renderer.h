@@ -27,7 +27,7 @@ public:
 
     RenderCommandAllocator* GetCommandAllocator();
 
-    void Init();
+    void Init(int max_allocators = 3);
 
     RenderCommandQueue* GetCommandQueue(RenderQueueTypes type = DirectQueue);
 
@@ -46,7 +46,10 @@ private:
     std::vector<RenderCommandAllocator*> m_Allocators;
     std::vector<RenderCommandAllocator*> m_FreeAllocators;
     std::array<RenderCommandQueue*, 3> m_CommandQueues;
+
     std::mutex m_List_mutex;
+    int max_allocators = 3;
+    std::condition_variable m_List_cond;
 
     static Renderer* instance;
 public:

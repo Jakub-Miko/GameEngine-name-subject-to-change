@@ -3,6 +3,7 @@
 #include <memory>
 #include <Renderer/Renderer.h>
 #include <Profiler.h>
+#include <chrono>
 #include <ThreadManager.h>
 
 class Window;
@@ -42,7 +43,7 @@ public:
     static void ShutDown();
 
 private:
-
+    std::chrono::high_resolution_clock::time_point last_time_point;
 
     void InitInstance();
 
