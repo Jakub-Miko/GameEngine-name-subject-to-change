@@ -1,6 +1,7 @@
 #include "Application.h"
 #include "Window.h"
 #include <FileManager.h>
+#include <ConfigManager.h>
 #include <Renderer/Renderer.h>
 #include "Layer.h"
 #include <Profiler.h>
@@ -35,6 +36,7 @@ Application::~Application()
     m_TaskThreads.clear();
     m_MainThread.reset();
     ThreadManager::Shutdown();
+    ConfigManager::Shutdown();
     FileManager::Shutdown();
 }
 
@@ -45,9 +47,11 @@ Application::Application()
 }
 
 void Application::InitInstance()
-{
+{   
     FileManager::Init();
     
+    ConfigManager::Init(FileManager::Get()->GetRelativeFilepath("config.json"));
+
     //ThreadManagerStartup
     ThreadManager::Init();
     

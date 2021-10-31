@@ -1,9 +1,12 @@
 #include "Application.h"
 #include "GameLayer.h"
 #include <Profiler.h>
-#define _CRTDBG_MAP_ALLOC
-#include <stdlib.h>
-#include <crtdbg.h>
+
+#ifdef WIN32
+    #define _CRTDBG_MAP_ALLOC
+    #include <stdlib.h>
+    #include <crtdbg.h>
+#endif
 
 int main() {
     {
@@ -14,5 +17,7 @@ int main() {
         Application::ShutDown();
         END_PROFILING();
     }
+#ifdef WIN32
     _CrtDumpMemoryLeaks();
+#endif
 }
