@@ -5,6 +5,7 @@
 #include <Renderer/Renderer.h>
 #include "Layer.h"
 #include <Profiler.h>
+#include <Input/Input.h>
 #include <TaskSystem.h>
 #include <stdexcept>
 
@@ -20,8 +21,20 @@ Window* Application::GetWindow() const
     return m_Window;
 }
 
+bool Application::SendEvent(Event* event)
+{
+    for (auto layer : m_Layers) {
+        layer->OnEvent(event);
+        if (event->handled) {
+            break;
+        }
+    }
+    return event->handled;
+}
+
 Application::~Application()
 {
+    Input::Shutdown();
     delete m_Window;
     Renderer::Shutdown();
     for (auto Layer : m_Layers)
@@ -43,7 +56,7 @@ Application::~Application()
 Application::Application()
     : m_Window(nullptr)
 {
-    InitInstance();
+    
 }
 
 void Application::InitInstance()
@@ -66,6 +79,7 @@ void Application::InitInstance()
     m_Window->PreInit();
     Renderer::Get()->PreInit();
     
+
     //TaskSystem Startup
     int task_threads = ThreadManager::GetThreadManager()->GetAvailableThreadCount();
     for (int i = 0; i < task_threads; i++) {
@@ -77,6 +91,8 @@ void Application::InitInstance()
     //Window and renderer Initialization phase
     m_Window->Init();
     Renderer::Get()->Init();
+
+    Input::Init();
 }
 
 void Application::Exit()
@@ -126,6 +142,7 @@ void Application::Init()
 {
     if (!instance) {
         instance = new Application();
+        instance->InitInstance();
     }
 }
 

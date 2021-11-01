@@ -21,8 +21,14 @@ void OpenGLRenderCommandList::PushCommand(Args&& ...args)
 
     T* cmd = std::allocator_traits<decltype(alloc)>::allocate(alloc, 1);
     std::allocator_traits<decltype(alloc)>::construct(alloc, cmd, std::forward<Args>(args)...);
-    cmd->next = m_Commands;
-    m_Commands = cmd;
+    if (!m_Commands) {
+        m_Commands = cmd;
+        m_Commands_tail = cmd;
+    }
+    else {
+        m_Commands_tail->next = cmd;
+        m_Commands_tail = cmd;
+    }
 }
 
 

@@ -4,6 +4,7 @@
 #include <Renderer/Renderer.h>
 #include <Profiler.h>
 #include <chrono>
+#include <Events/Event.h>
 #include <ThreadManager.h>
 
 class Window;
@@ -29,6 +30,8 @@ public:
     static Application* Get();
 
     Window* GetWindow() const;
+
+    bool SendEvent(Event* event);
 
     void PushLayer(Layer* layer);
 

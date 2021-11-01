@@ -23,6 +23,7 @@ private:
     virtual void Execute() override;
 
     OpenGLRenderCommand* m_Commands = nullptr;
+    OpenGLRenderCommand* m_Commands_tail = nullptr;
     
 };
 

@@ -1,3 +1,4 @@
 {
-  "Vsync": 1
+  "Vsync": 1,
+  "EnableMouseMoveEvent" : 1
 }

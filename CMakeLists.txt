@@ -10,6 +10,7 @@ option(ENABLE_PROFILING OFF)
 
 file(GLOB SRCS 
 "./*.cpp" "./*.h" 
+"./Input/*.cpp"
 "./Renderer/*.cpp" "./Renderer/*.h")
 
 add_executable(PseudoTest ${SRCS})
