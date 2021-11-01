@@ -1,5 +1,6 @@
 #pragma once
 #include <Renderer/RenderCommandList.h>
+#include <condition_variable>
 #include <Renderer/RenderCommandAllocator.h>
 #include <Renderer/RenderCommandQueue.h>
 #include <memory>
