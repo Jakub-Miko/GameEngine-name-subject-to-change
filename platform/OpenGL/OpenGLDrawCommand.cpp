@@ -28,7 +28,7 @@ OpenGLDrawCommand::OpenGLDrawCommand(glm::vec2 pos, glm::vec2 size, glm::vec4 co
 
 void OpenGLDrawCommand::Execute()
 {
-	PROFILE("DrawExecution");
+	//PROFILE("DrawExecution");
 
 	
 

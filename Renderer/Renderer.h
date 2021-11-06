@@ -1,5 +1,6 @@
 #pragma once
 #include <Renderer/RenderCommandList.h>
+#include <Renderer/RenderFence.h>
 #include <condition_variable>
 #include <Renderer/RenderCommandAllocator.h>
 #include <Renderer/RenderCommandQueue.h>
@@ -28,9 +29,11 @@ public:
 
     RenderCommandAllocator* GetCommandAllocator();
 
-    void Init(int max_allocators = 3);
+    void Init(int max_allocators = 5);
 
     RenderCommandQueue* GetCommandQueue(RenderQueueTypes type = DirectQueue);
+
+    RenderFence* GetFence();
 
     static void Shutdown();
 
@@ -46,7 +49,7 @@ private:
     
     std::vector<RenderCommandAllocator*> m_Allocators;
     std::vector<RenderCommandAllocator*> m_FreeAllocators;
-    std::array<RenderCommandQueue*, 3> m_CommandQueues;
+    std::array<RenderCommandQueue*, 5> m_CommandQueues;
 
     std::mutex m_List_mutex;
     int max_allocators = 3;

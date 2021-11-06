@@ -1,5 +1,6 @@
 #include "OpenGLRenderCommandQueue.h"
 #include <Renderer/Renderer.h>
+#include "OpenGLRenderFence.h"
 #include <Profiler.h>
 
 OpenGLRenderCommandQueue::OpenGLRenderCommandQueue()
@@ -12,7 +13,7 @@ void OpenGLRenderCommandQueue::ExecuteRenderCommandLists(std::vector<RenderComma
 {
 	std::unique_lock<std::mutex> lock(m_queue_mutex);
 	for (auto list : lists) {
-		m_Lists.push(reinterpret_cast<OpenGLRenderCommandList*>(list));
+		m_Lists.push(reinterpret_cast<ExecutableCommand*>(list));
 	}
 	lock.unlock();
 	m_cond_var.notify_one();
@@ -21,7 +22,16 @@ void OpenGLRenderCommandQueue::ExecuteRenderCommandLists(std::vector<RenderComma
 void OpenGLRenderCommandQueue::ExecuteRenderCommandList(RenderCommandList* list)
 {
 	std::unique_lock<std::mutex> lock(m_queue_mutex);
-	m_Lists.push(reinterpret_cast<OpenGLRenderCommandList*>(list));
+	m_Lists.push(reinterpret_cast<ExecutableCommand*>(list));
+	lock.unlock();
+	m_cond_var.notify_one();
+}
+
+void OpenGLRenderCommandQueue::Signal(std::shared_ptr<RenderFence> fence, int num)
+{
+	ExecutableCommand* command = new OpenGLRenderFenceCommand(fence, num);
+	std::unique_lock<std::mutex> lock(m_queue_mutex);
+	m_Lists.push(command);
 	lock.unlock();
 	m_cond_var.notify_one();
 }
@@ -45,23 +55,22 @@ void OpenGLRenderCommandQueue::RenderLoop()
 	running.store(true);
 	while (running.load()) {
 		PROFILE("RenderLoopFetch");
-		OpenGLRenderCommandList* list = FetchList();
+		ExecutableCommand* list = FetchList();
 		if (list) {
 			PROFILE("RenderLoopExec");
 			list->Execute();
-			list->m_Alloc->clear();
 			delete list;
 		}
 	}
 }
 
-OpenGLRenderCommandList* OpenGLRenderCommandQueue::FetchList() {
+ExecutableCommand* OpenGLRenderCommandQueue::FetchList() {
 	std::unique_lock<std::mutex> lock(m_queue_mutex);
 	if (m_Lists.empty()) {
 		PROFILE("Wait");
 		m_cond_var.wait(lock, [this]() {return !m_Lists.empty(); });
 	}
-	OpenGLRenderCommandList* list = m_Lists.front();
+	ExecutableCommand* list = m_Lists.front();
 	m_Lists.pop();
 	return list;
 }

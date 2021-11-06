@@ -58,6 +58,11 @@ RenderCommandQueue* Renderer::GetCommandQueue(RenderQueueTypes type)
     return m_CommandQueues[type];
 }
 
+RenderFence* Renderer::GetFence()
+{
+    return RenderFence::CreateFence();
+}
+
 void Renderer::Shutdown()
 {
     if (instance) {
@@ -91,6 +96,7 @@ void Renderer::Create()
 
 void Renderer::ReuseAllocator(RenderCommandAllocator* alloc)
 {
+    alloc->clear();
     std::lock_guard<std::mutex> lock(m_List_mutex);
     m_FreeAllocators.push_back(alloc);
     m_List_cond.notify_one();

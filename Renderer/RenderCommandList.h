@@ -2,10 +2,11 @@
 #include <memory>
 #include <glm/glm.hpp>
 #include <Renderer/RenderCommandAllocator.h>
+#include <Core/ExecutableCommand.h>
 
 class Renderer;
 
-class RenderCommandList
+class RenderCommandList : public ExecutableCommand
 {
 public:
     friend Renderer;
@@ -21,7 +22,6 @@ protected:
     Renderer* m_Renderer;
     std::shared_ptr<RenderCommandAllocator> m_Alloc;
 public:
-    virtual void Execute() = 0;
 
     static RenderCommandList* CreateQueue(Renderer* renderer, std::shared_ptr<RenderCommandAllocator> alloc);
 };

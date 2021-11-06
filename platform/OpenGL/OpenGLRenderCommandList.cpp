@@ -39,7 +39,6 @@ OpenGLRenderCommandList::OpenGLRenderCommandList(Renderer* renderer, std::shared
 }
 
 void OpenGLRenderCommandList::DrawSquare(glm::vec2 pos, glm::vec2 size, glm::vec4 color) {
-    PROFILE("Draw Square Command");
     PushCommand<OpenGLDrawCommand>(pos, size, color);
 }
 

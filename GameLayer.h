@@ -82,7 +82,6 @@ public:
         /*askSystem::Get()->Submit(task);
         task->GetFuture().GetValue();*/
 
-        PROFILE("Submittion");
         Renderer::Get()->GetCommandQueue()->ExecuteRenderCommandList(queue);
     }
 

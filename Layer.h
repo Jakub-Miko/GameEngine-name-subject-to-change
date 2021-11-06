@@ -1,4 +1,5 @@
 #pragma once
+class Event;
 class Layer {
 public:
     virtual void OnEvent(Event* e) {};

@@ -7,7 +7,10 @@
 #include <Profiler.h>
 #include <Input/Input.h>
 #include <TaskSystem.h>
+#include <GameStateMachine.h>
+#include <GameLayer.h>
 #include <stdexcept>
+
 
 Application* Application::instance = nullptr;
 
@@ -23,12 +26,7 @@ Window* Application::GetWindow() const
 
 bool Application::SendEvent(Event* event)
 {
-    for (auto layer : m_Layers) {
-        layer->OnEvent(event);
-        if (event->handled) {
-            break;
-        }
-    }
+    GameStateMachine::Get()->OnEventState(event);
     return event->handled;
 }
 
@@ -37,20 +35,16 @@ Application::~Application()
     Input::Shutdown();
     delete m_Window;
     Renderer::Shutdown();
-    for (auto Layer : m_Layers)
-    {
-        if (Layer)
-        {
-            delete Layer;
-        }
-    }
-    m_Layers.clear();
+    
+    delete m_GameLayer;
+
     TaskSystem::Shutdown();
     m_TaskThreads.clear();
     m_MainThread.reset();
     ThreadManager::Shutdown();
     ConfigManager::Shutdown();
     FileManager::Shutdown();
+    GameStateMachine::Shutdown();
 }
 
 Application::Application()
@@ -61,13 +55,20 @@ Application::Application()
 
 void Application::InitInstance()
 {   
+    //Initialize FileManager
     FileManager::Init();
     
+    //Initialize Config store
     ConfigManager::Init(FileManager::Get()->GetRelativeFilepath("config.json"));
+
+    //Init GameState
+    GameStateMachine::Init();
 
     //ThreadManagerStartup
     ThreadManager::Init();
     
+    m_GameLayer = new GameLayer();
+
     //Claim MainThread
     m_MainThread = ThreadManager::GetThreadManager()->GetThread();
     
@@ -91,6 +92,11 @@ void Application::InitInstance()
     //Window and renderer Initialization phase
     m_Window->Init();
     Renderer::Get()->Init();
+
+    m_Sync_Fence.reset(Renderer::Get()->GetFence());
+
+    latency_frames = ConfigManager::Get()->GetInt("Latency_Frames");
+    frame_count = latency_frames;
 
     Input::Init();
 }
@@ -117,24 +123,40 @@ void Application::Run()
     OnGameStop();
 }
 
+void Application::SetInitialGameState(std::shared_ptr<GameState> state)
+{
+    if (!m_running) {
+        GameStateMachine::Get()->ChangeState(state);
+    }
+    else {
+        throw std::runtime_error("Cannot set InitialGameState at runtime.");
+    }
+}
+
 void Application::Update()
 {
+    
+    Renderer::Get()->GetCommandQueue()->Signal(m_Sync_Fence, frame_count);
+    m_Sync_Fence->WaitForValue(frame_count - latency_frames);
+    ++frame_count;
     std::chrono::nanoseconds time_diff = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - last_time_point);
     float delta_time = (double)time_diff.count() / 1000000;
     last_time_point = std::chrono::high_resolution_clock::now();
     if (delta_time == 0) {
         delta_time = 1;
     }
+
     m_Window->PollEvents();
-    for (auto layer : m_Layers) 
-    {
-        PROFILE("Layer Update");
-        layer->OnUpdate(delta_time);
-    }
+
+    PROFILE("Layer Update");
+
+    GameStateMachine::Get()->UpdateState(delta_time);
+
     PROFILE("SwapBuffers");
     auto list = Renderer::Get()->GetRenderCommandList();
     list->SwapBuffers();
     Renderer::Get()->GetCommandQueue()->ExecuteRenderCommandList(list);
+
     TaskSystem::Get()->FlushDeallocations();
 }
 
@@ -156,9 +178,4 @@ void Application::ShutDown()
 void Application::OnGameStop()
 {
 
-}
-
-void Application::PushLayer(Layer *layer)
-{
-    m_Layers.push_back(layer);
 }

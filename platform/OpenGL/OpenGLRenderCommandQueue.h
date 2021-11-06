@@ -3,6 +3,7 @@
 #include <Renderer/RenderCommandQueue.h>
 #include "OpenGLRenderCommandList.h"
 #include <ThreadManager.h>
+#include <Core/ExecutableCommand.h>
 #include <mutex>
 #include <memory>
 #include <thread>
@@ -23,14 +24,17 @@ public:
 	virtual void ExecuteRenderCommandLists(std::vector<RenderCommandList*>& lists) override;
 	virtual void ExecuteRenderCommandList(RenderCommandList* list) override;
 
+	virtual void Signal(std::shared_ptr<RenderFence> fence, int num) override;
+
+
 	virtual ~OpenGLRenderCommandQueue();
 private:
 	void RenderLoop();
-	OpenGLRenderCommandList* FetchList();
+	ExecutableCommand* FetchList();
 	std::atomic_bool running = false;
 	std::mutex m_queue_mutex;
 	std::condition_variable m_cond_var;
-	std::queue<OpenGLRenderCommandList*> m_Lists;
+	std::queue<ExecutableCommand*> m_Lists;
 	std::shared_ptr<ThreadObject> Render_Thread_Object;
 	std::thread* Render_Thread;
 };

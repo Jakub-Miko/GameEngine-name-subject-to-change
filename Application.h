@@ -3,9 +3,11 @@
 #include <memory>
 #include <Renderer/Renderer.h>
 #include <Profiler.h>
+#include <cstddef>
 #include <chrono>
 #include <Events/Event.h>
 #include <ThreadManager.h>
+#include <Renderer/RenderFence.h>
 
 class Window;
 class Renderer;
@@ -15,11 +17,16 @@ class Application {
 private:
     static Application* instance;
     Window* m_Window;
-    std::vector<Layer*> m_Layers;
+    int latency_frames = 0;
     std::vector<std::shared_ptr<ThreadObject>> m_TaskThreads;
     std::shared_ptr<ThreadObject> m_MainThread;
     bool m_running = false;
+    std::shared_ptr<RenderFence> m_Sync_Fence;
+    uint32_t frame_count = 0;
 
+    friend class GameState;
+    Layer* m_GameLayer = nullptr;
+ 
 public:
 
     Application(const Application& ref) = delete;
@@ -33,9 +40,9 @@ public:
 
     bool SendEvent(Event* event);
 
-    void PushLayer(Layer* layer);
-
     void Exit();
+
+    void SetInitialGameState(std::shared_ptr<GameState> state);
 
     void Run();
 
