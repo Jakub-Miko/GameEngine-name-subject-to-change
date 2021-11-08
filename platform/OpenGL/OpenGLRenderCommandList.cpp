@@ -3,7 +3,6 @@
 #include "OpenGLBindOpenGLContextCommand.h"
 #include "OpenGLRenderCommand.h"
 #include "OpenGLRenderCommandAllocator.h"
-#include "OpenGLSwapBuffersCommand.h"
 #include <memory>
 
 #include <memory_resource>
@@ -40,11 +39,6 @@ OpenGLRenderCommandList::OpenGLRenderCommandList(Renderer* renderer, std::shared
 
 void OpenGLRenderCommandList::DrawSquare(glm::vec2 pos, glm::vec2 size, glm::vec4 color) {
     PushCommand<OpenGLDrawCommand>(pos, size, color);
-}
-
-void OpenGLRenderCommandList::SwapBuffers()
-{
-    PushCommand<OpenGLSwapBuffersCommand>();
 }
 
 void OpenGLRenderCommandList::BindOpenGLContext()

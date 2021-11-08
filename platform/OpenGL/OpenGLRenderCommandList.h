@@ -10,7 +10,6 @@ public:
     friend class OpenGLRenderCommandQueue;
     OpenGLRenderCommandList(Renderer* renderer, std::shared_ptr<RenderCommandAllocator> alloc);
     virtual void DrawSquare(glm::vec2 pos, glm::vec2 size, glm::vec4 color = { 1.f,1.f,1.f,1.f }) override;
-    virtual void SwapBuffers() override;
     virtual ~OpenGLRenderCommandList();
     
     void BindOpenGLContext();

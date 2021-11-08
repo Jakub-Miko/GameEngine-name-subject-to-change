@@ -25,7 +25,7 @@ public:
 	virtual void ExecuteRenderCommandList(RenderCommandList* list) override;
 
 	virtual void Signal(std::shared_ptr<RenderFence> fence, int num) override;
-
+	virtual void Present() override;
 
 	virtual ~OpenGLRenderCommandQueue();
 private:

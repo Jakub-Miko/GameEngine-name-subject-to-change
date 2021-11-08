@@ -4,6 +4,7 @@
 #include <Renderer/Renderer.h>
 #include <Profiler.h>
 #include <cstddef>
+#include <GameLayer.h>
 #include <chrono>
 #include <Events/Event.h>
 #include <ThreadManager.h>
@@ -25,7 +26,7 @@ private:
     uint32_t frame_count = 0;
 
     friend class GameState;
-    Layer* m_GameLayer = nullptr;
+    GameLayer* m_GameLayer = nullptr;
  
 public:
 
@@ -51,6 +52,9 @@ public:
     static void Init();
 
     static void ShutDown();
+
+    World& GetWorld() { return m_GameLayer->GetWorld(); };
+
 
 private:
     std::chrono::high_resolution_clock::time_point last_time_point;

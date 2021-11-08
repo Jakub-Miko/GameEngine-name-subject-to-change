@@ -36,7 +36,6 @@ Application::~Application()
     delete m_Window;
     Renderer::Shutdown();
     
-    delete m_GameLayer;
 
     TaskSystem::Shutdown();
     m_TaskThreads.clear();
@@ -45,6 +44,7 @@ Application::~Application()
     ConfigManager::Shutdown();
     FileManager::Shutdown();
     GameStateMachine::Shutdown();
+    delete m_GameLayer;
 }
 
 Application::Application()
@@ -135,10 +135,12 @@ void Application::SetInitialGameState(std::shared_ptr<GameState> state)
 
 void Application::Update()
 {
-    
+    //Synchronize with RenderThread
     Renderer::Get()->GetCommandQueue()->Signal(m_Sync_Fence, frame_count);
     m_Sync_Fence->WaitForValue(frame_count - latency_frames);
     ++frame_count;
+
+    //Calculate delta_time
     std::chrono::nanoseconds time_diff = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - last_time_point);
     float delta_time = (double)time_diff.count() / 1000000;
     last_time_point = std::chrono::high_resolution_clock::now();
@@ -146,17 +148,18 @@ void Application::Update()
         delta_time = 1;
     }
 
+    //Poll Event and execute event and input handlers
     m_Window->PollEvents();
 
+    //Update GameState and Layers
     PROFILE("Layer Update");
-
     GameStateMachine::Get()->UpdateState(delta_time);
 
+    //Present / Swap buffers
     PROFILE("SwapBuffers");
-    auto list = Renderer::Get()->GetRenderCommandList();
-    list->SwapBuffers();
-    Renderer::Get()->GetCommandQueue()->ExecuteRenderCommandList(list);
+    Renderer::Get()->GetCommandQueue()->Present();
 
+    //Flush TaskSystem MemoryPool deallocations
     TaskSystem::Get()->FlushDeallocations();
 }
 

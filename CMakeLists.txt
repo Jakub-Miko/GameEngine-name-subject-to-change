@@ -12,6 +12,8 @@ file(GLOB SRCS
 "./*.cpp" "./*.h" 
 "./Input/*.cpp"
 "./States/*.cpp"
+"./World/*.cpp"
+"./World/*/*.cpp"
 "./Renderer/*.cpp" "./Renderer/*.h"
 "./Core/*.cpp")
 
@@ -24,6 +26,8 @@ file(GLOB OPENGL_SRC
 
 add_subdirectory("./dependencies/glfw")
 
+add_subdirectory("./dependencies/EnTT")
+
 add_subdirectory("./dependencies/glew/build/cmake")
 
 add_subdirectory("./dependencies/glm")
@@ -32,7 +36,8 @@ add_subdirectory("./Utilities")
 
 target_include_directories(glew_s PUBLIC "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/dependencies/glew/include>")
 
-target_link_libraries(PseudoTest PRIVATE glfw glew_s glm Profiler MemoryManagement TaskSystem LuaEngine RuntimeTypeIdentifier ThreadManager FileManager ConfigManager)
+target_link_libraries(PseudoTest PRIVATE glfw glew_s glm Profiler MemoryManagement 
+TaskSystem LuaEngine RuntimeTypeIdentifier ThreadManager FileManager ConfigManager EnTT::EnTT)
 
 
 

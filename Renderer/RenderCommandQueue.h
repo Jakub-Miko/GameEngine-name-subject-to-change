@@ -9,6 +9,7 @@ public:
 	virtual void ExecuteRenderCommandList(RenderCommandList* list) = 0;
 
 	virtual void Signal(std::shared_ptr<RenderFence> fence, int num) = 0;
+	virtual void Present() = 0;
 
 	static RenderCommandQueue* CreateRenderCommandQueue();
 
