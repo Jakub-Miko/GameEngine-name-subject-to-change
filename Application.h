@@ -53,7 +53,7 @@ public:
 
     static void ShutDown();
 
-    World& GetWorld() { return m_GameLayer->GetWorld(); };
+    static World& GetWorld() { return instance->m_GameLayer->GetWorld(); };
 
 
 private:

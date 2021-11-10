@@ -33,8 +33,8 @@ public:
         };
 
         for (int i = 0; i < 5; i++) {
-            entities[i] = Application::Get()->GetWorld().CreateEntity();
-            Application::Get()->GetWorld().SetComponent<SquareComponent>(entities[i], init_vals[i]);
+            entities[i] = Application::GetWorld().CreateEntity();
+            Application::GetWorld().SetComponent<SquareComponent>(entities[i], init_vals[i]);
         }
     }
 
@@ -56,7 +56,8 @@ public:
                     position2.y /= 600 / 2;
                     position2.x -= 1;
                     position2.y -= 1;
-                    position = glm::vec2(1, -1) * position2;
+                    auto entity = Application::GetWorld().CreateEntity();
+                    Application::GetWorld().SetComponent<SquareComponent>(entity, SquareComponent({ glm::vec2(1, -1) * position2 }, { 0.1,0.1 }, { 1,1,1,1 }));
                     return true;
                 }
                 return false;
@@ -80,7 +81,7 @@ public:
         }
         float color = (std::sin(counter) + 1) / 2;
 
-        Application::Get()->GetWorld().GetComponent<SquareComponent>(entities[4]) = SquareComponent(position, { 0.25,0.25 }, { 1,color,0,1 });
+        Application::GetWorld().GetComponent<SquareComponent>(entities[4]) = SquareComponent(position, { 0.25,0.25 }, { 1,color,0,1 });
 
 
     }
