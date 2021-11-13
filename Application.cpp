@@ -33,8 +33,8 @@ bool Application::SendEvent(Event* event)
 Application::~Application()
 {
     Input::Shutdown();
-    delete m_Window;
     Renderer::Shutdown();
+    delete m_Window;
     
 
     TaskSystem::Shutdown();

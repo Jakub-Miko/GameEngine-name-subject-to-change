@@ -1,6 +1,7 @@
 #include "SquareRenderSystem.h"
 #include <entt/entt.hpp>
 #include <Profiler.h>
+#include <TaskSystemFence.h>
 #include <World/Components/SquareComponent.h>
 #include <Renderer/Renderer.h>
 #include <TaskSystem.h>
@@ -43,7 +44,7 @@ void SquareRenderSystem(World& world) {
 	entt::registry& reg = world.GetRegistry();
 	auto comps = reg.view<SquareComponent>();
 
-	ComponentCollectionParameters params = GetCollectionsFromSize(comps.size(), TaskSystem::Get()->GetProps().num_of_threads, 1);
+	ComponentCollectionParameters params = GetCollectionsFromSize(comps.size(), TaskSystem::Get()->GetProps().num_of_threads + 1, 1);
 
 	std::vector<Future<RenderCommandList*>> lists;
 	lists.reserve(params.num_of_collections);
@@ -55,6 +56,7 @@ void SquareRenderSystem(World& world) {
 			auto& comp = reg->get<SquareComponent>(*iter);
 			list->DrawSquare(comp.pos, comp.size, comp.color);
 		};
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		return list;
 	};
 	PROFILE("SquareRenderSubmit"); 
@@ -70,9 +72,18 @@ void SquareRenderSystem(World& world) {
 		lists.push_back(task1->GetFuture());
 		TaskSystem::Get()->Submit(task1);
 	}
+	
 
-	PROFILE("FlushSquareRenderSubmit");
-	TaskSystem::Get()->Flush();
+	TaskSystemFence fence;
+	auto task5 = [&fence]() {
+		fence.Signal(1); TaskSystem::Get()->FlushLoop();
+	};
+	TaskSystem::Get()->SetIdleTask(TaskSystem::Get()->CreateTask(task5));
+	TaskSystem::Get()->JoinTaskSystem([&fence]() -> bool { 
+		return fence.IsValue(1); 
+		});
+
+
 	PROFILE("SUBMITTOQUEUE");
 	for (int i = 0; i < params.num_of_collections + (params.extra_collections_size!=0); i++) {
 		Renderer::Get()->GetCommandQueue()->ExecuteRenderCommandList(lists[i].GetValue());
