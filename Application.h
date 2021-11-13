@@ -13,7 +13,7 @@
 class Window;
 class Renderer;
 class Layer;
-
+class GameState;
 class Application {
 private:
     static Application* instance;

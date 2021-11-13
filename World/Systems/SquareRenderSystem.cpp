@@ -7,13 +7,13 @@
 #include <TaskSystem.h>
 #include <cmath>
 
-static struct ComponentCollectionParameters {
+struct ComponentCollectionParameters {
 	int num_of_collections;
 	int collection_size;
 	int extra_collections_size;
 };
 
-static struct ComponentCollection {
+struct ComponentCollection {
 	int size;
 	int start_index;
 };
