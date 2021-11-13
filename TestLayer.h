@@ -6,6 +6,7 @@
 #include <cmath>
 #include <Promise.h>
 #include <Renderer/Renderer.h>
+#include <World/Components/SquareComponent.h>
 #include <Input/Input.h>
 #include <Events/KeyPressEvent.h>
 #include <Events/MouseButtonPressEvent.h>
@@ -17,25 +18,26 @@ class TestLayer : public Layer
 public:
     double counter = 0;
     bool stop = false;
-    Entity entities[5];
+    Entity entity1;
+    Entity field[10][10];
+
     glm::vec2 position = { 0,0 };
 public:
 
 
 
     TestLayer() : Layer() {
-        SquareComponent init_vals[5] = {
-               SquareComponent({ -0.5,0.5 }, { 0.75,0.5 }, { 1,0,0,1 }),
-               SquareComponent({ 0.5,-0.5 }, { 0.5,0.75 }),
-               SquareComponent({ 0.5,0.5 }, { 0.75,0.25 }, { 1,0,1,1 }),
-               SquareComponent({ -0.5,-0.5 }, { 0.25,0.75 }, { 0,1,0,1 }),
-               SquareComponent({0,0}, { 0.25,0.25 }, { 1,0,0,1 })
-        };
-
-        for (int i = 0; i < 5; i++) {
-            entities[i] = Application::GetWorld().CreateEntity();
-            Application::GetWorld().SetComponent<SquareComponent>(entities[i], init_vals[i]);
+        glm::vec2 origin = { -4,-4 };
+        for (int i = 0; i < 10; i++) {
+            for (int y = 0; y < 10; y++) {
+                int color = ((i * 9 + y) % 2 == 0) ? 1 : 0;
+                Entity ent = Application::GetWorld().CreateEntity();
+                Application::GetWorld().SetComponent<SquareComponent>(ent, SquareComponent({ (origin + glm::vec2(i,y))/glm::vec2(10.0,10.0) }, { 0.1,0.1 }, {color,color,color,1}));
+                field[i][y] = ent;
+            }
         }
+        entity1 = Application::GetWorld().CreateEntity();
+        Application::GetWorld().SetComponent<SquareComponent>(entity1, SquareComponent({ 0,0 }, { 0.25,0.25 }, { 1,1,0,1 }));
     }
 
     virtual void OnEvent(Event* e) override {
@@ -57,7 +59,7 @@ public:
                     position2.x -= 1;
                     position2.y -= 1;
                     auto entity = Application::GetWorld().CreateEntity();
-                    Application::GetWorld().SetComponent<SquareComponent>(entity, SquareComponent({ glm::vec2(1, -1) * position2 }, { 0.1,0.1 }, { 1,1,1,1 }));
+                    Application::GetWorld().SetComponent<SquareComponent>(entity, SquareComponent({ glm::vec2(1, -1) * position2 }, { 0.1,0.1 }, { 0,1,1,1 }));
                     return true;
                 }
                 return false;
@@ -81,7 +83,7 @@ public:
         }
         float color = (std::sin(counter) + 1) / 2;
 
-        Application::GetWorld().GetComponent<SquareComponent>(entities[4]) = SquareComponent(position, { 0.25,0.25 }, { 1,color,0,1 });
+        Application::GetWorld().GetComponent<SquareComponent>(entity1) = SquareComponent(position, { 0.25,0.25 }, { 1,color,0,1 });
 
 
     }

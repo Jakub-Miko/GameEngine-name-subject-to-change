@@ -1,4 +1,5 @@
 #include "OpenGLRenderFence.h"
+#include <Profiler.h>
 #include <GL/glew.h>
 
 bool OpenGLRenderFence::WaitForValue(int desired_value)
@@ -53,6 +54,7 @@ OpenGLRenderFenceCommand::OpenGLRenderFenceCommand(std::shared_ptr<RenderFence>&
 
 void OpenGLRenderFenceCommand::Execute()
 {
+	PROFILE("Wait");
 	glFinish();
 	reinterpret_cast<OpenGLRenderFence*>(m_fence.get())->Signal(num);
 }
