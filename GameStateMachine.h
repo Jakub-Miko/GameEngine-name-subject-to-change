@@ -16,6 +16,8 @@ public:
 	static void Init();
 	static void Shutdown();
 
+	void UpdateNextState();
+
 	void PushState(std::shared_ptr<GameState> state);
 	void PopState();
 
@@ -31,6 +33,7 @@ private:
 	GameStateMachine();
 	~GameStateMachine();
 
+	std::shared_ptr<GameState> next_state = nullptr;
 	std::shared_ptr<GameState> current_state = nullptr;
 	std::stack<std::shared_ptr<GameState>> m_States;
 

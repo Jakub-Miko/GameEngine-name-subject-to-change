@@ -148,6 +148,8 @@ void Application::Update()
         delta_time = 1;
     }
 
+    GameStateMachine::Get()->UpdateNextState();
+
     //Poll Event and execute event and input handlers
     m_Window->PollEvents();
 

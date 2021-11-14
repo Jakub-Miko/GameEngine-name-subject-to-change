@@ -23,35 +23,38 @@ void GameStateMachine::Shutdown()
 	}
 }
 
+void GameStateMachine::UpdateNextState()
+{
+	if (next_state) {
+		if (current_state) {
+			current_state->OnDeattach();
+		}
+		current_state = next_state;
+		current_state->OnAttach();
+		next_state = nullptr;
+	}
+}
+
 void GameStateMachine::PushState(std::shared_ptr<GameState> state)
 {
 	if (current_state) {
 		m_States.push(current_state);
-		current_state->OnDeattach();
 	}
-	current_state = state;
-	current_state->OnAttach();
+	next_state = state;
 }
 
 void GameStateMachine::PopState()
 {
-	if (current_state) {
-		current_state->OnDeattach();
-	}
 	if (m_States.empty()) {
 		throw std::runtime_error("No state in the state stack");
 	}
-	current_state = m_States.top();
-	current_state->OnAttach();
+	next_state = m_States.top();
+	m_States.pop();
 }
 
 void GameStateMachine::ChangeState(std::shared_ptr<GameState> state)
 {
-	if (current_state) {
-		current_state->OnDeattach();
-	}
-	current_state = state;
-	current_state->OnAttach();
+	next_state = state;
 }
 
 void GameStateMachine::ClearStateStack()
