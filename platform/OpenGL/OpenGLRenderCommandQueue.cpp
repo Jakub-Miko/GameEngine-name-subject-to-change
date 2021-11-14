@@ -72,6 +72,11 @@ void OpenGLRenderCommandQueue::RenderLoop()
 			delete list;
 		}
 	}
+	std::unique_lock<std::mutex> lock(m_queue_mutex);
+	while(!m_Lists.empty()) {
+		delete m_Lists.front();
+		m_Lists.pop();
+	}
 }
 
 ExecutableCommand* OpenGLRenderCommandQueue::FetchList() {
