@@ -70,7 +70,7 @@ void Application::InitInstance()
     m_GameLayer = new GameLayer();
 
     //Claim MainThread
-    m_MainThread = ThreadManager::GetThreadManager()->GetThread();
+    m_MainThread = ThreadManager::Get()->GetThread();
     
     //Create window and Renderer
     m_Window = Window::CreateWindow();
@@ -82,11 +82,7 @@ void Application::InitInstance()
     
 
     //TaskSystem Startup
-    int task_threads = ThreadManager::GetThreadManager()->GetAvailableThreadCount();
-    for (int i = 0; i < task_threads; i++) {
-        m_TaskThreads.push_back(ThreadManager::GetThreadManager()->GetThread());
-    }
-    TaskSystem::Initialize(TaskSystemProps{ task_threads });
+    TaskSystem::Initialize();
     TaskSystem::Get()->Run();
 
     //Window and renderer Initialization phase

@@ -6,7 +6,7 @@
 
 OpenGLRenderCommandQueue::OpenGLRenderCommandQueue()
 {
-	Render_Thread_Object = ThreadManager::GetThreadManager()->GetThread();
+	Render_Thread_Object = ThreadManager::Get()->GetThread();
 	Render_Thread = new std::thread(&OpenGLRenderCommandQueue::RenderLoop,this);
 }
 
