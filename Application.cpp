@@ -3,6 +3,7 @@
 #include <FileManager.h>
 #include <ConfigManager.h>
 #include <Renderer/Renderer.h>
+#include <World/Systems/ScriptSystem.h>
 #include "Layer.h"
 #include <Profiler.h>
 #include <Input/Input.h>
@@ -32,6 +33,8 @@ bool Application::SendEvent(Event* event)
 
 Application::~Application()
 {
+    ShutdownSystems();
+    
     Input::Shutdown();
     Renderer::Shutdown();
     delete m_Window;
@@ -39,6 +42,7 @@ Application::~Application()
 
     TaskSystem::Shutdown();
     m_TaskThreads.clear();
+    ThreadManager::Get()->JoinedThreadUnRegister();
     m_MainThread.reset();
     ThreadManager::Shutdown();
     ConfigManager::Shutdown();
@@ -72,6 +76,8 @@ void Application::InitInstance()
     //Claim MainThread
     m_MainThread = ThreadManager::Get()->GetThread();
     
+    ThreadManager::Get()->JoinedThreadRegister(m_MainThread);
+
     //Create window and Renderer
     m_Window = Window::CreateWindow();
     Renderer::Create();
@@ -95,6 +101,18 @@ void Application::InitInstance()
     frame_count = latency_frames;
 
     Input::Init();
+
+    InitializeSystems();
+}
+
+void Application::InitializeSystems()
+{
+    ScriptSystemManager::Initialize();
+}
+
+void Application::ShutdownSystems()
+{
+    ScriptSystemManager::Shutdown();
 }
 
 void Application::Exit()
@@ -180,3 +198,4 @@ void Application::OnGameStop()
 {
 
 }
+

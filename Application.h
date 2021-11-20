@@ -61,6 +61,9 @@ private:
 
     void InitInstance();
 
+    void InitializeSystems();
+    void ShutdownSystems();
+
     ~Application();
     Application();
 

@@ -6,6 +6,7 @@
 #include <cmath>
 #include <Promise.h>
 #include <Renderer/Renderer.h>
+#include <World/Components/ScriptComponent.h>
 #include <World/Components/SquareComponent.h>
 #include <Input/Input.h>
 #include <Events/KeyPressEvent.h>
@@ -33,6 +34,7 @@ public:
                 int color = ((i * 9 + y) % 2 == 0) ? 1 : 0;
                 Entity ent = Application::GetWorld().CreateEntity();
                 Application::GetWorld().SetComponent<SquareComponent>(ent, SquareComponent({ (origin + glm::vec2(i,y))/glm::vec2(10.0,10.0) }, { 0.1,0.1 }, {color,color,color,1}));
+
                 field[i][y] = ent;
             }
         }
@@ -60,6 +62,7 @@ public:
                     position2.y -= 1;
                     auto entity = Application::GetWorld().CreateEntity();
                     Application::GetWorld().SetComponent<SquareComponent>(entity, SquareComponent({ glm::vec2(1, -1) * position2 }, { 0.1,0.1 }, { 0,1,1,1 }));
+                    Application::GetWorld().SetComponent<ScriptComponent>(entity, ScriptComponent("TestScript.lua"));
                     return true;
                 }
                 return false;

@@ -12,6 +12,5 @@ public:
 		return *this;
 	};
 
-private:
 	Entity(uint32_t id) : id(id) {};
 };

@@ -7,6 +7,7 @@
 #include <Promise.h>
 #include <Renderer/Renderer.h>
 #include <Input/Input.h>
+#include <World/Systems/ScriptSystem.h>
 #include <Events/KeyPressEvent.h>
 #include <Events/MouseButtonPressEvent.h>
 #include <Events/MouseMoveEvent.h>
@@ -27,6 +28,7 @@ public:
     }
 
     virtual void OnUpdate(float delta_time) override {
+        ScriptSystem(m_World,delta_time);
         SquareRenderSystem(m_World);
     }
 

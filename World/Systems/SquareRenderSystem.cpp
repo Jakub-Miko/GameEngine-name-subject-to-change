@@ -11,7 +11,6 @@ void SquareRenderSystem(World& world) {
 			auto& comp = reg->get<SquareComponent>(*iter);
 			list->DrawSquare(comp.pos, comp.size, comp.color);
 		};
-		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		return list;
 	};
 
