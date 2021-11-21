@@ -153,7 +153,8 @@ void ScriptHandler::BindHandlerFunctions(LuaEngineClass<ScriptHandler>* script_e
         {"SetProperty_FLOAT" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetProperty<float>>},
         {"SetProperty_STRING" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetProperty<std::string>>},
         {"PropertyExists" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::PropertyExists>},
-        {"IsKeyPressed" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::IsKeyPressed>}
+        {"IsKeyPressed" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::IsKeyPressed>},
+        {"IsMouseButtonPressed" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::IsMouseButtonPressed>}
 
     };
     if (bindings.empty()) return;
@@ -193,5 +194,10 @@ bool ScriptHandler::PropertyExists(std::string name)
 bool ScriptHandler::IsKeyPressed(int key_code)
 {
     return Input::Get()->IsKeyPressed((KeyCode)key_code);
+}
+
+bool ScriptHandler::IsMouseButtonPressed(int key_code)
+{
+    return Input::Get()->IsMouseButtonPressed((MouseButtonCode)key_code);
 }
 

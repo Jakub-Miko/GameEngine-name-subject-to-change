@@ -107,6 +107,8 @@ public:
 
     bool IsKeyPressed(int key_code);
 
+    bool IsMouseButtonPressed(int key_code);
+
 #pragma endregion
 private:
     Entity current_entity;
