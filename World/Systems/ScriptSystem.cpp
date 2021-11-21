@@ -1,5 +1,7 @@
 #include "ScriptSystem.h"
 #include <algorithm>
+#include <Input/Input.h>
+#include <Events/KeyCodes.h>
 #include <FileManager.h>
 #include <string>
 #include <World/Components/SquareComponent.h>
@@ -123,6 +125,7 @@ ScriptSystemManager::ScriptSystemManager() : sync_mutex()
 
 ScriptSystemVM::ScriptSystemVM() : m_LuaEngine(), curentHandler(Entity())
 {
+    ScriptHandler::BindKeyCodes(&m_LuaEngine);
     ScriptHandler::BindHandlerFunctions(&m_LuaEngine);
 }
 
@@ -140,14 +143,55 @@ void ScriptHandler::BindHandlerFunctions(LuaEngineClass<ScriptHandler>* script_e
 {
     std::vector<LuaEngineClass<ScriptHandler>::LuaEngine_Function_Binding> bindings{
         //This is where function bindings go
-        {"MoveSquare" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::TestChangeSquarePos>}
+        {"MoveSquare" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::TestChangeSquarePos>},
+        {"GetPos_X" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::TestGetPosition_X>},
+        {"GetPos_Y" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::TestGetPosition_Y>},
+        {"GetProperty_INT" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::GetProperty<int>>},
+        {"GetProperty_FLOAT" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::GetProperty<float>>},
+        {"GetProperty_STRING" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::GetProperty<std::string>>},
+        {"SetProperty_INT" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetProperty<int>>},
+        {"SetProperty_FLOAT" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetProperty<float>>},
+        {"SetProperty_STRING" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetProperty<std::string>>},
+        {"PropertyExists" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::PropertyExists>},
+        {"IsKeyPressed" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::IsKeyPressed>}
 
     };
     if (bindings.empty()) return;
     script_engine->AddBindings(bindings);
 }
 
+void ScriptHandler::BindKeyCodes(LuaEngineClass<ScriptHandler>* script_engine)
+{
+    script_engine->RunString(ScriptKeyBindings);
+}
+
 void ScriptHandler::TestChangeSquarePos(float x, float y)
 {
     Application::GetWorld().GetComponent<SquareComponent>(current_entity).pos += glm::vec2(x, y);
 }
+
+float ScriptHandler::TestGetPosition_X()
+{
+    return Application::GetWorld().GetComponent<SquareComponent>(current_entity).pos.x;
+}
+
+float ScriptHandler::TestGetPosition_Y()
+{
+    return Application::GetWorld().GetComponent<SquareComponent>(current_entity).pos.y;
+}
+
+bool ScriptHandler::PropertyExists(std::string name)
+{
+    auto& props = Application::GetWorld().GetComponent<ScriptComponent>(current_entity).m_Properties;
+    auto find = props.find(name);
+    if (find != props.end()) {
+        return true;
+    };
+    return false;
+}
+
+bool ScriptHandler::IsKeyPressed(int key_code)
+{
+    return Input::Get()->IsKeyPressed((KeyCode)key_code);
+}
+

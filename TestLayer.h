@@ -40,6 +40,7 @@ public:
         }
         entity1 = Application::GetWorld().CreateEntity();
         Application::GetWorld().SetComponent<SquareComponent>(entity1, SquareComponent({ 0,0 }, { 0.25,0.25 }, { 1,1,0,1 }));
+        Application::GetWorld().SetComponent<ScriptComponent>(entity1, ScriptComponent("SecondScript.lua"));
     }
 
     virtual void OnEvent(Event* e) override {

@@ -55,13 +55,57 @@ class ScriptHandler {
 public:
     ScriptHandler(Entity ent) : current_entity(ent) {}
     static void BindHandlerFunctions(LuaEngineClass<ScriptHandler>* script_engine);
-
+    static void BindKeyCodes(LuaEngineClass<ScriptHandler>* script_engine);
     //This is where Functions which are bound to Lua go
 #pragma region LuaBound
     void TestChangeSquarePos(float x, float y);
+    float TestGetPosition_X();
+    float TestGetPosition_Y();
 
+    template<typename T>
+    T GetProperty(std::string name) {
+        auto& props = Application::GetWorld().GetComponent<ScriptComponent>(current_entity).m_Properties;
+        auto find = props.find(name);
+        if (find != props.end()) {
+            Script_Variant_type& prop = (*find).second;
+            try {
 
+                T& value = std::get<T>(prop);
+                return value;
 
+            } catch(std::bad_variant_access& e){
+                std::cout << e.what() << "\n";
+                throw std::runtime_error("Invalid Property Access");
+            }
+        }
+        else {
+            throw std::runtime_error("Property " + name + " was not found");
+        }
+    }
+
+    template<typename T>
+    void SetProperty(std::string name,T value) {
+        auto& props = Application::GetWorld().GetComponent<ScriptComponent>(current_entity).m_Properties;
+        auto find = props.find(name);
+        if (find != props.end()) {
+            Script_Variant_type& prop = (*find).second;
+            if (std::get_if<T>(&prop)) {
+                prop.emplace<T>(value);
+                return;
+            }
+            else {
+                throw std::runtime_error("Invalid Property Access");
+            }
+        }
+        else {
+            props.insert(std::make_pair(name, value));
+            return;
+        }
+    }
+
+    bool PropertyExists(std::string name);
+
+    bool IsKeyPressed(int key_code);
 
 #pragma endregion
 private:
@@ -97,6 +141,28 @@ public:
             std::string script = ScriptSystemManager::Get()->GetScript(path);
             m_LuaEngine.RunString(script);
             m_BoundScripts.insert(ScriptHash(path));
+            return CallFunction<R>(path, function_name, args...);
+        }
+    }
+
+    template<typename R, typename ... Args>
+    auto TryCallFunction(R* out,const std::string& path, const std::string& function_name, Args ... args)
+        -> std::enable_if_t<(!std::is_void_v<R>), bool>
+    {
+        if (m_BoundScripts.find(ScriptHash(path)) != m_BoundScripts.end()) {
+            bool success = m_LuaEngine.TryCallObject<void>(out, ScriptHash(path), function_name, args...);
+            if (success) {
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+        else {
+            std::string script = ScriptSystemManager::Get()->GetScript(path);
+            m_LuaEngine.RunString(script);
+            m_BoundScripts.insert(ScriptHash(path));
+            TryCallFunction(out, path, function_name, args...);
         }
     }
 
@@ -118,6 +184,29 @@ public:
             std::string script = ScriptSystemManager::Get()->GetScript(path);
             m_LuaEngine.RunString(script);
             m_BoundScripts.insert(ScriptHash(path));
+            CallFunction(path, function_name, args...);
+        }
+    }
+
+    template<typename ... Args>
+    bool TryCallFunction(void* null,const std::string& path, const std::string& function_name, Args ... args) {
+        if (m_BoundScripts.find(ScriptHash(path)) != m_BoundScripts.end()) {
+            bool success;
+            {
+                success = m_LuaEngine.TryCallObject<void>(nullptr, ScriptHash(path).c_str(), function_name.c_str(), args...);
+            }
+            if (success) {
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+        else {
+            std::string script = ScriptSystemManager::Get()->GetScript(path);
+            m_LuaEngine.RunString(script);
+            m_BoundScripts.insert(ScriptHash(path));
+            TryCallFunction(nullptr, path, function_name, args...);
         }
     }
 
