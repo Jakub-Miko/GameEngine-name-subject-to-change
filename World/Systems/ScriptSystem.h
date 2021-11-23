@@ -109,6 +109,8 @@ public:
 
     bool IsMouseButtonPressed(int key_code);
 
+    glm::vec2 GetMousePosition();
+
 #pragma endregion
 private:
     Entity current_entity;
