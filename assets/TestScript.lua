@@ -1,7 +1,9 @@
 function OnUpdate(delta_time)
+pos = GetPos()
+
 if not IsMouseButtonPressed(MouseButtonCode.MOUSE_BUTTON_LEFT) then	
-	MoveSquare(0.001*delta_time,0)
+	MoveSquare(pos.x + 0.001*delta_time,pos.y)
 else 
-	MoveSquare(-0.001*delta_time,0)
+	MoveSquare(pos.x -0.001*delta_time,pos.y)
 end
 end

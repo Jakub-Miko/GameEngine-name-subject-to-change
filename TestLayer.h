@@ -68,16 +68,6 @@ public:
                 }
                 return false;
             });
-
-        dispatcher.Dispatch<MouseMoveEvent>([this](MouseMoveEvent* e) {
-            glm::vec2 position2 = { e->x, e->y };
-            position2.x /= 800 / 2;
-            position2.y /= 600 / 2;
-            position2.x -= 1;
-            position2.y -= 1;
-            position = glm::vec2(1, -1) * position2;
-            return true;
-            });
     }
 
     virtual void OnUpdate(float delta_time) override {

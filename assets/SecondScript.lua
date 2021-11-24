@@ -13,7 +13,16 @@ function OnUpdate(delta_time)
 		SetProperty_FLOAT("value", prop-0.01*delta_time)
 	end
 
+	pos_sq = GetPos()
 
-	MoveSquare(pos2,pos)
+	position2 = GetMousePosition()
+    position2.x = position2.x / (800 / 2);
+    position2.y = position2.y / (600 / 2);
+    position2.x = position2.x - 1;
+    position2.y = position2.y - 1;
+	position2.y = position2.y * -1;
+
+
+	MoveSquare(position2.x + pos2,position2.y + pos)
 	
 end

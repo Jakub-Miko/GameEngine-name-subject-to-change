@@ -59,8 +59,7 @@ public:
     //This is where Functions which are bound to Lua go
 #pragma region LuaBound
     void TestChangeSquarePos(float x, float y);
-    float TestGetPosition_X();
-    float TestGetPosition_Y();
+    glm::vec2 TestGetPosition();
 
     template<typename T>
     T GetProperty(std::string name) {

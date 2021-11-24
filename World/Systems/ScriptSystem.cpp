@@ -144,8 +144,7 @@ void ScriptHandler::BindHandlerFunctions(LuaEngineClass<ScriptHandler>* script_e
     std::vector<LuaEngineClass<ScriptHandler>::LuaEngine_Function_Binding> bindings{
         //This is where function bindings go
         {"MoveSquare" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::TestChangeSquarePos>},
-        {"GetPos_X" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::TestGetPosition_X>},
-        {"GetPos_Y" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::TestGetPosition_Y>},
+        {"GetPos" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::TestGetPosition>},
         {"GetProperty_INT" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::GetProperty<int>>},
         {"GetProperty_FLOAT" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::GetProperty<float>>},
         {"GetProperty_STRING" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::GetProperty<std::string>>},
@@ -173,17 +172,12 @@ void ScriptHandler::BindKeyCodes(LuaEngineClass<ScriptHandler>* script_engine)
 
 void ScriptHandler::TestChangeSquarePos(float x, float y)
 {
-    Application::GetWorld().GetComponent<SquareComponent>(current_entity).pos += glm::vec2(x, y);
+    Application::GetWorld().GetComponent<SquareComponent>(current_entity).pos = glm::vec2(x, y);
 }
 
-float ScriptHandler::TestGetPosition_X()
+glm::vec2 ScriptHandler::TestGetPosition()
 {
-    return Application::GetWorld().GetComponent<SquareComponent>(current_entity).pos.x;
-}
-
-float ScriptHandler::TestGetPosition_Y()
-{
-    return Application::GetWorld().GetComponent<SquareComponent>(current_entity).pos.y;
+    return Application::GetWorld().GetComponent<SquareComponent>(current_entity).pos;
 }
 
 bool ScriptHandler::PropertyExists(std::string name)
