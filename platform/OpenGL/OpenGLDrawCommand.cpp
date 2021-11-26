@@ -3,6 +3,9 @@
 #include <GL/glew.h>
 #include <FileManager.h>
 #include <Profiler.h>
+#include <glm/ext/matrix_transform.hpp>
+#include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <platform/OpenGL/Shaders/OpenGLShader.h>
 #include <fstream>
 
@@ -11,8 +14,7 @@
 struct QuadData {
 	unsigned int vertex_array;
 	OpenGLShader shader;
-	int location_pos;
-	int size_pos;
+	int transform_pos;
 	int color_pos;
 };
 
@@ -21,9 +23,14 @@ bool initialized = false;
 static QuadData quad_data;
 
 OpenGLDrawCommand::OpenGLDrawCommand(glm::vec2 pos, glm::vec2 size, glm::vec4 color)
-	: pos(pos), size(size), color(color)
+	:  color(color)
 {
-	
+	tranform_matrix = glm::translate(glm::mat4(1.0f), glm::vec3(pos.x,pos.y,0.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(size.x,size.y, 1.0f));
+}
+
+OpenGLDrawCommand::OpenGLDrawCommand(const glm::mat4& matrix, glm::vec4 color) : tranform_matrix(matrix), color(color) 
+{
+
 }
 
 void OpenGLDrawCommand::Execute()
@@ -52,8 +59,7 @@ void OpenGLDrawCommand::Execute()
 			0,3,1
 		};
 
-		quad_data.location_pos= glGetUniformLocation(quad_data.shader.GetHandle(), "position");
-		quad_data.size_pos = glGetUniformLocation(quad_data.shader.GetHandle(), "size");
+		quad_data.transform_pos= glGetUniformLocation(quad_data.shader.GetHandle(), "transform");
 		quad_data.color_pos= glGetUniformLocation(quad_data.shader.GetHandle(), "in_color");
 
 		glGenVertexArrays(1, &quad_data.vertex_array);
@@ -77,9 +83,8 @@ void OpenGLDrawCommand::Execute()
 	quad_data.shader.Bind();
 	glBindVertexArray(quad_data.vertex_array);
 
-	glUniform2f(quad_data.location_pos, pos.x, pos.y);
-	glUniform2f(quad_data.size_pos, size.x, size.y);
 	glUniform4f(quad_data.color_pos, color.r,color.g,color.b,color.a);
+	glUniformMatrix4fv(quad_data.transform_pos, 1, GL_FALSE, glm::value_ptr(tranform_matrix));
 
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 	

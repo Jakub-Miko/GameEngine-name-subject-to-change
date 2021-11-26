@@ -1,7 +1,10 @@
 #pragma once 
 #include <entt/entt.hpp>
-#include "Entity.h"
+#include <World/EntityTypes.h>
+#include <World/Entity.h>
 #include <utility>
+
+class EntityType;
 
 class World {
 public:
@@ -14,7 +17,16 @@ public:
 	World& operator=(const World& ref) = delete;
 	World& operator=(World&& ref) = delete;
 
-	Entity CreateEntity();
+	template<typename T = EntityType, typename ... Args>
+	auto CreateEntity(Args&& ... args) -> decltype(T::CreateEntity(std::declval<World&>(),std::declval<Entity>(),std::declval<Args>()...), Entity())
+	{
+		auto ent = MakeEntity();
+		T::CreateEntity(*this,ent,std::forward<Args>(args)...);
+		return ent;
+	}
+
+
+
 	void RemoveEntity(Entity entity);
 
 	template<typename T, typename ... Args>
@@ -38,5 +50,8 @@ public:
 	}
 
 private:
+
+	Entity MakeEntity();
+
 	entt::registry m_ECS;
 };

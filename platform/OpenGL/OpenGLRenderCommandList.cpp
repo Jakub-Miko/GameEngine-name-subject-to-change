@@ -41,6 +41,11 @@ void OpenGLRenderCommandList::DrawSquare(glm::vec2 pos, glm::vec2 size, glm::vec
     PushCommand<OpenGLDrawCommand>(pos, size, color);
 }
 
+void OpenGLRenderCommandList::DrawSquare(const glm::mat4& transform, glm::vec4 color)
+{
+    PushCommand<OpenGLDrawCommand>(transform, color);
+}
+
 void OpenGLRenderCommandList::BindOpenGLContext()
 {
     PushCommand<OpenGLBindOpenGLContextCommand>();

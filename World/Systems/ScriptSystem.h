@@ -1,12 +1,11 @@
 #pragma once
 #include <World/Components/ScriptComponent.h>
 #include <unordered_map>
+#include <LuaEngineUtilities.h>
 #include <World/System.h>
 #include <World/Entity.h>
 #include <unordered_set>
 #include <LuaEngine.h>
-
-std::string ScriptHash(std::string script_path);
 
 class ScriptSystemVM;
 class ScriptHandler;
@@ -30,12 +29,13 @@ public:
     static void Shutdown();
 
     std::string& GetScript(const std::string& path);
-    std::string& LoadScript(const std::string& path);
-    std::string ParseScript(std::string script, const std::string& hash);
 
     ScriptSystemVM* TryGetScriptSystemVM();
 
     void InitializeScriptSystemVM();
+    
+    //Only call from main thread when vms aren't used, this call is NOT thread-safe
+    void ResetAllScriptSystemVMs();
 
 private:
     static ScriptSystemManager* instance;
@@ -131,8 +131,8 @@ public:
         -> std::enable_if_t<(!std::is_void_v<R>),R>
     {
         R out;
-        if (m_BoundScripts.find(ScriptHash(path)) != m_BoundScripts.end()) {
-            bool success = m_LuaEngine.TryCallObject<void>(nullptr, ScriptHash(path), function_name, args...);
+        if (m_BoundScripts.find(LuaEngineUtilities::ScriptHash(path)) != m_BoundScripts.end()) {
+            bool success = m_LuaEngine.TryCallObject<void>(nullptr, LuaEngineUtilities::ScriptHash(path), function_name, args...);
             if (success) {
                 return R;
             }
@@ -143,7 +143,7 @@ public:
         else {
             std::string script = ScriptSystemManager::Get()->GetScript(path);
             m_LuaEngine.RunString(script);
-            m_BoundScripts.insert(ScriptHash(path));
+            m_BoundScripts.insert(LuaEngineUtilities::ScriptHash(path));
             return CallFunction<R>(path, function_name, args...);
         }
     }
@@ -152,8 +152,8 @@ public:
     auto TryCallFunction(R* out,const std::string& path, const std::string& function_name, Args ... args)
         -> std::enable_if_t<(!std::is_void_v<R>), bool>
     {
-        if (m_BoundScripts.find(ScriptHash(path)) != m_BoundScripts.end()) {
-            bool success = m_LuaEngine.TryCallObject<void>(out, ScriptHash(path), function_name, args...);
+        if (m_BoundScripts.find(LuaEngineUtilities::ScriptHash(path)) != m_BoundScripts.end()) {
+            bool success = m_LuaEngine.TryCallObject<void>(out, LuaEngineUtilities::ScriptHash(path), function_name, args...);
             if (success) {
                 return true;
             }
@@ -164,17 +164,17 @@ public:
         else {
             std::string script = ScriptSystemManager::Get()->GetScript(path);
             m_LuaEngine.RunString(script);
-            m_BoundScripts.insert(ScriptHash(path));
+            m_BoundScripts.insert(LuaEngineUtilities::ScriptHash(path));
             TryCallFunction(out, path, function_name, args...);
         }
     }
 
     template<typename ... Args>
     void CallFunction(const std::string& path, const std::string& function_name, Args ... args) {
-        if (m_BoundScripts.find(ScriptHash(path)) != m_BoundScripts.end()) {
+        if (m_BoundScripts.find(LuaEngineUtilities::ScriptHash(path)) != m_BoundScripts.end()) {
             bool success;
             {
-                success = m_LuaEngine.TryCallObject<void>(nullptr,ScriptHash(path).c_str(), function_name.c_str(), args...);
+                success = m_LuaEngine.TryCallObject<void>(nullptr,LuaEngineUtilities::ScriptHash(path).c_str(), function_name.c_str(), args...);
             }
             if (success) {
                 return;
@@ -186,17 +186,17 @@ public:
         else {
             std::string script = ScriptSystemManager::Get()->GetScript(path);
             m_LuaEngine.RunString(script);
-            m_BoundScripts.insert(ScriptHash(path));
+            m_BoundScripts.insert(LuaEngineUtilities::ScriptHash(path));
             CallFunction(path, function_name, args...);
         }
     }
 
     template<typename ... Args>
     bool TryCallFunction(void* null,const std::string& path, const std::string& function_name, Args ... args) {
-        if (m_BoundScripts.find(ScriptHash(path)) != m_BoundScripts.end()) {
+        if (m_BoundScripts.find(LuaEngineUtilities::ScriptHash(path)) != m_BoundScripts.end()) {
             bool success;
             {
-                success = m_LuaEngine.TryCallObject<void>(nullptr, ScriptHash(path).c_str(), function_name.c_str(), args...);
+                success = m_LuaEngine.TryCallObject<void>(nullptr, LuaEngineUtilities::ScriptHash(path).c_str(), function_name.c_str(), args...);
             }
             if (success) {
                 return true;
@@ -208,10 +208,12 @@ public:
         else {
             std::string script = ScriptSystemManager::Get()->GetScript(path);
             m_LuaEngine.RunString(script);
-            m_BoundScripts.insert(ScriptHash(path));
+            m_BoundScripts.insert(LuaEngineUtilities::ScriptHash(path));
             TryCallFunction(nullptr, path, function_name, args...);
         }
     }
+
+    void ResetScriptVM();
 
 
 private:

@@ -38,8 +38,7 @@ public:
                 field[i][y] = ent;
             }
         }
-        entity1 = Application::GetWorld().CreateEntity();
-        Application::GetWorld().SetComponent<SquareComponent>(entity1, SquareComponent({ 0,0 }, { 0.25,0.25 }, { 1,1,0,1 }));
+        entity1 = Application::GetWorld().CreateEntity<SquareEntityType>(glm::vec4(1, 1, 0, 1),glm::vec2(0,0),glm::vec2(0.25,0.25));
         Application::GetWorld().SetComponent<ScriptComponent>(entity1, ScriptComponent("SecondScript.lua"));
     }
 

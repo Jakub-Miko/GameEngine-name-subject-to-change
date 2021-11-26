@@ -19,7 +19,7 @@ struct ComponentCollection {
 	int start_index;
 };
 
-static ComponentCollectionParameters GetCollectionsFromSize(int size, int num_of_threads, int min_collection_size = 10) {
+static ComponentCollectionParameters GetCollectionsFromSize(size_t size, int num_of_threads, int min_collection_size = 10) {
 	if (size == 0) {
 		return ComponentCollectionParameters{ 0 ,0,0};
 	}	
