@@ -39,7 +39,7 @@ public:
             }
         }
         entity1 = Application::GetWorld().CreateEntity<SquareEntityType>(glm::vec4(1, 1, 0, 1),glm::vec2(0,0),glm::vec2(0.25,0.25));
-        Application::GetWorld().SetComponent<ScriptComponent>(entity1, ScriptComponent("SecondScript.lua"));
+        Application::GetWorld().SetComponent<ScriptComponent>(entity1, ScriptComponent("SecondScript.lua"));     
     }
 
     virtual void OnEvent(Event* e) override {

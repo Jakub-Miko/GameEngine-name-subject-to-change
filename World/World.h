@@ -1,6 +1,7 @@
 #pragma once 
 #include <entt/entt.hpp>
 #include <World/EntityTypes.h>
+#include <World/Components/InitializationComponent.h>
 #include <World/Entity.h>
 #include <utility>
 
@@ -22,6 +23,7 @@ public:
 	{
 		auto ent = MakeEntity();
 		T::CreateEntity(*this,ent,std::forward<Args>(args)...);
+		SetComponent<InitializationComponent>(ent);
 		return ent;
 	}
 

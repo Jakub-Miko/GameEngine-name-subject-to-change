@@ -294,4 +294,20 @@ MOUSE_BUTTON_MIDDLE = 2
 
 }
 
+KeyPressType = {
+
+KEY_RELEASE = 0, KEY_PRESS = 1, KEY_REPEAT = 2
+
+}
+
+
+KeyModifiers = {
+	SHIFT = 1,
+	CTRL = 2,
+	ALT = 4,
+	SUPER = 8,
+	CAPS_LOCK = 16,
+	NUM_LOCK = 32
+};
+
 )delim";

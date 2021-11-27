@@ -5,6 +5,8 @@
 #include <FileManager.h>
 #include <string>
 #include <World/Components/SquareComponent.h>
+#include <World/Components/KeyPressedScriptComponent.h>
+#include <World/Components/MousePressedScriptComponent.h>
 #include <sstream>
 #include <World/World.h>
 #include <Application.h>
@@ -132,7 +134,9 @@ void ScriptHandler::BindHandlerFunctions(LuaEngineClass<ScriptHandler>* script_e
         {"PropertyExists" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::PropertyExists>},
         {"IsKeyPressed" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::IsKeyPressed>},
         {"IsMouseButtonPressed" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::IsMouseButtonPressed>},
-        {"GetMousePosition", LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::GetMousePosition>}
+        {"GetMousePosition", LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::GetMousePosition>},
+        {"EnableKeyPressedEvents", LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::EnableKeyPressedEvents>},
+        {"EnableMouseButtonPressedEvents", LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::EnableMouseButtonPressedEvents>}
 
     };
     if (bindings.empty()) return;
@@ -177,5 +181,15 @@ bool ScriptHandler::IsMouseButtonPressed(int key_code)
 glm::vec2 ScriptHandler::GetMousePosition()
 {
     return Input::Get()->GetMoutePosition();
+}
+
+void ScriptHandler::EnableKeyPressedEvents()
+{
+    Application::GetWorld().SetComponent<KeyPressedScriptComponent>(current_entity);
+}
+
+void ScriptHandler::EnableMouseButtonPressedEvents()
+{
+    Application::GetWorld().SetComponent<MousePressedScriptComponent>(current_entity);
 }
 

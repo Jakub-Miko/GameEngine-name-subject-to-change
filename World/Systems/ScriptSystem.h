@@ -110,6 +110,10 @@ public:
 
     glm::vec2 GetMousePosition();
 
+    void EnableKeyPressedEvents();
+
+    void EnableMouseButtonPressedEvents();
+
 #pragma endregion
 private:
     Entity current_entity;

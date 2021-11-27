@@ -1,3 +1,9 @@
+function OnConstruct() 
+
+EnableKeyPressedEvents()
+
+end
+
 function OnUpdate(delta_time)
 	
 	if not PropertyExists("value") then
@@ -25,4 +31,8 @@ function OnUpdate(delta_time)
 
 	MoveSquare(position2.x + pos2,position2.y + pos)
 	
+end
+
+function OnKeyPressed(e) 
+	print(e.key_code)
 end
