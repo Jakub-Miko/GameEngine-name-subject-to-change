@@ -1,4 +1,5 @@
 #pragma once
+#include <Application.h>
 #include <World/Components/ScriptComponent.h>
 #include <unordered_map>
 #include <LuaEngineUtilities.h>
