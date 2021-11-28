@@ -139,7 +139,7 @@ public:
         if (m_BoundScripts.find(LuaEngineUtilities::ScriptHash(path)) != m_BoundScripts.end()) {
             bool success = m_LuaEngine.TryCallObject<void>(nullptr, LuaEngineUtilities::ScriptHash(path), function_name, args...);
             if (success) {
-                return R;
+                return out;
             }
             else {
                 throw std::runtime_error("An error occured in a ScriptVM lua function execution");

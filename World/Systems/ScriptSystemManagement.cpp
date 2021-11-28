@@ -109,7 +109,7 @@ void ScriptSystemVM::SetEngineEntity(Entity ent)
 void ScriptSystemVM::ResetScriptVM()
 {
     m_LuaEngine = LuaEngineClass<ScriptHandler>();
-    m_BoundScripts.swap(std::unordered_set<std::string>());
+    m_BoundScripts.clear();
     curentHandler = ScriptHandler(Entity());
     ScriptHandler::BindKeyCodes(&m_LuaEngine);
     ScriptHandler::BindHandlerFunctions(&m_LuaEngine);
