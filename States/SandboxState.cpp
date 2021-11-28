@@ -2,6 +2,10 @@
 #include <Application.h>
 #include <TestLayer.h>
 
+SandboxState::SandboxState() : GameState("StateScript.lua",SCRIPT_FLAGS::ON_ATTACH | SCRIPT_FLAGS::UPDATE), m_TestLayer(nullptr) {
+
+}
+
 void SandboxState::Update(float delta_time)
 {
 	m_TestLayer->OnUpdate(delta_time);

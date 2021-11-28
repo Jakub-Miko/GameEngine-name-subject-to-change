@@ -150,12 +150,12 @@ void ScriptHandler::BindKeyCodes(LuaEngineClass<ScriptHandler>* script_engine)
 
 void ScriptHandler::TestChangeSquarePos(float x, float y)
 {
-    Application::GetWorld().GetComponent<SquareComponent>(current_entity).pos = glm::vec2(x, y);
+    Application::GetWorld().GetComponent<TransformComponent>(current_entity).TransformMatrix[3] = glm::vec4(x, y, 0.0f,1.0f);
 }
 
 glm::vec2 ScriptHandler::TestGetPosition()
 {
-    return Application::GetWorld().GetComponent<SquareComponent>(current_entity).pos;
+    return Application::GetWorld().GetComponent<TransformComponent>(current_entity).TransformMatrix[3];
 }
 
 bool ScriptHandler::PropertyExists(std::string name)

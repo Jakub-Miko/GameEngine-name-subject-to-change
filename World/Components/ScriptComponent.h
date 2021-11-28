@@ -3,6 +3,8 @@
 #include <variant>
 #include <LuaEngine.h>
 #include <glm/glm.hpp>
+#include <Events/KeyPressEvent.h>
+#include <Events/MouseButtonPressEvent.h>
 #include <unordered_map>
 #include <string>
 
@@ -43,6 +45,36 @@ public:
 
 	static glm::vec3 GetObject(LuaEngineProxy proxy, int index = -1) {
 		return glm::vec3(proxy.GetTableField<float>("x", index), proxy.GetTableField<float>("y", index), proxy.GetTableField<float>("z", index));
+	}
+
+};
+
+template<>
+class LuaEngineObjectDelegate<KeyPressedEvent> {
+public:
+	static void SetObject(LuaEngineProxy proxy, const KeyPressedEvent& value) {
+		proxy.SetTableItem((int)value.key_code, "key_code");
+		proxy.SetTableItem((int)value.key_mods, "key_mods");
+		proxy.SetTableItem((int)value.press_type, "press_type");
+	}
+
+	static KeyPressedEvent GetObject(LuaEngineProxy proxy, int index = -1) {
+		return KeyPressedEvent((KeyCode)proxy.GetTableField<int>("key_code", index), (KeyPressType)proxy.GetTableField<int>("press_type", index), (KeyModifiers)proxy.GetTableField<int>("key_mods", index));
+	}
+
+};
+
+template<>
+class LuaEngineObjectDelegate<MouseButtonPressEvent> {
+public:
+	static void SetObject(LuaEngineProxy proxy, const MouseButtonPressEvent& value) {
+		proxy.SetTableItem((int)value.key_code, "key_code");
+		proxy.SetTableItem((int)value.key_mods, "key_mods");
+		proxy.SetTableItem((int)value.press_type, "press_type");
+	}
+
+	static MouseButtonPressEvent GetObject(LuaEngineProxy proxy, int index = -1) {
+		return MouseButtonPressEvent((MouseButtonCode)proxy.GetTableField<int>("key_code", index), (KeyPressType)proxy.GetTableField<int>("press_type", index), (KeyModifiers)proxy.GetTableField<int>("key_mods", index));
 	}
 
 };

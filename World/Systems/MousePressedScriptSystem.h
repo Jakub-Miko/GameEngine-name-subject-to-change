@@ -25,18 +25,3 @@ inline void MousePressedScriptSystem(World& world, MouseButtonPressEvent* e) {
 
     RunSystemSimple<MousePressedScriptComponent>(world, func_1);
 }
-
-template<>
-class LuaEngineObjectDelegate<MouseButtonPressEvent> {
-public:
-    static void SetObject(LuaEngineProxy proxy, const MouseButtonPressEvent& value) {
-        proxy.SetTableItem((int)value.key_code, "key_code");
-        proxy.SetTableItem((int)value.key_mods, "key_mods");
-        proxy.SetTableItem((int)value.press_type, "press_type");
-    }
-
-    static MouseButtonPressEvent GetObject(LuaEngineProxy proxy, int index = -1) {
-        return MouseButtonPressEvent((MouseButtonCode)proxy.GetTableField<int>("key_code", index), (KeyPressType)proxy.GetTableField<int>("press_type", index), (KeyModifiers)proxy.GetTableField<int>("key_mods", index));
-    }
-
-};

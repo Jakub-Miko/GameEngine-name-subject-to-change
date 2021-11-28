@@ -1,5 +1,6 @@
 #include "SquareRenderSystem.h"
 #include <World/Components/SquareComponent.h>
+#include <World/Components/TransformComponent.h>
 #include <World/System.h>
 
 
@@ -9,7 +10,8 @@ void SquareRenderSystem(World& world) {
 		auto list = Renderer::Get()->GetRenderCommandList();
 		for (auto iter = comps.rbegin() + compcol.start_index; iter != comps.rbegin() + compcol.start_index + compcol.size; iter++) {
 			auto& comp = reg->get<SquareComponent>(*iter);
-			list->DrawSquare(comp.pos, comp.size, comp.color);
+			auto& transform = reg->get<TransformComponent>(*iter);
+			list->DrawSquare(transform.TransformMatrix, comp.color);
 		};
 		return list;
 	};

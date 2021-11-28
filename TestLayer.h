@@ -32,8 +32,10 @@ public:
         for (int i = 0; i < 10; i++) {
             for (int y = 0; y < 10; y++) {
                 int color = ((i * 9 + y) % 2 == 0) ? 1 : 0;
-                Entity ent = Application::GetWorld().CreateEntity();
-                Application::GetWorld().SetComponent<SquareComponent>(ent, SquareComponent({ (origin + glm::vec2(i,y))/glm::vec2(10.0,10.0) }, { 0.1,0.1 }, {color,color,color,1}));
+                Entity ent = Application::GetWorld().CreateEntity<SquareEntityType>(glm::vec4( color,color,color,1 ), 
+                    glm::vec2((origin + glm::vec2(i,y)) / glm::vec2(10.0,10.0)), 
+                    glm::vec2( 0.1,0.1 ));
+                //Application::GetWorld().SetComponent<SquareComponent>(ent, SquareComponent({ (origin + glm::vec2(i,y))/glm::vec2(10.0,10.0) }, { 0.1,0.1 }, {color,color,color,1}));
 
                 field[i][y] = ent;
             }
@@ -60,8 +62,7 @@ public:
                     position2.y /= 600 / 2;
                     position2.x -= 1;
                     position2.y -= 1;
-                    auto entity = Application::GetWorld().CreateEntity();
-                    Application::GetWorld().SetComponent<SquareComponent>(entity, SquareComponent({ glm::vec2(1, -1) * position2 }, { 0.1,0.1 }, { 0,1,1,1 }));
+                    auto entity = Application::GetWorld().CreateEntity<SquareEntityType>(glm::vec4(0,1,1,1), glm::vec2(glm::vec2(1, -1) * position2), glm::vec2(0.1));
                     Application::GetWorld().SetComponent<ScriptComponent>(entity, ScriptComponent("TestScript.lua"));
                     return true;
                 }
@@ -76,8 +77,8 @@ public:
         }
         float color = (std::sin(counter) + 1) / 2;
 
-        Application::GetWorld().GetComponent<SquareComponent>(entity1) = SquareComponent(position, { 0.25,0.25 }, { 1,color,0,1 });
-
+        Application::GetWorld().GetComponent<SquareComponent>(entity1) = SquareComponent(glm::vec4(1,color,0,1 ));
+        Application::GetWorld().GetComponent<TransformComponent>(entity1) = TransformComponent(glm::vec3(position,0.0f), glm::vec3(0.25, 0.25,1.0f));
 
     }
 

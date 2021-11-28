@@ -9,6 +9,9 @@ class EntityType : public Entity {
 public:
 
 	static void CreateEntity(World& world, Entity entity);
+	static void CreateEntity(World& world, Entity entity, const glm::mat4& transform);
+	static void CreateEntity(World& world, Entity entity, const glm::vec3& translation, const glm::vec3& scale = glm::vec3(1.0f),
+		const glm::vec3& rotation_axis = glm::vec3(0, 1, 0), float rotation_angle = 0.0f);
 
 };
 

@@ -2,7 +2,9 @@
 #include <GameState.h>
 #include <Layer.h>
 
-class SandboxState : public GameState {
+class SandboxState : public GameState{
+public:
+	SandboxState();
 	virtual void Update(float delta_time) override;
 	virtual bool OnEvent(Event* e) override;
 	virtual void OnAttach() override;

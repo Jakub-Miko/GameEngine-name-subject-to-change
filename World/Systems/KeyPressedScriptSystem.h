@@ -25,18 +25,3 @@ inline void KeyPressedScriptSystem(World& world, KeyPressedEvent* e) {
 
     RunSystemSimple<KeyPressedScriptComponent>(world, func_1);
 }
-
-template<>
-class LuaEngineObjectDelegate<KeyPressedEvent> {
-public:
-    static void SetObject(LuaEngineProxy proxy, const KeyPressedEvent& value) {
-        proxy.SetTableItem((int)value.key_code, "key_code");
-        proxy.SetTableItem((int)value.key_mods, "key_mods");
-        proxy.SetTableItem((int)value.press_type, "press_type");
-    }
-
-    static KeyPressedEvent GetObject(LuaEngineProxy proxy, int index = -1) {
-        return KeyPressedEvent((KeyCode)proxy.GetTableField<int>("key_code", index), (KeyPressType)proxy.GetTableField<int>("press_type", index), (KeyModifiers)proxy.GetTableField<int>("key_mods", index));
-    }
-
-};

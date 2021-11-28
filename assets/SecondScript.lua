@@ -34,5 +34,9 @@ function OnUpdate(delta_time)
 end
 
 function OnKeyPressed(e) 
+	
+	if e.press_type == KeyPressType.KEY_PRESS then
 	print(e.key_code)
+	end
+
 end
