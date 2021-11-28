@@ -2,7 +2,7 @@
 #include <World/Components/MousePressedScriptComponent.h>
 #include <World/System.h>
 #include <Events/MouseButtonPressEvent.h>
-#include <World/Systems/ScriptSystem.h>
+#include <World/Systems/ScriptSystemManagement.h>
 #include <World/Components/ScriptComponent.h>
 
 inline void MousePressedScriptSystem(World& world, MouseButtonPressEvent* e) {

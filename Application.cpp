@@ -3,7 +3,7 @@
 #include <FileManager.h>
 #include <ConfigManager.h>
 #include <Renderer/Renderer.h>
-#include <World/Systems/ScriptSystem.h>
+#include <World/Systems/ScriptSystemManagement.h>
 #include "Layer.h"
 #include <Profiler.h>
 #include <Input/Input.h>

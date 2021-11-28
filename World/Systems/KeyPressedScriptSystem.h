@@ -2,7 +2,7 @@
 #include <World/Components/KeyPressedScriptComponent.h>
 #include <World/System.h>
 #include <Events/KeyPressEvent.h>
-#include <World/Systems/ScriptSystem.h>
+#include <World/Systems/ScriptSystemManagement.h>
 #include <World/Components/ScriptComponent.h>
 
 inline void KeyPressedScriptSystem(World& world, KeyPressedEvent* e) {

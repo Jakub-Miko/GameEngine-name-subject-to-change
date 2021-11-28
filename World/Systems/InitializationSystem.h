@@ -2,7 +2,7 @@
 
 #include <World/Components/InitializationComponent.h>
 #include <World/System.h>
-#include <World/Systems/ScriptSystem.h>
+#include <World/Systems/ScriptSystemManagement.h>
 #include <World/Components/ScriptComponent.h>
 
 inline void InitializationSystem(World& world) {
