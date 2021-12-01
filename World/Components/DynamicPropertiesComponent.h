@@ -1,5 +1,7 @@
 #pragma once
 #include <unordered_map>
+#include <variant>
+#include <glm/glm.hpp>
 
 using Script_Variant_type = std::variant<int, float, double, glm::vec2, glm::vec3, std::string>;
 
