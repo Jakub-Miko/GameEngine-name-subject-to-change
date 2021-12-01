@@ -49,6 +49,7 @@ private:
     std::unordered_map<std::string, ScriptObject> m_ScriptCache;
     std::vector<ScriptSystemVM*> m_Script_system_VMs;
     std::mutex sync_mutex;
+    std::mutex script_cache_mutex;
 };
 
 #pragma region ScriptHandler

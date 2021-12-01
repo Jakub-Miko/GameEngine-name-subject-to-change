@@ -37,12 +37,15 @@ void ScriptSystemManager::Shutdown()
 
 std::string& ScriptSystemManager::GetScript(const std::string& path)
 {
+    std::unique_lock<std::mutex> lock(script_cache_mutex);
     auto file = m_ScriptCache.find(LuaEngineUtilities::ScriptHash(path));
     if (file != m_ScriptCache.end()) {
         return (*file).second.script;
     }
     else {
+        lock.unlock();
         std::string str = LuaEngineUtilities::LoadScript(path);
+        lock.lock();
         auto it = m_ScriptCache.insert_or_assign(LuaEngineUtilities::ScriptHash(path),ScriptObject(str)).first;
         return (*it).second.script;
     }
