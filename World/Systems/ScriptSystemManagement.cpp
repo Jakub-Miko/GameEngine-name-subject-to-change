@@ -90,10 +90,11 @@ ScriptSystemManager::ScriptSystemManager() : sync_mutex()
 
 }
 
-ScriptSystemVM::ScriptSystemVM() : m_LuaEngine(), curentHandler(Entity())
+ScriptSystemVM::ScriptSystemVM() : m_LuaEngine(), m_LuaInitializationEngine(), curentHandler(Entity()), current_Initialization_handler(Entity())
 {
     ScriptHandler::BindKeyCodes(&m_LuaEngine);
     ScriptHandler::BindHandlerFunctions(&m_LuaEngine);
+    InitializationScriptHandler::BindHandlerFunctions(&m_LuaInitializationEngine);
 }
 
 ScriptSystemVM::~ScriptSystemVM()
@@ -106,6 +107,12 @@ void ScriptSystemVM::SetEngineEntity(Entity ent)
     m_LuaEngine.SetClassInstance(&curentHandler);
 }
 
+void ScriptSystemVM::SetEngineInitializationEntity(Entity ent)
+{
+    current_Initialization_handler = InitializationScriptHandler(ent);
+    m_LuaInitializationEngine.SetClassInstance(&current_Initialization_handler);
+}
+
 void ScriptSystemVM::ResetScriptVM()
 {
     m_LuaEngine = LuaEngineClass<ScriptHandler>();
@@ -113,6 +120,11 @@ void ScriptSystemVM::ResetScriptVM()
     curentHandler = ScriptHandler(Entity());
     ScriptHandler::BindKeyCodes(&m_LuaEngine);
     ScriptHandler::BindHandlerFunctions(&m_LuaEngine);
+
+    m_LuaInitializationEngine = LuaEngineClass<InitializationScriptHandler>();
+    m_BoundInitializationScripts.clear();
+    current_Initialization_handler = InitializationScriptHandler(Entity());
+    InitializationScriptHandler::BindHandlerFunctions(&m_LuaInitializationEngine);
 }
 
 void ScriptHandler::BindHandlerFunctions(LuaEngineClass<ScriptHandler>* script_engine)
@@ -143,6 +155,27 @@ void ScriptHandler::BindHandlerFunctions(LuaEngineClass<ScriptHandler>* script_e
     script_engine->AddBindings(bindings);
 }
 
+void InitializationScriptHandler::BindHandlerFunctions(LuaEngineClass<InitializationScriptHandler>* script_engine)
+{
+    std::vector<LuaEngineClass<InitializationScriptHandler>::LuaEngine_Function_Binding> bindings{
+        //This is where function bindings go
+        
+
+    };
+    if (bindings.empty()) return;
+    script_engine->AddBindings(bindings);
+}
+
+void InitializationScriptHandler::EnableKeyPressedEvents()
+{
+    Application::GetWorld().SetComponent<KeyPressedScriptComponent>(current_entity);
+}
+
+void InitializationScriptHandler::EnableMouseButtonPressedEvents()
+{
+    Application::GetWorld().SetComponent<MousePressedScriptComponent>(current_entity);
+}
+
 void ScriptHandler::BindKeyCodes(LuaEngineClass<ScriptHandler>* script_engine)
 {
     script_engine->RunString(ScriptKeyBindings);
@@ -160,7 +193,7 @@ glm::vec2 ScriptHandler::TestGetPosition()
 
 bool ScriptHandler::PropertyExists(std::string name)
 {
-    auto& props = Application::GetWorld().GetComponent<ScriptComponent>(current_entity).m_Properties;
+    auto& props = Application::GetWorld().GetComponent<DynamicPropertiesComponent>(current_entity).m_Properties;
     auto find = props.find(name);
     if (find != props.end()) {
         return true;

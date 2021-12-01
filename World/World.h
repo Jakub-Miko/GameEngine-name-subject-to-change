@@ -3,11 +3,31 @@
 #include <World/EntityTypes.h>
 #include <World/Components/InitializationComponent.h>
 #include <World/Entity.h>
+#include <mutex>
 #include <utility>
 
 class EntityType;
+class World;
+
+
+template<typename T>
+class ComponentInitProxy {
+public:
+
+	static void OnCreate(World& world, Entity entity) {
+
+	}
+
+};
+
 
 class World {
+	template<typename T>
+	std::mutex& SyncPool() {
+		static std::mutex pool_lock;
+		return pool_lock;
+	}
+
 public:
 
 	World();
@@ -27,13 +47,26 @@ public:
 		return ent;
 	}
 
-
-
+	//Should only be used when no other threads are currently accesing the components
 	void RemoveEntity(Entity entity);
 
 	template<typename T, typename ... Args>
 	void SetComponent(Entity entity, Args&& ... args) {
+		std::lock_guard<std::mutex> lock(SyncPool<T>());
 		m_ECS.emplace<T>((entt::entity)entity.id, std::forward<Args>(args)...);
+		ComponentInitProxy<T>::OnCreate(*this,entity);
+	}
+
+	template<typename T>
+	bool HasComponentSynced(Entity ent) {
+		std::lock_guard<std::mutex> lock(SyncPool<T>());
+		return m_ECS.any_of<T>((entt::entity)ent.id);
+	}
+
+	template<typename T>
+	bool HasComponent(Entity ent) {
+		std::lock_guard<std::mutex> lock(SyncPool<T>());
+		return m_ECS.any_of<T>((entt::entity)ent.id);
 	}
 
 	template<typename T>
@@ -43,6 +76,7 @@ public:
 
 	template<typename T>
 	void RemoveComponent(Entity entity) {
+		std::lock_guard<std::mutex> lock(SyncPool<T>());
 		m_ECS.remove<T>((entt::entity)entity.id);
 	}
 
@@ -52,8 +86,13 @@ public:
 	}
 
 private:
-
+	
 	Entity MakeEntity();
+
+	//TODO implement this per-pool
+	//std::mutex component_mutex;
+
+	std::mutex entity_mutex;
 
 	entt::registry m_ECS;
 };

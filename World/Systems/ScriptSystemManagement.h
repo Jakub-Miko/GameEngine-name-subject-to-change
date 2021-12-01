@@ -5,6 +5,7 @@
 #include <LuaEngineUtilities.h>
 #include <World/System.h>
 #include <World/Entity.h>
+#include <World/Components/DynamicPropertiesComponent.h>
 #include <unordered_set>
 #include <LuaEngine.h>
 
@@ -64,7 +65,7 @@ public:
 
     template<typename T>
     T GetProperty(std::string name) {
-        auto& props = Application::GetWorld().GetComponent<ScriptComponent>(current_entity).m_Properties;
+        auto& props = Application::GetWorld().GetComponent<DynamicPropertiesComponent>(current_entity).m_Properties;
         auto find = props.find(name);
         if (find != props.end()) {
             Script_Variant_type& prop = (*find).second;
@@ -85,7 +86,7 @@ public:
 
     template<typename T>
     void SetProperty(std::string name,T value) {
-        auto& props = Application::GetWorld().GetComponent<ScriptComponent>(current_entity).m_Properties;
+        auto& props = Application::GetWorld().GetComponent<DynamicPropertiesComponent>(current_entity).m_Properties;
         auto find = props.find(name);
         if (find != props.end()) {
             Script_Variant_type& prop = (*find).second;
@@ -122,6 +123,32 @@ private:
 
 #pragma endregion
 
+#pragma region InitializationScriptHandler
+
+class InitializationScriptHandler {
+public:
+    InitializationScriptHandler(Entity ent) : current_entity(ent) {}
+    static void BindHandlerFunctions(LuaEngineClass<InitializationScriptHandler>* script_engine);
+    //This is where Functions which are bound to Lua go
+#pragma region LuaBound
+    
+    template<typename T, typename ... Args>
+    void SetComponent(Args&&... args) {
+        Application::GetWorld().SetComponent<T>(std::forward<Args>(args)...);
+    }
+
+    void EnableKeyPressedEvents();
+
+    void EnableMouseButtonPressedEvents();
+
+#pragma endregion
+private:
+    Entity current_entity;
+};
+
+#pragma endregion
+
+
 class ScriptSystemVM {
 public:
     friend ScriptSystemManager;
@@ -130,6 +157,8 @@ private:
     ~ScriptSystemVM();
 public:
     void SetEngineEntity(Entity ent);
+
+    // For Script Runtime
 
     template<typename R, typename ... Args>
     auto CallFunction(const std::string& path,const std::string& function_name, Args ... args) 
@@ -218,11 +247,110 @@ public:
         }
     }
 
+    // For Initialization Scripts.
+
+    void SetEngineInitializationEntity(Entity ent);
+
+    template<typename R, typename ... Args>
+    auto CallInitializationFunction(const std::string& path, const std::string& function_name, Args ... args)
+        -> std::enable_if_t<(!std::is_void_v<R>), R>
+    {
+        R out;
+        if (m_BoundInitializationScripts.find(LuaEngineUtilities::ScriptHash(path)) != m_BoundInitializationScripts.end()) {
+            bool success = m_LuaInitializationEngine.TryCallObject<void>(nullptr, LuaEngineUtilities::ScriptHash(path), function_name, args...);
+            if (success) {
+                return out;
+            }
+            else {
+                throw std::runtime_error("An error occured in a ScriptVM lua function execution");
+            }
+        }
+        else {
+            std::string script = ScriptSystemManager::Get()->GetScript(path);
+            m_LuaInitializationEngine.RunString(script);
+            m_BoundInitializationScripts.insert(LuaEngineUtilities::ScriptHash(path));
+            return CallInitializationFunction<R>(path, function_name, args...);
+        }
+    }
+
+    template<typename R, typename ... Args>
+    auto TryCallInitializationFunction(R* out, const std::string& path, const std::string& function_name, Args ... args)
+        -> std::enable_if_t<(!std::is_void_v<R>), bool>
+    {
+        if (m_BoundInitializationScripts.find(LuaEngineUtilities::ScriptHash(path)) != m_BoundInitializationScripts.end()) {
+            bool success = m_LuaInitializationEngine.TryCallObject<void>(out, LuaEngineUtilities::ScriptHash(path), function_name, args...);
+            if (success) {
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+        else {
+            std::string script = ScriptSystemManager::Get()->GetScript(path);
+            m_LuaInitializationEngine.RunString(script);
+            m_BoundInitializationScripts.insert(LuaEngineUtilities::ScriptHash(path));
+            TryCallInitializationFunction(out, path, function_name, args...);
+        }
+    }
+
+    template<typename ... Args>
+    void CallInitializationFunction(const std::string& path, const std::string& function_name, Args ... args) {
+        if (m_BoundInitializationScripts.find(LuaEngineUtilities::ScriptHash(path)) != m_BoundInitializationScripts.end()) {
+            bool success;
+            {
+                success = m_BoundInitializationScripts.TryCallObject<void>(nullptr, LuaEngineUtilities::ScriptHash(path).c_str(), function_name.c_str(), args...);
+            }
+            if (success) {
+                return;
+            }
+            else {
+                throw std::runtime_error("An error occured in a ScriptVM lua function execution");
+            }
+        }
+        else {
+            std::string script = ScriptSystemManager::Get()->GetScript(path);
+            m_BoundInitializationScripts.RunString(script);
+            m_BoundInitializationScripts.insert(LuaEngineUtilities::ScriptHash(path));
+            CallInitializationFunction(path, function_name, args...);
+        }
+    }
+
+    template<typename ... Args>
+    bool TryCallInitializationFunction(void* null, const std::string& path, const std::string& function_name, Args ... args) {
+        if (m_BoundInitializationScripts.find(LuaEngineUtilities::ScriptHash(path)) != m_BoundInitializationScripts.end()) {
+            bool success;
+            {
+                success = m_BoundInitializationScripts.TryCallObject<void>(nullptr, LuaEngineUtilities::ScriptHash(path).c_str(), function_name.c_str(), args...);
+            }
+            if (success) {
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+        else {
+            std::string script = ScriptSystemManager::Get()->GetScript(path);
+            m_BoundInitializationScripts.RunString(script);
+            m_BoundInitializationScripts.insert(LuaEngineUtilities::ScriptHash(path));
+            TryCallInitializationFunction(nullptr, path, function_name, args...);
+        }
+    }
+
+
+
     void ResetScriptVM();
 
 
 private:
     ScriptHandler curentHandler;
+
     std::unordered_set<std::string> m_BoundScripts;
     LuaEngineClass<ScriptHandler> m_LuaEngine;
+
+    InitializationScriptHandler current_Initialization_handler;
+
+    std::unordered_set<std::string> m_BoundInitializationScripts;  
+    LuaEngineClass<InitializationScriptHandler> m_LuaInitializationEngine;
 };

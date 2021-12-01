@@ -7,8 +7,8 @@
 #include <Events/MouseButtonPressEvent.h>
 #include <unordered_map>
 #include <string>
-
-using Script_Variant_type = std::variant<int, float, double, glm::vec2, glm::vec3, std::string>;
+#include <World/Components/DynamicPropertiesComponent.h>
+#include <World/World.h>
 
 
 class ScriptComponent {
@@ -16,9 +16,21 @@ public:
 	ScriptComponent(const std::string& ref) : script_path(ref) {}
 	std::string script_path;
 
-	//TODO: Implement custom allocator
-	std::unordered_map<std::string, Script_Variant_type> m_Properties;
 };
+
+
+template<>
+class ComponentInitProxy<ScriptComponent> {
+public:
+
+	static void OnCreate(World& world, Entity entity) {
+		if (!world.HasComponentSynced<DynamicPropertiesComponent>(entity)) {
+			world.SetComponent<DynamicPropertiesComponent>(entity);
+		}
+	}
+
+};
+
 
 template<>
 class LuaEngineObjectDelegate<glm::vec2> {
