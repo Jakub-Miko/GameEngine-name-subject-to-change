@@ -1,3 +1,11 @@
+@Entity
+
+{
+	"value" : "string"
+}
+
+@Entity:Inline_Script
+
 
 function OnConstruct()
 
@@ -15,3 +23,8 @@ else
 end
 
 end
+
+
+@Entity:Construction_Script
+
+// Construction_Script goes here

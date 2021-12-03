@@ -32,6 +32,13 @@ public:
 
     std::string& GetScript(const std::string& path);
 
+    std::string& GetConstructionScript(const std::string& path);
+
+    void UploadScript(const std::string& path, const std::string& script);
+
+    void UploadConstructionScript(const std::string& path, const std::string& script);
+
+
     ScriptSystemVM* TryGetScriptSystemVM();
 
     void InitializeScriptSystemVM();

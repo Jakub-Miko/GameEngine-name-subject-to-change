@@ -6,10 +6,11 @@
 
 struct EntityParseResult {
 	
-	std::string construction_script;		
+	std::string construction_script = "";
+	std::string inline_script = "";
 	DynamicPropertiesComponent properties;
 	std::vector<std::string> children;
-
+	bool has_inline = false;
 };
 
 
@@ -17,6 +18,6 @@ struct EntityParseResult {
 class EntityParser {
 public:
 
-	static EntityParseResult ParseConstructionScript(const std::string& script);
+	static EntityParseResult ParseEntity(const std::string& script);
 
 };

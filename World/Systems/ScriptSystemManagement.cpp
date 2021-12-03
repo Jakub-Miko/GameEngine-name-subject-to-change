@@ -51,6 +51,38 @@ std::string& ScriptSystemManager::GetScript(const std::string& path)
     }
 }
 
+std::string& ScriptSystemManager::GetConstructionScript(const std::string& path)
+{
+    std::unique_lock<std::mutex> lock(script_cache_mutex);
+    auto file = m_ScriptCache.find(LuaEngineUtilities::ScriptHash(path, true));
+    if (file != m_ScriptCache.end()) {
+        return (*file).second.script;
+    }
+    else {
+        lock.unlock();
+        std::string str = LuaEngineUtilities::LoadScript(path, true);
+        lock.lock();
+        auto it = m_ScriptCache.insert_or_assign(LuaEngineUtilities::ScriptHash(path, true), ScriptObject(str)).first;
+        return (*it).second.script;
+    }
+}
+
+void ScriptSystemManager::UploadScript(const std::string& path, const std::string& script)
+{
+    auto hash = LuaEngineUtilities::ScriptHash(path);
+    std::string parsed_script = LuaEngineUtilities::ParseScript(script, hash);
+    std::unique_lock<std::mutex> lock(script_cache_mutex);
+    m_ScriptCache.insert_or_assign(hash, ScriptObject(parsed_script));
+}
+
+void ScriptSystemManager::UploadConstructionScript(const std::string& path, const std::string& script)
+{
+    auto hash = LuaEngineUtilities::ScriptHash(path,true);
+    std::string parsed_script = LuaEngineUtilities::ParseScript(script, hash,true);
+    std::unique_lock<std::mutex> lock(script_cache_mutex);
+    m_ScriptCache.insert_or_assign(hash, ScriptObject(parsed_script));
+}
+
 ScriptSystemVM* ScriptSystemManager::TryGetScriptSystemVM()
 {
     if (ThreadManager::IsValidThreadContext()) {

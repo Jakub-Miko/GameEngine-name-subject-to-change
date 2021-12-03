@@ -1,7 +1,7 @@
 #include "EntityParser.h"
 #include <stdexcept>
 #include <glm/glm.hpp>
-#include <Utilities/ConfigManager/dependencies/json.hpp>
+#include <json.hpp>
 #include <sstream>
 
 template<typename T>
@@ -42,7 +42,7 @@ public:
 
 
 
-EntityParseResult EntityParser::ParseConstructionScript(const std::string& script)
+EntityParseResult EntityParser::ParseEntity(const std::string& script)
 {
 	std::string json_script;
 	if (script[0] != '@') {
@@ -61,17 +61,19 @@ EntityParseResult EntityParser::ParseConstructionScript(const std::string& scrip
 	if (tag != "Entity") {
 		throw std::runtime_error("Invalid entity descriptor format");
 	}
+	auto end_scr = script.find("@Entity", end + 1);
+	if (end_scr == script.npos) {
+		json_script = script.substr(end + 1, script.npos);
+	}
+	else {
+		json_script = script.substr(end + 1, end_scr - (end + 1));
+	}
 
-	json_script = script.substr(end + 1, script.npos);
 	std::stringstream json_stream(json_script);
 	nlohmann::json parser;
 	json_stream >> parser;
 
 	EntityParseResult result;
-
-	if (parser.contains("Construction_Script")) {
-		result.construction_script = parser["Construction_Script"].get<std::string>();
-	}
 
 	
 	if (parser.contains("Properties")) {
@@ -97,6 +99,35 @@ EntityParseResult EntityParser::ParseConstructionScript(const std::string& scrip
 		for (auto prop : parser.at("Children")) {
 			result.children.push_back(prop.get<std::string>());
 		}
+	}
+
+	auto construct = script.find("@Entity:Construction_Script", 0);
+	if (construct != script.npos) {
+		construct += strlen("@Entity:Construction_Script");
+		auto end = script.find("@Entity", construct);
+		std::string construction_script;
+		if (end == script.npos) {
+			construction_script = script.substr(construct, script.npos);
+		}
+		else {
+			construction_script = script.substr(construct, end - construct);
+		}
+		result.construction_script = construction_script;
+	}
+
+	auto inline_script_bg = script.find("@Entity:Inline_Script", 0);
+	if (inline_script_bg != script.npos) {
+		inline_script_bg += strlen("@Entity:Inline_Script");
+		auto end = script.find("@Entity", inline_script_bg);
+		std::string inline_script;
+		if (end == script.npos) {
+			inline_script = script.substr(inline_script_bg, script.npos);
+		}
+		else {
+			inline_script = script.substr(inline_script_bg, end - inline_script_bg);
+		}
+		result.inline_script = inline_script;
+		result.has_inline = true;
 	}
 
 	return result;

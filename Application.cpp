@@ -5,6 +5,7 @@
 #include <Renderer/Renderer.h>
 #include <World/Systems/ScriptSystemManagement.h>
 #include "Layer.h"
+#include <World/EntityManager.h>
 #include <Profiler.h>
 #include <Input/Input.h>
 #include <TaskSystem.h>
@@ -35,6 +36,8 @@ Application::~Application()
 {
     ShutdownSystems();
     
+    EntityManager::Shutdown();
+
     Input::Shutdown();
     Renderer::Shutdown();
     delete m_Window;
@@ -101,6 +104,8 @@ void Application::InitInstance()
     frame_count = latency_frames;
 
     Input::Init();
+
+    EntityManager::Initialize();
 
     InitializeSystems();
 }
