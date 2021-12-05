@@ -124,6 +124,8 @@ public:
 
     void EnableMouseButtonPressedEvents();
 
+    int CreateEntity(std::string path);
+
 #pragma endregion
 private:
     Entity current_entity;
@@ -135,22 +137,39 @@ private:
 
 class InitializationScriptHandler {
 public:
-    InitializationScriptHandler(Entity ent) : current_entity(ent) {}
+    InitializationScriptHandler(Entity ent, const std::string& path) : current_entity(ent), current_path(path) {}
     static void BindHandlerFunctions(LuaEngineClass<InitializationScriptHandler>* script_engine);
     //This is where Functions which are bound to Lua go
 #pragma region LuaBound
     
     template<typename T, typename ... Args>
     void SetComponent(Args&&... args) {
-        Application::GetWorld().SetComponent<T>(std::forward<Args>(args)...);
+        Application::GetWorld().SetComponent<T>(current_entity, T(std::forward<Args>(args)...));
     }
+
+    void SetScriptComponent(std::string path);
+
+    void SetSquareComponent(glm::vec4 color = glm::vec4(1.0f));
+
+    void SetTranslation(glm::vec3 translation);
+
+    void SetScale(glm::vec3 scale);
 
     void EnableKeyPressedEvents();
 
+    void UseInlineScript();
+
     void EnableMouseButtonPressedEvents();
+
+    bool IsKeyPressed(int key_code);
+
+    bool IsMouseButtonPressed(int key_code);
+
+    glm::vec2 GetMousePosition();
 
 #pragma endregion
 private:
+    std::string current_path;
     Entity current_entity;
 };
 
@@ -257,7 +276,7 @@ public:
 
     // For Initialization Scripts.
 
-    void SetEngineInitializationEntity(Entity ent);
+    void SetEngineInitializationEntity(Entity ent, const std::string& path);
 
     template<typename R, typename ... Args>
     auto CallInitializationFunction(const std::string& path, const std::string& function_name, Args ... args)
@@ -265,7 +284,7 @@ public:
     {
         R out;
         if (m_BoundInitializationScripts.find(LuaEngineUtilities::ScriptHash(path)) != m_BoundInitializationScripts.end()) {
-            bool success = m_LuaInitializationEngine.TryCallObject<void>(nullptr, LuaEngineUtilities::ScriptHash(path), function_name, args...);
+            bool success = m_LuaInitializationEngine.TryCallObject<void>(nullptr, LuaEngineUtilities::ScriptHash(path, true), function_name, args...);
             if (success) {
                 return out;
             }
@@ -274,7 +293,7 @@ public:
             }
         }
         else {
-            std::string script = ScriptSystemManager::Get()->GetScript(path);
+            std::string script = ScriptSystemManager::Get()->GetConstructionScript(path);
             m_LuaInitializationEngine.RunString(script);
             m_BoundInitializationScripts.insert(LuaEngineUtilities::ScriptHash(path));
             return CallInitializationFunction<R>(path, function_name, args...);
@@ -286,7 +305,7 @@ public:
         -> std::enable_if_t<(!std::is_void_v<R>), bool>
     {
         if (m_BoundInitializationScripts.find(LuaEngineUtilities::ScriptHash(path)) != m_BoundInitializationScripts.end()) {
-            bool success = m_LuaInitializationEngine.TryCallObject<void>(out, LuaEngineUtilities::ScriptHash(path), function_name, args...);
+            bool success = m_LuaInitializationEngine.TryCallObject<void>(out, LuaEngineUtilities::ScriptHash(path, true), function_name, args...);
             if (success) {
                 return true;
             }
@@ -295,7 +314,7 @@ public:
             }
         }
         else {
-            std::string script = ScriptSystemManager::Get()->GetScript(path);
+            std::string script = ScriptSystemManager::Get()->GetConstructionScript(path);
             m_LuaInitializationEngine.RunString(script);
             m_BoundInitializationScripts.insert(LuaEngineUtilities::ScriptHash(path));
             TryCallInitializationFunction(out, path, function_name, args...);
@@ -307,7 +326,7 @@ public:
         if (m_BoundInitializationScripts.find(LuaEngineUtilities::ScriptHash(path)) != m_BoundInitializationScripts.end()) {
             bool success;
             {
-                success = m_BoundInitializationScripts.TryCallObject<void>(nullptr, LuaEngineUtilities::ScriptHash(path).c_str(), function_name.c_str(), args...);
+                success = m_LuaInitializationEngine.TryCallObject<void>(nullptr, LuaEngineUtilities::ScriptHash(path,true).c_str(), function_name.c_str(), args...);
             }
             if (success) {
                 return;
@@ -317,8 +336,8 @@ public:
             }
         }
         else {
-            std::string script = ScriptSystemManager::Get()->GetScript(path);
-            m_BoundInitializationScripts.RunString(script);
+            std::string script = ScriptSystemManager::Get()->GetConstructionScript(path);
+            m_LuaInitializationEngine.RunString(script);
             m_BoundInitializationScripts.insert(LuaEngineUtilities::ScriptHash(path));
             CallInitializationFunction(path, function_name, args...);
         }
@@ -329,7 +348,7 @@ public:
         if (m_BoundInitializationScripts.find(LuaEngineUtilities::ScriptHash(path)) != m_BoundInitializationScripts.end()) {
             bool success;
             {
-                success = m_BoundInitializationScripts.TryCallObject<void>(nullptr, LuaEngineUtilities::ScriptHash(path).c_str(), function_name.c_str(), args...);
+                success = m_BoundInitializationScripts.TryCallObject<void>(nullptr, LuaEngineUtilities::ScriptHash(path, true).c_str(), function_name.c_str(), args...);
             }
             if (success) {
                 return true;
@@ -339,7 +358,7 @@ public:
             }
         }
         else {
-            std::string script = ScriptSystemManager::Get()->GetScript(path);
+            std::string script = ScriptSystemManager::Get()->GetConstructionScript(path);
             m_BoundInitializationScripts.RunString(script);
             m_BoundInitializationScripts.insert(LuaEngineUtilities::ScriptHash(path));
             TryCallInitializationFunction(nullptr, path, function_name, args...);

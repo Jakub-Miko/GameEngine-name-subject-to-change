@@ -1,17 +1,21 @@
 @Entity
 
 {
-	"value" : "string"
+	"Properties": [
+		{
+			"Name" : "prop_int",
+			"Type" : "int",
+			"Value" : 6
+		}
+	],
+
+	"Children" : [
+		"lol", "Hello There"
+	]
+
 }
 
 @Entity:Inline_Script
-
-
-function OnConstruct()
-
-print("Im alive")
-
-end
 
 function OnUpdate(delta_time)
 pos = GetPos()
@@ -27,4 +31,9 @@ end
 
 @Entity:Construction_Script
 
-// Construction_Script goes here
+function OnConstruct()
+
+SetSquareComponent()
+print("Its working")
+
+end

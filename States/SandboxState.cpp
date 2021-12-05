@@ -2,7 +2,7 @@
 #include <Application.h>
 #include <TestLayer.h>
 
-SandboxState::SandboxState() : GameState("StateScript.lua",SCRIPT_FLAGS::ON_ATTACH | SCRIPT_FLAGS::UPDATE), m_TestLayer(nullptr) {
+SandboxState::SandboxState() : GameState("StateScript.lua",SCRIPT_FLAGS::ON_ATTACH | SCRIPT_FLAGS::UPDATE | SCRIPT_FLAGS::KEY_PRESS), m_TestLayer(nullptr) {
 
 }
 

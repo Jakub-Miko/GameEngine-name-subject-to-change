@@ -1,6 +1,8 @@
 #include "EntityManager.h"
 #include <sstream>
 #include <stdexcept>
+#include <Application.h>
+#include <World/World.h>
 #include <fstream>
 #include <FileManager.h>
 
@@ -23,6 +25,25 @@ void EntityManager::Shutdown()
 	if (instance) {
 		delete instance;
 	}
+}
+
+Entity EntityManager::CreateEntity(const std::string& path)
+{
+	std::lock_guard<std::mutex> lock(constuction_mutex);
+	auto ent = Application::GetWorld().MakeEmptyEntity();
+	construction_queue.push_back(Construction_Entry(ent, path));
+	return ent;
+}
+
+void EntityManager::ClearConstructionQueue()
+{
+	std::lock_guard<std::mutex> lock(constuction_mutex);
+	construction_queue.clear();
+}
+
+std::deque<Construction_Entry>& EntityManager::GetQueue()
+{
+	return construction_queue;
 }
 
 EntityManager::EntityManager()

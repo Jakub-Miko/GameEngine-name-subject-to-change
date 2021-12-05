@@ -17,6 +17,8 @@
 #include <World/Systems/InitializationSystem.h>
 #include <World/Systems/KeyPressedScriptSystem.h>
 #include <World/Systems/MousePressedScriptSystem.h>
+#include <World/Systems/EntityConstructionSystem.h>
+
 
 class GameLayer : public Layer
 {
@@ -42,6 +44,7 @@ public:
     }
 
     virtual void OnUpdate(float delta_time) override {
+        EntityConstructionSystem(m_World);
         InitializationSystem(m_World);
         ScriptSystem(m_World,delta_time);
         SquareRenderSystem(m_World);

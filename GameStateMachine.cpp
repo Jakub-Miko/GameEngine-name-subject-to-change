@@ -5,9 +5,10 @@
 #include <LuaEngineUtilities.h>
 #include <Events/Event.h>
 #include <World/Components/ScriptComponent.h>
-
+#include <Application.h>
 #include <Events/KeyPressEvent.h>
 #include <Events/MouseButtonPressEvent.h>
+#include <World/EntityManager.h>
 
 GameStateMachine* GameStateMachine::instance = nullptr;
 
@@ -80,6 +81,7 @@ void GameStateMachine::UpdateState(float delta_time)
 
 void GameStateMachine::OnEventState(Event* e)
 {
+	ScriptOnEvent(e);
 	current_state->OnEvent(e);
 }
 
@@ -146,10 +148,15 @@ void GameStateMachine::BindLuaFunctions()
 	m_LuaEngine.RunString(ScriptKeyBindings);
 	
 	auto bindings = std::vector<LuaEngine::LuaEngine_Function_Binding>{
-
+		{"CreateEntity",LuaEngineClass<GameStateMachine>::InvokeClass<&GameStateMachine::CreateEntity>}
 	};
 
 	if (!bindings.empty()) {
 		m_LuaEngine.AddBindings(bindings);
 	}
+}
+
+int GameStateMachine::CreateEntity(std::string path)
+{
+	return EntityManager::Get()->CreateEntity(path).id;
 }

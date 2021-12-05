@@ -7,6 +7,7 @@
 #include <World/Components/SquareComponent.h>
 #include <World/Components/KeyPressedScriptComponent.h>
 #include <World/Components/MousePressedScriptComponent.h>
+#include <World/EntityManager.h>
 #include <sstream>
 #include <World/World.h>
 #include <Application.h>
@@ -125,7 +126,7 @@ ScriptSystemManager::ScriptSystemManager() : sync_mutex()
 
 }
 
-ScriptSystemVM::ScriptSystemVM() : m_LuaEngine(), m_LuaInitializationEngine(), curentHandler(Entity()), current_Initialization_handler(Entity())
+ScriptSystemVM::ScriptSystemVM() : m_LuaEngine(), m_LuaInitializationEngine(), curentHandler(Entity()), current_Initialization_handler(Entity(),"")
 {
     ScriptHandler::BindKeyCodes(&m_LuaEngine);
     ScriptHandler::BindHandlerFunctions(&m_LuaEngine);
@@ -142,9 +143,9 @@ void ScriptSystemVM::SetEngineEntity(Entity ent)
     m_LuaEngine.SetClassInstance(&curentHandler);
 }
 
-void ScriptSystemVM::SetEngineInitializationEntity(Entity ent)
+void ScriptSystemVM::SetEngineInitializationEntity(Entity ent, const std::string& path)
 {
-    current_Initialization_handler = InitializationScriptHandler(ent);
+    current_Initialization_handler = InitializationScriptHandler(ent, path);
     m_LuaInitializationEngine.SetClassInstance(&current_Initialization_handler);
 }
 
@@ -158,7 +159,7 @@ void ScriptSystemVM::ResetScriptVM()
 
     m_LuaInitializationEngine = LuaEngineClass<InitializationScriptHandler>();
     m_BoundInitializationScripts.clear();
-    current_Initialization_handler = InitializationScriptHandler(Entity());
+    current_Initialization_handler = InitializationScriptHandler(Entity(),"");
     InitializationScriptHandler::BindHandlerFunctions(&m_LuaInitializationEngine);
 }
 
@@ -183,7 +184,8 @@ void ScriptHandler::BindHandlerFunctions(LuaEngineClass<ScriptHandler>* script_e
         {"IsMouseButtonPressed" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::IsMouseButtonPressed>},
         {"GetMousePosition", LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::GetMousePosition>},
         {"EnableKeyPressedEvents", LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::EnableKeyPressedEvents>},
-        {"EnableMouseButtonPressedEvents", LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::EnableMouseButtonPressedEvents>}
+        {"EnableMouseButtonPressedEvents", LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::EnableMouseButtonPressedEvents>},
+        {"CreateEntity", LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::CreateEntity>}
 
     };
     if (bindings.empty()) return;
@@ -194,11 +196,43 @@ void InitializationScriptHandler::BindHandlerFunctions(LuaEngineClass<Initializa
 {
     std::vector<LuaEngineClass<InitializationScriptHandler>::LuaEngine_Function_Binding> bindings{
         //This is where function bindings go
-        
-
+        {"SetSquareComponent", LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::SetSquareComponent>},
+        {"SetScriptComponent", LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::SetScriptComponent>},
+        {"SetTranslation", LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::SetTranslation>},
+        {"SetScale", LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::SetScale>},
+        {"UseInlineScript", LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::UseInlineScript>},
+        {"IsKeyPressed" ,LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::IsKeyPressed>},
+        {"IsMouseButtonPressed" ,LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::IsMouseButtonPressed>},
+        {"GetMousePosition", LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::GetMousePosition>}
+    
     };
+
     if (bindings.empty()) return;
     script_engine->AddBindings(bindings);
+}
+
+void InitializationScriptHandler::SetScriptComponent(std::string path)
+{
+    Application::GetWorld().SetComponent<ScriptComponent>(current_entity, ScriptComponent(path));
+}
+
+void InitializationScriptHandler::SetSquareComponent(glm::vec4 color)
+{
+    Application::GetWorld().SetComponent<SquareComponent>(current_entity, SquareComponent(color));
+}
+
+void InitializationScriptHandler::SetTranslation(glm::vec3 translation)
+{
+    std::lock_guard<std::mutex> lock(Application::Get()->GetWorld().GetPoolSync< TransformComponent>());
+    Application::Get()->GetWorld().GetComponent<TransformComponent>(current_entity).TransformMatrix[3] = glm::vec4(translation, 1.0f);
+}
+
+void InitializationScriptHandler::SetScale(glm::vec3 scale)
+{
+    glm::mat4 matrix = Application::Get()->GetWorld().GetComponentSync<TransformComponent>(current_entity).TransformMatrix;
+    glm::vec3 size = glm::vec3(glm::length(matrix[0]), glm::length(matrix[1]), glm::length(matrix[2]));
+    scale /= size;
+    Application::Get()->GetWorld().SetComponent<TransformComponent>(current_entity, TransformComponent(glm::scale(matrix, scale)));
 }
 
 void InitializationScriptHandler::EnableKeyPressedEvents()
@@ -206,9 +240,29 @@ void InitializationScriptHandler::EnableKeyPressedEvents()
     Application::GetWorld().SetComponent<KeyPressedScriptComponent>(current_entity);
 }
 
+void InitializationScriptHandler::UseInlineScript()
+{
+    Application::GetWorld().SetComponent<ScriptComponent>(current_entity, ScriptComponent(current_path));
+}
+
 void InitializationScriptHandler::EnableMouseButtonPressedEvents()
 {
     Application::GetWorld().SetComponent<MousePressedScriptComponent>(current_entity);
+}
+
+bool InitializationScriptHandler::IsKeyPressed(int key_code)
+{
+    return Input::Get()->IsKeyPressed((KeyCode)key_code);
+}
+
+bool InitializationScriptHandler::IsMouseButtonPressed(int key_code)
+{
+    return Input::Get()->IsMouseButtonPressed((MouseButtonCode)key_code);
+}
+
+glm::vec2 InitializationScriptHandler::GetMousePosition()
+{
+    return Input::Get()->GetMoutePosition();
 }
 
 void ScriptHandler::BindKeyCodes(LuaEngineClass<ScriptHandler>* script_engine)
@@ -259,5 +313,10 @@ void ScriptHandler::EnableKeyPressedEvents()
 void ScriptHandler::EnableMouseButtonPressedEvents()
 {
     Application::GetWorld().SetComponent<MousePressedScriptComponent>(current_entity);
+}
+
+int ScriptHandler::CreateEntity(std::string path)
+{
+    return EntityManager::Get()->CreateEntity(path).id;
 }
 

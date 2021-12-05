@@ -14,6 +14,7 @@
 class ScriptComponent {
 public:
 	ScriptComponent(const std::string& ref) : script_path(ref) {}
+	ScriptComponent() : script_path("") {}
 	std::string script_path;
 
 };
@@ -57,6 +58,22 @@ public:
 
 	static glm::vec3 GetObject(LuaEngineProxy proxy, int index = -1) {
 		return glm::vec3(proxy.GetTableField<float>("x", index), proxy.GetTableField<float>("y", index), proxy.GetTableField<float>("z", index));
+	}
+
+};
+
+template<>
+class LuaEngineObjectDelegate<glm::vec4> {
+public:
+	static void SetObject(LuaEngineProxy proxy, const glm::vec4& value) {
+		proxy.SetTableItem(value.x, "x");
+		proxy.SetTableItem(value.y, "y");
+		proxy.SetTableItem(value.z, "z");
+		proxy.SetTableItem(value.w, "w");
+	}
+
+	static glm::vec4 GetObject(LuaEngineProxy proxy, int index = -1) {
+		return glm::vec4(proxy.GetTableField<float>("x", index), proxy.GetTableField<float>("y", index), proxy.GetTableField<float>("z", index), proxy.GetTableField<float>("w", index));
 	}
 
 };

@@ -3,6 +3,15 @@
 #include <World/EntityParser.h>
 #include <mutex>
 #include <string>
+#include <vector>
+#include <deque>
+#include <World/Entity.h>
+
+struct Construction_Entry {
+    Construction_Entry(Entity id, const std::string& path) : id(id), path(path) {}
+    Entity id;
+    std::string path;
+};
 
 class EntityManager {
 public:
@@ -15,6 +24,12 @@ public:
     static EntityManager* Get();
     static void Shutdown();
 
+    Entity CreateEntity(const std::string& path);
+
+    void ClearConstructionQueue();
+
+    std::deque<Construction_Entry>& GetQueue();
+
     const EntityParseResult& GetEntitySignature(const std::string& path);
 
 private:
@@ -24,4 +39,6 @@ private:
     std::mutex sync_mutex;
     std::unordered_map<std::string, EntityParseResult> m_entity_cache;
 
+    std::mutex constuction_mutex;
+    std::deque<Construction_Entry> construction_queue;
 };

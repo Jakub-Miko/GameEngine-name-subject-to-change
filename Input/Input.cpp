@@ -1,5 +1,5 @@
 #include "Input.h"
-#ifdef OpenGL
+#if defined OpenGL
 #include <platform/GLFW/GlfwInput.h>
 #endif
 
@@ -8,9 +8,9 @@ Input* Input::instance = nullptr;
 void Input::Init()
 {
 	if (!instance) {
-#ifdef OpenGL
+	#if defined OpenGL
 		instance = new GlfwInput();
-#endif
+	#endif
 	}
 }
 

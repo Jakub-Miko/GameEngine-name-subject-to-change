@@ -1,4 +1,4 @@
-function OnConstruct() 
+function OnStart() 
 
 EnableKeyPressedEvents()
 

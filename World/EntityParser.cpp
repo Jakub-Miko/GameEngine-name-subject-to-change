@@ -40,6 +40,19 @@ public:
 
 };
 
+template<>
+class PropertyParser<glm::vec4> {
+public:
+
+	static glm::vec4 Parse(const nlohmann::json::value_type& json) {
+		glm::vec4 value;
+		std::stringstream stream(json["Value"].get<std::string>());
+		stream >> value.x >> value.y >> value.z >> value.w;
+		return value;
+	}
+
+};
+
 
 
 EntityParseResult EntityParser::ParseEntity(const std::string& script)
@@ -88,7 +101,7 @@ EntityParseResult EntityParser::ParseEntity(const std::string& script)
 			else if (type_name == "double") val = PropertyParser<double>::Parse(prop);
 			else if (type_name == "vec2") val = PropertyParser<glm::vec2>::Parse(prop);
 			else if (type_name == "vec3") val = PropertyParser<glm::vec3>::Parse(prop);
-
+			else if (type_name == "vec3") val = PropertyParser<glm::vec4>::Parse(prop);
 
 			result.properties.m_Properties.insert(std::make_pair(name,val));
 		}

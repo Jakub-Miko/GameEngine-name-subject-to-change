@@ -41,11 +41,21 @@ public:
 	template<typename T = EntityType, typename ... Args>
 	auto CreateEntity(Args&& ... args) -> decltype(T::CreateEntity(std::declval<World&>(),std::declval<Entity>(),std::declval<Args>()...), Entity())
 	{
-		auto ent = MakeEntity();
+		auto ent = MakeEmptyEntity();
 		T::CreateEntity(*this,ent,std::forward<Args>(args)...);
 		SetComponent<InitializationComponent>(ent);
 		return ent;
 	}
+
+
+	template<typename T = EntityType, typename ... Args>
+	auto CreateEntityFromEmpty(Entity ent, Args&& ... args) -> decltype(T::CreateEntity(std::declval<World&>(), std::declval<Entity>(), std::declval<Args>()...), Entity())
+	{
+		T::CreateEntity(*this, ent, std::forward<Args>(args)...);
+		SetComponent<InitializationComponent>(ent);
+		return ent;
+	}
+
 
 	//Should only be used when no other threads are currently accesing the components
 	void RemoveEntity(Entity entity);
@@ -53,8 +63,13 @@ public:
 	template<typename T, typename ... Args>
 	void SetComponent(Entity entity, Args&& ... args) {
 		std::lock_guard<std::mutex> lock(SyncPool<T>());
-		m_ECS.emplace<T>((entt::entity)entity.id, std::forward<Args>(args)...);
+		m_ECS.emplace_or_replace<T>((entt::entity)entity.id, std::forward<Args>(args)...);
 		ComponentInitProxy<T>::OnCreate(*this,entity);
+	}
+
+	template<typename T>
+	std::mutex& GetPoolSync() {
+		return SyncPool<T>();
 	}
 
 	template<typename T>
@@ -75,6 +90,12 @@ public:
 	}
 
 	template<typename T>
+	T& GetComponentSync(Entity entity) {
+		std::lock_guard<std::mutex> lock(SyncPool<T>());
+		return m_ECS.get<T>((entt::entity)entity.id);
+	}
+
+	template<typename T>
 	void RemoveComponent(Entity entity) {
 		std::lock_guard<std::mutex> lock(SyncPool<T>());
 		m_ECS.remove<T>((entt::entity)entity.id);
@@ -85,12 +106,9 @@ public:
 		return m_ECS;
 	}
 
-private:
-	
-	Entity MakeEntity();
+	Entity MakeEmptyEntity();
 
-	//TODO implement this per-pool
-	//std::mutex component_mutex;
+private:
 
 	std::mutex entity_mutex;
 
