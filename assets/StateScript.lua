@@ -1,6 +1,6 @@
 function OnAttach()
 
-	CreateEntity("TestEntity.lua")
+	CreateEntity("ComplexEntity.lua",0)
 
 end
 
@@ -10,9 +10,9 @@ end
 
 function OnKeyPressed(key) 
 
-if(key.press_type == KeyPressType.KEY_PRESS) then
+if(key.press_type == KeyPressType.KEY_PRESS and key.key_code == KeyCode.KEY_V) then
 
-print(CreateEntity("TestEntity.lua"))
+CreateEntity("TestEntityGroup.lua",0)
 
 end
 

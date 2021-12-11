@@ -1,9 +1,11 @@
 #pragma once 
 #include <entt/entt.hpp>
 #include <World/EntityTypes.h>
+#include <World/SceneGraph.h>
 #include <World/Components/InitializationComponent.h>
 #include <World/Entity.h>
 #include <mutex>
+#include <glm/glm.hpp>
 #include <utility>
 
 class EntityType;
@@ -38,24 +40,40 @@ public:
 	World& operator=(const World& ref) = delete;
 	World& operator=(World&& ref) = delete;
 
+	void UpdateTransformMatricies();
+
+	void SetEntityTranslation(Entity ent, const glm::vec3& translation);
+
+	void SetEntityTranslationSync(Entity ent, const glm::vec3& translation);
+
+	void SetEntityRotation(Entity ent, const glm::quat& rotation);
+
+	void SetEntityRotationSync(Entity ent, const glm::quat& rotation);
+
+	void SetEntityScale(Entity ent, const glm::vec3& scale);
+
+	void SetEntityScaleSync(Entity ent, const glm::vec3& scale);
+
 	template<typename T = EntityType, typename ... Args>
-	auto CreateEntity(Args&& ... args) -> decltype(T::CreateEntity(std::declval<World&>(),std::declval<Entity>(),std::declval<Args>()...), Entity())
+	auto CreateEntity(Entity parent = Entity(), Args&& ... args) -> decltype(T::CreateEntity(std::declval<World&>(),std::declval<Entity>(), std::declval<Entity>(),std::declval<Args>()...), Entity())
 	{
 		auto ent = MakeEmptyEntity();
-		T::CreateEntity(*this,ent,std::forward<Args>(args)...);
-		SetComponent<InitializationComponent>(ent);
+		T::CreateEntity(*this,ent,parent,std::forward<Args>(args)...);
 		return ent;
 	}
 
 
 	template<typename T = EntityType, typename ... Args>
-	auto CreateEntityFromEmpty(Entity ent, Args&& ... args) -> decltype(T::CreateEntity(std::declval<World&>(), std::declval<Entity>(), std::declval<Args>()...), Entity())
+	auto CreateEntityFromEmpty(Entity ent, Entity parent = Entity(), Args&& ... args) -> decltype(T::CreateEntity(std::declval<World&>(), std::declval<Entity>(), std::declval<Entity>(), std::declval<Args>()...), Entity())
 	{
-		T::CreateEntity(*this, ent, std::forward<Args>(args)...);
+		T::CreateEntity(*this, ent, parent, std::forward<Args>(args)...);
 		SetComponent<InitializationComponent>(ent);
 		return ent;
 	}
 
+	SceneGraph* GetSceneGraph() {
+		return &m_SceneGraph;
+	}
 
 	//Should only be used when no other threads are currently accesing the components
 	void RemoveEntity(Entity entity);
@@ -111,6 +129,6 @@ public:
 private:
 
 	std::mutex entity_mutex;
-
+	SceneGraph m_SceneGraph;
 	entt::registry m_ECS;
 };

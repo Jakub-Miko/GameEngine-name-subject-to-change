@@ -45,8 +45,10 @@ public:
 
     virtual void OnUpdate(float delta_time) override {
         EntityConstructionSystem(m_World);
+        ScriptSystemDefferedSet(m_World);
         InitializationSystem(m_World);
-        ScriptSystem(m_World,delta_time);
+        ScriptSystemUpdate(m_World,delta_time);
+        m_World.UpdateTransformMatricies();
         SquareRenderSystem(m_World);
     }
 

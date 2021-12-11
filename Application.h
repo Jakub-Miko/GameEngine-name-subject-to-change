@@ -49,6 +49,10 @@ public:
 
     void Update();
 
+    static void InitThread();
+
+    static void ShutdownThread();
+
     static void Init();
 
     static void ShutDown();
@@ -60,6 +64,8 @@ private:
     std::chrono::high_resolution_clock::time_point last_time_point;
 
     void InitInstance();
+
+    void PreInitializeSystems();
 
     void InitializeSystems();
     void ShutdownSystems();

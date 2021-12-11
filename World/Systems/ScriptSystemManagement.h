@@ -12,6 +12,15 @@
 class ScriptSystemVM;
 class ScriptHandler;
 
+struct Script_Variant_Key_Value {
+    Script_Variant_Key_Value(const Script_Variant_type& value,const std::string& name) : value(value), name(name) {}
+    
+    Script_Variant_type value;
+    std::string name;
+};
+
+using Deffered_Set_Map = std::unordered_map<uint32_t, std::vector<Script_Variant_Key_Value>>;
+
 class ScriptObject {
 public:
     ScriptObject(const std::string& ref) : script(ref) {}
@@ -30,6 +39,8 @@ public:
     static ScriptSystemManager* Get();
     static void Shutdown();
 
+    void InitThread();
+
     std::string& GetScript(const std::string& path);
 
     std::string& GetConstructionScript(const std::string& path);
@@ -38,6 +49,11 @@ public:
 
     void UploadConstructionScript(const std::string& path, const std::string& script);
 
+    void SetEntityAsDirty(Entity ent);
+
+    const std::vector<Deffered_Set_Map>& GetEntityChanges();
+
+    void ClearEntityChanges();
 
     ScriptSystemVM* TryGetScriptSystemVM();
 
@@ -51,12 +67,17 @@ private:
     ~ScriptSystemManager();
     ScriptSystemManager();
 
+    Deffered_Set_Map* GetDefferedSetMap();
+
 private:
-    
+
     std::unordered_map<std::string, ScriptObject> m_ScriptCache;
     std::vector<ScriptSystemVM*> m_Script_system_VMs;
     std::mutex sync_mutex;
     std::mutex script_cache_mutex;
+
+    std::mutex DefferedSetMaps_mutex;
+    std::vector<Deffered_Set_Map> m_DefferedSetMaps;
 };
 
 #pragma region ScriptHandler
@@ -122,9 +143,23 @@ public:
 
     void EnableKeyPressedEvents();
 
+    template<typename T>
+    void SetEntityProperty(int entity, std::string name, T value) {
+        auto map = ThreadManager::GetThreadLocalData<Deffered_Set_Map>();
+        auto fnd = map->find((uint32_t)entity);
+        if (fnd != map->end()) {
+            fnd->second.push_back(Script_Variant_Key_Value(value, name));
+        }
+        else {
+            ScriptSystemManager::Get()->SetEntityAsDirty(Entity(entity));
+            auto new_vec = map->insert(std::make_pair((uint32_t)entity, std::vector<Script_Variant_Key_Value>()));
+            (new_vec.first)->second.push_back(Script_Variant_Key_Value(value, name));
+        }
+    }
+
     void EnableMouseButtonPressedEvents();
 
-    int CreateEntity(std::string path);
+    int CreateEntity(std::string path, int parent);
 
 #pragma endregion
 private:
@@ -381,3 +416,4 @@ private:
     std::unordered_set<std::string> m_BoundInitializationScripts;  
     LuaEngineClass<InitializationScriptHandler> m_LuaInitializationEngine;
 };
+

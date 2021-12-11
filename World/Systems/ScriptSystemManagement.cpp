@@ -7,6 +7,7 @@
 #include <World/Components/SquareComponent.h>
 #include <World/Components/KeyPressedScriptComponent.h>
 #include <World/Components/MousePressedScriptComponent.h>
+#include <World/Components/DefferedUpdateComponent.h>
 #include <World/EntityManager.h>
 #include <sstream>
 #include <World/World.h>
@@ -34,6 +35,11 @@ void ScriptSystemManager::Shutdown()
     if (instance) {
         delete instance;
     }
+}
+
+void ScriptSystemManager::InitThread()
+{
+    ThreadManager::Get()->SetThreadLocalData<Deffered_Set_Map>(GetDefferedSetMap());
 }
 
 std::string& ScriptSystemManager::GetScript(const std::string& path)
@@ -84,6 +90,24 @@ void ScriptSystemManager::UploadConstructionScript(const std::string& path, cons
     m_ScriptCache.insert_or_assign(hash, ScriptObject(parsed_script));
 }
 
+void ScriptSystemManager::SetEntityAsDirty(Entity ent)
+{
+    Application::GetWorld().SetComponent<DefferedUpdateComponent>(ent);
+}
+ 
+const std::vector<Deffered_Set_Map>& ScriptSystemManager::GetEntityChanges()
+{
+    std::lock_guard<std::mutex> lock(DefferedSetMaps_mutex);
+    return m_DefferedSetMaps;
+} 
+
+void ScriptSystemManager::ClearEntityChanges()
+{
+    for (auto& map : m_DefferedSetMaps) {
+        map.clear();
+    }
+}
+
 ScriptSystemVM* ScriptSystemManager::TryGetScriptSystemVM()
 {
     if (ThreadManager::IsValidThreadContext()) {
@@ -121,9 +145,18 @@ ScriptSystemManager::~ScriptSystemManager()
     }
 }
 
-ScriptSystemManager::ScriptSystemManager() : sync_mutex()
+ScriptSystemManager::ScriptSystemManager() : sync_mutex(), m_DefferedSetMaps(), DefferedSetMaps_mutex(), m_ScriptCache()
 {
+    m_DefferedSetMaps.reserve(ThreadManager::Get()->GetMaxThreadCount());
+}
 
+Deffered_Set_Map* ScriptSystemManager::GetDefferedSetMap()
+{
+    std::lock_guard<std::mutex> lock(DefferedSetMaps_mutex);
+    if ((m_DefferedSetMaps.size() + 1) > m_DefferedSetMaps.capacity()) {
+        throw std::runtime_error("Invalid number of deffred set maps allocated");
+    }
+    return &(m_DefferedSetMaps.emplace_back());
 }
 
 ScriptSystemVM::ScriptSystemVM() : m_LuaEngine(), m_LuaInitializationEngine(), curentHandler(Entity()), current_Initialization_handler(Entity(),"")
@@ -174,12 +207,20 @@ void ScriptHandler::BindHandlerFunctions(LuaEngineClass<ScriptHandler>* script_e
         {"GetProperty_STRING" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::GetProperty<std::string>>},
         {"GetProperty_VEC2" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::GetProperty<glm::vec2>>},
         {"GetProperty_VEC3" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::GetProperty<glm::vec3>>},
+        {"GetProperty_VEC4" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::GetProperty<glm::vec4>>},
         {"SetProperty_INT" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetProperty<int>>},
         {"SetProperty_FLOAT" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetProperty<float>>},
         {"SetProperty_VEC2" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetProperty<glm::vec2>>},
         {"SetProperty_VEC3" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetProperty<glm::vec3>>},
+        {"SetProperty_VEC4" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetProperty<glm::vec4>>},
         {"SetProperty_STRING" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetProperty<std::string>>},
         {"PropertyExists" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::PropertyExists>},
+        {"SetEntityProperty_INT" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetEntityProperty<int>>},
+        {"SetEntityProperty_FLOAT" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetEntityProperty<float>>},
+        {"SetEntityProperty_VEC2" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetEntityProperty<glm::vec2>>},
+        {"SetEntityProperty_VEC3" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetEntityProperty<glm::vec3>>},
+        {"SetEntityProperty_VEC4" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetEntityProperty<glm::vec4>>},
+        {"SetEntityProperty_STRING" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetEntityProperty<std::string>>},
         {"IsKeyPressed" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::IsKeyPressed>},
         {"IsMouseButtonPressed" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::IsMouseButtonPressed>},
         {"GetMousePosition", LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::GetMousePosition>},
@@ -223,16 +264,12 @@ void InitializationScriptHandler::SetSquareComponent(glm::vec4 color)
 
 void InitializationScriptHandler::SetTranslation(glm::vec3 translation)
 {
-    std::lock_guard<std::mutex> lock(Application::Get()->GetWorld().GetPoolSync< TransformComponent>());
-    Application::Get()->GetWorld().GetComponent<TransformComponent>(current_entity).TransformMatrix[3] = glm::vec4(translation, 1.0f);
+    Application::Get()->GetWorld().SetEntityTranslationSync(current_entity, translation);
 }
 
 void InitializationScriptHandler::SetScale(glm::vec3 scale)
 {
-    glm::mat4 matrix = Application::Get()->GetWorld().GetComponentSync<TransformComponent>(current_entity).TransformMatrix;
-    glm::vec3 size = glm::vec3(glm::length(matrix[0]), glm::length(matrix[1]), glm::length(matrix[2]));
-    scale /= size;
-    Application::Get()->GetWorld().SetComponent<TransformComponent>(current_entity, TransformComponent(glm::scale(matrix, scale)));
+    Application::Get()->GetWorld().SetEntityScaleSync(current_entity, scale);
 }
 
 void InitializationScriptHandler::EnableKeyPressedEvents()
@@ -272,12 +309,12 @@ void ScriptHandler::BindKeyCodes(LuaEngineClass<ScriptHandler>* script_engine)
 
 void ScriptHandler::TestChangeSquarePos(float x, float y)
 {
-    Application::GetWorld().GetComponent<TransformComponent>(current_entity).TransformMatrix[3] = glm::vec4(x, y, 0.0f,1.0f);
+    Application::GetWorld().SetEntityTranslation(current_entity, glm::vec4(x, y, 0.0f,1.0f));
 }
 
 glm::vec2 ScriptHandler::TestGetPosition()
 {
-    return Application::GetWorld().GetComponent<TransformComponent>(current_entity).TransformMatrix[3];
+    return Application::GetWorld().GetComponent<TransformComponent>(current_entity).translation;
 }
 
 bool ScriptHandler::PropertyExists(std::string name)
@@ -315,8 +352,8 @@ void ScriptHandler::EnableMouseButtonPressedEvents()
     Application::GetWorld().SetComponent<MousePressedScriptComponent>(current_entity);
 }
 
-int ScriptHandler::CreateEntity(std::string path)
+int ScriptHandler::CreateEntity(std::string path,int parent)
 {
-    return EntityManager::Get()->CreateEntity(path).id;
+    return EntityManager::Get()->CreateEntity(path, Entity(parent)).id;
 }
 

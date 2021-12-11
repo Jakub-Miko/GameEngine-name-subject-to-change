@@ -44,6 +44,7 @@ Application::~Application()
     
 
     TaskSystem::Shutdown();
+    ShutdownThread();
     m_TaskThreads.clear();
     ThreadManager::Get()->JoinedThreadUnRegister();
     m_MainThread.reset();
@@ -61,10 +62,10 @@ Application::Application()
 }
 
 void Application::InitInstance()
-{   
+{
     //Initialize FileManager
     FileManager::Init();
-    
+
     //Initialize Config store
     ConfigManager::Init(FileManager::Get()->GetRelativeFilepath("config.json"));
 
@@ -73,12 +74,12 @@ void Application::InitInstance()
 
     //ThreadManagerStartup
     ThreadManager::Init();
-    
+
     m_GameLayer = new GameLayer();
 
     //Claim MainThread
     m_MainThread = ThreadManager::Get()->GetThread();
-    
+
     ThreadManager::Get()->JoinedThreadRegister(m_MainThread);
 
     //Create window and Renderer
@@ -88,11 +89,15 @@ void Application::InitInstance()
     //Window and renderer Pre-initialization phase
     m_Window->PreInit();
     Renderer::Get()->PreInit();
-    
+
+    PreInitializeSystems();
 
     //TaskSystem Startup
     TaskSystem::Initialize();
-    TaskSystem::Get()->Run();
+    TaskSystem::Get()->Run(&InitThread,&ShutdownThread);
+
+    //Initialize MainThread as JoinedThread
+    InitThread();
 
     //Window and renderer Initialization phase
     m_Window->Init();
@@ -110,9 +115,14 @@ void Application::InitInstance()
     InitializeSystems();
 }
 
-void Application::InitializeSystems()
+void Application::PreInitializeSystems()
 {
     ScriptSystemManager::Initialize();
+}
+
+void Application::InitializeSystems()
+{
+    
 }
 
 void Application::ShutdownSystems()
@@ -182,6 +192,26 @@ void Application::Update()
 
     //Flush TaskSystem MemoryPool deallocations
     TaskSystem::Get()->FlushDeallocations();
+}
+
+void Application::InitThread()
+{
+    if (ThreadManager::IsValidThreadContext()) {
+        ScriptSystemManager::Get()->InitThread();
+    }
+    else {
+        throw std::runtime_error("Thread Initialization failed");
+    }
+}
+
+void Application::ShutdownThread()
+{
+    if (ThreadManager::IsValidThreadContext()) {
+
+    }
+    else {
+        throw std::runtime_error("Thread Initialization failed");
+    }
 }
 
 void Application::Init()

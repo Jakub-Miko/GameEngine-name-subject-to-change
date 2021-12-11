@@ -34,6 +34,5 @@ end
 function OnConstruct()
 
 SetSquareComponent()
-print("Its working")
 
 end

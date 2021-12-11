@@ -12,14 +12,14 @@ public:
 
 	DynamicPropertiesComponent(const DynamicPropertiesComponent& ref) : m_Properties(ref.m_Properties) {}
 
-	DynamicPropertiesComponent(DynamicPropertiesComponent&& ref) : m_Properties(std::move(ref.m_Properties)) {}
+	DynamicPropertiesComponent(DynamicPropertiesComponent&& ref) noexcept : m_Properties(std::move(ref.m_Properties)) {}
 
 	DynamicPropertiesComponent& operator=(const DynamicPropertiesComponent& ref) {
 		m_Properties = ref.m_Properties;
 		return *this;
 	}
 	
-	DynamicPropertiesComponent& operator=(DynamicPropertiesComponent&& ref) {
+	DynamicPropertiesComponent& operator=(DynamicPropertiesComponent&& ref) noexcept {
 		m_Properties = std::move(ref.m_Properties);
 		return *this;
 	}

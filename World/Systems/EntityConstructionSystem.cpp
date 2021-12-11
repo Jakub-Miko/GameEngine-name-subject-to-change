@@ -20,17 +20,19 @@ void EntityConstructionSystem(World& world)
             auto comp = *iter;
             EntityParseResult entity_template = EntityManager::Get()->GetEntitySignature(comp.path);
             Entity new_ent = comp.id;
-            world.CreateEntityFromEmpty(new_ent);
+            world.CreateEntityFromEmpty(new_ent, comp.parent);
             script_vm->SetEngineInitializationEntity(new_ent,comp.path);
             world.SetComponent<DynamicPropertiesComponent>(new_ent, DynamicPropertiesComponent(entity_template.properties));
             script_vm->CallInitializationFunction(comp.path, "OnConstruct");
+            world.SetComponent<InitializationComponent>(new_ent);
 
             for (auto child : entity_template.children) {
                 EntityParseResult child_entity_template = EntityManager::Get()->GetEntitySignature(child);
-                Entity child_ent = world.CreateEntity();
+                Entity child_ent = world.CreateEntity(new_ent);
                 script_vm->SetEngineInitializationEntity(child_ent, child);
                 world.SetComponent<DynamicPropertiesComponent>(child_ent, DynamicPropertiesComponent(child_entity_template.properties));
                 script_vm->CallInitializationFunction(child, "OnConstruct");
+                world.SetComponent<InitializationComponent>(child_ent);
             }
 
         }

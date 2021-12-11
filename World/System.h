@@ -151,3 +151,33 @@ auto RunSystemSimpleQueue(World& world,std::deque<Queue>& queue, system_function
 		});
 
 }
+
+
+template<typename Vector, typename system_function>
+auto RunSystemSimpleVector(World& world, const std::vector<Vector>& vector, system_function sys_func, int min_num_of_tasks_per_thread = 1)
+-> decltype((void(),
+	sys_func(std::declval<ComponentCollection>(), std::declval<const std::vector<Vector>&>())))
+{
+	ComponentCollectionParameters params = GetCollectionsFromSize(vector.size(), TaskSystem::Get()->GetProps().num_of_threads + 1, min_num_of_tasks_per_thread);
+
+	for (int i = 0; i < params.num_of_collections; i++) {
+		ComponentCollection comp{ params.collection_size,params.collection_size * i };
+		auto task1 = TaskSystem::Get()->CreateTask(sys_func, comp, vector);
+		TaskSystem::Get()->Submit(task1);
+	}
+	if (params.extra_collections_size != 0) {
+		ComponentCollection comp{ params.extra_collections_size, params.collection_size * params.num_of_collections };
+		auto task1 = TaskSystem::Get()->CreateTask(sys_func, comp, vector);
+		TaskSystem::Get()->Submit(task1);
+	}
+
+	TaskSystemFence fence;
+	auto task5 = [&fence]() {
+		fence.Signal(1); TaskSystem::Get()->FlushLoop();
+	};
+	TaskSystem::Get()->SetIdleTask(TaskSystem::Get()->CreateTask(task5));
+	TaskSystem::Get()->JoinTaskSystem([&fence]() -> bool {
+		return fence.IsValue(1);
+		});
+
+}

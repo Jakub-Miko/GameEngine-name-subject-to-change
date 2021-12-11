@@ -1,10 +1,10 @@
 #pragma once
-#include <cstddef>
+#include <stdint.h>
 
 class Entity {
 public:
 	friend class World;
-	uint32_t id;
+
 	Entity() : id(0) {};
 	Entity(const Entity& ref) : id(ref.id) {};
 	Entity& operator=(const Entity& ref) {
@@ -13,4 +13,7 @@ public:
 	};
 
 	Entity(uint32_t id) : id(id) {};
+
+public:
+	uint32_t id;
 };

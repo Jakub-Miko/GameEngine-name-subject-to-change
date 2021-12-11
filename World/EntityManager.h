@@ -8,8 +8,9 @@
 #include <World/Entity.h>
 
 struct Construction_Entry {
-    Construction_Entry(Entity id, const std::string& path) : id(id), path(path) {}
+    Construction_Entry(Entity id, const std::string& path, Entity parent) : id(id), path(path), parent(parent) {}
     Entity id;
+    Entity parent;
     std::string path;
 };
 
@@ -24,7 +25,7 @@ public:
     static EntityManager* Get();
     static void Shutdown();
 
-    Entity CreateEntity(const std::string& path);
+    Entity CreateEntity(const std::string& path, Entity parent = Entity());
 
     void ClearConstructionQueue();
 

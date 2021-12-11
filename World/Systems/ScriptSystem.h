@@ -1,4 +1,6 @@
 #pragma once
 class World;
 
-void ScriptSystem(World& world, float delta_time);
+void ScriptSystemUpdate(World& world, float delta_time);
+
+void ScriptSystemDefferedSet(World& world);

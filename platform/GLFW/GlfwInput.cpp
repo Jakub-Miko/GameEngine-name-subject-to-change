@@ -7,6 +7,7 @@
 #include <Events/MouseMoveEvent.h>
 #include <Application.h>
 #include <glm/glm.hpp>
+#include <Core/UnitConverter.h>
 
 GlfwInput::~GlfwInput()
 {
@@ -49,5 +50,5 @@ glm::vec2 GlfwInput::GetMoutePosition()
 {
 	double x, y;
 	glfwGetCursorPos(reinterpret_cast<GlfwWindow*>(Application::Get()->GetWindow())->GetHandle(), &x, &y);
-	return glm::vec2(x, y);
+	return UnitConverter::ScreenSpaceToNDC(glm::vec2(x, y));
 }

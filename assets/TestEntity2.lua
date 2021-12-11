@@ -24,11 +24,7 @@ function OnConstruct()
 pos = GetMousePosition()
 
 pos = GetMousePosition()
-pos.x = pos.x / (800 / 2)
-pos.y = pos.y / (600 / 2)
-pos.x = pos.x - 1
-pos.y = pos.y - 1
-pos.y = pos.y * -1
+
 
 
 SetScale({x=0.1,y=0.1,z=1.0})
@@ -43,8 +39,6 @@ end
 @Entity:Inline_Script
 
 function OnStart()
-
-print("Spawned")
 
 end
 

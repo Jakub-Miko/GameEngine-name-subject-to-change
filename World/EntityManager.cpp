@@ -27,11 +27,11 @@ void EntityManager::Shutdown()
 	}
 }
 
-Entity EntityManager::CreateEntity(const std::string& path)
+Entity EntityManager::CreateEntity(const std::string& path, Entity parent)
 {
-	std::lock_guard<std::mutex> lock(constuction_mutex);
 	auto ent = Application::GetWorld().MakeEmptyEntity();
-	construction_queue.push_back(Construction_Entry(ent, path));
+	std::lock_guard<std::mutex> lock(constuction_mutex);
+	construction_queue.push_back(Construction_Entry(ent, path, parent));
 	return ent;
 }
 

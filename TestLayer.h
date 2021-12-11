@@ -32,7 +32,7 @@ public:
         for (int i = 0; i < 10; i++) {
             for (int y = 0; y < 10; y++) {
                 int color = ((i * 9 + y) % 2 == 0) ? 1 : 0;
-                Entity ent = Application::GetWorld().CreateEntity<SquareEntityType>(glm::vec4( color,color,color,1 ), 
+                Entity ent = Application::GetWorld().CreateEntity<SquareEntityType>(Entity(), glm::vec4( color,color,color,1 ), 
                     glm::vec2((origin + glm::vec2(i,y)) / glm::vec2(10.0,10.0)), 
                     glm::vec2( 0.1,0.1 ));
                 //Application::GetWorld().SetComponent<SquareComponent>(ent, SquareComponent({ (origin + glm::vec2(i,y))/glm::vec2(10.0,10.0) }, { 0.1,0.1 }, {color,color,color,1}));
@@ -40,45 +40,14 @@ public:
                 field[i][y] = ent;
             }
         }
-        entity1 = Application::GetWorld().CreateEntity<SquareEntityType>(glm::vec4(1, 1, 0, 1),glm::vec2(0,0),glm::vec2(0.25,0.25));
-        Application::GetWorld().SetComponent<ScriptComponent>(entity1, ScriptComponent("SecondScript.lua"));     
     }
 
     virtual void OnEvent(Event* e) override {
-        EventDispacher dispatcher(e);
-        dispatcher.Dispatch<KeyPressedEvent>([this](KeyPressedEvent* e)
-            {
-                if (e->key_code == KeyCode::KEY_SPACE && e->press_type == KeyPressType::KEY_PRESS) {
-                    this->stop = !this->stop;
-                    return true;
-                }
-                return false;
-            });
-        dispatcher.Dispatch<MouseButtonPressEvent>([this](MouseButtonPressEvent* e)
-            {
-                if (e->press_type == KeyPressType::KEY_PRESS && e->key_code == MouseButtonCode::MOUSE_BUTTON_LEFT) {
-                    glm::vec2 position2 = Input::Get()->GetMoutePosition();
-                    position2.x /= 800 / 2;
-                    position2.y /= 600 / 2;
-                    position2.x -= 1;
-                    position2.y -= 1;
-                    auto entity = Application::GetWorld().CreateEntity<SquareEntityType>(glm::vec4(0,1,1,1), glm::vec2(glm::vec2(1, -1) * position2), glm::vec2(0.1));
-                    Application::GetWorld().SetComponent<ScriptComponent>(entity, ScriptComponent("TestScript.lua"));
-                    return true;
-                }
-                return false;
-            });
+
     }
 
     virtual void OnUpdate(float delta_time) override {
-        float speed = 0.005f;
-        if (!stop) {
-            counter += speed * delta_time;
-        }
-        float color = (std::sin(counter) + 1) / 2;
-
-        Application::GetWorld().GetComponent<SquareComponent>(entity1) = SquareComponent(glm::vec4(1,color,0,1 ));
-        Application::GetWorld().GetComponent<TransformComponent>(entity1) = TransformComponent(glm::vec3(position,0.0f), glm::vec3(0.25, 0.25,1.0f));
+       
 
     }
 

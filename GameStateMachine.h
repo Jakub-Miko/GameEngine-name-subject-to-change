@@ -76,6 +76,6 @@ private:
 	void BindLuaFunctions();
 	//Lua Bindings
 
-	int CreateEntity(std::string path);
+	int CreateEntity(std::string path, int parent);
 
 };

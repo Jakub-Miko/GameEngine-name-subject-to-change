@@ -156,7 +156,7 @@ void GameStateMachine::BindLuaFunctions()
 	}
 }
 
-int GameStateMachine::CreateEntity(std::string path)
+int GameStateMachine::CreateEntity(std::string path, int parent)
 {
-	return EntityManager::Get()->CreateEntity(path).id;
+	return EntityManager::Get()->CreateEntity(path, parent).id;
 }

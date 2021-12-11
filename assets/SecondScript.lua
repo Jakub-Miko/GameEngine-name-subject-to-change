@@ -28,15 +28,15 @@ function OnUpdate(delta_time)
     position2.y = position2.y - 1;
 	position2.y = position2.y * -1;
 
-
 	MoveSquare(position2.x + pos2,position2.y + pos)
 	
 end
 
 function OnKeyPressed(e) 
-	
-	if e.press_type == KeyPressType.KEY_PRESS then
-	print(e.key_code)
-	end
+
+
+
+ent = CreateEntity("TestEntity.lua",0)
+SetEntityProperty_INT(ent,"prop_int", 2);
 
 end
