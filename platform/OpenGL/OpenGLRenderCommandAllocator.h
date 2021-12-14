@@ -1,12 +1,12 @@
 #pragma once 
 #include <Renderer/RenderCommandAllocator.h>
-#include <MultiPool.h>
+
 #include <memory>
 
 class OpenGLRenderCommandAllocator : public RenderCommandAllocator {
 public: 
 
-	using Pool = MultiPool<std::allocator<void>>;
+
 
 	OpenGLRenderCommandAllocator(size_t starting_pool_size = 1024);
 
@@ -22,6 +22,4 @@ public:
 
 	virtual void clear() override;
 
-private:
-	Pool m_pool;
 };

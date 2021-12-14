@@ -40,8 +40,6 @@ void GlfwWindow::PollEvents()
     PROFILE("Poll Events");
     if (!glfwWindowShouldClose(m_Window)) {
 
-        glClear(GL_COLOR_BUFFER_BIT);
-
         glfwPollEvents();
     }
     else {

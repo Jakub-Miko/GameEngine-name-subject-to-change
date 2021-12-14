@@ -15,8 +15,7 @@
 template<typename T, typename ...Args>
 void OpenGLRenderCommandList::PushCommand(Args&& ...args)
 {
-    OpenGLRenderCommandAllocator::Pool* pool = reinterpret_cast<OpenGLRenderCommandAllocator::Pool*>(m_Alloc->Get());
-    std::pmr::polymorphic_allocator<T> alloc(pool);
+    std::allocator<T> alloc;
 
     T* cmd = std::allocator_traits<decltype(alloc)>::allocate(alloc, 1);
     std::allocator_traits<decltype(alloc)>::construct(alloc, cmd, std::forward<Args>(args)...);
@@ -31,8 +30,8 @@ void OpenGLRenderCommandList::PushCommand(Args&& ...args)
 }
 
 
-OpenGLRenderCommandList::OpenGLRenderCommandList(Renderer* renderer, std::shared_ptr<RenderCommandAllocator> alloc)
-    : RenderCommandList(renderer, alloc)
+OpenGLRenderCommandList::OpenGLRenderCommandList(Renderer* renderer)
+    : RenderCommandList(renderer)
 {
 
 }

@@ -1,16 +1,7 @@
 #include "Application.h"
 #include "Window.h"
-#include <FileManager.h>
-#include <ConfigManager.h>
 #include <Renderer/Renderer.h>
-#include <World/Systems/ScriptSystemManagement.h>
-#include "Layer.h"
-#include <World/EntityManager.h>
 #include <Profiler.h>
-#include <Input/Input.h>
-#include <TaskSystem.h>
-#include <GameStateMachine.h>
-#include <GameLayer.h>
 #include <stdexcept>
 
 
@@ -28,31 +19,31 @@ Window* Application::GetWindow() const
 
 bool Application::SendEvent(Event* event)
 {
-    GameStateMachine::Get()->OnEventState(event);
+    //GameStateMachine::Get()->OnEventState(event);
     return event->handled;
 }
 
 Application::~Application()
 {
-    ShutdownSystems();
+    //ShutdownSystems();
     
-    EntityManager::Shutdown();
+    //EntityManager::Shutdown();
 
-    Input::Shutdown();
+    //Input::Shutdown();
     Renderer::Shutdown();
     delete m_Window;
     
 
-    TaskSystem::Shutdown();
-    ShutdownThread();
-    m_TaskThreads.clear();
-    ThreadManager::Get()->JoinedThreadUnRegister();
-    m_MainThread.reset();
-    ThreadManager::Shutdown();
-    ConfigManager::Shutdown();
-    FileManager::Shutdown();
-    GameStateMachine::Shutdown();
-    delete m_GameLayer;
+    //TaskSystem::Shutdown();
+    //ShutdownThread();
+  /*  m_TaskThreads.clear();*/
+    //ThreadManager::Get()->JoinedThreadUnRegister();
+   /* m_MainThread.reset();
+    ThreadManager::Shutdown();*/
+    //ConfigManager::Shutdown();
+    //FileManager::Shutdown();
+    //GameStateMachine::Shutdown();
+    //delete m_GameLayer;
 }
 
 Application::Application()
@@ -63,24 +54,24 @@ Application::Application()
 
 void Application::InitInstance()
 {
-    //Initialize FileManager
-    FileManager::Init();
+    ////Initialize FileManager
+    //FileManager::Init();
 
-    //Initialize Config store
-    ConfigManager::Init(FileManager::Get()->GetRelativeFilepath("config.json"));
+    ////Initialize Config store
+    //ConfigManager::Init(FileManager::Get()->GetRelativeFilepath("config.json"));
 
-    //Init GameState
-    GameStateMachine::Init();
+    ////Init GameState
+    //GameStateMachine::Init();
 
     //ThreadManagerStartup
-    ThreadManager::Init();
+    //ThreadManager::Init();
 
-    m_GameLayer = new GameLayer();
+    //m_GameLayer = new GameLayer();
 
-    //Claim MainThread
-    m_MainThread = ThreadManager::Get()->GetThread();
+    ////Claim MainThread
+    //m_MainThread = ThreadManager::Get()->GetThread();
 
-    ThreadManager::Get()->JoinedThreadRegister(m_MainThread);
+    //ThreadManager::Get()->JoinedThreadRegister(m_MainThread);
 
     //Create window and Renderer
     m_Window = Window::CreateWindow();
@@ -90,14 +81,14 @@ void Application::InitInstance()
     m_Window->PreInit();
     Renderer::Get()->PreInit();
 
-    PreInitializeSystems();
+    //PreInitializeSystems();
 
-    //TaskSystem Startup
-    TaskSystem::Initialize();
-    TaskSystem::Get()->Run(&InitThread,&ShutdownThread);
+    ////TaskSystem Startup
+    //TaskSystem::Initialize();
+    //TaskSystem::Get()->Run(&InitThread,&ShutdownThread);
 
-    //Initialize MainThread as JoinedThread
-    InitThread();
+    ////Initialize MainThread as JoinedThread
+    //InitThread();
 
     //Window and renderer Initialization phase
     m_Window->Init();
@@ -105,19 +96,19 @@ void Application::InitInstance()
 
     m_Sync_Fence.reset(Renderer::Get()->GetFence());
 
-    latency_frames = ConfigManager::Get()->GetInt("Latency_Frames");
+    latency_frames = 1;
     frame_count = latency_frames;
 
-    Input::Init();
+    //Input::Init();
 
-    EntityManager::Initialize();
+    //EntityManager::Initialize();
 
-    InitializeSystems();
+    //InitializeSystems();
 }
 
 void Application::PreInitializeSystems()
 {
-    ScriptSystemManager::Initialize();
+    //ScriptSystemManager::Initialize();
 }
 
 void Application::InitializeSystems()
@@ -127,7 +118,7 @@ void Application::InitializeSystems()
 
 void Application::ShutdownSystems()
 {
-    ScriptSystemManager::Shutdown();
+    //ScriptSystemManager::Shutdown();
 }
 
 void Application::Exit()
@@ -152,15 +143,6 @@ void Application::Run()
     OnGameStop();
 }
 
-void Application::SetInitialGameState(std::shared_ptr<GameState> state)
-{
-    if (!m_running) {
-        GameStateMachine::Get()->ChangeState(state);
-    }
-    else {
-        throw std::runtime_error("Cannot set InitialGameState at runtime.");
-    }
-}
 
 void Application::Update()
 {
@@ -169,49 +151,42 @@ void Application::Update()
     m_Sync_Fence->WaitForValue(frame_count - latency_frames);
     ++frame_count;
 
-    //Calculate delta_time
-    std::chrono::nanoseconds time_diff = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - last_time_point);
-    float delta_time = (double)time_diff.count() / 1000000;
-    last_time_point = std::chrono::high_resolution_clock::now();
-    if (delta_time == 0) {
-        delta_time = 1;
-    }
+    ////Calculate delta_time
+    //std::chrono::nanoseconds time_diff = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - last_time_point);
+    //float delta_time = (double)time_diff.count() / 1000000;
+    //last_time_point = std::chrono::high_resolution_clock::now();
+    //if (delta_time == 0) {
+    //    delta_time = 1;
+    //}
 
-    GameStateMachine::Get()->UpdateNextState();
+    //GameStateMachine::Get()->UpdateNextState();
 
     //Poll Event and execute event and input handlers
     m_Window->PollEvents();
 
     //Update GameState and Layers
-    PROFILE("Layer Update");
-    GameStateMachine::Get()->UpdateState(delta_time);
+    //PROFILE("Layer Update");
+    //GameStateMachine::Get()->UpdateState(delta_time);
+    auto list = Renderer::Get()->GetRenderCommandList();
+    list->DrawSquare({ 0.0f,0.0f }, { 1.0f,1.0f }, { 1.0f,1.0f,1.0f,1.0f });
 
+    Renderer::Get()->GetCommandQueue()->ExecuteRenderCommandList(list);
     //Present / Swap buffers
     PROFILE("SwapBuffers");
     Renderer::Get()->GetCommandQueue()->Present();
 
-    //Flush TaskSystem MemoryPool deallocations
-    TaskSystem::Get()->FlushDeallocations();
+    ////Flush TaskSystem MemoryPool deallocations
+    //TaskSystem::Get()->FlushDeallocations();
 }
 
 void Application::InitThread()
 {
-    if (ThreadManager::IsValidThreadContext()) {
-        ScriptSystemManager::Get()->InitThread();
-    }
-    else {
-        throw std::runtime_error("Thread Initialization failed");
-    }
+
 }
 
 void Application::ShutdownThread()
 {
-    if (ThreadManager::IsValidThreadContext()) {
 
-    }
-    else {
-        throw std::runtime_error("Thread Initialization failed");
-    }
 }
 
 void Application::Init()

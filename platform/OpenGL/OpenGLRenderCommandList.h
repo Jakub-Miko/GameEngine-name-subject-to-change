@@ -8,7 +8,7 @@ struct GLFWwindow;
 class OpenGLRenderCommandList : public RenderCommandList {
 public:
     friend class OpenGLRenderCommandQueue;
-    OpenGLRenderCommandList(Renderer* renderer, std::shared_ptr<RenderCommandAllocator> alloc);
+    OpenGLRenderCommandList(Renderer* renderer);
     virtual void DrawSquare(glm::vec2 pos, glm::vec2 size, glm::vec4 color = { 1.f,1.f,1.f,1.f }) override;
     virtual void DrawSquare(const glm::mat4& transform, glm::vec4 color = { 1.f,1.f,1.f,1.f }) override;
 

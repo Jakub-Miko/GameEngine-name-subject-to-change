@@ -1,7 +1,6 @@
 #include "OpenGLDrawCommand.h"
 #include <iostream>
 #include <GL/glew.h>
-#include <FileManager.h>
 #include <Profiler.h>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/glm.hpp>
@@ -42,8 +41,8 @@ void OpenGLDrawCommand::Execute()
 	if (!initialized) {
 	
 		quad_data.shader = OpenGLShader::LoadFromFile(
-			FileManager::Get()->GetRenderApiAssetFilePath("shaders/Vertex_Shader.glsl"),
-			FileManager::Get()->GetRenderApiAssetFilePath("shaders/Fragment_Shader.glsl")
+			"C:/Users/mainm/Desktop/GameEngine/PseudoCode/assets/OpenGL/shaders/Vertex_Shader.glsl",
+			"C:/Users/mainm/Desktop/GameEngine/PseudoCode/assets/OpenGL/shaders/Fragment_Shader.glsl"
 		);
 
 		float quad[4 * 2] =

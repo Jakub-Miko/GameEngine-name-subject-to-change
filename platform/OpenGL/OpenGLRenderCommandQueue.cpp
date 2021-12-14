@@ -6,7 +6,7 @@
 
 OpenGLRenderCommandQueue::OpenGLRenderCommandQueue()
 {
-	Render_Thread_Object = ThreadManager::Get()->GetThread();
+	//Render_Thread_Object = ThreadManager::Get()->GetThread();
 	Render_Thread = new std::thread(&OpenGLRenderCommandQueue::RenderLoop,this);
 }
 
@@ -56,7 +56,6 @@ OpenGLRenderCommandQueue::~OpenGLRenderCommandQueue()
 	m_cond_var.notify_one();
 	Render_Thread->join();
 	delete Render_Thread;
-	Render_Thread_Object.reset();
 }
 
 void OpenGLRenderCommandQueue::RenderLoop()

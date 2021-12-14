@@ -3,13 +3,13 @@
 #include <Renderer/Renderer.h>
 
 
-RenderCommandList::RenderCommandList(Renderer* renderer, std::shared_ptr<RenderCommandAllocator> alloc)
-    :m_Renderer(renderer), m_Alloc(alloc)
+RenderCommandList::RenderCommandList(Renderer* renderer)
+    :m_Renderer(renderer)
 {
 }
 
-RenderCommandList* RenderCommandList::CreateQueue(Renderer* renderer, std::shared_ptr<RenderCommandAllocator> alloc){
+RenderCommandList* RenderCommandList::CreateQueue(Renderer* renderer){
     
-    return new OpenGLRenderCommandList(renderer, alloc);
+    return new OpenGLRenderCommandList(renderer);
 
 }

@@ -1,6 +1,6 @@
 #include "GlfwInput.h"
 #include <GLFW/glfw3.h>
-#include <ConfigManager.h>
+
 #include <Events/MouseButtonPressEvent.h>
 #include <platform/GLFW/GlfwWindow.h>
 #include <Events/KeyPressEvent.h>
@@ -28,7 +28,7 @@ GlfwInput::GlfwInput()
 		Application::Get()->SendEvent(&ev);
 		});
 
-	if (ConfigManager::Get()->GetInt("EnableMouseMoveEvent")) {
+	if (1) {
 		glfwSetCursorPosCallback(reinterpret_cast<GlfwWindow*>(Application::Get()->GetWindow())->GetHandle(), [](GLFWwindow* window, double x, double y) {
 			MouseMoveEvent ev(x, y);
 			Application::Get()->SendEvent(&ev);

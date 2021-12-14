@@ -2,7 +2,7 @@
 #include <atomic>
 #include <Renderer/RenderCommandQueue.h>
 #include "OpenGLRenderCommandList.h"
-#include <ThreadManager.h>
+
 #include <Core/ExecutableCommand.h>
 #include <mutex>
 #include <memory>
@@ -35,6 +35,5 @@ private:
 	std::mutex m_queue_mutex;
 	std::condition_variable m_cond_var;
 	std::queue<ExecutableCommand*> m_Lists;
-	std::shared_ptr<ThreadObject> Render_Thread_Object;
 	std::thread* Render_Thread;
 };

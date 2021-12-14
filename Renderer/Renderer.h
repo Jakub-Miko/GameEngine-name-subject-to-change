@@ -27,8 +27,6 @@ public:
 
     RenderCommandList* GetRenderCommandList();
 
-    RenderCommandAllocator* GetCommandAllocator();
-
     void Init(int max_allocators = 50);
 
     RenderCommandQueue* GetCommandQueue(RenderQueueTypes type = DirectQueue);
