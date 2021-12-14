@@ -24,6 +24,9 @@ SceneNode* SceneGraph::AddEntity(Entity ent, SceneNode* parent)
 
 	std::lock_guard<std::mutex> lock(addition_mutex);
 	auto new_node = m_Nodes.insert(std::make_pair(ent.id, node));
+	if (parent_node->first_child) {
+		parent_node->first_child->previous = &((new_node.first)->second);
+	}
 	parent_node->first_child = &((new_node.first)->second);
 	MarkEntityDirty(parent_node->first_child);
 	return parent_node->first_child;

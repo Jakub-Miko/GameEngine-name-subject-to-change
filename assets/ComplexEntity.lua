@@ -25,7 +25,6 @@ SetTranslation({x=pos.x,y=pos.y,z=0.0})
 
 UseInlineScript()
 
-
 end
 
 
