@@ -383,7 +383,7 @@ public:
         if (m_BoundInitializationScripts.find(LuaEngineUtilities::ScriptHash(path)) != m_BoundInitializationScripts.end()) {
             bool success;
             {
-                success = m_BoundInitializationScripts.TryCallObject<void>(nullptr, LuaEngineUtilities::ScriptHash(path, true).c_str(), function_name.c_str(), args...);
+                success = m_LuaInitializationEngine.TryCallObject<void>(nullptr, LuaEngineUtilities::ScriptHash(path, true).c_str(), function_name.c_str(), args...);
             }
             if (success) {
                 return true;
@@ -394,7 +394,7 @@ public:
         }
         else {
             std::string script = ScriptSystemManager::Get()->GetConstructionScript(path);
-            m_BoundInitializationScripts.RunString(script);
+            m_LuaInitializationEngine.RunString(script);
             m_BoundInitializationScripts.insert(LuaEngineUtilities::ScriptHash(path));
             TryCallInitializationFunction(nullptr, path, function_name, args...);
         }

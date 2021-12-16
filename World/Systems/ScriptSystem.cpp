@@ -33,7 +33,7 @@ void ScriptSystemDefferedSet(World& world)
         for (auto iter = comps.begin() + compcol.start_index; iter != comps.begin() + compcol.start_index + compcol.size; iter++) {
             auto& dynamic_prop = world.GetRegistry().get<DynamicPropertiesComponent>((entt::entity)(*iter));
             for (auto& change : changes) {
-                auto& fnd = change.find((uint32_t)(*iter));
+                auto fnd = change.find((uint32_t)(*iter));
                 if (fnd != change.end()) {
                     for (auto& changed_props : fnd->second) {
                         dynamic_prop.m_Properties.insert_or_assign(changed_props.name, changed_props.value);
