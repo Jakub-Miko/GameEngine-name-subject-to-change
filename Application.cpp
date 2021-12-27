@@ -39,6 +39,9 @@ Application::~Application()
     EntityManager::Shutdown();
 
     Input::Shutdown();
+
+    GameStateMachine::Shutdown();
+
     Renderer::Shutdown();
     delete m_Window;
     
@@ -51,7 +54,6 @@ Application::~Application()
     ThreadManager::Shutdown();
     ConfigManager::Shutdown();
     FileManager::Shutdown();
-    GameStateMachine::Shutdown();
     delete m_GameLayer;
 }
 

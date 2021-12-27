@@ -1,6 +1,9 @@
 #include "Renderer.h"
 #include <platform/OpenGL/OpenGLRenderCommandList.h>
 #include <Renderer/RenderContext.h>
+#include <Renderer/RenderResourceManager.h>
+#include <Renderer/ShaderManager.h>
+#include <Renderer/PipelineManager.h>
 
 Renderer* Renderer::instance = nullptr;
 
@@ -46,6 +49,9 @@ RenderCommandAllocator* Renderer::GetCommandAllocator()
 
 void Renderer::Init(int max_allocators) {
     this->max_allocators = max_allocators;
+    RenderResourceManager::Initialize();
+    ShaderManager::Initialize();
+    PipelineManager::Initialize();
     if (RenderContext::Get()) {
         RenderContext::Get()->Init();
     }
@@ -54,7 +60,7 @@ void Renderer::Init(int max_allocators) {
 
 RenderCommandQueue* Renderer::GetCommandQueue(RenderQueueTypes type)
 {
-    return m_CommandQueues[type];
+    return m_CommandQueues[(unsigned char)type];
 }
 
 RenderFence* Renderer::GetFence()
@@ -64,6 +70,9 @@ RenderFence* Renderer::GetFence()
 
 void Renderer::Shutdown()
 {
+    PipelineManager::Shutdown();
+    ShaderManager::Shutdown();
+    RenderResourceManager::Shutdown();
     if (instance) {
         instance->Destroy();
         delete instance;
@@ -72,7 +81,7 @@ void Renderer::Shutdown()
 
 void Renderer::SetRenderQueue(RenderCommandQueue* queue, RenderQueueTypes type)
 {
-    m_CommandQueues[type] = queue;
+    m_CommandQueues[(unsigned char)type] = queue;
 }
 
 void Renderer::Destroy()

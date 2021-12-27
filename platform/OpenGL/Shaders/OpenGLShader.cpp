@@ -5,23 +5,23 @@
 #include <fstream>
 #include <sstream>
 
-OpenGLShader::OpenGLShader()
+OpenGLShaderTest::OpenGLShaderTest()
 	:m_ProgramHandle(0)
 {
 }
 
-OpenGLShader::OpenGLShader(const std::string& vertex_shader, const std::string& fragment_shader)
+OpenGLShaderTest::OpenGLShaderTest(const std::string& vertex_shader, const std::string& fragment_shader)
 {
 	CreateShader(vertex_shader, fragment_shader);
 }
 
-OpenGLShader::OpenGLShader(OpenGLShader&& ref) noexcept
+OpenGLShaderTest::OpenGLShaderTest(OpenGLShaderTest&& ref) noexcept
 	:m_ProgramHandle(ref.m_ProgramHandle)
 {
 	ref.m_ProgramHandle = 0;
 }
 
-OpenGLShader& OpenGLShader::operator=(OpenGLShader&& ref) noexcept
+OpenGLShaderTest& OpenGLShaderTest::operator=(OpenGLShaderTest&& ref) noexcept
 {
 	DeleteShader();
 	m_ProgramHandle = ref.m_ProgramHandle;
@@ -31,7 +31,7 @@ OpenGLShader& OpenGLShader::operator=(OpenGLShader&& ref) noexcept
 
 
 //TODO: Rework error checkiong
-bool OpenGLShader::CreateShader(const std::string& vertex_shader, const std::string& fragment_shader)
+bool OpenGLShaderTest::CreateShader(const std::string& vertex_shader, const std::string& fragment_shader)
 {
 	unsigned int vertex_shader_handle;
 	unsigned int fragment_shader_handle;
@@ -60,24 +60,24 @@ bool OpenGLShader::CreateShader(const std::string& vertex_shader, const std::str
 	return true;
 }
 
-void OpenGLShader::Bind()
+void OpenGLShaderTest::Bind()
 {
 	if (m_ProgramHandle) {
 		glUseProgram(m_ProgramHandle);
 	}
 }
 
-void OpenGLShader::Unbind()
+void OpenGLShaderTest::Unbind()
 {
 	glUseProgram(0);
 }
 
-OpenGLShader::~OpenGLShader()
+OpenGLShaderTest::~OpenGLShaderTest()
 {
 	DeleteShader();
 }
 
-OpenGLShader OpenGLShader::LoadFromFile(const std::string& vertex_path, const std::string& fragment_path)
+OpenGLShaderTest OpenGLShaderTest::LoadFromFile(const std::string& vertex_path, const std::string& fragment_path)
 {
 	std::ifstream file;
 	std::string vertex_shader_src;
@@ -94,7 +94,7 @@ OpenGLShader OpenGLShader::LoadFromFile(const std::string& vertex_path, const st
 			stream << file.rdbuf();
 			fragment_shader_src = stream.str();
 			
-			OpenGLShader shader(vertex_shader_src, fragment_shader_src);
+			OpenGLShaderTest shader(vertex_shader_src, fragment_shader_src);
 			file.close();
 			return shader;
 		}
@@ -105,13 +105,13 @@ OpenGLShader OpenGLShader::LoadFromFile(const std::string& vertex_path, const st
 
 }
 
-void OpenGLShader::DeleteShader() {
+void OpenGLShaderTest::DeleteShader() {
 	if (m_ProgramHandle) {
 		glDeleteProgram(m_ProgramHandle);
 	}
 }
 
-unsigned int OpenGLShader::CompileShader(const std::string& shader, unsigned int type)
+unsigned int OpenGLShaderTest::CompileShader(const std::string& shader, unsigned int type)
 {
 	const char* shader_src_buf = shader.c_str();
 	int length = shader.length();
@@ -132,7 +132,7 @@ unsigned int OpenGLShader::CompileShader(const std::string& shader, unsigned int
 	return Shader;
 }
 
-unsigned int OpenGLShader::LinkShader(unsigned int vertex_handle, unsigned int fragment_handle)
+unsigned int OpenGLShaderTest::LinkShader(unsigned int vertex_handle, unsigned int fragment_handle)
 {
 	unsigned int program = glCreateProgram();
 	

@@ -10,9 +10,12 @@
 #include <queue>
 #include <condition_variable>
 
+class OpenGLRenderResourceManager;
+
 class OpenGLRenderCommandQueue : public RenderCommandQueue {
 public:
-
+	friend OpenGLRenderResourceManager;
+	friend class OpenGLShaderManager;
 	OpenGLRenderCommandQueue();
 
 	OpenGLRenderCommandQueue(const OpenGLRenderCommandQueue& ref) = delete;
@@ -31,6 +34,9 @@ public:
 private:
 	void RenderLoop();
 	ExecutableCommand* FetchList();
+
+	void ExecuteCustomCommand(ExecutableCommand* command);
+
 	std::atomic_bool running = false;
 	std::mutex m_queue_mutex;
 	std::condition_variable m_cond_var;

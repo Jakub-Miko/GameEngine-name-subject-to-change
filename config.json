@@ -1,5 +1,5 @@
 {
   "Vsync": 1,
-  "Latency_Frames": 1,
+  "Latency_Frames": 3,
   "EnableMouseMoveEvent": 1
 }

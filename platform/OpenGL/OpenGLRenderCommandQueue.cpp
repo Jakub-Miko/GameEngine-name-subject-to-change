@@ -89,3 +89,11 @@ ExecutableCommand* OpenGLRenderCommandQueue::FetchList() {
 	m_Lists.pop();
 	return list;
 }
+
+void OpenGLRenderCommandQueue::ExecuteCustomCommand(ExecutableCommand* command)
+{
+	std::unique_lock<std::mutex> lock(m_queue_mutex);
+	m_Lists.push(command);
+	lock.unlock();
+	m_cond_var.notify_one();
+}

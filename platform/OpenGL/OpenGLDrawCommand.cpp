@@ -13,7 +13,7 @@
 
 struct QuadData {
 	unsigned int vertex_array;
-	OpenGLShader shader;
+	OpenGLShaderTest shader;
 	int transform_pos;
 	int color_pos;
 };
@@ -41,7 +41,7 @@ void OpenGLDrawCommand::Execute()
 
 	if (!initialized) {
 	
-		quad_data.shader = OpenGLShader::LoadFromFile(
+		quad_data.shader = OpenGLShaderTest::LoadFromFile(
 			FileManager::Get()->GetRenderApiAssetFilePath("shaders/Vertex_Shader.glsl"),
 			FileManager::Get()->GetRenderApiAssetFilePath("shaders/Fragment_Shader.glsl")
 		);

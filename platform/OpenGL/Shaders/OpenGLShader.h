@@ -1,16 +1,16 @@
 #pragma once
 #include <string>
 
-class OpenGLShader {
+class OpenGLShaderTest {
 public:
-	OpenGLShader();
-	OpenGLShader(const std::string& vertex_shader, const std::string& fragment_shader);
+	OpenGLShaderTest();
+	OpenGLShaderTest(const std::string& vertex_shader, const std::string& fragment_shader);
 
-	OpenGLShader(const OpenGLShader& ref) = delete;
-	OpenGLShader(OpenGLShader&& ref) noexcept;
+	OpenGLShaderTest(const OpenGLShaderTest& ref) = delete;
+	OpenGLShaderTest(OpenGLShaderTest&& ref) noexcept;
 
-	OpenGLShader& operator=(const OpenGLShader& ref) = delete;
-	OpenGLShader& operator=(OpenGLShader&& ref) noexcept;
+	OpenGLShaderTest& operator=(const OpenGLShaderTest& ref) = delete;
+	OpenGLShaderTest& operator=(OpenGLShaderTest&& ref) noexcept;
 
 	bool CreateShader(const std::string& vertex_shader, const std::string& fragment_shader);
 
@@ -19,11 +19,11 @@ public:
 	void Bind();
 	void Unbind();
 
-	~OpenGLShader();
+	~OpenGLShaderTest();
 
 public:
 
-	static OpenGLShader LoadFromFile(const std::string& vertex_path, const std::string& fragment_path);
+	static OpenGLShaderTest LoadFromFile(const std::string& vertex_path, const std::string& fragment_path);
 
 private:
 
