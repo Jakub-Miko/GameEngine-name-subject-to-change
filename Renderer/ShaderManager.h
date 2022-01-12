@@ -2,7 +2,8 @@
 #include <string>
 
 class Shader {
-
+public:
+	virtual ~Shader() {}
 };
 
 class ShaderManager {

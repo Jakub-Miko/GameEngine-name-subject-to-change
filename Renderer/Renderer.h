@@ -8,17 +8,7 @@
 #include <vector>
 #include <array>
 #include <mutex>
-
-enum class RenderPrimitiveType : unsigned char
-{
-    FLOAT = 0, INT = 1, UNSIGNED_INT = 2, CHAR = 3, UNSIGNED_CHAR = 4
-};
-
-enum class RenderQueueTypes : unsigned char
-{
-    DirectQueue = 0, ComputeQueue = 1, CopyQueue = 2
-};
-
+#include <Renderer/RendererDefines.h>
 
 class Renderer {
 public: 

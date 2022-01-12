@@ -33,6 +33,8 @@ public:
 		id = str;
 	}
 
+	virtual ~OpenGLShader() {}
+
 private:
 	unsigned int program_id = 0;
 	std::string id = "";

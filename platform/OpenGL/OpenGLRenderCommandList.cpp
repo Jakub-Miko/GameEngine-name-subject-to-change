@@ -12,6 +12,10 @@
 #include <Profiler.h>
 #include <utility>
 #include <gl/glew.h>
+#include "OpenGLConstantBufferCommands.h"
+#include "OpenGLPipelineCommands.h"
+#include "OpenGLDrawCommands.h"
+#include "OpenGLVertexIndexBufferCommands.h"
 
 template<typename T, typename ...Args>
 void OpenGLRenderCommandList::PushCommand(Args&& ...args)
@@ -33,9 +37,49 @@ void OpenGLRenderCommandList::PushCommand(Args&& ...args)
 
 
 OpenGLRenderCommandList::OpenGLRenderCommandList(Renderer* renderer, std::shared_ptr<RenderCommandAllocator> alloc)
-    : RenderCommandList(renderer, alloc)
+    : RenderCommandList(renderer, alloc), index_buffer()
 {
 
+}
+
+void OpenGLRenderCommandList::SetPipeline(Pipeline* pipeline)
+{
+    current_pipeline = pipeline;
+    PushCommand<OpenGLSetPipelineCommand>(pipeline);
+}
+
+void OpenGLRenderCommandList::SetConstantBuffer(RootBinding binding_id, std::shared_ptr<RenderBufferResource> buffer)
+{
+    if (current_pipeline) {
+        PushCommand<OpenGLSetConstantBufferCommandId>(current_pipeline, binding_id, buffer);
+    }
+    else {
+        throw std::runtime_error("No pipeline is bound");
+    }
+}
+
+void OpenGLRenderCommandList::SetConstantBuffer(const std::string& semantic_name, std::shared_ptr<RenderBufferResource> buffer)
+{
+    if (current_pipeline) {
+        PushCommand<OpenGLSetConstantBufferCommandName>(current_pipeline, semantic_name, buffer);
+    }
+    else {
+        throw std::runtime_error("No pipeline is bound");
+    }
+}
+
+//Needs to be Reworked
+void OpenGLRenderCommandList::SetIndexBuffer(std::shared_ptr<RenderBufferResource> buffer)
+{
+    if (!buffer && buffer->GetBufferDescriptor().usage != RenderBufferUsage::INDEX_BUFFER) {
+        throw std::runtime_error("Buffer must be an Index buffer");
+    }
+    index_buffer = buffer;
+}
+
+void OpenGLRenderCommandList::SetVertexBuffer(std::shared_ptr<RenderBufferResource> vertex_buffer)
+{
+    PushCommand<OpenGLSetVertexBufferCommand>(vertex_buffer, current_pipeline);
 }
 
 void OpenGLRenderCommandList::DrawSquare(glm::vec2 pos, glm::vec2 size, glm::vec4 color) {
@@ -45,6 +89,11 @@ void OpenGLRenderCommandList::DrawSquare(glm::vec2 pos, glm::vec2 size, glm::vec
 void OpenGLRenderCommandList::DrawSquare(const glm::mat4& transform, glm::vec4 color)
 {
     PushCommand<OpenGLDrawCommand>(transform, color);
+}
+
+void OpenGLRenderCommandList::Draw()
+{
+    PushCommand<OpenGLImplicitDrawCommand>(index_buffer);
 }
 
 void OpenGLRenderCommandList::BindOpenGLContext()

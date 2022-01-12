@@ -18,12 +18,9 @@ class Application {
 private:
     static Application* instance;
     Window* m_Window;
-    int latency_frames = 0;
     std::vector<std::shared_ptr<ThreadObject>> m_TaskThreads;
     std::shared_ptr<ThreadObject> m_MainThread;
     bool m_running = false;
-    std::shared_ptr<RenderFence> m_Sync_Fence;
-    uint32_t frame_count = 0;
 
     friend class GameState;
     GameLayer* m_GameLayer = nullptr;

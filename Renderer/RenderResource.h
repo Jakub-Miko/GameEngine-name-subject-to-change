@@ -2,7 +2,7 @@
 #include <atomic>
 #include <vector>
 #include <memory>
-#include <Renderer/Renderer.h>
+#include <Renderer/RendererDefines.h>
 
 enum class RenderState : unsigned char
 {

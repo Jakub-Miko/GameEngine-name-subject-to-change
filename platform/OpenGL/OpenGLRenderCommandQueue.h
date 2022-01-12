@@ -16,6 +16,7 @@ class OpenGLRenderCommandQueue : public RenderCommandQueue {
 public:
 	friend OpenGLRenderResourceManager;
 	friend class OpenGLShaderManager;
+	friend class OpenGLPipelineManager;
 	OpenGLRenderCommandQueue();
 
 	OpenGLRenderCommandQueue(const OpenGLRenderCommandQueue& ref) = delete;

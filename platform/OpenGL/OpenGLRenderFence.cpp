@@ -54,7 +54,7 @@ OpenGLRenderFenceCommand::OpenGLRenderFenceCommand(std::shared_ptr<RenderFence>&
 
 void OpenGLRenderFenceCommand::Execute()
 {
-	PROFILE("Wait");
+	PROFILE("FenceWait");
 	glFinish();
 	reinterpret_cast<OpenGLRenderFence*>(m_fence.get())->Signal(num);
 }

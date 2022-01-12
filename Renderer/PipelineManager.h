@@ -1,39 +1,48 @@
-#pragma once
-#include <memory>
-#include <Renderer/ShaderManager.h>
-#include <Renderer/RenderResourceManager.h>
-#include <vector>
-#include <stdexcept>
+#pragma once 
 #include <Renderer/RootSignature.h>
-#include <stdint.h>
+#include <Renderer/RendererDefines.h>
+#include <Renderer/ShaderManager.h>
+#include <string>
+#include <glm/glm.hpp>
+
+struct RenderViewport {
+	RenderViewport(glm::vec2 position, glm::vec2 size,float min_depth, float max_depth) : position(position), size(size), min_depth(min_depth), max_depth(max_depth) {}
+	glm::vec2 position;
+	glm::vec2 size;
+	float min_depth;
+	float max_depth;
+};
+
+
+struct PipelineDescriptor {
+	VertexLayout layout;
+	RootSignature* signature;
+	Shader* shader;
+};
 
 class Pipeline {
 public:
-	using BindingSlot = uint32_t;
-	virtual ~Pipeline() = default;
-};
+	virtual ~Pipeline() { }
+	virtual RootBinding GetBindingId(const std::string& name) = 0;
 
-struct VertexLayoutElement {
-	RenderPrimitiveType type;
-	int size;
-};
+	const VertexLayout& GetLayout() const {
+		return layout;
+	}
 
-using VertexLayout = std::vector<VertexLayoutElement>;
+	const RootSignature* GetSignature() const {
+		return signature;
+	}
 
-struct PipelineDescriptor {
+	const Shader* GetShader() const {
+		return shader;
+	}
+
+protected:
+	Pipeline(const PipelineDescriptor& desc) : layout(desc.layout), signature(desc.signature), shader(desc.shader) {}
+	Pipeline(PipelineDescriptor&& desc) : layout(std::move(desc.layout)), signature(desc.signature), shader(desc.shader) {}
+	VertexLayout layout;
+	RootSignature* signature;
 	Shader* shader;
-	VertexLayout vertex_layout;
-	RootSignature* root_signature;
-};
-
-class DescriptorHeap {
-public:
-	virtual ~DescriptorHeap() {}
-};
-
-class DescriptorTable {
-public:
-	virtual ~DescriptorTable() {}
 };
 
 
@@ -44,10 +53,9 @@ public:
 	static PipelineManager* Get();
 	static void Shutdown();
 
-	virtual ~PipelineManager() {};
-	virtual std::shared_ptr<Pipeline> CreatePipeline(const PipelineDescriptor& desc) = 0;
+	virtual Pipeline* CreatePipeline(const PipelineDescriptor& desc) = 0;
+	virtual ~PipelineManager() { }
 
 private:
 	static PipelineManager* instance;
-
 };

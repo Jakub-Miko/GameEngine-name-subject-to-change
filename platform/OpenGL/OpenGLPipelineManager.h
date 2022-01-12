@@ -1,17 +1,32 @@
 #pragma once
 #include <Renderer/PipelineManager.h>
+#include <Renderer/RenderResource.h>
 
 class OpenGLPipeline : public Pipeline {
 public:
+	friend class OpenGLPipelineManager;
+	virtual RootBinding GetBindingId(const std::string& name) override;
+	virtual ~OpenGLPipeline() {}
 
-	virtual ~OpenGLPipeline() = default;
+	void SetConstantBuffer(RootBinding binding_id, std::shared_ptr<RenderBufferResource> buffer);
+	void SetConstantBuffer(const std::string& semantic_name, std::shared_ptr<RenderBufferResource> buffer);
+
+private:
+	OpenGLPipeline(const PipelineDescriptor& desc);
+	OpenGLPipeline(PipelineDescriptor&& desc);
+private:
+
+
 };
+
 
 class OpenGLPipelineManager : public PipelineManager {
 public:
 	friend PipelineManager;
-	virtual std::shared_ptr<Pipeline> CreatePipeline(const PipelineDescriptor& desc) override;
+	virtual Pipeline* CreatePipeline(const PipelineDescriptor& desc) override;
+	
 private:
-	OpenGLPipelineManager();
 	virtual ~OpenGLPipelineManager() {}
+	OpenGLPipelineManager();
+
 };

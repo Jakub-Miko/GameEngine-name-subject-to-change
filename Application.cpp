@@ -12,7 +12,7 @@
 #include <GameStateMachine.h>
 #include <GameLayer.h>
 #include <stdexcept>
-
+#include <FrameManager.h>
 
 Application* Application::instance = nullptr;
 
@@ -41,6 +41,8 @@ Application::~Application()
     Input::Shutdown();
 
     GameStateMachine::Shutdown();
+
+    FrameManager::Shutdown();
 
     Renderer::Shutdown();
     delete m_Window;
@@ -105,10 +107,7 @@ void Application::InitInstance()
     m_Window->Init();
     Renderer::Get()->Init();
 
-    m_Sync_Fence.reset(Renderer::Get()->GetFence());
-
-    latency_frames = ConfigManager::Get()->GetInt("Latency_Frames");
-    frame_count = latency_frames;
+    FrameManager::Initialize();
 
     Input::Init();
 
@@ -167,9 +166,7 @@ void Application::SetInitialGameState(std::shared_ptr<GameState> state)
 void Application::Update()
 {
     //Synchronize with RenderThread
-    Renderer::Get()->GetCommandQueue()->Signal(m_Sync_Fence, frame_count);
-    m_Sync_Fence->WaitForValue(frame_count - latency_frames);
-    ++frame_count;
+    FrameManager::Get()->StartFrame();
 
     //Calculate delta_time
     std::chrono::nanoseconds time_diff = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - last_time_point);
@@ -179,9 +176,10 @@ void Application::Update()
         delta_time = 1;
     }
 
+    //Update current GameState
     GameStateMachine::Get()->UpdateNextState();
 
-    //Poll Event and execute event and input handlers
+    //Poll Events and execute event and input handlers
     m_Window->PollEvents();
 
     //Update GameState and Layers

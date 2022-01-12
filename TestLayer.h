@@ -15,6 +15,8 @@
 #include <glm/glm.hpp>
 #include <Renderer/RenderResourceManager.h>
 #include <Renderer/ShaderManager.h>
+#include <Core/FrameMultiBufferResource.h>
+#include <Renderer/RootSignature.h>
 #include <Renderer/PipelineManager.h>
 
 class TestLayer : public Layer
@@ -26,6 +28,10 @@ public:
     Entity entity1;
     Entity field[10][10];
     std::shared_ptr<RenderBufferResource> resource;
+    std::shared_ptr<RenderBufferResource> resource_vertex;
+    std::shared_ptr<RenderBufferResource> resource_index;
+    Pipeline* pipeline;
+    FrameMultiBufferResource<std::shared_ptr<RenderBufferResource>> resource2;
     glm::vec2 position = { 0,0 };
 public:
 
@@ -47,68 +53,100 @@ public:
     }
 
     virtual void OnEvent(Event* e) override {
-
+        EventDispacher dispatch(e);
+        dispatch.Dispatch<KeyPressedEvent>([this](KeyPressedEvent* e) {
+            if (e->key_code == KeyCode::KEY_R && e->press_type == KeyPressType::KEY_PRESS) {
+                resource2 = FrameMultiBufferResource<std::shared_ptr<RenderBufferResource>>();
+            }
+            return false;
+            });
     }
 
     virtual void OnUpdate(float delta_time) override {
-        if (stop == false && stop2 == true) {
+        //if (stop == false && stop2 == true) {
 
-            resource.reset();
+        //    resource.reset();
 
-            stop2 = false;
-        }
+        //    stop2 = false;
+        //}
         
-        
+        #pragma region Test1
+
+
         if (stop) {
-            RenderBufferDescriptor desc(256, RenderBufferType::DEFAULT, RenderBufferUsage::VERTEX_BUFFER);
+            PROFILE("RendererInit");
+            struct data {
+                glm::vec4 color;
+                glm::vec2 pos;
+            };
+            
+            data d;
+            d.color = glm::vec4(1.0f, 0.0f, 1.0f, 1.0f);
+            d.pos = glm::vec2(0.5f, 0.0f);
+            
+            float pos[6] = {
+                -0.5f,-0.5f,
+                0.5f,-0.5f,
+                0.0f,0.5f
+            };
+
+            unsigned int ind[3] = {
+                0,1,2
+            };
+
+            RenderBufferDescriptor desc_ver(sizeof(pos), RenderBufferType::DEFAULT, RenderBufferUsage::VERTEX_BUFFER);
+            resource_vertex = RenderResourceManager::Get()->CreateBuffer(desc_ver);
+
+            RenderBufferDescriptor desc_ind(sizeof(ind), RenderBufferType::DEFAULT, RenderBufferUsage::INDEX_BUFFER);
+            resource_index = RenderResourceManager::Get()->CreateBuffer(desc_ind);
+ 
+            RenderBufferDescriptor desc(sizeof(d), RenderBufferType::DEFAULT, RenderBufferUsage::CONSTANT_BUFFER);
             resource = RenderResourceManager::Get()->CreateBuffer(desc);
 
-
-            unsigned char lol[32] = {
-                1,5,8,4,2,6,4,56,
-                1,5,8,4,2,6,4,56,
-                1,5,8,4,2,6,4,56,
-                1,5,8,4,2,6,4,56
-            };
             auto list = Renderer::Get()->GetRenderCommandList();
-            RenderResourceManager::Get()->UploadDataToBuffer(list, resource, lol, sizeof(unsigned char) * 32, 0);
-            RenderResourceManager::Get()->UploadDataToBuffer(list, resource, lol, sizeof(unsigned char) * 32, 32);
-            RenderResourceManager::Get()->UploadDataToBuffer(list, resource, lol, sizeof(unsigned char) * 32, 64);
-            RenderResourceManager::Get()->UploadDataToBuffer(list, resource, lol, sizeof(unsigned char) * 32, 96);
-            RenderResourceManager::Get()->UploadDataToBuffer(list, resource, lol, sizeof(unsigned char) * 32, 128);
-            RenderResourceManager::Get()->UploadDataToBuffer(list, resource, lol, sizeof(unsigned char) * 32, 128 + 32);
-            RenderResourceManager::Get()->UploadDataToBuffer(list, resource, lol, sizeof(unsigned char) * 32, 128 + 64);
-            RenderResourceManager::Get()->UploadDataToBuffer(list, resource, lol, sizeof(unsigned char) * 32, 128 + 96);
-
+            RenderResourceManager::Get()->UploadDataToBuffer(list, resource, &d, sizeof(d), 0);
+            RenderResourceManager::Get()->UploadDataToBuffer(list, resource_vertex, &pos, sizeof(pos), 0);
+            RenderResourceManager::Get()->UploadDataToBuffer(list, resource_index, &ind, sizeof(ind), 0);
 
             PipelineDescriptor descr;
-
-            Shader* shader = ShaderManager::Get()->GetShader("Default_shader.glsl");
-            descr.shader = shader;
-
-            RootSignature* sig = RootSignature<TestSig>::GetSignature();
-            descr.root_signature = sig;
-            
-            descr.vertex_layout = VertexLayout<TestSig>::GetLayout();
-            
-            std::shared_ptr<Pipeline> pipeline = PipelineManager::Get()->CreatePipeline(descr);
-
-            glm::vec4 value(1.0f);
-
-            list->SetPipeline(pipeline);
-            list->SetFloat4(pipeline->GetSlot("Constant_name"), &value);
-            list->SetConstantBuffer(pipeline->GetSlot("Buffer_name"), resource);
-            list->SetTable(pipeline->GetSlot("Table_name"), table);
-
-
-
+            descr.shader = ShaderManager::Get()->GetShader("Default_shader.glsl");;
+            descr.signature = RootSignatureFactory<TestPreset>::GetRootSignature();
+            descr.layout = VertexLayoutFactory<TestPreset>::GetLayout();
+            pipeline = PipelineManager::Get()->CreatePipeline(descr);
 
             Renderer::Get()->GetCommandQueue()->ExecuteRenderCommandList(list);
             stop = false;
         }
+        PROFILE("RenderRun");
+
+        auto list = Renderer::Get()->GetRenderCommandList();
+
+        list->SetPipeline(pipeline);
+        list->SetConstantBuffer("Testblock", resource);
+        list->SetIndexBuffer(resource_index);
+        list->SetVertexBuffer(resource_vertex);
+        list->Draw();
+
+        Renderer::Get()->GetCommandQueue()->ExecuteRenderCommandList(list);
 
 
-        
+#pragma endregion
+
+        #pragma region Test2
+
+        //if (stop) {
+
+        //    RenderBufferDescriptor desc(128, RenderBufferType::DEFAULT, RenderBufferUsage::CONSTANT_BUFFER);
+
+        //    resource2 = FrameMultiBufferResource<std::shared_ptr<RenderBufferResource>>([desc]() {
+
+        //        return RenderResourceManager::Get()->CreateBuffer(desc);
+
+        //        });
+        //    stop = false;
+        //}
+        #pragma endregion
+
 
 
     }
