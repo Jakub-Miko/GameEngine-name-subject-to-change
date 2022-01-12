@@ -11,7 +11,7 @@
 #include <Renderer/Renderer.h>
 #include <Profiler.h>
 #include <utility>
-#include <gl/glew.h>
+#include <GL/glew.h>
 #include "OpenGLConstantBufferCommands.h"
 #include "OpenGLPipelineCommands.h"
 #include "OpenGLDrawCommands.h"

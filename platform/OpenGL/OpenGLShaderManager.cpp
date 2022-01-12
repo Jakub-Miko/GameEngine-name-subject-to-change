@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <GL/glew.h>
 #include <sstream>
+#include <cstring>
 
 OpenGLShaderManager::OpenGLShaderManager() {
 

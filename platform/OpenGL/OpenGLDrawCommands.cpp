@@ -1,5 +1,5 @@
 #include "OpenGLDrawCommands.h"
-#include <gl/glew.h>
+#include <GL/glew.h>
 #include <platform/OpenGL/OpenGLRenderResource.h>
 
 void OpenGLImplicitDrawCommand::Execute()

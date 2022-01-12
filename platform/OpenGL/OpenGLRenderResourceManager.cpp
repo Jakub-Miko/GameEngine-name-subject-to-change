@@ -3,7 +3,8 @@
 #include <memory_resource>
 #include <Renderer/Renderer.h>
 #include <platform/OpenGL/OpenGLRenderCommandQueue.h>
-#include <gl/glew.h>
+#include <GL/glew.h>
+#include <cstring>
 
 std::shared_ptr<RenderBufferResource> OpenGLRenderResourceManager::CreateBuffer(const RenderBufferDescriptor& buffer_desc)
 {
