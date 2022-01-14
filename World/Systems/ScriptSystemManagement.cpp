@@ -159,8 +159,11 @@ Deffered_Set_Map* ScriptSystemManager::GetDefferedSetMap()
     return &(m_DefferedSetMaps.emplace_back());
 }
 
-ScriptSystemVM::ScriptSystemVM() : m_LuaEngine(), m_LuaInitializationEngine(), curentHandler(Entity()), current_Initialization_handler(Entity(),"")
+ScriptSystemVM::ScriptSystemVM() : m_LuaEngine(), m_LuaInitializationEngine(), 
+    curentHandler(Entity()), current_Initialization_handler(Entity(),""), m_BoundScripts(), m_BoundInitializationScripts()
 {
+    m_BoundScripts.reserve(10);
+    m_BoundInitializationScripts.reserve(10);
     ScriptHandler::BindKeyCodes(&m_LuaEngine);
     ScriptHandler::BindHandlerFunctions(&m_LuaEngine);
     InitializationScriptHandler::BindHandlerFunctions(&m_LuaInitializationEngine);

@@ -261,7 +261,7 @@ public:
             std::string script = ScriptSystemManager::Get()->GetScript(path);
             m_LuaEngine.RunString(script);
             m_BoundScripts.insert(LuaEngineUtilities::ScriptHash(path));
-            TryCallFunction(out, path, function_name, args...);
+            return TryCallFunction(out, path, function_name, args...);
         }
     }
 
@@ -305,7 +305,7 @@ public:
             std::string script = ScriptSystemManager::Get()->GetScript(path);
             m_LuaEngine.RunString(script);
             m_BoundScripts.insert(LuaEngineUtilities::ScriptHash(path));
-            TryCallFunction(nullptr, path, function_name, args...);
+            return TryCallFunction(nullptr, path, function_name, args...);
         }
     }
 
@@ -352,7 +352,7 @@ public:
             std::string script = ScriptSystemManager::Get()->GetConstructionScript(path);
             m_LuaInitializationEngine.RunString(script);
             m_BoundInitializationScripts.insert(LuaEngineUtilities::ScriptHash(path));
-            TryCallInitializationFunction(out, path, function_name, args...);
+            return TryCallInitializationFunction(out, path, function_name, args...);
         }
     }
 
@@ -396,7 +396,7 @@ public:
             std::string script = ScriptSystemManager::Get()->GetConstructionScript(path);
             m_LuaInitializationEngine.RunString(script);
             m_BoundInitializationScripts.insert(LuaEngineUtilities::ScriptHash(path));
-            TryCallInitializationFunction(nullptr, path, function_name, args...);
+            return TryCallInitializationFunction(nullptr, path, function_name, args...);
         }
     }
 
