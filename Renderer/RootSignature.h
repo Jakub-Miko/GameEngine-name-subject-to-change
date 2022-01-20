@@ -4,72 +4,9 @@
 #include <stdint.h>
 #include <stdexcept>
 #include <unordered_map>
-#include <Renderer/RendererDefines.h>
+#include <Renderer/PipelineManager.h>
 #include <Renderer/PipelinePresets.h>
 #include <string>
-
-using RootBinding = unsigned int;
-
-enum class RootParameterType : unsigned char {
-	UNDEFINED = 0, CONSTANT_BUFFER = 1, TEXTURE_2D = 2, DESCRIPTOR_TABLE = 3
-};
-
-enum class RootDescriptorType : unsigned char {
-	CONSTANT_BUFFER = 0, TEXTURE_2D = 1
-};
-
-struct RootMappingEntry {
-	RootMappingEntry() : binding_id(0), type(RootParameterType::UNDEFINED) {}
-	RootMappingEntry(RootBinding binding_id, RootParameterType type) : binding_id(binding_id), type(type) {}
-	RootBinding binding_id;
-	RootParameterType type;
-};
-
-struct VertexLayoutElement {
-	VertexLayoutElement(RenderPrimitiveType type, uint32_t size) : type(type), size(size) {}
-	RenderPrimitiveType type;
-	uint32_t size;
-};
-
-struct VertexLayout {
-	
-	VertexLayout() : layout(), stride(0) {}
-
-	VertexLayout(const std::vector<VertexLayoutElement>& layout) : layout(layout), stride(0) {
-		CalculateStride();
-	}
-
-	VertexLayout(std::vector<VertexLayoutElement>&& layout) : layout(std::move(layout)), stride(0) {
-		CalculateStride();
-	}
-
-	VertexLayout(const VertexLayout& layout) : layout(layout.layout), stride(layout.stride) {
-
-	}
-
-	VertexLayout(VertexLayout&& layout) noexcept : layout(std::move(layout.layout)), stride(layout.stride) {
-
-	}
-
-	VertexLayout& operator=(const VertexLayout& ref) {
-		layout = ref.layout;
-		stride = ref.stride;
-		return* this;
-	}
-	
-	VertexLayout& operator=(VertexLayout&& ref) {
-		layout = std::move(ref.layout);
-		stride = ref.stride;
-		return *this;
-	}
-
-	std::vector<VertexLayoutElement> layout;
-	int stride;
-private:
-
-	void CalculateStride();
-
-};
 
 
 struct RootDescriptorTableRange {
@@ -102,15 +39,15 @@ public:
 	RootMappingEntry GetRootMapping(const std::string& semantic_name);
 
 	static RootSignature* CreateSignature(const RootSignatureDescriptor& descriptor);
+	virtual ~RootSignature() {}
 
 protected:
 	RootSignature() : RootMappings() {}
 	RootSignature(const RootMappingTable& mapping) : RootMappings(mapping) {}
-	virtual ~RootSignature() {}
 	RootMappingTable RootMappings;
 };
 
-
+//tends to be detected as a memory leak
 template<typename T>
 struct RootSignatureFactory {
 
@@ -119,11 +56,11 @@ struct RootSignatureFactory {
 	}
 
 };
-
+//Tends to be detected as a memory leak
 template<typename T>
 struct VertexLayoutFactory {
 
-	static VertexLayout& GetLayout() {
+	static VertexLayout* GetLayout() {
 		throw std::runtime_error("Not Implemented");
 	}
 
@@ -139,11 +76,16 @@ template<>
 struct RootSignatureFactory<TestPreset> {
 
 	static RootSignature* GetRootSignature() {
-		static RootSignature* signature = RootSignature::CreateSignature(RootSignatureDescriptor(
-			{
-				RootSignatureDescriptorElement("Testblock",RootParameterType::CONSTANT_BUFFER),
-			}
-		));
+		static RootSignature* signature = nullptr;
+		if (!signature) {
+			PipelineManager::Get()->m_Signatures.push_back(RootSignature::CreateSignature(RootSignatureDescriptor(
+				{
+					RootSignatureDescriptorElement("Testblock",RootParameterType::CONSTANT_BUFFER),
+				}
+			)));
+			signature = PipelineManager::Get()->m_Signatures.back();
+		}
+
 		return signature;
 	}
 
@@ -153,10 +95,15 @@ struct RootSignatureFactory<TestPreset> {
 template<>
 struct VertexLayoutFactory<TestPreset> {
 
-	static VertexLayout& GetLayout() {
-		static VertexLayout layout = VertexLayout({
-			VertexLayoutElement(RenderPrimitiveType::FLOAT,2)
-			});
+	static VertexLayout* GetLayout() {
+		static VertexLayout* layout = nullptr;
+		if (!layout) {
+			PipelineManager::Get()->m_Layouts.push_back(VertexLayout({
+				VertexLayoutElement(RenderPrimitiveType::FLOAT,2)
+			}));
+
+			layout = &PipelineManager::Get()->m_Layouts.back();
+		}
 		return layout;
 	}
 

@@ -9,10 +9,10 @@ class World;
 struct SceneNode {
 
 	Entity entity;
-	SceneNode* parent;
-	SceneNode* first_child;
-	SceneNode* next;
-	SceneNode* previous;
+	SceneNode* parent = nullptr;
+	SceneNode* first_child = nullptr;
+	SceneNode* next = nullptr;
+	SceneNode* previous = nullptr;
 	bool dirty = false;
 
 };

@@ -16,6 +16,8 @@ public:
 		func();
 	};
 
+	virtual ~OpenGLRenderCommandAdapter() {}
+
 private:
 	F func;
 };

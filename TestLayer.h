@@ -35,7 +35,9 @@ public:
     glm::vec2 position = { 0,0 };
 public:
 
-
+    ~TestLayer() {
+        delete pipeline;
+    }
 
     TestLayer() : Layer() {
         glm::vec2 origin = { -4,-4 };
@@ -125,7 +127,7 @@ public:
         list->SetConstantBuffer("Testblock", resource);
         list->SetIndexBuffer(resource_index);
         list->SetVertexBuffer(resource_vertex);
-        list->Draw();
+        list->Draw(3);
 
         Renderer::Get()->GetCommandQueue()->ExecuteRenderCommandList(list);
 

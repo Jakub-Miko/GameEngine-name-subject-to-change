@@ -23,21 +23,21 @@ static ComponentCollectionParameters GetCollectionsFromSize(size_t size, int num
 	if (size == 0) {
 		return ComponentCollectionParameters{ 0 ,0,0};
 	}	
-	int chunk_size = std::ceil((float)size / (float)num_of_threads);
+	int chunk_size = int(std::ceil((float)size / (float)num_of_threads));
 	int num_of_chunks;
 	int last;
 	if (chunk_size >= min_collection_size) {
-		num_of_chunks = std::ceil((float)size / (float)chunk_size);
+		num_of_chunks = int(std::ceil((float)size / (float)chunk_size));
 	}
 	else {
-		num_of_chunks = std::ceil((float)size / (float)min_collection_size);
+		num_of_chunks = int(std::ceil((float)size / (float)min_collection_size));
 		chunk_size = min_collection_size;
 	}
 	if ((float)size / (float)num_of_chunks == (float)chunk_size) {
 		last = 0;
 	}
 	else {
-		last = size - ((num_of_chunks - 1) * chunk_size);
+		last = (int)size - ((num_of_chunks - 1) * chunk_size);
 		num_of_chunks--;
 	}
 	return ComponentCollectionParameters{ num_of_chunks ,chunk_size,last };

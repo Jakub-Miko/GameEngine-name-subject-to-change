@@ -91,9 +91,9 @@ void OpenGLRenderCommandList::DrawSquare(const glm::mat4& transform, glm::vec4 c
     PushCommand<OpenGLDrawCommand>(transform, color);
 }
 
-void OpenGLRenderCommandList::Draw()
+void OpenGLRenderCommandList::Draw(uint32_t index_count)
 {
-    PushCommand<OpenGLImplicitDrawCommand>(index_buffer);
+    PushCommand<OpenGLImplicitDrawCommand>(index_buffer, index_count);
 }
 
 void OpenGLRenderCommandList::BindOpenGLContext()
@@ -138,5 +138,12 @@ void OpenGLRenderCommandList::Execute()
 
 OpenGLRenderCommandList::~OpenGLRenderCommandList()
 {
+    if (m_Commands != nullptr) {
+        OpenGLRenderCommand* next = m_Commands;
+        while (next) {
+            next->~OpenGLRenderCommand();
+            next = next->next;
+        }
+    }
     m_Commands = nullptr;
 }

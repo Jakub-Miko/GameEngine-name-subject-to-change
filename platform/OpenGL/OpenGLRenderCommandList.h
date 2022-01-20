@@ -3,6 +3,7 @@
 #include <vector>
 #include <Renderer/RenderResource.h>
 #include <Renderer/PipelineManager.h>
+#include <stdint.h>
 
 class OpenGLRenderCommand;
 struct GLFWwindow;
@@ -21,7 +22,7 @@ public:
     virtual void SetPipeline(Pipeline* pipeline) override;
     virtual void DrawSquare(glm::vec2 pos, glm::vec2 size, glm::vec4 color = { 1.f,1.f,1.f,1.f }) override;
     virtual void DrawSquare(const glm::mat4& transform, glm::vec4 color = { 1.f,1.f,1.f,1.f }) override;
-    virtual void Draw() override;
+    virtual void Draw(uint32_t index_count) override;
 
     virtual ~OpenGLRenderCommandList();
     

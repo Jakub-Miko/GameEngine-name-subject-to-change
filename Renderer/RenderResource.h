@@ -50,6 +50,8 @@ public:
 	virtual void* Map() = 0;
 	virtual void UnMap() = 0;
 
+	virtual ~RenderResource() {};
+
 protected:
 	std::atomic<RenderState> render_state = RenderState::UNINITIALIZED;
 
@@ -64,6 +66,8 @@ public:
 		return descriptor;
 	}
 
+	virtual ~RenderBufferResource() {};
+
 protected:
 	RenderBufferDescriptor descriptor;
 };
@@ -74,6 +78,8 @@ public:
 	RenderTextureDescriptor GetBufferDescriptor() const {
 		return descriptor;
 	}
+
+	virtual ~RenderTextureResource() {};
 
 protected:
 	RenderTextureDescriptor descriptor;

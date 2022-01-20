@@ -59,7 +59,7 @@ ParsedShader OpenGLShaderManager::ParseShader(const std::string& source_code)
 unsigned int OpenGLShaderManager::CompileShaderStage(int type, const std::string& source)
 {
 	const char* shader_src_buf = source.c_str();
-	int length = source.length();
+	int length = (int)source.length();
 	unsigned int Shader = glCreateShader(type);
 	glShaderSource(Shader, 1, &shader_src_buf, &length);
 	glCompileShader(Shader);
