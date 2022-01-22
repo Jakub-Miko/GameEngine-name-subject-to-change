@@ -27,6 +27,7 @@ void OpenGLSetVertexBufferCommand::Execute()
 			glEnableVertexAttribArray(count);
 			glVertexAttribPointer(count, attrib.size, OpenGLUnitConverter::PrimitiveToGL(attrib.type),  GL_FALSE, stride, (void*)offset);
 			offset += attrib.size * OpenGLUnitConverter::PrimitiveSize(attrib.type);
+			count++;
 		}
 		gl_buffer->SetVAOId(vao);
 	}

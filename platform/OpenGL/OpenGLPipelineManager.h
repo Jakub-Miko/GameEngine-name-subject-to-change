@@ -10,6 +10,7 @@ public:
 
 	void SetConstantBuffer(RootBinding binding_id, std::shared_ptr<RenderBufferResource> buffer);
 	void SetConstantBuffer(const std::string& semantic_name, std::shared_ptr<RenderBufferResource> buffer);
+	void SetTexture2D(const std::string& semantic_name, std::shared_ptr<RenderTexture2DResource> buffer);
 
 private:
 	OpenGLPipeline(const PipelineDescriptor& desc);

@@ -55,6 +55,15 @@ void OpenGLPipeline::SetConstantBuffer(const std::string& semantic_name, std::sh
 	}
 }
 
+void OpenGLPipeline::SetTexture2D(const std::string& semantic_name, std::shared_ptr<RenderTexture2DResource> texture)
+{
+	OpenGLRootSignature* sig = static_cast<OpenGLRootSignature*>(signature);
+	int index = sig->GetTextureSlot(semantic_name);
+	glActiveTexture(GL_TEXTURE0 + index);
+	glBindTexture(GL_TEXTURE_2D, static_cast<OpenGLRenderTexture2DResource*>(texture.get())->GetRenderId());
+}
+
+
 OpenGLPipeline::OpenGLPipeline(const PipelineDescriptor& desc) : Pipeline(desc)
 {
 

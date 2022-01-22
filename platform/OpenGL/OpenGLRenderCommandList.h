@@ -17,6 +17,7 @@ public:
 
     virtual void SetConstantBuffer(RootBinding binding_id, std::shared_ptr<RenderBufferResource> buffer) override;
     virtual void SetConstantBuffer(const std::string& semantic_name, std::shared_ptr<RenderBufferResource> buffer) override;
+    virtual void SetTexture2D(const std::string& semantic_name, std::shared_ptr<RenderTexture2DResource> buffer) override;
     virtual void SetIndexBuffer(std::shared_ptr<RenderBufferResource> buffer) override;
     virtual void SetVertexBuffer(std::shared_ptr<RenderBufferResource> vertex_buffer) override;
     virtual void SetPipeline(Pipeline* pipeline) override;
@@ -34,7 +35,8 @@ private:
     void PushCommand(Args&& ... args);
 
     void UpdateBufferResource(std::shared_ptr<RenderBufferResource> resource, void* data, size_t size, size_t offset);
-
+    void UpdateTexture2DResource(std::shared_ptr<RenderTexture2DResource> resource, void* data, size_t width, size_t height, size_t offset_x, size_t offset_y);
+    
     virtual void Execute() override;
 
     OpenGLRenderCommand* m_Commands = nullptr;

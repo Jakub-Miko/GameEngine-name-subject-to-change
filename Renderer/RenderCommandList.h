@@ -21,6 +21,7 @@ public:
 
     virtual void SetConstantBuffer(RootBinding binding_id, std::shared_ptr<RenderBufferResource> buffer) = 0;
     virtual void SetConstantBuffer(const std::string& semantic_name, std::shared_ptr<RenderBufferResource> buffer) = 0;
+    virtual void SetTexture2D(const std::string& semantic_name, std::shared_ptr<RenderTexture2DResource> buffer) = 0;
     virtual void SetIndexBuffer(std::shared_ptr<RenderBufferResource> buffer) = 0;
     virtual void SetVertexBuffer(std::shared_ptr<RenderBufferResource> vertex_buffer) = 0;
     virtual void Draw(uint32_t index_count) = 0;

@@ -37,3 +37,41 @@ private:
 	unsigned int extra_id = 0;
 
 };
+
+
+class OpenGLTextureSampler : public TextureSampler {
+public:
+	friend TextureSampler;
+
+	virtual ~OpenGLTextureSampler() {}
+
+private:
+	OpenGLTextureSampler(const TextureSamplerDescritor& desc);
+};
+
+class OpenGLRenderTexture2DResource : public RenderTexture2DResource {
+public:
+	friend OpenGLRenderResourceManager;
+
+	virtual void* Map() override;
+
+	virtual void UnMap() override;
+
+	void SetRenderId(unsigned int id);
+
+	unsigned int GetRenderId() const {
+		return render_id;
+	}
+
+	OpenGLRenderTexture2DResource(const RenderTexture2DDescriptor& desc, RenderState initial_state = RenderState::UNINITIALIZED, unsigned int render_id = 0)
+		: RenderTexture2DResource(desc, initial_state), render_id(render_id) {
+
+	}
+
+	~OpenGLRenderTexture2DResource() {}
+
+private:
+
+	unsigned int render_id = 0;
+
+};

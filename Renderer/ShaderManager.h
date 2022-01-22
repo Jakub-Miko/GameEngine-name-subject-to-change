@@ -13,6 +13,7 @@ public:
 	static ShaderManager* Get();
 	static void Shutdown();
 
+	virtual Shader* CreateShader(const std::string& path) = 0;
 	virtual Shader* GetShader(const std::string& name) = 0;
 
 	virtual ~ShaderManager() {}

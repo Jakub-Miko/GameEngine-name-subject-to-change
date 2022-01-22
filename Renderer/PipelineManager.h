@@ -3,6 +3,7 @@
 #include <Renderer/ShaderManager.h>
 #include <string>
 #include <glm/glm.hpp>
+#include <mutex>
 #include <vector>
 
 struct VertexLayout;
@@ -69,9 +70,15 @@ public:
 
 private:
 	static PipelineManager* instance;
+	
+	void AddLayout(VertexLayout* layout);
+	void AddSignature(RootSignature* signature);
 
 private:
+
+	std::mutex m_Signatures_mutex;
+	std::mutex m_Layouts_mutex;
 	std::vector<RootSignature*> m_Signatures;
-	std::vector<VertexLayout> m_Layouts;
+	std::vector<VertexLayout*> m_Layouts;
 
 };

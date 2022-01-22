@@ -30,6 +30,8 @@ public:
     std::shared_ptr<RenderBufferResource> resource;
     std::shared_ptr<RenderBufferResource> resource_vertex;
     std::shared_ptr<RenderBufferResource> resource_index;
+    std::shared_ptr<RenderTexture2DResource> texture;
+    std::unique_ptr<TextureSampler> sampler;
     Pipeline* pipeline;
     FrameMultiBufferResource<std::shared_ptr<RenderBufferResource>> resource2;
     glm::vec2 position = { 0,0 };
@@ -41,17 +43,17 @@ public:
 
     TestLayer() : Layer() {
         glm::vec2 origin = { -4,-4 };
-        for (int i = 0; i < 10; i++) {
-            for (int y = 0; y < 10; y++) {
-                int color = ((i * 9 + y) % 2 == 0) ? 1 : 0;
-                Entity ent = Application::GetWorld().CreateEntity<SquareEntityType>(Entity(), glm::vec4( color,color,color,1 ), 
-                    glm::vec2((origin + glm::vec2(i,y)) / glm::vec2(10.0,10.0)), 
-                    glm::vec2( 0.1,0.1 ));
-                //Application::GetWorld().SetComponent<SquareComponent>(ent, SquareComponent({ (origin + glm::vec2(i,y))/glm::vec2(10.0,10.0) }, { 0.1,0.1 }, {color,color,color,1}));
+        //for (int i = 0; i < 10; i++) {
+        //    for (int y = 0; y < 10; y++) {
+        //        int color = ((i * 9 + y) % 2 == 0) ? 1 : 0;
+        //        Entity ent = Application::GetWorld().CreateEntity<SquareEntityType>(Entity(), glm::vec4( color,color,color,1 ), 
+        //            glm::vec2((origin + glm::vec2(i,y)) / glm::vec2(10.0,10.0)), 
+        //            glm::vec2( 0.1,0.1 ));
+        //        Application::GetWorld().SetComponent<SquareComponent>(ent, SquareComponent({ (origin + glm::vec2(i,y))/glm::vec2(10.0,10.0) }, { 0.1,0.1 }, {color,color,color,1}));
 
-                field[i][y] = ent;
-            }
-        }
+        //        field[i][y] = ent;
+        //    }
+        //}
     }
 
     virtual void OnEvent(Event* e) override {
@@ -84,16 +86,23 @@ public:
             
             data d;
             d.color = glm::vec4(1.0f, 0.0f, 1.0f, 1.0f);
-            d.pos = glm::vec2(0.5f, 0.0f);
+            d.pos = glm::vec2(0.0f, 0.0f);
             
-            float pos[6] = {
-                -0.5f,-0.5f,
-                0.5f,-0.5f,
-                0.0f,0.5f
+            struct Vertex {
+                glm::vec2 pos;
+                glm::vec2 uv;
             };
 
-            unsigned int ind[3] = {
-                0,1,2
+            Vertex pos[4] = {
+                {{-0.5f,-0.5f}, {0.0f,0.0f}},
+                {{0.5f,-0.5f}, {1.0f,0.0f}},
+                {{0.5f,0.5f}, {1.0f,1.0f}},
+                {{-0.5f,0.5f}, {0.0f,1.0f}},
+            };
+
+            unsigned int ind[6] = {
+                0,1,2,
+                0,2,3
             };
 
             RenderBufferDescriptor desc_ver(sizeof(pos), RenderBufferType::DEFAULT, RenderBufferUsage::VERTEX_BUFFER);
@@ -116,8 +125,43 @@ public:
             descr.layout = VertexLayoutFactory<TestPreset>::GetLayout();
             pipeline = PipelineManager::Get()->CreatePipeline(descr);
 
+
+            struct Pixel {
+                Pixel(unsigned char r, unsigned char b, unsigned char g, unsigned char a) : r(r), g(g), b(b), a(a) {}
+                unsigned char r, g, b, a;
+            };
+
+            Pixel pixels[9] = {
+                {255,255,255,255},{255,255,255,255},{255,255,255,255},
+                {255,255,255,255},{0,0,0,255},{255,255,255,255},
+                {255,255,255,255},{255,255,255,255},{255,255,255,255}
+            };
+
+            TextureSamplerDescritor desc_sample;
+            desc_sample.AddressMode_U = TextureAddressMode::BORDER;
+            desc_sample.AddressMode_V = TextureAddressMode::BORDER;
+            desc_sample.AddressMode_W = TextureAddressMode::BORDER;
+            desc_sample.border_color = glm::vec4(1.0f,0.0f,1.0f,1.0f);
+            desc_sample.filter = TextureFilter::POINT_MIN_MAG_MIP;
+            desc_sample.LOD_bias = 0.0f;
+            desc_sample.max_LOD = 10;
+            desc_sample.min_LOD = 0;
+
+            sampler.reset(TextureSampler::CreateSampler(desc_sample));
+
+
+            RenderTexture2DDescriptor desc2;
+            desc2.format = TextureFormat::RGBA_UNSIGNED_CHAR;
+            desc2.height = 3;
+            desc2.width = 3;
+            desc2.sampler = sampler.get();
+            texture = RenderResourceManager::Get()->CreateTexture(desc2);
+
+            RenderResourceManager::Get()->UploadDataToTexture2D(list, texture, &pixels, 3, 3, 0, 0);
+
             Renderer::Get()->GetCommandQueue()->ExecuteRenderCommandList(list);
             stop = false;
+
         }
         PROFILE("RenderRun");
 
@@ -125,9 +169,10 @@ public:
 
         list->SetPipeline(pipeline);
         list->SetConstantBuffer("Testblock", resource);
+        list->SetTexture2D("TestTexture", texture);
         list->SetIndexBuffer(resource_index);
         list->SetVertexBuffer(resource_vertex);
-        list->Draw(3);
+        list->Draw(6);
 
         Renderer::Get()->GetCommandQueue()->ExecuteRenderCommandList(list);
 

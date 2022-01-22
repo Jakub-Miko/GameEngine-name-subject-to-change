@@ -19,16 +19,12 @@ enum class RenderBufferUsage : unsigned char
 	VERTEX_BUFFER = 0, INDEX_BUFFER = 1, CONSTANT_BUFFER = 2
 };
 
+
 struct RenderBufferDescriptor {
 	RenderBufferDescriptor(size_t size, RenderBufferType type, RenderBufferUsage usage) : buffer_size(size), type(type), usage(usage) {}
 	const size_t buffer_size;
 	const RenderBufferType type = RenderBufferType::DEFAULT;
 	const RenderBufferUsage usage;
-};
-
-
-struct RenderTextureDescriptor {
-
 };
 
 class RenderResource {
@@ -72,18 +68,56 @@ protected:
 	RenderBufferDescriptor descriptor;
 };
 
-class RenderTextureResource : public RenderResource {
+struct TextureSamplerDescritor {
+	TextureAddressMode AddressMode_U, AddressMode_V, AddressMode_W;
+	TextureFilter filter;
+	float LOD_bias;
+	glm::vec4 border_color;
+	float min_LOD;
+	float max_LOD;
+};
+
+
+
+class TextureSampler {
 public:
 
-	RenderTextureDescriptor GetBufferDescriptor() const {
+	TextureSampler(const TextureSamplerDescritor& desc) : descriptor(desc) {}
+
+	virtual ~TextureSampler() {}
+
+	const TextureSamplerDescritor& GetDescriptor() const { return descriptor; }
+
+	static TextureSampler* CreateSampler(const TextureSamplerDescritor& desc);
+
+private:
+
+	TextureSamplerDescritor descriptor;
+
+};
+
+
+struct RenderTexture2DDescriptor {
+	int width, height;
+	TextureFormat format;
+	TextureSampler* sampler = nullptr;
+};
+
+class RenderTexture2DResource : public RenderResource {
+public:
+
+	RenderTexture2DResource(const RenderTexture2DDescriptor& desc, RenderState state) : descriptor(desc), RenderResource(state) {}
+
+	RenderTexture2DDescriptor GetBufferDescriptor() const {
 		return descriptor;
 	}
 
-	virtual ~RenderTextureResource() {};
+	virtual ~RenderTexture2DResource() {};
 
 protected:
-	RenderTextureDescriptor descriptor;
+	RenderTexture2DDescriptor descriptor;
 };
+
 
 
 class RenderIndexBufferView {
@@ -107,3 +141,4 @@ private:
 	size_t vertex_count;
 	RenderPrimitiveType type;
 };
+

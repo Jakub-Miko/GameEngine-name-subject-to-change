@@ -45,6 +45,7 @@ public:
 	friend ShaderManager;
 
 	virtual Shader* GetShader(const std::string& name) override;
+	virtual Shader* CreateShader(const std::string& path) override;
 
 private:
 	OpenGLShaderManager();
@@ -56,7 +57,7 @@ private:
 	static unsigned int LinkShader(ParsedShader shader);
 
 private:
-	std::unordered_map<std::string,OpenGLShader> m_Shaders;
+	std::unordered_map<std::string,OpenGLShader*> m_Shaders;
 	std::mutex sync_mutex;
 
 };

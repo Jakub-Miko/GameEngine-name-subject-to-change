@@ -2,6 +2,9 @@
 #version 150
 
 in vec2 pos;
+in vec2 uv;
+
+out vec2 vertex_uv;
 
 uniform Testblock
 {
@@ -10,7 +13,8 @@ uniform Testblock
 };
 
 void main() {
-	gl_Position = vec4(pos + test, 1.0, 1.0);
+	gl_Position = vec4(pos*0.5 + test, 1.0, 1.0);
+	vertex_uv = uv;
 }
 
 
@@ -20,13 +24,17 @@ void main() {
 
 out vec4 color;
 
+in vec2 vertex_uv;
+
+uniform sampler2D TestTexture;
+
 uniform Testblock{
 	vec4 in_color;
 	vec2 test;	
 };
 
 void main() {
-	color = in_color;
+	color = texture(TestTexture,vertex_uv);
 }
 
 #end
