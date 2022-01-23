@@ -35,6 +35,7 @@ uniform Testblock{
 
 void main() {
 	color = texture(TestTexture,vertex_uv);
+	
 }
 
 #end

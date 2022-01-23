@@ -19,6 +19,7 @@
 #include <Core/FrameMultiBufferResource.h>
 #include <Renderer/RootSignature.h>
 #include <Renderer/PipelineManager.h>
+#include <FileManager.h>
 
 class TestLayer : public Layer
 {
@@ -92,7 +93,7 @@ public:
             };
 
             int x_size, y_size, channel;
-            unsigned char* data = stbi_load("C:/Users/mainm/Desktop/Heaven.jpg", &x_size, &y_size, &channel, 4);
+            unsigned char* data = stbi_load(FileManager::Get()->GetAssetFilePath("test_image.jpg").c_str(), &x_size, &y_size, &channel, 4);
 
 
             data_type d;
