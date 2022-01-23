@@ -3,8 +3,10 @@
 #include <memory_resource>
 #include <platform/OpenGL/OpenGLUnitConverter.h>
 #include <Renderer/Renderer.h>
+#include <FileManager.h>
 #include <platform/OpenGL/OpenGLRenderCommandQueue.h>
 #include <GL/glew.h>
+#include <stb_image.h>
 #include <glm/gtc/type_ptr.hpp>
 #include <cstring>
 
@@ -97,12 +99,55 @@ std::shared_ptr<RenderTexture2DResource> OpenGLRenderResourceManager::CreateText
 	return ptr;
 }
 
-void OpenGLRenderResourceManager::UploadDataToTexture2D(RenderCommandList* list, std::shared_ptr<RenderTexture2DResource> resource, void* data, size_t width, size_t height, size_t offset_x, size_t offset_y)
+void OpenGLRenderResourceManager::UploadDataToTexture2D(RenderCommandList* list, std::shared_ptr<RenderTexture2DResource> resource, void* data, size_t width, size_t height,
+	size_t offset_x, size_t offset_y, int level)
 {
 	size_t size = OpenGLUnitConverter::TextureFormatToTexelSize(resource->GetBufferDescriptor().format) * width * height;
 	void* allocated = new char[size];
 	memcpy(allocated, data, size);
-	static_cast<OpenGLRenderCommandList*>(list)->UpdateTexture2DResource(resource,allocated,width,height,offset_x,offset_y);
+	static_cast<OpenGLRenderCommandList*>(list)->UpdateTexture2DResource(resource, level, allocated,width,height,offset_x,offset_y);
+}
+
+void OpenGLRenderResourceManager::GenerateMIPs(RenderCommandList* list, std::shared_ptr<RenderTexture2DResource> resource)
+{
+	list->GenerateMIPs(resource);
+}
+
+void OpenGLRenderResourceManager::UploadToTexture2DFromFile(RenderCommandList* list, std::shared_ptr<RenderTexture2DResource> resource, const std::string& filepath, int level)
+{
+	int x, y, channel;
+	unsigned char* data = stbi_load(FileManager::Get()->GetAssetFilePath(filepath).c_str(), &x, &y, &channel, 4);
+	if (data) {
+		static_cast<OpenGLRenderCommandList*>(list)->UpdateTexture2DResource(resource, level, data, x, y, 0, 0);
+	}
+	else {
+		throw std::runtime_error("Image could not be loaded");
+	}
+}
+
+std::shared_ptr<RenderTexture2DResource> OpenGLRenderResourceManager::CreateTextureFromFile(RenderCommandList* list, const std::string& filepath, TextureSampler* sampler)
+{
+	int x, y, channel;
+	unsigned char* data = stbi_load(FileManager::Get()->GetAssetFilePath(filepath).c_str(), &x, &y, &channel, 4);
+	if(data) {
+		RenderTexture2DDescriptor desc;
+		desc.format = TextureFormat::RGBA_UNSIGNED_CHAR;
+		desc.height = y;
+		desc.width = x;
+		desc.sampler = sampler;
+
+		std::shared_ptr<RenderTexture2DResource> texture = CreateTexture(desc);
+
+		UploadDataToTexture2D(list, texture, data, x, y, 0, 0);
+
+		stbi_image_free(data);
+
+		return texture;
+
+	}
+	else {
+		throw std::runtime_error("Image could not be loaded");
+	}
 }
 
 OpenGLRenderResourceManager::OpenGLRenderResourceManager() : ResourcePool(std::allocator<void>(),1024), ResourceMutex()

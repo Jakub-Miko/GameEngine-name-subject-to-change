@@ -13,3 +13,11 @@ private:
 	Pipeline* pipeline;
 	std::string name;
 };
+
+class OpenGLGenerateMIPsCommand : public OpenGLRenderCommand {
+public:
+	OpenGLGenerateMIPsCommand(std::shared_ptr<RenderTexture2DResource> texture) :texture(texture){}
+	virtual void Execute() override;
+private:
+	std::shared_ptr<RenderTexture2DResource> texture;
+};

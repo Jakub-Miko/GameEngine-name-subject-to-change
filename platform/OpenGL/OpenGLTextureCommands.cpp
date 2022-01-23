@@ -7,3 +7,10 @@ void OpenGLSetTexture2DCommand::Execute()
 {
 	static_cast<OpenGLPipeline*>(pipeline)->SetTexture2D(name, texture);
 }
+
+void OpenGLGenerateMIPsCommand::Execute()
+{
+	glBindTexture(GL_TEXTURE_2D, static_cast<OpenGLRenderTexture2DResource*>(texture.get())->GetRenderId());
+	glGenerateMipmap(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, 0);
+}

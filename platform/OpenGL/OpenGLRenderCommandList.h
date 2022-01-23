@@ -20,6 +20,7 @@ public:
     virtual void SetTexture2D(const std::string& semantic_name, std::shared_ptr<RenderTexture2DResource> buffer) override;
     virtual void SetIndexBuffer(std::shared_ptr<RenderBufferResource> buffer) override;
     virtual void SetVertexBuffer(std::shared_ptr<RenderBufferResource> vertex_buffer) override;
+    virtual void GenerateMIPs(std::shared_ptr<RenderTexture2DResource> texture) override;
     virtual void SetPipeline(Pipeline* pipeline) override;
     virtual void DrawSquare(glm::vec2 pos, glm::vec2 size, glm::vec4 color = { 1.f,1.f,1.f,1.f }) override;
     virtual void DrawSquare(const glm::mat4& transform, glm::vec4 color = { 1.f,1.f,1.f,1.f }) override;
@@ -35,7 +36,7 @@ private:
     void PushCommand(Args&& ... args);
 
     void UpdateBufferResource(std::shared_ptr<RenderBufferResource> resource, void* data, size_t size, size_t offset);
-    void UpdateTexture2DResource(std::shared_ptr<RenderTexture2DResource> resource, void* data, size_t width, size_t height, size_t offset_x, size_t offset_y);
+    void UpdateTexture2DResource(std::shared_ptr<RenderTexture2DResource> resource, int level, void* data, size_t width, size_t height, size_t offset_x, size_t offset_y);
     
     virtual void Execute() override;
 

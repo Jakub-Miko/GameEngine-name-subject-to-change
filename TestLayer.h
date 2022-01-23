@@ -14,6 +14,7 @@
 #include <Events/MouseMoveEvent.h>
 #include <glm/glm.hpp>
 #include <Renderer/RenderResourceManager.h>
+#include <stb_image.h>
 #include <Renderer/ShaderManager.h>
 #include <Core/FrameMultiBufferResource.h>
 #include <Renderer/RootSignature.h>
@@ -79,25 +80,31 @@ public:
 
         if (stop) {
             PROFILE("RendererInit");
-            struct data {
+            struct data_type {
                 glm::vec4 color;
-                glm::vec2 pos;
+                glm::vec2 scale;
             };
             
-            data d;
-            d.color = glm::vec4(1.0f, 0.0f, 1.0f, 1.0f);
-            d.pos = glm::vec2(0.0f, 0.0f);
             
             struct Vertex {
                 glm::vec2 pos;
                 glm::vec2 uv;
             };
 
+            int x_size, y_size, channel;
+            unsigned char* data = stbi_load("C:/Users/mainm/Desktop/Heaven.jpg", &x_size, &y_size, &channel, 4);
+
+
+            data_type d;
+            d.color = glm::vec4(1.0f, 0.0f, 1.0f, 1.0f);
+            d.scale = glm::vec2((float)x_size/(float)y_size, 1.0f);
+
+
             Vertex pos[4] = {
-                {{-0.5f,-0.5f}, {0.0f,0.0f}},
-                {{0.5f,-0.5f}, {1.0f,0.0f}},
-                {{0.5f,0.5f}, {1.0f,1.0f}},
-                {{-0.5f,0.5f}, {0.0f,1.0f}},
+                {{-0.5f,-0.5f}, {0.0f,1.0f}},
+                {{0.5f,-0.5f}, {1.0f,1.0f}},
+                {{0.5f,0.5f}, {1.0f,0.0f}},
+                {{-0.5f,0.5f}, {0.0f,0.0f}},
             };
 
             unsigned int ind[6] = {
@@ -127,15 +134,12 @@ public:
 
 
             struct Pixel {
-                Pixel(unsigned char r, unsigned char b, unsigned char g, unsigned char a) : r(r), g(g), b(b), a(a) {}
-                unsigned char r, g, b, a;
-            };
-
-            Pixel pixels[9] = {
-                {255,255,255,255},{255,255,255,255},{255,255,255,255},
-                {255,255,255,255},{0,0,0,255},{255,255,255,255},
-                {255,255,255,255},{255,255,255,255},{255,255,255,255}
-            };
+                Pixel(unsigned char r, unsigned char g, unsigned char b, unsigned char a) : r(r), g(g), b(b), a(a) {}
+                unsigned char r;
+                unsigned char g;
+                unsigned char b;
+                unsigned char a;
+            };  
 
             TextureSamplerDescritor desc_sample;
             desc_sample.AddressMode_U = TextureAddressMode::BORDER;
@@ -150,14 +154,10 @@ public:
             sampler.reset(TextureSampler::CreateSampler(desc_sample));
 
 
-            RenderTexture2DDescriptor desc2;
-            desc2.format = TextureFormat::RGBA_UNSIGNED_CHAR;
-            desc2.height = 3;
-            desc2.width = 3;
-            desc2.sampler = sampler.get();
-            texture = RenderResourceManager::Get()->CreateTexture(desc2);
+            texture = RenderResourceManager::Get()->CreateTextureFromFile(list, "test_image.jpg", sampler.get());
+            RenderResourceManager::Get()->GenerateMIPs(list, texture);
 
-            RenderResourceManager::Get()->UploadDataToTexture2D(list, texture, &pixels, 3, 3, 0, 0);
+            stbi_image_free(data);
 
             Renderer::Get()->GetCommandQueue()->ExecuteRenderCommandList(list);
             stop = false;

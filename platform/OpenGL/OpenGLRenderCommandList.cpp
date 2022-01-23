@@ -94,6 +94,11 @@ void OpenGLRenderCommandList::SetVertexBuffer(std::shared_ptr<RenderBufferResour
     PushCommand<OpenGLSetVertexBufferCommand>(vertex_buffer, current_pipeline);
 }
 
+void OpenGLRenderCommandList::GenerateMIPs(std::shared_ptr<RenderTexture2DResource> texture)
+{
+    PushCommand<OpenGLGenerateMIPsCommand>(texture);
+}
+
 void OpenGLRenderCommandList::DrawSquare(glm::vec2 pos, glm::vec2 size, glm::vec4 color) {
     PushCommand<OpenGLDrawCommand>(pos, size, color);
 }
@@ -136,9 +141,9 @@ void OpenGLRenderCommandList::UpdateBufferResource(std::shared_ptr<RenderBufferR
     PushCommand<decltype(command)>(command);
 }
 
-void OpenGLRenderCommandList::UpdateTexture2DResource(std::shared_ptr<RenderTexture2DResource> resource, void* data, size_t width, size_t height, size_t offset_x, size_t offset_y)
+void OpenGLRenderCommandList::UpdateTexture2DResource(std::shared_ptr<RenderTexture2DResource> resource,int level, void* data, size_t width, size_t height, size_t offset_x, size_t offset_y)
 {
-    auto command = OpenGLRenderCommandAdapter([resource, data, width, height, offset_x, offset_y]() {
+    auto command = OpenGLRenderCommandAdapter([resource, data, width, height, offset_x, offset_y, level]() {
         RenderState state = RenderState::COMMON;
         resource->GetRenderStateAtomic().compare_exchange_strong(state, RenderState::WRITE);
         if (state == RenderState::COMMON) {
@@ -146,7 +151,7 @@ void OpenGLRenderCommandList::UpdateTexture2DResource(std::shared_ptr<RenderText
                 throw std::runtime_error("Buffer out of range.");
             }
             glBindTexture(GL_TEXTURE_2D, static_cast<OpenGLRenderTexture2DResource*>(resource.get())->GetRenderId());
-            glTexSubImage2D(GL_TEXTURE_2D, 0, offset_x, offset_y, width, height, OpenGLUnitConverter::TextureFormatToGLInternalformat(resource->GetBufferDescriptor().format),
+            glTexSubImage2D(GL_TEXTURE_2D, level, offset_x, offset_y, width, height, OpenGLUnitConverter::TextureFormatToGLInternalformat(resource->GetBufferDescriptor().format),
                 OpenGLUnitConverter::TextureFormatToGLDataType(resource->GetBufferDescriptor().format),data);
             glBindTexture(GL_TEXTURE_2D, 0);
             resource->SetRenderState(RenderState::COMMON);

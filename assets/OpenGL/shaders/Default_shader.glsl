@@ -9,11 +9,11 @@ out vec2 vertex_uv;
 uniform Testblock
 {
 	vec4 in_color;
-	vec2 test;
+	vec2 scale;
 };
 
 void main() {
-	gl_Position = vec4(pos*0.5 + test, 1.0, 1.0);
+	gl_Position = vec4(pos * scale, 1.0, 1.0);
 	vertex_uv = uv;
 }
 
@@ -30,7 +30,7 @@ uniform sampler2D TestTexture;
 
 uniform Testblock{
 	vec4 in_color;
-	vec2 test;	
+	vec2 scale;	
 };
 
 void main() {
