@@ -16,6 +16,7 @@
 #include "OpenGLUnitConverter.h"
 #include "OpenGLPipelineCommands.h"
 #include "OpenGLTextureCommands.h"
+#include "OpenGLFrameBufferCommands.h"
 #include "OpenGLDrawCommands.h"
 #include "OpenGLVertexIndexBufferCommands.h"
 
@@ -92,6 +93,11 @@ void OpenGLRenderCommandList::SetIndexBuffer(std::shared_ptr<RenderBufferResourc
 void OpenGLRenderCommandList::SetVertexBuffer(std::shared_ptr<RenderBufferResource> vertex_buffer)
 {
     PushCommand<OpenGLSetVertexBufferCommand>(vertex_buffer, current_pipeline);
+}
+
+void OpenGLRenderCommandList::SetRenderTarget(std::shared_ptr<RenderFrameBufferResource> framebuffer)
+{
+    PushCommand<OpenGLSetRenderTargetCommand>(framebuffer);
 }
 
 void OpenGLRenderCommandList::GenerateMIPs(std::shared_ptr<RenderTexture2DResource> texture)

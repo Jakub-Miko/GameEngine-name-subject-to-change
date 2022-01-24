@@ -33,6 +33,11 @@ public:
     std::shared_ptr<RenderBufferResource> resource_vertex;
     std::shared_ptr<RenderBufferResource> resource_index;
     std::shared_ptr<RenderTexture2DResource> texture;
+
+    std::shared_ptr<RenderTexture2DResource> color_texture;
+    std::shared_ptr<RenderTexture2DResource> depth_texture;
+    std::shared_ptr<RenderFrameBufferResource> frame_buffer;
+
     std::unique_ptr<TextureSampler> sampler;
     Pipeline* pipeline;
     FrameMultiBufferResource<std::shared_ptr<RenderBufferResource>> resource2;
@@ -140,10 +145,33 @@ public:
             RenderResourceManager::Get()->UploadDataToBuffer(list, resource_index, &ind, sizeof(ind), 0);
 
             PipelineDescriptor descr;
-            descr.shader = ShaderManager::Get()->GetShader("Default_shader.glsl");;
+            descr.shader = ShaderManager::Get()->GetShader("Default_shader.glsl");
             descr.signature = RootSignatureFactory<TestPreset>::GetRootSignature();
             descr.layout = VertexLayoutFactory<TestPreset>::GetLayout();
             pipeline = PipelineManager::Get()->CreatePipeline(descr);
+
+
+            RenderTexture2DDescriptor color_desc;
+            color_desc.format = TextureFormat::RGBA_UNSIGNED_CHAR;
+            color_desc.height = 600;
+            color_desc.width = 800;
+            color_desc.sampler = sampler.get();
+
+            RenderTexture2DDescriptor depth_desc;
+            depth_desc.format = TextureFormat::DEPTH24_STENCIL8_UNSIGNED_CHAR;
+            depth_desc.height = 600;
+            depth_desc.width = 800;
+            depth_desc.sampler = sampler.get();
+
+            color_texture = RenderResourceManager::Get()->CreateTexture(color_desc);
+            depth_texture = RenderResourceManager::Get()->CreateTexture(depth_desc);
+
+            RenderFrameBufferDescriptor framebuffer_desc;
+            framebuffer_desc.color_attachments = { color_texture };
+            framebuffer_desc.depth_stencil_attachment = depth_texture;
+
+            frame_buffer = RenderResourceManager::Get()->CreateFrameBuffer(framebuffer_desc);
+
 
 
             Renderer::Get()->GetCommandQueue()->ExecuteRenderCommandList(list);
@@ -154,6 +182,7 @@ public:
 
         auto list = Renderer::Get()->GetRenderCommandList();
 
+        list->SetRenderTarget(frame_buffer);
         list->SetPipeline(pipeline);
         list->SetConstantBuffer("Testblock", resource);
         list->SetTexture2D("TestTexture", texture);

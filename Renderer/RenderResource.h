@@ -119,26 +119,27 @@ protected:
 };
 
 
-
-class RenderIndexBufferView {
-public:
-	RenderIndexBufferView(std::shared_ptr<RenderBufferResource> resource, RenderPrimitiveType type, size_t size) : Resource(resource), type(type), vertex_count(size) {}
-
-	std::shared_ptr<RenderBufferResource> GetResource() const {
-		return Resource;
-	}
-
-	RenderPrimitiveType GetIndexBufferType() const {
-		return type;
-	}
-
-	size_t GetVertexCount() const {
-		return vertex_count;
-	}
-
-private:
-	std::shared_ptr<RenderBufferResource> Resource;
-	size_t vertex_count;
-	RenderPrimitiveType type;
+struct RenderFrameBufferDescriptor {
+	std::vector<std::shared_ptr<RenderTexture2DResource>> color_attachments;
+	std::shared_ptr<RenderTexture2DResource> depth_stencil_attachment;
 };
+
+
+class RenderFrameBufferResource : public RenderResource {
+public:
+
+	RenderFrameBufferResource(const RenderFrameBufferDescriptor& desc, RenderState state) : descriptor(desc), RenderResource(state) {}
+
+	RenderFrameBufferDescriptor GetBufferDescriptor() const {
+		return descriptor;
+	}
+
+	virtual ~RenderFrameBufferResource() {};
+
+protected:
+	RenderFrameBufferDescriptor descriptor;
+};
+
+
+
 

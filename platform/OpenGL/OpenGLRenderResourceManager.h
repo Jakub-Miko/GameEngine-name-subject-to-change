@@ -18,12 +18,15 @@ public:
 	virtual void UploadToTexture2DFromFile(RenderCommandList* list, std::shared_ptr<RenderTexture2DResource> resource, const std::string& filepath, int level = 0) override;
 	virtual std::shared_ptr<RenderTexture2DResource> CreateTextureFromFile(RenderCommandList* list, const std::string& filepath, TextureSampler* sampler) override;
 
+	virtual std::shared_ptr<RenderFrameBufferResource> CreateFrameBuffer(const RenderFrameBufferDescriptor& buffer_desc) override;
+
 private:
 	OpenGLRenderResourceManager();
 	~OpenGLRenderResourceManager();
 
 	void ReturnBufferResource(RenderBufferResource* resource);
 	void ReturnTexture2DResource(RenderTexture2DResource* resource);
+	void ReturnFrameBufferResource(RenderFrameBufferResource* resource);
 
 private:
 	MultiPool<std::allocator<void>, true, false> ResourcePool;

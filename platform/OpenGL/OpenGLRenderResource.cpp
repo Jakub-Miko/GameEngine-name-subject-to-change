@@ -55,3 +55,23 @@ OpenGLTextureSampler::OpenGLTextureSampler(const TextureSamplerDescritor& desc) 
 {
 
 }
+
+void* OpenGLRenderFrameBufferResource::Map()
+{
+	throw std::runtime_error("Not Implemented");
+}
+
+void OpenGLRenderFrameBufferResource::UnMap()
+{
+	throw std::runtime_error("Not Implemented");
+}
+
+void OpenGLRenderFrameBufferResource::SetRenderId(unsigned int id)
+{
+	if (render_state == RenderState::UNINITIALIZED) {
+		render_id = id;
+	}
+	else {
+		throw std::runtime_error("Trying to Initialized resource that has already been initialized");
+	}
+}

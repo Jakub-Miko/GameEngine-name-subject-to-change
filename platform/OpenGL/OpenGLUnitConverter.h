@@ -34,6 +34,7 @@ public:
 		switch (type) {
 		case TextureFormat::RGBA_UNSIGNED_CHAR:				return GL_RGBA;
 		case TextureFormat::RGB_UNSIGNED_CHAR:				return GL_RGB;
+		case TextureFormat::DEPTH24_STENCIL8_UNSIGNED_CHAR:	return GL_DEPTH_STENCIL;
 		default:
 			throw std::runtime_error("Conversion failed");
 		}
@@ -43,6 +44,7 @@ public:
 		switch (type) {
 		case TextureFormat::RGBA_UNSIGNED_CHAR:				return GL_UNSIGNED_BYTE;
 		case TextureFormat::RGB_UNSIGNED_CHAR:				return GL_UNSIGNED_BYTE;
+		case TextureFormat::DEPTH24_STENCIL8_UNSIGNED_CHAR:	return GL_UNSIGNED_INT_24_8;
 		default:
 			throw std::runtime_error("Conversion failed");
 		}
@@ -52,6 +54,7 @@ public:
 		switch (type) {
 		case TextureFormat::RGBA_UNSIGNED_CHAR:				return 4*sizeof(unsigned char);
 		case TextureFormat::RGB_UNSIGNED_CHAR:				return 3*sizeof(unsigned char);
+		case TextureFormat::DEPTH24_STENCIL8_UNSIGNED_CHAR:	return 4*sizeof(unsigned char);
 		default:
 			throw std::runtime_error("Conversion failed");
 		}

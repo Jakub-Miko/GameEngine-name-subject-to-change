@@ -150,6 +150,53 @@ std::shared_ptr<RenderTexture2DResource> OpenGLRenderResourceManager::CreateText
 	}
 }
 
+std::shared_ptr<RenderFrameBufferResource> OpenGLRenderResourceManager::CreateFrameBuffer(const RenderFrameBufferDescriptor& buffer_desc)
+{
+	auto allocator = std::pmr::polymorphic_allocator<OpenGLRenderFrameBufferResource>(&ResourcePool);
+	std::unique_lock<std::mutex> lock(ResourceMutex);
+	OpenGLRenderFrameBufferResource* resource = std::allocator_traits<decltype(allocator)>::allocate(allocator, 1);
+	lock.unlock();
+	std::allocator_traits<decltype(allocator)>::construct(allocator, resource, buffer_desc, RenderState::UNINITIALIZED);
+	auto ptr = std::shared_ptr<RenderFrameBufferResource>(static_cast<RenderFrameBufferResource*>(resource), [this](RenderFrameBufferResource* ptr) {
+		ReturnFrameBufferResource(ptr);
+		});
+
+	OpenGLRenderCommandQueue* queue = static_cast<OpenGLRenderCommandQueue*>(Renderer::Get()->GetCommandQueue());
+	queue->ExecuteCustomCommand(new ExecutableCommandAdapter([ptr] {
+		if (ptr->GetRenderState() == RenderState::UNINITIALIZED) {
+			unsigned int buffer;
+			glGenFramebuffers(1, &buffer);
+			glBindFramebuffer(GL_FRAMEBUFFER, buffer);
+			std::vector<GLenum> attachments;
+			for (int i = 0; i < ptr->GetBufferDescriptor().color_attachments.size();i++) {
+				glBindTexture(GL_TEXTURE_2D, static_cast<OpenGLRenderTexture2DResource*>(ptr->GetBufferDescriptor().color_attachments[i].get())->GetRenderId());
+				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D,
+					static_cast<OpenGLRenderTexture2DResource*>(ptr->GetBufferDescriptor().color_attachments[i].get())->GetRenderId(),0);
+				attachments.push_back(GL_COLOR_ATTACHMENT0 + i);
+			}
+
+			glDrawBuffers(attachments.size(), attachments.data());
+
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D,
+				static_cast<OpenGLRenderTexture2DResource*>(ptr->GetBufferDescriptor().depth_stencil_attachment.get())->GetRenderId(),0);
+
+			if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+				throw std::runtime_error("FrameBuffer Initialization failed");
+			}
+
+			glBindTexture(GL_TEXTURE_2D, 0);
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+			static_cast<OpenGLRenderFrameBufferResource*>(ptr.get())->SetRenderId(buffer);
+			ptr->SetRenderState(RenderState::COMMON);
+		}
+		else {
+			throw std::runtime_error("Resource has already been Initialied");
+		}
+		}));
+	return ptr;
+}
+
 OpenGLRenderResourceManager::OpenGLRenderResourceManager() : ResourcePool(std::allocator<void>(),1024), ResourceMutex()
 {
 
@@ -187,6 +234,20 @@ void OpenGLRenderResourceManager::ReturnTexture2DResource(RenderTexture2DResourc
 		glDeleteTextures(1, &texture);
 		}));
 	auto allocator = std::pmr::polymorphic_allocator<OpenGLRenderTexture2DResource>(&ResourcePool);
+	std::allocator_traits<decltype(allocator)>::destroy(allocator, ptr);
+	std::lock_guard<std::mutex> lock(ResourceMutex);
+	std::allocator_traits<decltype(allocator)>::deallocate(allocator, ptr, 1);
+}
+
+void OpenGLRenderResourceManager::ReturnFrameBufferResource(RenderFrameBufferResource* resource)
+{
+	OpenGLRenderFrameBufferResource* ptr = static_cast<OpenGLRenderFrameBufferResource*>(resource);
+	unsigned int frame_buffer = ptr->render_id;
+	OpenGLRenderCommandQueue* queue = static_cast<OpenGLRenderCommandQueue*>(Renderer::Get()->GetCommandQueue());
+	queue->ExecuteCustomCommand(new ExecutableCommandAdapter([frame_buffer] {
+		glDeleteFramebuffers(1, &frame_buffer);
+		}));
+	auto allocator = std::pmr::polymorphic_allocator<OpenGLRenderFrameBufferResource>(&ResourcePool);
 	std::allocator_traits<decltype(allocator)>::destroy(allocator, ptr);
 	std::lock_guard<std::mutex> lock(ResourceMutex);
 	std::allocator_traits<decltype(allocator)>::deallocate(allocator, ptr, 1);

@@ -75,3 +75,31 @@ private:
 	unsigned int render_id = 0;
 
 };
+
+
+class OpenGLRenderFrameBufferResource : public RenderFrameBufferResource {
+public:
+	friend OpenGLRenderResourceManager;
+
+	virtual void* Map() override;
+
+	virtual void UnMap() override;
+
+	void SetRenderId(unsigned int id);
+
+	unsigned int GetRenderId() const {
+		return render_id;
+	}
+
+	OpenGLRenderFrameBufferResource(const RenderFrameBufferDescriptor& desc, RenderState initial_state = RenderState::UNINITIALIZED, unsigned int render_id = 0)
+		: RenderFrameBufferResource(desc, initial_state), render_id(render_id) {
+
+	}
+
+	~OpenGLRenderFrameBufferResource() {}
+
+private:
+
+	unsigned int render_id = 0;
+
+};
