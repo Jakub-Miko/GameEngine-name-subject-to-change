@@ -92,13 +92,26 @@ public:
                 glm::vec2 uv;
             };
 
-            int x_size, y_size, channel;
-            unsigned char* data = stbi_load(FileManager::Get()->GetAssetFilePath("test_image.jpg").c_str(), &x_size, &y_size, &channel, 4);
+            auto list = Renderer::Get()->GetRenderCommandList();
 
+            TextureSamplerDescritor desc_sample;
+            desc_sample.AddressMode_U = TextureAddressMode::BORDER;
+            desc_sample.AddressMode_V = TextureAddressMode::BORDER;
+            desc_sample.AddressMode_W = TextureAddressMode::BORDER;
+            desc_sample.border_color = glm::vec4(1.0f,0.0f,1.0f,1.0f);
+            desc_sample.filter = TextureFilter::POINT_MIN_MAG_MIP;
+            desc_sample.LOD_bias = 0.0f;
+            desc_sample.max_LOD = 10;
+            desc_sample.min_LOD = 0;
 
+            sampler.reset(TextureSampler::CreateSampler(desc_sample));
+
+            texture = RenderResourceManager::Get()->CreateTextureFromFile(list, "test_image.jpg", sampler.get());
+
+            RenderResourceManager::Get()->GenerateMIPs(list, texture);
             data_type d;
             d.color = glm::vec4(1.0f, 0.0f, 1.0f, 1.0f);
-            d.scale = glm::vec2((float)x_size/(float)y_size, 1.0f);
+            d.scale = glm::vec2((float)(texture->GetBufferDescriptor().width)/(float)(texture->GetBufferDescriptor().height), 1.0f);
 
 
             Vertex pos[4] = {
@@ -122,7 +135,6 @@ public:
             RenderBufferDescriptor desc(sizeof(d), RenderBufferType::DEFAULT, RenderBufferUsage::CONSTANT_BUFFER);
             resource = RenderResourceManager::Get()->CreateBuffer(desc);
 
-            auto list = Renderer::Get()->GetRenderCommandList();
             RenderResourceManager::Get()->UploadDataToBuffer(list, resource, &d, sizeof(d), 0);
             RenderResourceManager::Get()->UploadDataToBuffer(list, resource_vertex, &pos, sizeof(pos), 0);
             RenderResourceManager::Get()->UploadDataToBuffer(list, resource_index, &ind, sizeof(ind), 0);
@@ -133,32 +145,6 @@ public:
             descr.layout = VertexLayoutFactory<TestPreset>::GetLayout();
             pipeline = PipelineManager::Get()->CreatePipeline(descr);
 
-
-            struct Pixel {
-                Pixel(unsigned char r, unsigned char g, unsigned char b, unsigned char a) : r(r), g(g), b(b), a(a) {}
-                unsigned char r;
-                unsigned char g;
-                unsigned char b;
-                unsigned char a;
-            };  
-
-            TextureSamplerDescritor desc_sample;
-            desc_sample.AddressMode_U = TextureAddressMode::BORDER;
-            desc_sample.AddressMode_V = TextureAddressMode::BORDER;
-            desc_sample.AddressMode_W = TextureAddressMode::BORDER;
-            desc_sample.border_color = glm::vec4(1.0f,0.0f,1.0f,1.0f);
-            desc_sample.filter = TextureFilter::POINT_MIN_MAG_MIP;
-            desc_sample.LOD_bias = 0.0f;
-            desc_sample.max_LOD = 10;
-            desc_sample.min_LOD = 0;
-
-            sampler.reset(TextureSampler::CreateSampler(desc_sample));
-
-
-            texture = RenderResourceManager::Get()->CreateTextureFromFile(list, "test_image.jpg", sampler.get());
-            RenderResourceManager::Get()->GenerateMIPs(list, texture);
-
-            stbi_image_free(data);
 
             Renderer::Get()->GetCommandQueue()->ExecuteRenderCommandList(list);
             stop = false;
