@@ -24,3 +24,8 @@ void OpenGLRenderContext::Destroy()
     SetRenderQueue(nullptr, RenderQueueTypes::CopyQueue);
 }
 
+void OpenGLRenderContext::StartShutdown()
+{
+    static_cast<OpenGLRenderCommandQueue*>(Renderer::Get()->GetCommandQueue())->StartShutdownPhase();
+}
+

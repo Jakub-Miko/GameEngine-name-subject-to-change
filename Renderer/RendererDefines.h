@@ -3,6 +3,39 @@
 #include <vector>
 #include <glm/glm.hpp>
 
+enum class PipelineFlags : uint32_t {
+	ENABLE_DEPTH_TEST = (1 << 0),
+	ENABLE_STENCIL_TEST = (1 << 1),
+	ENABLE_SCISSOR_TEST = (1 << 2),
+	DEFAULT = 0
+};
+
+inline PipelineFlags operator|(const PipelineFlags& flags_1, const PipelineFlags& flags_2) {
+	return (PipelineFlags)((uint32_t)flags_1 | (uint32_t)flags_2);
+}
+
+inline PipelineFlags operator&(const PipelineFlags& flags_1, const PipelineFlags& flags_2) {
+	return (PipelineFlags)((uint32_t)flags_1 & (uint32_t)flags_2);
+}
+
+
+
+struct RenderViewport {
+	RenderViewport(glm::vec2 offset = {0,0}, glm::vec2 size = { -1,-1 }, float min_depth = 0, float max_depth = 1) 
+		: offset(offset), size(size), min_depth(min_depth), max_depth(max_depth) {}
+	glm::vec2 offset;
+	glm::vec2 size;
+	float min_depth;
+	float max_depth;
+};
+
+struct RenderScissorRect {
+	RenderScissorRect(glm::vec2 offset = { 0,0 }, glm::vec2 size = {-1,-1}) : offset(offset), size(size) {}
+	glm::vec2 offset;
+	glm::vec2 size;
+};
+
+
 enum class RenderPrimitiveType : unsigned char
 {
     FLOAT = 0, INT = 1, UNSIGNED_INT = 2, CHAR = 3, UNSIGNED_CHAR = 4, UNKNOWN = 5

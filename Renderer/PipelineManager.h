@@ -9,19 +9,14 @@
 struct VertexLayout;
 class RootSignature;
 
-struct RenderViewport {
-	RenderViewport(glm::vec2 position, glm::vec2 size,float min_depth, float max_depth) : position(position), size(size), min_depth(min_depth), max_depth(max_depth) {}
-	glm::vec2 position;
-	glm::vec2 size;
-	float min_depth;
-	float max_depth;
-};
-
 
 struct PipelineDescriptor {
 	VertexLayout* layout;
 	RootSignature* signature;
 	Shader* shader;
+	RenderViewport viewport;
+	RenderScissorRect scissor_rect;
+	PipelineFlags flags = PipelineFlags::DEFAULT;
 };
 
 class Pipeline {
@@ -37,16 +32,39 @@ public:
 		return signature;
 	}
 
+	const RenderViewport& GetViewport() const {
+		return viewport;
+	}
+
+	const RenderScissorRect& GetScissorRect() const {
+		return scissor_rect;
+	}
+
 	const Shader* GetShader() const {
 		return shader;
 	}
+	
+	const PipelineFlags& GetPipelineFlags() const {
+		return flags;
+	}
 
 protected:
-	Pipeline(const PipelineDescriptor& desc) : layout(desc.layout), signature(desc.signature), shader(desc.shader) {}
-	Pipeline(PipelineDescriptor&& desc) : layout(desc.layout), signature(desc.signature), shader(desc.shader) {}
+	Pipeline(const PipelineDescriptor& desc) : layout(desc.layout), signature(desc.signature), shader(desc.shader), viewport(desc.viewport), scissor_rect(desc.scissor_rect),
+		flags(desc.flags)
+	{
+
+	}
+	Pipeline(PipelineDescriptor&& desc) : layout(desc.layout), signature(desc.signature), shader(desc.shader), viewport(desc.viewport), scissor_rect(desc.scissor_rect),
+		flags(desc.flags)
+	{
+
+	}
 	VertexLayout* layout;
 	RootSignature* signature;
 	Shader* shader;
+	RenderViewport viewport;
+	RenderScissorRect scissor_rect;
+	PipelineFlags flags = PipelineFlags::DEFAULT;
 };
 
 

@@ -16,6 +16,10 @@ public:
 
     virtual void PollEvents() = 0;
 
+    const WindowProperties& GetProperties() const {
+        return m_Properties;
+    }
+
     virtual void SwapBuffers() = 0;
 
     virtual ~Window() {};

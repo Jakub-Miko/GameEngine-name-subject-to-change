@@ -49,11 +49,8 @@ void OpenGLRenderCommandQueue::Present()
 //TODO: Use synchronization to make sure everythings finished
 OpenGLRenderCommandQueue::~OpenGLRenderCommandQueue()
 {
-	
-	running.store(false);
-	auto empty = Renderer::Get()->GetRenderCommandList();
-	ExecuteRenderCommandList(empty);
-	m_cond_var.notify_one();
+	shutdown_flag = 2;
+	shutdown_cond.notify_all();
 	Render_Thread->join();
 	delete Render_Thread;
 	Render_Thread_Object.reset();
@@ -72,11 +69,19 @@ void OpenGLRenderCommandQueue::RenderLoop()
 			delete list;
 		}
 	}
-	std::unique_lock<std::mutex> lock(m_queue_mutex);
+
 	while(!m_Lists.empty()) {
 		delete m_Lists.front();
+		std::unique_lock<std::mutex> lock(m_queue_mutex);
 		m_Lists.pop();
 	}
+
+
+	std::unique_lock<std::mutex> shutdown_lock(shutdown_mutex);
+	shutdown_flag = 1;
+	shutdown_cond.notify_all();
+	shutdown_cond.wait(shutdown_lock, [this]() {return shutdown_flag == 2; });
+
 }
 
 ExecutableCommand* OpenGLRenderCommandQueue::FetchList() {
@@ -88,6 +93,16 @@ ExecutableCommand* OpenGLRenderCommandQueue::FetchList() {
 	ExecutableCommand* list = m_Lists.front();
 	m_Lists.pop();
 	return list;
+}
+
+void OpenGLRenderCommandQueue::StartShutdownPhase()
+{
+	running.store(false);
+	auto empty = Renderer::Get()->GetRenderCommandList();
+	ExecuteRenderCommandList(empty);
+	m_cond_var.notify_one();
+	std::unique_lock<std::mutex> shutdown_lock(shutdown_mutex);
+	shutdown_cond.wait(shutdown_lock, [this]() {return shutdown_flag == 1; });
 }
 
 void OpenGLRenderCommandQueue::ExecuteCustomCommand(ExecutableCommand* command)

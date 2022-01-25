@@ -12,7 +12,7 @@ public:
 	RenderContext& operator=(const RenderContext& ref) = delete;
 	RenderContext& operator=(RenderContext&& ref) = delete;
 
-
+	virtual void StartShutdown() = 0;
 	virtual ~RenderContext() {};
 
 public:

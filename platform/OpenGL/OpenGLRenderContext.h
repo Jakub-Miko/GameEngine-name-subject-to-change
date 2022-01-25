@@ -7,6 +7,7 @@ public:
 	virtual void Init() override;
 	virtual void PreInit() override;
 	virtual void Destroy() override;
+	virtual void StartShutdown() override;
 private:
 	OpenGLRenderContext() { };
 };

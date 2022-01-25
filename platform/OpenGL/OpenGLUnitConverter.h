@@ -82,5 +82,16 @@ public:
 		}
 	}
 
+	static GLenum PipelineFlagsToGLenum(PipelineFlags flags) {
+		switch (flags) {
+			case PipelineFlags::DEFAULT:				return GL_NONE;
+			case PipelineFlags::ENABLE_DEPTH_TEST:		return GL_DEPTH_TEST;
+			case PipelineFlags::ENABLE_SCISSOR_TEST:	return GL_SCISSOR_TEST;
+			case PipelineFlags::ENABLE_STENCIL_TEST:	return GL_STENCIL_TEST;
+		default:
+			throw std::runtime_error("Conversion failed");
+		}
+	}
+
 };
 

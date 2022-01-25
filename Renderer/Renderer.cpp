@@ -72,6 +72,7 @@ RenderFence* Renderer::GetFence()
 
 void Renderer::Shutdown()
 {
+    RenderContext::Get()->StartShutdown();
     PipelineManager::Shutdown();
     ShaderManager::Shutdown();
     RenderResourceManager::Shutdown();

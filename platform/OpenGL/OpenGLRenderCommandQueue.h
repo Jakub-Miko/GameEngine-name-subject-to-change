@@ -17,6 +17,8 @@ public:
 	friend OpenGLRenderResourceManager;
 	friend class OpenGLShaderManager;
 	friend class OpenGLPipelineManager;
+	friend class Renderer;
+	friend class OpenGLRenderContext;
 	OpenGLRenderCommandQueue();
 
 	OpenGLRenderCommandQueue(const OpenGLRenderCommandQueue& ref) = delete;
@@ -35,6 +37,15 @@ public:
 private:
 	void RenderLoop();
 	ExecutableCommand* FetchList();
+
+	//When Shutdown starts, the queue stops executing commmands, calls destructors of the remaining ones, the waits and unblocks this function call
+	//After this function call the queue is guaranteed to be inactive and finished with its tasks, but destruction tasks which dont use other render systems can 
+	//still be submitted.
+	//Before the queue gets destroyed(after all other render systems do) it resumes and finishes the task submitted during the renderer destruction phase, then exits.
+	void StartShutdownPhase();
+	std::mutex shutdown_mutex;
+	std::condition_variable shutdown_cond;
+	int shutdown_flag = 0;
 
 	void ExecuteCustomCommand(ExecutableCommand* command);
 

@@ -105,7 +105,7 @@ public:
             desc_sample.AddressMode_U = TextureAddressMode::BORDER;
             desc_sample.AddressMode_V = TextureAddressMode::BORDER;
             desc_sample.AddressMode_W = TextureAddressMode::BORDER;
-            desc_sample.border_color = glm::vec4(1.0f,0.0f,1.0f,1.0f);
+            desc_sample.border_color = glm::vec4(0.2f,0.7f,1.0f,1.0f);
             desc_sample.filter = TextureFilter::POINT_MIN_MAG_MIP;
             desc_sample.LOD_bias = 0.0f;
             desc_sample.max_LOD = 10;
@@ -117,7 +117,7 @@ public:
 
             RenderResourceManager::Get()->GenerateMIPs(list, texture);
             data_type d;
-            d.color = glm::vec4(1.0f, 0.0f, 1.0f, 1.0f);
+            d.color = glm::vec4(0.2f, 0.7f, 1.0f, 1.0f);
             d.scale = glm::vec2((float)(texture->GetBufferDescriptor().width)/(float)(texture->GetBufferDescriptor().height), 1.0f);
 
 
@@ -158,7 +158,6 @@ public:
             descr_2.layout = VertexLayoutFactory<TestPreset>::GetLayout();
             pipeline_2 = PipelineManager::Get()->CreatePipeline(descr_2);
 
-
             RenderTexture2DDescriptor color_desc;
             color_desc.format = TextureFormat::RGBA_UNSIGNED_CHAR;
             color_desc.height = 600;
@@ -190,8 +189,6 @@ public:
 
         auto list = Renderer::Get()->GetRenderCommandList();
 
-
-        //Implement Default FrameBuffer
         //Implement Default RenderTarget attachments (renderbufferes in opengl case)
         list->SetRenderTarget(frame_buffer);
         list->SetPipeline(pipeline);
