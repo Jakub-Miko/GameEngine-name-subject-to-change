@@ -100,6 +100,11 @@ void OpenGLRenderCommandList::SetRenderTarget(std::shared_ptr<RenderFrameBufferR
     PushCommand<OpenGLSetRenderTargetCommand>(framebuffer);
 }
 
+void OpenGLRenderCommandList::SetDefaultRenderTarget()
+{
+    PushCommand<OpenGLSetDefaultRenderTargetCommand>();
+}
+
 void OpenGLRenderCommandList::GenerateMIPs(std::shared_ptr<RenderTexture2DResource> texture)
 {
     PushCommand<OpenGLGenerateMIPsCommand>(texture);

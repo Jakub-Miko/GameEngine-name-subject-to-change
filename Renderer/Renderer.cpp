@@ -4,6 +4,7 @@
 #include <Renderer/RenderResourceManager.h>
 #include <Renderer/ShaderManager.h>
 #include <Renderer/PipelineManager.h>
+#include <stb_image.h>
 
 Renderer* Renderer::instance = nullptr;
 
@@ -12,6 +13,7 @@ Renderer* Renderer::Get() {
 }
 
 void Renderer::PreInit() {
+    stbi_set_flip_vertically_on_load(true);
     RenderContext::Create();
     if(RenderContext::Get()) {
         RenderContext::Get()->PreInit();

@@ -10,3 +10,10 @@ public:
 private:
 	std::shared_ptr<RenderFrameBufferResource> framebuffer;
 };
+
+
+class OpenGLSetDefaultRenderTargetCommand : public OpenGLRenderCommand {
+public:
+	OpenGLSetDefaultRenderTargetCommand() {}
+	virtual void Execute() override;
+};

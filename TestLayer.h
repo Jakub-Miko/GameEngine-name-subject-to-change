@@ -40,12 +40,14 @@ public:
 
     std::unique_ptr<TextureSampler> sampler;
     Pipeline* pipeline;
+    Pipeline* pipeline_2;
     FrameMultiBufferResource<std::shared_ptr<RenderBufferResource>> resource2;
     glm::vec2 position = { 0,0 };
 public:
 
     ~TestLayer() {
         delete pipeline;
+        delete pipeline_2;
     }
 
     TestLayer() : Layer() {
@@ -120,10 +122,10 @@ public:
 
 
             Vertex pos[4] = {
-                {{-0.5f,-0.5f}, {0.0f,1.0f}},
-                {{0.5f,-0.5f}, {1.0f,1.0f}},
-                {{0.5f,0.5f}, {1.0f,0.0f}},
-                {{-0.5f,0.5f}, {0.0f,0.0f}},
+                {{-0.5f,-0.5f}, {0.0f,0.0f}},
+                {{0.5f,-0.5f}, {1.0f,0.0f}},
+                {{0.5f,0.5f}, {1.0f,1.0f}},
+                {{-0.5f,0.5f}, {0.0f,1.0f}},
             };
 
             unsigned int ind[6] = {
@@ -149,6 +151,12 @@ public:
             descr.signature = RootSignatureFactory<TestPreset>::GetRootSignature();
             descr.layout = VertexLayoutFactory<TestPreset>::GetLayout();
             pipeline = PipelineManager::Get()->CreatePipeline(descr);
+
+            PipelineDescriptor descr_2;
+            descr_2.shader = ShaderManager::Get()->GetShader("Default_shader_2.glsl");
+            descr_2.signature = RootSignatureFactory<TestPreset>::GetRootSignature();
+            descr_2.layout = VertexLayoutFactory<TestPreset>::GetLayout();
+            pipeline_2 = PipelineManager::Get()->CreatePipeline(descr_2);
 
 
             RenderTexture2DDescriptor color_desc;
@@ -182,10 +190,22 @@ public:
 
         auto list = Renderer::Get()->GetRenderCommandList();
 
+
+        //Implement Default FrameBuffer
+        //Implement Default RenderTarget attachments (renderbufferes in opengl case)
         list->SetRenderTarget(frame_buffer);
         list->SetPipeline(pipeline);
         list->SetConstantBuffer("Testblock", resource);
         list->SetTexture2D("TestTexture", texture);
+        list->SetIndexBuffer(resource_index);
+        list->SetVertexBuffer(resource_vertex);
+        list->Draw(6);
+
+
+        list->SetPipeline(pipeline_2);
+        list->SetDefaultRenderTarget();
+        list->SetConstantBuffer("Testblock", resource);
+        list->SetTexture2D("TestTexture", color_texture);
         list->SetIndexBuffer(resource_index);
         list->SetVertexBuffer(resource_vertex);
         list->Draw(6);
