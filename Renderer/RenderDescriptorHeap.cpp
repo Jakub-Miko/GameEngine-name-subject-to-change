@@ -10,6 +10,7 @@ RenderDescriptorHeap::RenderDescriptorHeap(size_t descriptor_heap_size) : descri
 RenderDescriptorHeap::~RenderDescriptorHeap()
 {
 	FlushDescriptorDeallocations(FrameManager::Get()->GetCurrentFrameNumber());
+	delete descriptor_block;
 }
 
 RenderDescriptorAllocationHandle RenderDescriptorHeap::Allocate(size_t num_of_descriptors)
