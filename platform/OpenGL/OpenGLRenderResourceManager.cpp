@@ -6,6 +6,7 @@
 #include <FileManager.h>
 #include <platform/OpenGL/OpenGLRenderCommandQueue.h>
 #include <GL/glew.h>
+#include <platform/OpenGL/OpenGLRenderDescriptorHeapBlock.h>
 #include <stb_image.h>
 #include <glm/gtc/type_ptr.hpp>
 #include <cstring>
@@ -195,6 +196,31 @@ std::shared_ptr<RenderFrameBufferResource> OpenGLRenderResourceManager::CreateFr
 		}
 		}));
 	return ptr;
+}
+
+//References to Resources never get destoryed !!!!!!!!!!!!!!!!!!!!!!!!!!!!! -> partially fixed (recommend revision)
+void OpenGLRenderResourceManager::CreateConstantBufferDescriptor(const RenderDescriptorTable& table, int index, std::shared_ptr<RenderBufferResource> resource)
+{
+	OpenGLRenderDescriptorAllocation* gl_table = static_cast<OpenGLRenderDescriptorAllocation*>(table.get());
+	if (index > gl_table->num_of_descriptors) {
+		throw std::runtime_error("Descriptor out of range");
+	}
+	OpenGLResourceDescriptor* desc = &gl_table->descriptor_pointer[index];
+	desc->m_resource = resource;
+	desc->type = RootParameterType::CONSTANT_BUFFER;
+
+}
+
+//References to Resources never get destoryed !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+void OpenGLRenderResourceManager::CreateTexture2DDescriptor(const RenderDescriptorTable& table, int index, std::shared_ptr<RenderTexture2DResource> resource)
+{
+	OpenGLRenderDescriptorAllocation* gl_table = static_cast<OpenGLRenderDescriptorAllocation*>(table.get());
+	if (index > gl_table->num_of_descriptors) {
+		throw std::runtime_error("Descriptor out of range");
+	}
+	OpenGLResourceDescriptor* desc = &gl_table->descriptor_pointer[index];
+	desc->m_resource = resource;
+	desc->type = RootParameterType::TEXTURE_2D;
 }
 
 OpenGLRenderResourceManager::OpenGLRenderResourceManager() : ResourcePool(std::allocator<void>(),1024), ResourceMutex()

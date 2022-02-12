@@ -5,6 +5,8 @@
 #include <platform/OpenGL/OpenGLShaderManager.h>
 #include <platform/OpenGL/OpenGLRenderResource.h>
 #include <platform/OpenGL/OpenGLRootSignature.h>
+#include <platform/OpenGL/OpenGLRenderDescriptorHeapBlock.h>
+#include <memory>
 #include <Renderer/Renderer.h>
 
 Pipeline* OpenGLPipelineManager::CreatePipeline(const PipelineDescriptor& desc)
@@ -33,26 +35,25 @@ void OpenGLPipeline::SetConstantBuffer(RootBinding binding_id, std::shared_ptr<R
 	if (buffer->GetBufferDescriptor().usage != RenderBufferUsage::CONSTANT_BUFFER) {
 		throw std::runtime_error("This buffer isn't a constant buffer");
 	}
-	glUniformBlockBinding(static_cast<OpenGLShader*>(shader)->GetShaderProgram(), binding_id, static_cast<OpenGLRenderBufferResource*>(buffer.get())->GetRenderId());
+
+	glBindBufferBase(GL_UNIFORM_BUFFER, binding_id, static_cast<OpenGLRenderBufferResource*>(buffer.get())->GetRenderId());
 }
 
 void OpenGLPipeline::SetConstantBuffer(const std::string& semantic_name, std::shared_ptr<RenderBufferResource> buffer)
 {
-	unsigned int id = glGetUniformBlockIndex(static_cast<OpenGLShader*>(shader)->GetShaderProgram(), semantic_name.c_str());
-
 	if (buffer->GetBufferDescriptor().usage != RenderBufferUsage::CONSTANT_BUFFER) {
 		throw std::runtime_error("This buffer isn't a constant buffer");
 	}
 	
-	if (id != -1) {
-		OpenGLRootSignature* sig = static_cast<OpenGLRootSignature*>(signature);
-		int index = sig->GetUniformBlockBindingId(semantic_name);
-		glUniformBlockBinding(static_cast<OpenGLShader*>(shader)->GetShaderProgram(), id, index);
-		glBindBufferBase(GL_UNIFORM_BUFFER, index, static_cast<OpenGLRenderBufferResource*>(buffer.get())->GetRenderId());
-	}
-	else {
-		throw std::runtime_error("Constant buffer with name " + semantic_name + " doesn't exist.");
-	}
+	OpenGLRootSignature* sig = static_cast<OpenGLRootSignature*>(signature);
+	int index = sig->GetUniformBlockBindingId(semantic_name);
+	glBindBufferBase(GL_UNIFORM_BUFFER, index, static_cast<OpenGLRenderBufferResource*>(buffer.get())->GetRenderId());
+}
+
+void OpenGLPipeline::SetTexture2D(RootBinding binding_id, std::shared_ptr<RenderTexture2DResource> texture)
+{
+	glActiveTexture(GL_TEXTURE0 + binding_id);
+	glBindTexture(GL_TEXTURE_2D, static_cast<OpenGLRenderTexture2DResource*>(texture.get())->GetRenderId());
 }
 
 void OpenGLPipeline::SetTexture2D(const std::string& semantic_name, std::shared_ptr<RenderTexture2DResource> texture)
@@ -61,6 +62,48 @@ void OpenGLPipeline::SetTexture2D(const std::string& semantic_name, std::shared_
 	int index = sig->GetTextureSlot(semantic_name);
 	glActiveTexture(GL_TEXTURE0 + index);
 	glBindTexture(GL_TEXTURE_2D, static_cast<OpenGLRenderTexture2DResource*>(texture.get())->GetRenderId());
+}
+
+//TODO: FIX THIS, IT MIGHT WORK, BUT I DONT LIKE IT !!!!!!!!!!!!!!!!!!!!!!
+void OpenGLPipeline::SetDescriptorTable(const std::string& semantic_name, RenderDescriptorTable table)
+{
+	OpenGLRootSignature* sig = static_cast<OpenGLRootSignature*>(signature);
+	int current = 0;
+	auto table_desc = sig->GetTableBinding(semantic_name);
+	int buf_start = table_desc.starting_binding_id;
+	int tex_start = table_desc.starting_binding_id;
+
+	for (auto entry : table_desc.table) {
+		switch (entry.type) {
+		case RootDescriptorType::CONSTANT_BUFFER:
+			for (int i = 0; i < entry.size; i++) {
+				if (static_cast<OpenGLRenderDescriptorAllocation*>(table.get())->descriptor_pointer[current].type == RootParameterType::CONSTANT_BUFFER) {
+					SetConstantBuffer(buf_start,
+						std::static_pointer_cast<RenderBufferResource>(static_cast<OpenGLRenderDescriptorAllocation*>(table.get())->descriptor_pointer[current].m_resource));
+					i++;
+					buf_start++;
+				}
+				else {
+					throw std::runtime_error("Descriptor is not of Constant Buffer type.");
+				}
+			}
+			break;
+		case RootDescriptorType::TEXTURE_2D:
+			for (int i = 0; i < entry.size; i++) {
+				if (static_cast<OpenGLRenderDescriptorAllocation*>(table.get())->descriptor_pointer[current].type == RootParameterType::TEXTURE_2D) {
+					SetTexture2D(tex_start,
+						std::static_pointer_cast<RenderTexture2DResource>(static_cast<OpenGLRenderDescriptorAllocation*>(table.get())->descriptor_pointer[current].m_resource));
+					i++;
+					tex_start++;
+				}
+				else {
+					throw std::runtime_error("Descriptor is not of Texture2D type.");
+				}
+			}
+			break;
+		}
+		current++;
+	}
 }
 
 

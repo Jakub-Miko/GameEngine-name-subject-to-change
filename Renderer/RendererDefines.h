@@ -3,6 +3,22 @@
 #include <vector>
 #include <glm/glm.hpp>
 
+
+enum class RenderState : unsigned char
+{
+	UNINITIALIZED = 0, READ = 1, WRITE = 2, COMMON = 3, EMPTY = 4, IN_USE_VERTEX_BUFFER = 5, IN_USE_INDEX_BUFFER = 6
+};
+
+enum class RenderBufferType : unsigned char
+{
+	DEFAULT = 0, UPLOAD = 1
+};
+
+enum class RenderBufferUsage : unsigned char
+{
+	VERTEX_BUFFER = 0, INDEX_BUFFER = 1, CONSTANT_BUFFER = 2
+};
+
 enum class PipelineFlags : uint32_t {
 	ENABLE_DEPTH_TEST = (1 << 0),
 	ENABLE_STENCIL_TEST = (1 << 1),

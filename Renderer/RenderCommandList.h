@@ -4,6 +4,7 @@
 #include <Renderer/RenderCommandAllocator.h>
 #include <Core/ExecutableCommand.h>
 #include <Renderer/RenderResource.h>
+#include <Renderer/RenderDescriptorHeap.h>
 #include <Renderer/RootSignature.h>
 #include <Renderer/PipelineManager.h>
 
@@ -26,6 +27,7 @@ public:
     virtual void SetDefaultRenderTarget() = 0;
     virtual void SetIndexBuffer(std::shared_ptr<RenderBufferResource> buffer) = 0;
     virtual void SetVertexBuffer(std::shared_ptr<RenderBufferResource> vertex_buffer) = 0;
+    virtual void SetDescriptorTable(const std::string& semantic_name, RenderDescriptorTable table) = 0;
     virtual void GenerateMIPs(std::shared_ptr<RenderTexture2DResource> texture) = 0;
     virtual void Draw(uint32_t index_count) = 0;
 

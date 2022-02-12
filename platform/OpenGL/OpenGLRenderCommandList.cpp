@@ -14,6 +14,7 @@
 #include <GL/glew.h>
 #include "OpenGLConstantBufferCommands.h"
 #include "OpenGLUnitConverter.h"
+#include "OpenGLResourceDescriptorCommands.h"
 #include "OpenGLPipelineCommands.h"
 #include "OpenGLTextureCommands.h"
 #include "OpenGLFrameBufferCommands.h"
@@ -23,7 +24,7 @@
 template<typename T, typename ...Args>
 void OpenGLRenderCommandList::PushCommand(Args&& ...args)
 {
-    OpenGLRenderCommandAllocator::Pool* pool = reinterpret_cast<OpenGLRenderCommandAllocator::Pool*>(m_Alloc->Get());
+    OpenGLRenderCommandAllocator::Pool* pool = static_cast<OpenGLRenderCommandAllocator::Pool*>(m_Alloc->Get());
     std::pmr::polymorphic_allocator<T> alloc(pool);
 
     T* cmd = std::allocator_traits<decltype(alloc)>::allocate(alloc, 1);
@@ -49,6 +50,16 @@ void OpenGLRenderCommandList::SetPipeline(Pipeline* pipeline)
 {
     current_pipeline = pipeline;
     PushCommand<OpenGLSetPipelineCommand>(pipeline);
+}
+
+void OpenGLRenderCommandList::SetDescriptorTable(const std::string& semantic_name, RenderDescriptorTable table)
+{
+    if (current_pipeline) {
+        PushCommand<OpenGLSetDescriptorTableCommand>(current_pipeline, semantic_name, table);
+    }
+    else {
+        throw std::runtime_error("No pipeline is bound");
+    }
 }
 
 void OpenGLRenderCommandList::SetConstantBuffer(RootBinding binding_id, std::shared_ptr<RenderBufferResource> buffer)

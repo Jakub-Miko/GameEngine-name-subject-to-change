@@ -4,21 +4,10 @@
 #include <memory>
 #include <Renderer/RendererDefines.h>
 
-enum class RenderState : unsigned char
-{
-	UNINITIALIZED = 0, READ = 1, WRITE = 2, COMMON = 3, EMPTY = 4, IN_USE_VERTEX_BUFFER = 5, IN_USE_INDEX_BUFFER = 6
+class RenderResourceDescriptor {
+public:
+	~RenderResourceDescriptor() {}
 };
-
-enum class RenderBufferType : unsigned char
-{
-	DEFAULT = 0, UPLOAD = 1
-};
-
-enum class RenderBufferUsage : unsigned char
-{
-	VERTEX_BUFFER = 0, INDEX_BUFFER = 1, CONSTANT_BUFFER = 2
-};
-
 
 struct RenderBufferDescriptor {
 	RenderBufferDescriptor(size_t size, RenderBufferType type, RenderBufferUsage usage) : buffer_size(size), type(type), usage(usage) {}

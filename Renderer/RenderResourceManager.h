@@ -1,6 +1,7 @@
 #pragma once 
 #include <memory>
 #include "RenderResource.h"
+#include <Renderer/RenderDescriptorHeap.h>
 #include <Renderer/Renderer.h>
 
 class RenderResourceManager {
@@ -21,6 +22,9 @@ public:
 	virtual std::shared_ptr<RenderTexture2DResource> CreateTextureFromFile(RenderCommandList* list, const std::string& filepath, TextureSampler* sampler) = 0;
 
 	virtual std::shared_ptr<RenderFrameBufferResource> CreateFrameBuffer(const RenderFrameBufferDescriptor& buffer_desc) = 0;
+
+	virtual void CreateConstantBufferDescriptor(const RenderDescriptorTable& table, int index, std::shared_ptr<RenderBufferResource> resource) = 0;
+	virtual void CreateTexture2DDescriptor(const RenderDescriptorTable& table, int index, std::shared_ptr<RenderTexture2DResource> resource) = 0;
 
 	virtual ~RenderResourceManager() {};
 

@@ -6,13 +6,15 @@
 #include <unordered_map>
 #include <Renderer/PipelineManager.h>
 #include <Renderer/PipelinePresets.h>
+#include <Renderer/RenderResource.h>
 #include <string>
 
 
 struct RootDescriptorTableRange {
-	RootDescriptorTableRange(RootDescriptorType type,uint32_t size) : type(type), size(size) {}
+	RootDescriptorTableRange(RootDescriptorType type,uint32_t size, std::string name) : type(type), size(size),name(name) {}
 	RootDescriptorType type;
 	uint32_t size;
+	std::string name;
 };
 
 using RootDescriptorTable = std::vector<RootDescriptorTableRange>;
@@ -20,8 +22,8 @@ using RootDescriptorTable = std::vector<RootDescriptorTableRange>;
 struct RootSignatureDescriptorElement {
 	RootSignatureDescriptorElement(const std::string& name, const RootDescriptorTable& table) : type(RootParameterType::DESCRIPTOR_TABLE), table(table), name(name) {}
 	RootSignatureDescriptorElement(const std::string& name, RootDescriptorTable&& table) : type(RootParameterType::DESCRIPTOR_TABLE), table(std::move(table)), name(name) {}
-	RootSignatureDescriptorElement(const std::string& name, RootParameterType type) : type(type), table(), name(name) {}
-	RootParameterType type;
+	RootSignatureDescriptorElement(const std::string& name, RootParameterType type) : type(type), name(name),table() {}
+	const RootParameterType type;
 	std::string name;
 	RootDescriptorTable table;
 };
@@ -82,8 +84,11 @@ struct RootSignatureFactory<TestPreset> {
 		if (!signature) {
 			RootSignature* sig = RootSignature::CreateSignature(RootSignatureDescriptor(
 				{
-					RootSignatureDescriptorElement("Testblock",RootParameterType::CONSTANT_BUFFER),
-					RootSignatureDescriptorElement("TestTexture", RootParameterType::TEXTURE_2D)
+
+					RootSignatureDescriptorElement("Test",RootDescriptorTable({
+						RootDescriptorTableRange(RootDescriptorType::CONSTANT_BUFFER,1,"Testblock"),
+						RootDescriptorTableRange(RootDescriptorType::TEXTURE_2D, 1, "TestTexture")
+						}))
 				}
 			));
 

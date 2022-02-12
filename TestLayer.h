@@ -18,6 +18,7 @@
 #include <Renderer/ShaderManager.h>
 #include <Core/FrameMultiBufferResource.h>
 #include <Renderer/RootSignature.h>
+#include <Renderer/RenderDescriptorHeapBlock.h>
 #include <Renderer/PipelineManager.h>
 #include <FileManager.h>
 
@@ -33,10 +34,13 @@ public:
     std::shared_ptr<RenderBufferResource> resource_vertex;
     std::shared_ptr<RenderBufferResource> resource_index;
     std::shared_ptr<RenderTexture2DResource> texture;
-
+    RenderDescriptorHeap heap;
     std::shared_ptr<RenderTexture2DResource> color_texture;
     std::shared_ptr<RenderTexture2DResource> depth_texture;
     std::shared_ptr<RenderFrameBufferResource> frame_buffer;
+
+    RenderDescriptorTable table1;
+    RenderDescriptorTable table2;
 
     std::unique_ptr<TextureSampler> sampler;
     Pipeline* pipeline;
@@ -50,7 +54,7 @@ public:
         delete pipeline_2;
     }
 
-    TestLayer() : Layer() {
+    TestLayer() : Layer(), heap(10){
         glm::vec2 origin = { -4,-4 };
         //for (int i = 0; i < 10; i++) {
         //    for (int y = 0; y < 10; y++) {
@@ -87,6 +91,28 @@ public:
 
 
         if (stop) {
+            //TestDescriptor allocators
+            //{
+            //    RenderDescriptorHeapBlock* block = RenderDescriptorHeapBlock::CreateHeapBlock(20);
+            //    RenderDescriptorAllocation* alloc_1 = block->Allocate(5);
+            //    RenderDescriptorAllocation* alloc_2 = block->Allocate(10);
+            //    RenderDescriptorAllocation* alloc_3 = block->Allocate(5);
+            //    delete alloc_1;
+            //    RenderDescriptorAllocation* alloc_4 = block->Allocate(10);
+            //    delete alloc_2;
+            //    block->FlushDescriptorDeallocations(FrameManager::Get()->GetCurrentFrameNumber());
+            //    RenderDescriptorAllocation* alloc_5 = block->Allocate(10);
+            //    delete alloc_3;
+            //    delete alloc_5;
+            //    block->FlushDescriptorDeallocations(FrameManager::Get()->GetCurrentFrameNumber());
+            //    RenderDescriptorAllocation* alloc_6 = block->Allocate(20);
+            //    delete alloc_6;
+            //    block->FlushDescriptorDeallocations(FrameManager::Get()->GetCurrentFrameNumber());
+            //    std::cout << "Stop";
+            //}
+            
+            
+            
             PROFILE("RendererInit");
             struct data_type {
                 glm::vec4 color;
@@ -179,7 +205,17 @@ public:
 
             frame_buffer = RenderResourceManager::Get()->CreateFrameBuffer(framebuffer_desc);
 
+            table1 = heap.Allocate(2);
 
+            RenderResourceManager::Get()->CreateConstantBufferDescriptor(table1, 0, resource);
+
+            RenderResourceManager::Get()->CreateTexture2DDescriptor(table1, 1, texture);
+
+            table2 = heap.Allocate(2);
+
+            RenderResourceManager::Get()->CreateConstantBufferDescriptor(table2, 0, resource);
+
+            RenderResourceManager::Get()->CreateTexture2DDescriptor(table2, 1, color_texture);
 
             Renderer::Get()->GetCommandQueue()->ExecuteRenderCommandList(list);
             stop = false;
@@ -192,8 +228,7 @@ public:
         //Implement Default RenderTarget attachments (renderbufferes in opengl case)
         list->SetRenderTarget(frame_buffer);
         list->SetPipeline(pipeline);
-        list->SetConstantBuffer("Testblock", resource);
-        list->SetTexture2D("TestTexture", texture);
+        list->SetDescriptorTable("Test", table1);
         list->SetIndexBuffer(resource_index);
         list->SetVertexBuffer(resource_vertex);
         list->Draw(6);
@@ -201,8 +236,7 @@ public:
 
         list->SetPipeline(pipeline_2);
         list->SetDefaultRenderTarget();
-        list->SetConstantBuffer("Testblock", resource);
-        list->SetTexture2D("TestTexture", color_texture);
+        list->SetDescriptorTable("Test", table2);
         list->SetIndexBuffer(resource_index);
         list->SetVertexBuffer(resource_vertex);
         list->Draw(6);
