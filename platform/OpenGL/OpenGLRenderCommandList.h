@@ -46,6 +46,8 @@ private:
     OpenGLRenderCommand* m_Commands = nullptr;
     OpenGLRenderCommand* m_Commands_tail = nullptr;
     std::shared_ptr<RenderBufferResource> index_buffer;
+    std::shared_ptr<RenderBufferResource> vertex_buffer;
+
     
 };
 

@@ -1,3 +1,4 @@
+
 #pragma once
 #include "Layer.h"
 #include "Application.h"
@@ -34,7 +35,7 @@ public:
     std::shared_ptr<RenderBufferResource> resource_vertex;
     std::shared_ptr<RenderBufferResource> resource_index;
     std::shared_ptr<RenderTexture2DResource> texture;
-    RenderDescriptorHeap heap;
+    RenderDescriptorHeap* heap;
     std::shared_ptr<RenderTexture2DResource> color_texture;
     std::shared_ptr<RenderTexture2DResource> depth_texture;
     std::shared_ptr<RenderFrameBufferResource> frame_buffer;
@@ -49,12 +50,13 @@ public:
     glm::vec2 position = { 0,0 };
 public:
 
+    //Here we go a memory leak yay
     ~TestLayer() {
-        delete pipeline;
-        delete pipeline_2;
+        //delete pipeline;
+        //delete pipeline_2;
     }
 
-    TestLayer() : Layer(), heap(10){
+    TestLayer() : Layer(), heap(new RenderDescriptorHeap(10)){
         glm::vec2 origin = { -4,-4 };
         //for (int i = 0; i < 10; i++) {
         //    for (int y = 0; y < 10; y++) {
@@ -205,13 +207,13 @@ public:
 
             frame_buffer = RenderResourceManager::Get()->CreateFrameBuffer(framebuffer_desc);
 
-            table1 = heap.Allocate(2);
+            table1 = heap->Allocate(2);
 
             RenderResourceManager::Get()->CreateConstantBufferDescriptor(table1, 0, resource);
 
             RenderResourceManager::Get()->CreateTexture2DDescriptor(table1, 1, texture);
 
-            table2 = heap.Allocate(2);
+            table2 = heap->Allocate(2);
 
             RenderResourceManager::Get()->CreateConstantBufferDescriptor(table2, 0, resource);
 

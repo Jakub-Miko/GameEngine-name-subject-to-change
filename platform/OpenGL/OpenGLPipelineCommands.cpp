@@ -9,6 +9,8 @@
 
 void OpenGLSetPipelineCommand::Execute()
 {
+	
+	PROFILE("Set Pipeline");
 	glUseProgram(static_cast<const OpenGLShader*>(pipeline->GetShader())->GetShaderProgram());
 
 	RenderViewport viewport = pipeline->GetViewport();

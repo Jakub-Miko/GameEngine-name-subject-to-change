@@ -10,7 +10,7 @@ end
 
 function OnKeyPressed(key) 
 
-if(key.press_type == KeyPressType.KEY_PRESS and key.key_code == KeyCode.KEY_V) then
+if(key.press_type == KeyPressType.KEY_PRESS) then
 
 CreateEntity("TestEntityGroup.lua",0)
 

@@ -41,7 +41,7 @@ void OpenGLRenderCommandList::PushCommand(Args&& ...args)
 
 
 OpenGLRenderCommandList::OpenGLRenderCommandList(Renderer* renderer, std::shared_ptr<RenderCommandAllocator> alloc)
-    : RenderCommandList(renderer, alloc), index_buffer()
+    : RenderCommandList(renderer, alloc), index_buffer(), vertex_buffer()
 {
 
 }
@@ -101,9 +101,12 @@ void OpenGLRenderCommandList::SetIndexBuffer(std::shared_ptr<RenderBufferResourc
     index_buffer = buffer;
 }
 
-void OpenGLRenderCommandList::SetVertexBuffer(std::shared_ptr<RenderBufferResource> vertex_buffer)
+void OpenGLRenderCommandList::SetVertexBuffer(std::shared_ptr<RenderBufferResource> vertex_buffer_in)
 {
-    PushCommand<OpenGLSetVertexBufferCommand>(vertex_buffer, current_pipeline);
+    if (!vertex_buffer_in && vertex_buffer_in->GetBufferDescriptor().usage != RenderBufferUsage::VERTEX_BUFFER) {
+        throw std::runtime_error("Buffer must be an Vertex buffer");
+    }
+    vertex_buffer = vertex_buffer_in;
 }
 
 void OpenGLRenderCommandList::SetRenderTarget(std::shared_ptr<RenderFrameBufferResource> framebuffer)
@@ -132,7 +135,7 @@ void OpenGLRenderCommandList::DrawSquare(const glm::mat4& transform, glm::vec4 c
 
 void OpenGLRenderCommandList::Draw(uint32_t index_count)
 {
-    PushCommand<OpenGLImplicitDrawCommand>(index_buffer, index_count);
+    PushCommand<OpenGLImplicitDrawCommand>(current_pipeline,index_buffer,vertex_buffer, index_count);
 }
 
 void OpenGLRenderCommandList::BindOpenGLContext()
