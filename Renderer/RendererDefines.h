@@ -39,6 +39,15 @@ inline PipelineFlags operator&(const PipelineFlags& flags_1, const PipelineFlags
 struct RenderViewport {
 	RenderViewport(glm::vec2 offset = {0,0}, glm::vec2 size = { -1,-1 }, float min_depth = 0, float max_depth = 1) 
 		: offset(offset), size(size), min_depth(min_depth), max_depth(max_depth) {}
+
+	bool operator==(const RenderViewport& other) const {
+		return (offset == other.offset && size == other.size && min_depth == other.min_depth && max_depth == other.max_depth);
+	}
+
+	bool operator!=(const RenderViewport& other) const {
+		return !this->operator==(other);
+	}
+
 	glm::vec2 offset;
 	glm::vec2 size;
 	float min_depth;
@@ -47,6 +56,15 @@ struct RenderViewport {
 
 struct RenderScissorRect {
 	RenderScissorRect(glm::vec2 offset = { 0,0 }, glm::vec2 size = {-1,-1}) : offset(offset), size(size) {}
+
+	bool operator==(const RenderScissorRect& other) const {
+		return (offset == other.offset && size == other.size);
+	}
+
+	bool operator!=(const RenderScissorRect& other) const {
+		return !this->operator==(other);
+	}
+
 	glm::vec2 offset;
 	glm::vec2 size;
 };

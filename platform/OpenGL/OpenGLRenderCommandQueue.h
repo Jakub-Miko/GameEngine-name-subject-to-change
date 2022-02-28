@@ -34,6 +34,27 @@ public:
 	virtual void Present() override;
 
 	virtual ~OpenGLRenderCommandQueue();
+
+	const PipelineState& GetPipelineState() const {
+		return current_state;
+	}
+
+	void SetScissorRect(const RenderScissorRect& ref) {
+		current_state.scissor_rect = ref;
+	}
+
+	void SetViewport(const RenderViewport& ref) {
+		current_state.viewport = ref;
+	}
+
+	void SetFlags(const PipelineFlags& ref) {
+		current_state.flags = ref;
+	}
+
+	void SetShader(const Shader* shader) {
+		current_state.shader = shader;
+	}
+
 private:
 	void RenderLoop();
 	ExecutableCommand* FetchList();
@@ -55,4 +76,7 @@ private:
 	std::queue<ExecutableCommand*> m_Lists;
 	std::shared_ptr<ThreadObject> Render_Thread_Object;
 	std::thread* Render_Thread;
+
+	PipelineState current_state;
+
 };

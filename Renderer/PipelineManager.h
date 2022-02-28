@@ -11,13 +11,53 @@ class RootSignature;
 
 
 struct PipelineDescriptor {
-	VertexLayout* layout;
-	RootSignature* signature;
-	Shader* shader;
-	RenderViewport viewport;
-	RenderScissorRect scissor_rect;
+	
+	friend class Pipeline;
+
+	PipelineDescriptor() = default;
+
+	PipelineDescriptor(const PipelineDescriptor& desc) : layout(desc.layout), signature(desc.signature), shader(desc.shader), viewport(desc.viewport), scissor_rect(desc.scissor_rect),
+		flags(desc.flags)
+	{
+
+	}
+
+	const VertexLayout& GetLayout() const {
+		return *layout;
+	}
+
+	const RootSignature* GetSignature() const {
+		return signature;
+	}
+
+	const RenderViewport& GetViewport() const {
+		return viewport;
+	}
+
+	const RenderScissorRect& GetScissorRect() const {
+		return scissor_rect;
+	}
+
+	const Shader* GetShader() const {
+		return shader;
+	}
+
+	const PipelineFlags& GetPipelineFlags() const {
+		return flags;
+	}
+	
+
+public:
+
+	VertexLayout* layout = nullptr;
+	RootSignature* signature = nullptr;
+	const Shader* shader = nullptr;
+	RenderViewport viewport = RenderViewport();
+	RenderScissorRect scissor_rect = RenderScissorRect();
 	PipelineFlags flags = PipelineFlags::DEFAULT;
 };
+
+using PipelineState = PipelineDescriptor;
 
 class Pipeline {
 public:
@@ -59,11 +99,11 @@ protected:
 	{
 
 	}
-	VertexLayout* layout;
-	RootSignature* signature;
-	Shader* shader;
-	RenderViewport viewport;
-	RenderScissorRect scissor_rect;
+	VertexLayout* layout = nullptr;
+	RootSignature* signature = nullptr;
+	const Shader* shader = nullptr;
+	RenderViewport viewport = RenderViewport();
+	RenderScissorRect scissor_rect = RenderScissorRect();
 	PipelineFlags flags = PipelineFlags::DEFAULT;
 };
 

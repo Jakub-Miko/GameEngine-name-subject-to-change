@@ -44,7 +44,7 @@ private:
     
     std::vector<RenderCommandAllocator*> m_Allocators;
     std::vector<RenderCommandAllocator*> m_FreeAllocators;
-    std::array<RenderCommandQueue*, 50> m_CommandQueues;
+    std::array<RenderCommandQueue*, 3> m_CommandQueues;
 
     std::mutex m_List_mutex;
     int max_allocators = 50;

@@ -4,7 +4,7 @@
 #include <Profiler.h>
 #include "OpenGLPresent.h"
 
-OpenGLRenderCommandQueue::OpenGLRenderCommandQueue()
+OpenGLRenderCommandQueue::OpenGLRenderCommandQueue() : current_state(), m_queue_mutex(), m_cond_var(), m_Lists(), Render_Thread(), Render_Thread_Object()
 {
 	Render_Thread_Object = ThreadManager::Get()->GetThread();
 	Render_Thread = new std::thread(&OpenGLRenderCommandQueue::RenderLoop,this);
