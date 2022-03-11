@@ -72,6 +72,8 @@ struct VertexLayoutFactory {
 
 #pragma region PipelinePresets
 
+#pragma region TestPreset
+
 
 
 class TestPreset { };
@@ -121,4 +123,54 @@ struct VertexLayoutFactory<TestPreset> {
 	}
 
 };
+
+#pragma endregion
+
+#pragma region BoxPreset
+class BoxPreset { };
+
+template<>
+struct RootSignatureFactory<BoxPreset> {
+
+	static RootSignature* GetRootSignature() {
+		static RootSignature* signature = nullptr;
+		if (!signature) {
+			RootSignature* sig = RootSignature::CreateSignature(RootSignatureDescriptor(
+				{
+					RootSignatureDescriptorElement("input",RootParameterType::CONSTANT_BUFFER)
+				}
+			));
+
+			PipelineManager::Get()->AddSignature(sig);
+			signature = sig;
+		}
+
+		return signature;
+	}
+
+};
+
+
+template<>
+struct VertexLayoutFactory<BoxPreset> {
+
+	static VertexLayout* GetLayout() {
+		static VertexLayout* layout = nullptr;
+		if (!layout) {
+			VertexLayout* layout_new = new VertexLayout({
+				VertexLayoutElement(RenderPrimitiveType::FLOAT,4),
+				VertexLayoutElement(RenderPrimitiveType::FLOAT,4)
+				});
+
+			PipelineManager::Get()->AddLayout(layout_new);
+
+			layout = layout_new;
+		}
+		return layout;
+	}
+
+};
+#pragma endregion
+
+
 #pragma endregion

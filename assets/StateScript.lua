@@ -1,6 +1,7 @@
 function OnAttach()
 
 	CreateEntity("ComplexEntity.lua",0)
+	CreateEntity("ComplexEntity.lua",0)
 
 end
 

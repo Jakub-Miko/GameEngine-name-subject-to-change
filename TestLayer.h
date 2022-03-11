@@ -19,8 +19,12 @@
 #include <Renderer/ShaderManager.h>
 #include <Core/FrameMultiBufferResource.h>
 #include <Renderer/RootSignature.h>
+#include <World/Systems/BoxRenderer.h>
 #include <Renderer/RenderDescriptorHeapBlock.h>
 #include <Renderer/PipelineManager.h>
+#include <Core/UnitConverter.h>
+#include <World/Components/BoundingVolumeComponent.h>
+#include <Window.h>
 #include <FileManager.h>
 
 class TestLayer : public Layer
@@ -48,12 +52,15 @@ public:
     Pipeline* pipeline_2;
     FrameMultiBufferResource<std::shared_ptr<RenderBufferResource>> resource2;
     glm::vec2 position = { 0,0 };
+    glm::vec3 camerapos = {1.0f, 1.5f, -5.0f};
+
 public:
 
     //Here we go a memory leak yay
     ~TestLayer() {
         //delete pipeline;
         //delete pipeline_2;
+        Delete_Render_Box_data();
     }
 
     TestLayer() : Layer(), heap(new RenderDescriptorHeap(10)){
@@ -77,6 +84,23 @@ public:
             if (e->key_code == KeyCode::KEY_R && e->press_type == KeyPressType::KEY_PRESS) {
                 resource2 = FrameMultiBufferResource<std::shared_ptr<RenderBufferResource>>();
             }
+            else if (e->key_code == KeyCode::KEY_S && e->press_type == KeyPressType::KEY_PRESS) {
+                Application::GetWorld().GetSceneGraph()->Serialize(FileManager::Get()->GetAssetFilePath("save_file.json"));
+            }
+            return false;
+            });
+        dispatch.Dispatch<MouseMoveEvent>([this](MouseMoveEvent* e) {
+            glm::vec2 norm_scree_pos = UnitConverter::ScreenSpaceToNDC({ e->x,e->y });
+            glm::vec2 offset = { -1.0,0.0 };
+            norm_scree_pos += offset;
+            norm_scree_pos.y *= -1;
+            float distance = 5.0f;
+            glm::vec3 pos{
+                glm::cos(norm_scree_pos.x * glm::pi<float>()) * glm::cos(norm_scree_pos.y * glm::pi<float>()/2) ,
+                glm::sin(norm_scree_pos.y * glm::pi<float>() / 2),
+                glm::sin(norm_scree_pos.x * glm::pi<float>()) * glm::cos(norm_scree_pos.y * glm::pi<float>()/2)
+            };
+            camerapos = pos * distance;
             return false;
             });
     }
@@ -114,7 +138,7 @@ public:
             //}
             
             
-            
+           /* 
             PROFILE("RendererInit");
             struct data_type {
                 glm::vec4 color;
@@ -220,30 +244,41 @@ public:
             RenderResourceManager::Get()->CreateTexture2DDescriptor(table2, 1, color_texture);
 
             Renderer::Get()->GetCommandQueue()->ExecuteRenderCommandList(list);
+            stop = false;*/
+            
             stop = false;
 
         }
+        
+        
+        auto props = Application::Get()->GetWindow()->m_Properties;
+        auto camera = CameraComponent(45.0f, 0.1f, 1000.0f, (float)props.resolution_x / (float)props.resolution_y);
+        auto view_matrix = glm::lookAt(camerapos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        Render_Box(glm::translate(glm::mat4(1.0f), {0.0f,0.6f,0.0f}), camera , view_matrix);
+        Render_Box(glm::translate(glm::mat4(1.0f), { 0.0f,-0.6f,0.0f }), camera, view_matrix, PrimitivePolygonRenderMode::WIREFRAME);
         PROFILE("RenderRun");
 
-        auto list = Renderer::Get()->GetRenderCommandList();
-
-        //Implement Default RenderTarget attachments (renderbufferes in opengl case)
-        list->SetRenderTarget(frame_buffer);
-        list->SetPipeline(pipeline);
-        list->SetDescriptorTable("Test", table1);
-        list->SetIndexBuffer(resource_index);
-        list->SetVertexBuffer(resource_vertex);
-        list->Draw(6);
 
 
-        list->SetPipeline(pipeline_2);
-        list->SetDefaultRenderTarget();
-        list->SetDescriptorTable("Test", table2);
-        list->SetIndexBuffer(resource_index);
-        list->SetVertexBuffer(resource_vertex);
-        list->Draw(6);
+        //auto list = Renderer::Get()->GetRenderCommandList();
 
-        Renderer::Get()->GetCommandQueue()->ExecuteRenderCommandList(list);
+        ////Implement Default RenderTarget attachments (renderbufferes in opengl case)
+        //list->SetRenderTarget(frame_buffer);
+        //list->SetPipeline(pipeline);
+        //list->SetDescriptorTable("Test", table1);
+        //list->SetIndexBuffer(resource_index);
+        //list->SetVertexBuffer(resource_vertex);
+        //list->Draw(6);
+
+
+        //list->SetPipeline(pipeline_2);
+        //list->SetDefaultRenderTarget();
+        //list->SetDescriptorTable("Test", table2);
+        //list->SetIndexBuffer(resource_index);
+        //list->SetVertexBuffer(resource_vertex);
+        //list->Draw(6);
+
+        //Renderer::Get()->GetCommandQueue()->ExecuteRenderCommandList(list);
 
 
 #pragma endregion

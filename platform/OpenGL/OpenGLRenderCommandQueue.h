@@ -55,6 +55,10 @@ public:
 		current_state.shader = shader;
 	}
 
+	void SetPrimitivePolygonRenderMode(const PrimitivePolygonRenderMode& mode) {
+		current_state.polygon_render_mode = mode;
+	}
+
 private:
 	void RenderLoop();
 	ExecutableCommand* FetchList();

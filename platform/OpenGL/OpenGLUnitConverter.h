@@ -93,5 +93,14 @@ public:
 		}
 	}
 
+	static GLenum PrimitivePolygonRenderModetoGLenum(PrimitivePolygonRenderMode mode) {
+		switch (mode) {
+		case PrimitivePolygonRenderMode::DEFAULT:				return GL_FILL;
+		case PrimitivePolygonRenderMode::WIREFRAME:				return GL_LINE;
+		default:
+			throw std::runtime_error("Conversion failed");
+		}
+	}
+
 };
 

@@ -8,5 +8,5 @@ void OpenGLPresent::Execute()
 {
 	PROFILE("Present");
 	glfwSwapBuffers(reinterpret_cast<GlfwWindow*>(Application::Get()->GetWindow())->GetHandle());
-	glClear(GL_COLOR_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }

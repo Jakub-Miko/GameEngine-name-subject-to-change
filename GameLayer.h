@@ -49,7 +49,7 @@ public:
         InitializationSystem(m_World);
         ScriptSystemUpdate(m_World,delta_time);
         m_World.UpdateTransformMatricies();
-        SquareRenderSystem(m_World);
+        //SquareRenderSystem(m_World);
     }
 
 };

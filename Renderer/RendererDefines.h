@@ -26,6 +26,10 @@ enum class PipelineFlags : uint32_t {
 	DEFAULT = 0
 };
 
+enum class PrimitivePolygonRenderMode : unsigned char {
+	DEFAULT = 0, WIREFRAME = 1
+};
+
 inline PipelineFlags operator|(const PipelineFlags& flags_1, const PipelineFlags& flags_2) {
 	return (PipelineFlags)((uint32_t)flags_1 | (uint32_t)flags_2);
 }

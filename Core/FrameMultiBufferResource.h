@@ -12,6 +12,16 @@ public:
 
 	}
 
+	FrameMultiBufferResource(FrameMultiBufferResource&& move) : resources(std::move(move.resources)) {
+
+	}
+
+	FrameMultiBufferResource& operator=(FrameMultiBufferResource&& move) {
+		resources.clear();
+		resources = std::move(move.resources);
+		return *this;
+	}
+
 	template<typename F, typename dummy = std::enable_if_t<std::is_same_v<decltype(std::declval<F>()()),T>>>
 	FrameMultiBufferResource(F func) {
 		int num_of_latency_frames = FrameManager::Get()->GetLatencyFrames();

@@ -26,4 +26,5 @@ struct TransformComponent {
 	glm::quat rotation;
 
 	glm::mat4 TransformMatrix;
+	
 };

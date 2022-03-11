@@ -62,6 +62,8 @@ void OpenGLDrawCommand::Execute()
 		quad_data.transform_pos= glGetUniformLocation(quad_data.shader.GetHandle(), "transform");
 		quad_data.color_pos= glGetUniformLocation(quad_data.shader.GetHandle(), "in_color");
 
+		glEnable(GL_DEPTH_TEST);
+
 		glGenVertexArrays(1, &quad_data.vertex_array);
 		glBindVertexArray(quad_data.vertex_array);
 

@@ -2,6 +2,12 @@
 #include <stdexcept>
 #include <glm/glm.hpp>
 #include <World/World.h>
+#include <json.hpp>
+#include <fstream>
+#include <glm/gtc/type_ptr.hpp>
+#include <World/Components/LoadedComponent.h>
+
+static void SerializeNode(const SceneNode& node, nlohmann::json& base_object, World* world);
 
 SceneNode* SceneGraph::AddEntity(Entity ent, SceneNode* parent)
 {
@@ -20,6 +26,10 @@ SceneNode* SceneGraph::AddEntity(Entity ent, SceneNode* parent)
 	node.previous = nullptr;
 	node.dirty = false;
 	node.entity = ent;
+
+	if (m_world->HasComponent<LoadedComponent>(ent)) {
+		node.prefab = true;
+	}
 
 
 	std::lock_guard<std::mutex> lock(addition_mutex);
@@ -48,6 +58,63 @@ void SceneGraph::MarkEntityDirty(SceneNode* ent)
 		throw std::runtime_error("Invalid SceneNode.");
 	}
 }
+
+void SceneGraph::Serialize(const std::string& file_path)
+{
+	using namespace nlohmann;
+
+	json base_object;
+	SceneNode* current_node = root_node.first_child;
+	while (current_node) {
+		SerializeNode(*current_node, base_object["SceneGraph"], m_world);
+		current_node = current_node->next;
+	}
+	
+	std::ofstream file_stream(file_path);
+	if (file_stream.is_open()) {
+		file_stream << base_object;
+		file_stream.close();
+	}
+	else {
+		throw std::runtime_error("Couldn't open file: " + file_path);
+	}
+
+}
+
+static void SerializeNode(const SceneNode& node, nlohmann::json& base_object, World* world) {
+	using namespace nlohmann;
+	base_object.push_back(json::object());
+	json& current_json_node = base_object.back();
+	//Serialize here
+	current_json_node["id"] = node.entity.id;
+	if (world->HasComponent<TransformComponent>(node.entity)) {
+		TransformComponent& transform = world->GetComponent<TransformComponent>(node.entity);
+		float* mat = glm::value_ptr(transform.TransformMatrix);
+		for (int i = 0; i < 16; i++) {
+			current_json_node["transform"].push_back(mat[i]);
+		}
+
+	}
+
+	if (world->HasComponent<LoadedComponent>(node.entity)) {
+		LoadedComponent& loaded = world->GetComponent<LoadedComponent>(node.entity);
+		current_json_node["file_path"] = loaded.file_path;
+
+	}
+
+	//Prefab hierarchy is defined in its file not the scene file
+	if (node.prefab) {
+		return;
+	}
+
+	SceneNode* current_node = node.first_child;
+	while (current_node) {
+		SerializeNode(*current_node, current_json_node["children"], world);
+		current_node = current_node->next;
+	}
+
+}
+
 
 void SceneGraph::CalculateMatricies()
 {

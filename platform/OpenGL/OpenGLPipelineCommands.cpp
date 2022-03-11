@@ -21,10 +21,28 @@ void OpenGLSetPipelineCommand::Execute()
 	
 	RenderViewport viewport = pipeline->GetViewport();
 	RenderScissorRect scissor = pipeline->GetScissorRect();
+	PrimitivePolygonRenderMode rendermode = pipeline->GetPrimitivePolygonRenderMode();
 	const WindowProperties& props = Application::Get()->GetWindow()->GetProperties();
 	const PipelineFlags& flags = pipeline->GetPipelineFlags();
 	unsigned int shader = static_cast<const OpenGLShader*>(pipeline->GetShader())->GetShaderProgram();
+
+	if (current_state.flags != flags) {
+		if (uint32_t(flags & PipelineFlags::ENABLE_DEPTH_TEST)) glEnable(GL_DEPTH_TEST);
+		else glDisable(GL_DEPTH_TEST);
+
+		if (uint32_t(flags & PipelineFlags::ENABLE_SCISSOR_TEST)) glEnable(GL_SCISSOR_TEST);
+		else glDisable(GL_SCISSOR_TEST);
+
+		if (uint32_t(flags & PipelineFlags::ENABLE_STENCIL_TEST)) glEnable(GL_STENCIL_TEST);
+		else glDisable(GL_STENCIL_TEST);
+		queue->SetFlags(flags);
+	}
 	
+	if (current_state.GetPrimitivePolygonRenderMode() != rendermode) {
+		glPolygonMode(GL_FRONT_AND_BACK, OpenGLUnitConverter::PrimitivePolygonRenderModetoGLenum(rendermode));
+		queue->SetPrimitivePolygonRenderMode(rendermode);
+	}
+
 	if (!current_shader || current_shader->GetShaderProgram() != shader) {
 		glUseProgram(shader);
 		queue->SetShader(pipeline->GetShader());
@@ -46,18 +64,6 @@ void OpenGLSetPipelineCommand::Execute()
 	if (current_state.scissor_rect != scissor) {
 		glScissor(scissor.offset.x, scissor.offset.y, scissor.size.x, scissor.size.y);
 		queue->SetScissorRect(scissor);
-	}
-
-	if (current_state.flags != flags) {
-		if (uint32_t(flags & PipelineFlags::ENABLE_DEPTH_TEST)) glEnable(GL_DEPTH_TEST);
-		else glDisable(GL_DEPTH_TEST);
-
-		if (uint32_t(flags & PipelineFlags::ENABLE_SCISSOR_TEST)) glEnable(GL_SCISSOR_TEST);
-		else glDisable(GL_SCISSOR_TEST);
-
-		if (uint32_t(flags & PipelineFlags::ENABLE_STENCIL_TEST)) glEnable(GL_STENCIL_TEST);
-		else glDisable(GL_STENCIL_TEST);
-		queue->SetFlags(flags);
 	}
 
 }

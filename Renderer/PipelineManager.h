@@ -17,7 +17,7 @@ struct PipelineDescriptor {
 	PipelineDescriptor() = default;
 
 	PipelineDescriptor(const PipelineDescriptor& desc) : layout(desc.layout), signature(desc.signature), shader(desc.shader), viewport(desc.viewport), scissor_rect(desc.scissor_rect),
-		flags(desc.flags)
+		flags(desc.flags), polygon_render_mode(desc.polygon_render_mode)
 	{
 
 	}
@@ -46,6 +46,9 @@ struct PipelineDescriptor {
 		return flags;
 	}
 	
+	const PrimitivePolygonRenderMode& GetPrimitivePolygonRenderMode() const {
+		return polygon_render_mode;
+	}
 
 public:
 
@@ -55,6 +58,7 @@ public:
 	RenderViewport viewport = RenderViewport();
 	RenderScissorRect scissor_rect = RenderScissorRect();
 	PipelineFlags flags = PipelineFlags::DEFAULT;
+	PrimitivePolygonRenderMode polygon_render_mode = PrimitivePolygonRenderMode::DEFAULT;
 };
 
 using PipelineState = PipelineDescriptor;
@@ -88,14 +92,18 @@ public:
 		return flags;
 	}
 
+	const PrimitivePolygonRenderMode& GetPrimitivePolygonRenderMode() const {
+		return polygon_render_mode;
+	}
+
 protected:
 	Pipeline(const PipelineDescriptor& desc) : layout(desc.layout), signature(desc.signature), shader(desc.shader), viewport(desc.viewport), scissor_rect(desc.scissor_rect),
-		flags(desc.flags)
+		flags(desc.flags), polygon_render_mode(desc.polygon_render_mode)
 	{
 
 	}
 	Pipeline(PipelineDescriptor&& desc) : layout(desc.layout), signature(desc.signature), shader(desc.shader), viewport(desc.viewport), scissor_rect(desc.scissor_rect),
-		flags(desc.flags)
+		flags(desc.flags), polygon_render_mode(desc.polygon_render_mode)
 	{
 
 	}
@@ -105,6 +113,7 @@ protected:
 	RenderViewport viewport = RenderViewport();
 	RenderScissorRect scissor_rect = RenderScissorRect();
 	PipelineFlags flags = PipelineFlags::DEFAULT;
+	PrimitivePolygonRenderMode polygon_render_mode = PrimitivePolygonRenderMode::DEFAULT;
 };
 
 

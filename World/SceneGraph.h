@@ -14,6 +14,7 @@ struct SceneNode {
 	SceneNode* next = nullptr;
 	SceneNode* previous = nullptr;
 	bool dirty = false;
+	bool prefab = false;
 
 };
 
@@ -41,11 +42,14 @@ public:
 
 	void MarkEntityDirty(SceneNode* ent);
 
+	void Serialize(const std::string& file_path);
+
 	void CalculateMatricies();
 
 	void RecalculateDownstream(SceneNode* node, SceneNode* upstream);
 
 private:
+
 	std::unordered_map<uint32_t, SceneNode> m_Nodes;
 	SceneNode root_node;
 	World* m_world;

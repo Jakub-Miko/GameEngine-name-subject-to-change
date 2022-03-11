@@ -1,6 +1,7 @@
 #include "EntityConstructionSystem.h"
 #include <World/System.h>
 #include <World/Components/DynamicPropertiesComponent.h>
+#include <World/Components/LoadedComponent.h>
 #include <World/Systems/ScriptSystemManagement.h>
 #include <World/EntityManager.h>
 
@@ -20,6 +21,7 @@ void EntityConstructionSystem(World& world)
             auto comp = *iter;
             EntityParseResult entity_template = EntityManager::Get()->GetEntitySignature(comp.path);
             Entity new_ent = comp.id;
+            world.SetComponent<LoadedComponent>(new_ent, LoadedComponent(comp.path));
             world.CreateEntityFromEmpty(new_ent, comp.parent);
             script_vm->SetEngineInitializationEntity(new_ent,comp.path);
             world.SetComponent<DynamicPropertiesComponent>(new_ent, DynamicPropertiesComponent(entity_template.properties));
