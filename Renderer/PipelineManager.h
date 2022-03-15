@@ -5,6 +5,7 @@
 #include <glm/glm.hpp>
 #include <mutex>
 #include <vector>
+#include <memory>
 
 struct VertexLayout;
 class RootSignature;
@@ -130,7 +131,7 @@ public:
 	static PipelineManager* Get();
 	static void Shutdown();
 
-	virtual Pipeline* CreatePipeline(const PipelineDescriptor& desc) = 0;
+	virtual std::shared_ptr<Pipeline> CreatePipeline(const PipelineDescriptor& desc) = 0;
 	virtual ~PipelineManager();
 
 	PipelineManager();

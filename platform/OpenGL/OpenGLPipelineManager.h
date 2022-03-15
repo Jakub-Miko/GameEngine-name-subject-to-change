@@ -28,7 +28,7 @@ private:
 class OpenGLPipelineManager : public PipelineManager {
 public:
 	friend PipelineManager;
-	virtual Pipeline* CreatePipeline(const PipelineDescriptor& desc) override;
+	virtual std::shared_ptr<Pipeline> CreatePipeline(const PipelineDescriptor& desc) override;
 	
 private:
 	virtual ~OpenGLPipelineManager() {}

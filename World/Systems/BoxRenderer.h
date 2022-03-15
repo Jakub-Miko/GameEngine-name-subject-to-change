@@ -25,8 +25,6 @@ struct Render_Box_data {
     void clear() {
         vertex_buffer.reset();
         index_buffer.reset();
-        delete pipeline;
-        delete pipeline_wireframe;
         constant_buffer = FrameMultiBufferResource<std::shared_ptr<RenderBufferResource>>();
     }
 
@@ -169,8 +167,8 @@ struct Render_Box_data {
         
     }
     
-    Pipeline* pipeline;
-    Pipeline* pipeline_wireframe;
+    std::shared_ptr<Pipeline> pipeline;
+    std::shared_ptr<Pipeline> pipeline_wireframe;
     std::shared_ptr<RenderBufferResource> vertex_buffer;
     std::shared_ptr<RenderBufferResource> index_buffer;
     FrameMultiBufferResource<std::shared_ptr<RenderBufferResource>> constant_buffer;

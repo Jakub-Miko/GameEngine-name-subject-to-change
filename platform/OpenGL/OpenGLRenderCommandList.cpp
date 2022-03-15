@@ -46,7 +46,7 @@ OpenGLRenderCommandList::OpenGLRenderCommandList(Renderer* renderer, std::shared
 
 }
 
-void OpenGLRenderCommandList::SetPipeline(Pipeline* pipeline)
+void OpenGLRenderCommandList::SetPipeline(std::shared_ptr<Pipeline> pipeline)
 {
     current_pipeline = pipeline;
     PushCommand<OpenGLSetPipelineCommand>(pipeline);

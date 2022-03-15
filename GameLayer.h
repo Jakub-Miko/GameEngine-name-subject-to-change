@@ -18,7 +18,7 @@
 #include <World/Systems/KeyPressedScriptSystem.h>
 #include <World/Systems/MousePressedScriptSystem.h>
 #include <World/Systems/EntityConstructionSystem.h>
-
+#include <World/SceneGraph.h>
 
 class GameLayer : public Layer
 {
@@ -44,6 +44,8 @@ public:
     }
 
     virtual void OnUpdate(float delta_time) override {
+        m_World.LoadSceneSystem();
+        m_World.GetSceneGraph()->DeserializeSystem();
         EntityConstructionSystem(m_World);
         ScriptSystemDefferedSet(m_World);
         InitializationSystem(m_World);

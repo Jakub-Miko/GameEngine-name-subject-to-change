@@ -18,7 +18,7 @@ public:
     RenderCommandList(Renderer* renderer, std::shared_ptr<RenderCommandAllocator> alloc);
     virtual ~RenderCommandList() {};
 
-    virtual void SetPipeline(Pipeline* pipeline) = 0;
+    virtual void SetPipeline(std::shared_ptr<Pipeline> pipeline) = 0;
 
     virtual void SetConstantBuffer(RootBinding binding_id, std::shared_ptr<RenderBufferResource> buffer) = 0;
     virtual void SetConstantBuffer(const std::string& semantic_name, std::shared_ptr<RenderBufferResource> texture) = 0;

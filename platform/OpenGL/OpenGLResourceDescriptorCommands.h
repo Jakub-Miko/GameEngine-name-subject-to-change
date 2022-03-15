@@ -5,10 +5,10 @@
 
 class OpenGLSetDescriptorTableCommand : public OpenGLRenderCommand {
 public:
-	OpenGLSetDescriptorTableCommand(Pipeline* pipeline, const std::string& name, RenderDescriptorTable table) : name(name), pipeline(pipeline), table(table) {}
+	OpenGLSetDescriptorTableCommand(std::shared_ptr<Pipeline> pipeline, const std::string& name, RenderDescriptorTable table) : name(name), pipeline(pipeline), table(table) {}
 	virtual void Execute() override;
 private:
 	RenderDescriptorTable table;
-	Pipeline* pipeline;
+	std::shared_ptr<Pipeline> pipeline;
 	std::string name;
 };

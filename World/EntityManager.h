@@ -7,6 +7,7 @@
 #include <deque>
 #include <World/Entity.h>
 
+
 struct Construction_Entry {
     Construction_Entry(Entity id, const std::string& path, Entity parent) : id(id), path(path), parent(parent) {}
     Entity id;
@@ -26,6 +27,8 @@ public:
     static void Shutdown();
 
     Entity CreateEntity(const std::string& path, Entity parent = Entity());
+
+    Entity CreateEntityInplace(const std::string& path, Entity parent = Entity());
 
     void ClearConstructionQueue();
 

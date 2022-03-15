@@ -1,6 +1,7 @@
 #include "World.h"
+#include <FileManager.h>
 
-World::World() : m_ECS(), m_SceneGraph(this)
+World::World() : m_ECS(), m_SceneGraph(this), load_scene(std::make_shared<SceneProxy>())
 {
 	if((uint32_t)(m_ECS.create())!=0) throw std::runtime_error("A null Entity could not be reserved");
 }
@@ -55,6 +56,25 @@ void World::RemoveEntity(Entity entity)
 {
 	std::lock_guard<std::mutex> lock(entity_mutex);
 	m_ECS.destroy((entt::entity)entity.id);
+}
+
+void World::LoadSceneSystem()
+{
+	if (load_scene) {
+		m_ECS.clear();
+		m_ECS = entt::registry();
+		m_SceneGraph.clear();
+		if ((uint32_t)(m_ECS.create()) != 0) throw std::runtime_error("A null Entity could not be reserved");
+
+		m_SceneGraph.Deserialize(FileManager::Get()->GetAssetFilePath(load_scene->scene_path));
+		current_scene = load_scene;
+		load_scene = nullptr;
+	}
+}
+
+void World::LoadSceneFromFile(const std::string& file_path)
+{
+	load_scene = std::make_shared<SceneProxy>(file_path);
 }
 
 Entity World::MakeEmptyEntity()

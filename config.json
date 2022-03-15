@@ -1,5 +1,6 @@
 {
   "Vsync": 0,
   "Latency_Frames": 2,
-  "EnableMouseMoveEvent": 1
+  "EnableMouseMoveEvent": 1,
+  "default_scene": "save_file.json"
 }

@@ -6,11 +6,11 @@
 
 class OpenGLSetTexture2DCommand : public OpenGLRenderCommand {
 public:
-	OpenGLSetTexture2DCommand(Pipeline* pipeline, const std::string& name, std::shared_ptr<RenderTexture2DResource> texture) : name(name), texture(texture), pipeline(pipeline) {}
+	OpenGLSetTexture2DCommand(std::shared_ptr<Pipeline> pipeline, const std::string& name, std::shared_ptr<RenderTexture2DResource> texture) : name(name), texture(texture), pipeline(pipeline) {}
 	virtual void Execute() override;
 private:
 	std::shared_ptr<RenderTexture2DResource> texture;
-	Pipeline* pipeline;
+	std::shared_ptr<Pipeline> pipeline;
 	std::string name;
 };
 

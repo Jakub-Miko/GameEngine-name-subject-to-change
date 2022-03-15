@@ -5,9 +5,29 @@
 #include <json.hpp>
 #include <fstream>
 #include <glm/gtc/type_ptr.hpp>
+#include <World/EntityManager.h>
 #include <World/Components/LoadedComponent.h>
 
 static void SerializeNode(const SceneNode& node, nlohmann::json& base_object, World* world);
+static void DeserializeNode(nlohmann::json& json, SceneNode* parent, World* world);
+
+void SceneGraph::clear()
+{
+	m_Nodes.clear();
+	m_dirty_nodes.clear();
+	root_calclulation_nodes.clear();
+	deserialize = false;
+
+	SceneNode node;
+	node.dirty = false;
+	node.entity = Entity();
+	node.first_child = nullptr;
+	node.next = nullptr;
+	node.previous = nullptr;
+	node.parent = nullptr;
+
+	root_node = node;
+}
 
 SceneNode* SceneGraph::AddEntity(Entity ent, SceneNode* parent)
 {
@@ -76,10 +96,11 @@ void SceneGraph::Serialize(const std::string& file_path)
 		file_stream.close();
 	}
 	else {
-		throw std::runtime_error("Couldn't open file: " + file_path);
+		throw std::runtime_error("File could not be opened: " + file_path);
 	}
 
 }
+
 
 static void SerializeNode(const SceneNode& node, nlohmann::json& base_object, World* world) {
 	using namespace nlohmann;
@@ -89,10 +110,17 @@ static void SerializeNode(const SceneNode& node, nlohmann::json& base_object, Wo
 	current_json_node["id"] = node.entity.id;
 	if (world->HasComponent<TransformComponent>(node.entity)) {
 		TransformComponent& transform = world->GetComponent<TransformComponent>(node.entity);
-		float* mat = glm::value_ptr(transform.TransformMatrix);
-		for (int i = 0; i < 16; i++) {
-			current_json_node["transform"].push_back(mat[i]);
+		float* translation = glm::value_ptr(transform.translation);
+		float* scale = glm::value_ptr(transform.size);
+		float* rotation = glm::value_ptr(transform.rotation);
+		for (int i = 0; i < 3; i++) {
+			current_json_node["transform"]["translation"].push_back(translation[i]);
+			current_json_node["transform"]["scale"].push_back(scale[i]);
 		}
+		for (int i = 0; i < 4; i++) {
+			current_json_node["transform"]["rotation"].push_back(rotation[i]);
+		}
+
 
 	}
 
@@ -156,3 +184,89 @@ void SceneGraph::RecalculateDownstream(SceneNode* node, SceneNode* upstream)
 		children = children->next;
 	}
 }
+
+void SceneGraph::DeserializeSystem()
+{
+	using namespace nlohmann;
+	if (!deserialize) return;
+	
+	std::ifstream file(deserialize_path);
+	if (!file.is_open()) {
+		throw std::runtime_error("File could not be opened: " + deserialize_path);
+	}
+	json base_json;
+	base_json << file;
+
+	for (json& current_json : base_json["SceneGraph"]) {
+		DeserializeNode(current_json, &root_node, m_world);
+	}
+
+	deserialize = false;
+
+}
+
+
+void SceneGraph::Deserialize(const std::string& file_path)
+{
+	deserialize_path = file_path;
+	deserialize = true;
+
+}
+
+static void DeserializeNode(nlohmann::json& json, SceneNode* parent, World* world) {
+	Entity entity;
+	if(json.find("transform") == json.end() || json["transform"].size() != 3) {
+		// Failed
+		return;
+	}
+
+	float translation[3];
+	float scale[3];
+	float rotation[4];
+
+	for (int i = 0; i < 3; i++) {
+		translation[i] = json["transform"]["translation"][i];
+		scale[i] = json["transform"]["scale"][i];
+	}
+	for (int i = 0; i < 4; i++) {
+		rotation[i] = json["transform"]["rotation"][i];
+	}
+
+
+	if (json.find("file_path") != json.end()) {
+		entity = EntityManager::Get()->CreateEntityInplace(json["file_path"].get<std::string>() , parent->entity);
+	}
+	else {
+		entity = world->CreateEntity(parent->entity); 
+	}
+
+	TransformComponent& transform = world->GetComponent<TransformComponent>(entity);
+	world->SetEntityRotation(entity, glm::make_quat(rotation));
+	world->SetEntityScale(entity, glm::make_vec3(scale));
+	world->SetEntityTranslation(entity, glm::make_vec3(translation));
+
+	if (json.find("children") != json.end()) {
+		for (nlohmann::json& json_current : json["children"]) {
+			DeserializeNode(json_current, transform.scene_node, world);
+		}
+	}
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

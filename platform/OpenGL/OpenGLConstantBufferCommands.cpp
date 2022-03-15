@@ -4,10 +4,10 @@
 
 void OpenGLSetConstantBufferCommandName::Execute()
 {
-	static_cast<OpenGLPipeline*>(pipeline)->SetConstantBuffer(name, buffer);
+	static_cast<OpenGLPipeline*>(pipeline.get())->SetConstantBuffer(name, buffer);
 }
 
 void OpenGLSetConstantBufferCommandId::Execute()
 {
-	static_cast<OpenGLPipeline*>(pipeline)->SetConstantBuffer(binding_id, buffer);
+	static_cast<OpenGLPipeline*>(pipeline.get())->SetConstantBuffer(binding_id, buffer);
 }

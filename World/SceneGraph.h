@@ -38,17 +38,27 @@ public:
 	}
 	~SceneGraph() {}
 
+	void clear();
+
 	SceneNode* AddEntity(Entity ent, SceneNode* parent = nullptr);
 
 	void MarkEntityDirty(SceneNode* ent);
 
 	void Serialize(const std::string& file_path);
 
+	void Deserialize(const std::string& file_path);
+
 	void CalculateMatricies();
 
 	void RecalculateDownstream(SceneNode* node, SceneNode* upstream);
 
 private:
+	friend class GameLayer;
+
+	void DeserializeSystem();
+
+	std::string deserialize_path = "null path";
+	bool deserialize = false;
 
 	std::unordered_map<uint32_t, SceneNode> m_Nodes;
 	SceneNode root_node;

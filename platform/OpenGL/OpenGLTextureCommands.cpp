@@ -5,7 +5,7 @@
 
 void OpenGLSetTexture2DCommand::Execute()
 {
-	static_cast<OpenGLPipeline*>(pipeline)->SetTexture2D(name, texture);
+	static_cast<OpenGLPipeline*>(pipeline.get())->SetTexture2D(name, texture);
 }
 
 void OpenGLGenerateMIPsCommand::Execute()

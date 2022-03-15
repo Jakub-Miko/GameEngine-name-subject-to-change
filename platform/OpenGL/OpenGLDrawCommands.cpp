@@ -18,7 +18,7 @@ void OpenGLImplicitDrawCommand::Execute()
 			glBindVertexArray(gl_buffer->GetVAOId());
 		}
 		else {
-			OpenGLPipeline* gl_pipeline = static_cast<OpenGLPipeline*>(pipeline);
+			OpenGLPipeline* gl_pipeline = static_cast<OpenGLPipeline*>(pipeline.get());
 			int stride = gl_pipeline->GetLayout().stride;
 			int offset = 0;
 			int count = 0;

@@ -246,6 +246,8 @@ public:
             Renderer::Get()->GetCommandQueue()->ExecuteRenderCommandList(list);
             stop = false;*/
             
+            //Application::GetWorld().GetSceneGraph()->Deserialize(FileManager::Get()->GetAssetFilePath("save_file.json"));
+
             stop = false;
 
         }

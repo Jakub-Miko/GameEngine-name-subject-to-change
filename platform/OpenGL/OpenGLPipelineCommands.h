@@ -4,8 +4,8 @@
 
 class OpenGLSetPipelineCommand : public OpenGLRenderCommand {
 public:
-	OpenGLSetPipelineCommand(Pipeline* pipeline) : pipeline(pipeline) {}
+	OpenGLSetPipelineCommand(std::shared_ptr<Pipeline> pipeline) : pipeline(pipeline) {}
 	virtual void Execute() override;
 private:
-	Pipeline* pipeline;
+	std::shared_ptr<Pipeline> pipeline;
 };

@@ -8,13 +8,13 @@
 
 class OpenGLImplicitDrawCommand : public OpenGLRenderCommand {
 public:
-	OpenGLImplicitDrawCommand(Pipeline* pipeline, std::shared_ptr<RenderBufferResource> index_buffer,
+	OpenGLImplicitDrawCommand(std::shared_ptr<Pipeline> pipeline, std::shared_ptr<RenderBufferResource> index_buffer,
 		std::shared_ptr<RenderBufferResource> vertex_buffer, uint32_t index_count) 
 		: index_buffer(index_buffer), index_count(index_count), vertex_buffer(vertex_buffer), pipeline(pipeline) {};
 	virtual void Execute() override;
 private:
 	std::shared_ptr<RenderBufferResource> index_buffer;
 	std::shared_ptr<RenderBufferResource> vertex_buffer;
-	Pipeline* pipeline;
+	std::shared_ptr<Pipeline> pipeline;
 	uint32_t index_count;
 };

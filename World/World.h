@@ -6,6 +6,8 @@
 #include <World/Entity.h>
 #include <mutex>
 #include <glm/glm.hpp>
+#include <World/SceneProxy.h>
+#include <memory>
 #include <utility>
 
 class EntityType;
@@ -124,10 +126,16 @@ public:
 		return m_ECS;
 	}
 
+	void LoadSceneFromFile(const std::string& file_path);
+
 	Entity MakeEmptyEntity();
 
 private:
+	friend class GameLayer;
 
+	void LoadSceneSystem();
+	std::shared_ptr<SceneProxy> current_scene = nullptr;
+	std::shared_ptr<SceneProxy> load_scene = nullptr;
 	std::mutex entity_mutex;
 	SceneGraph m_SceneGraph;
 	entt::registry m_ECS;

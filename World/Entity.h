@@ -2,6 +2,15 @@
 #include <stdint.h>
 #include <entt/entt.hpp>
 
+enum class EntityMode : unsigned char {
+	DEFAULT = 0, STATIC = 1, DYNAMIC = 2
+};
+
+struct EntityProperties {
+	EntityProperties(EntityMode mode = EntityMode::DEFAULT) : mode(mode) {}
+	EntityMode mode;
+};
+
 class Entity {
 public:
 	friend class World;

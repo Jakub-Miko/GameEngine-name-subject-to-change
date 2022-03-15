@@ -5,5 +5,5 @@
 void OpenGLSetDescriptorTableCommand::Execute()
 {
 	PROFILE("Set Descriptor table");
-	static_cast<OpenGLPipeline*>(pipeline)->SetDescriptorTable(name, table);
+	static_cast<OpenGLPipeline*>(pipeline.get())->SetDescriptorTable(name, table);
 }

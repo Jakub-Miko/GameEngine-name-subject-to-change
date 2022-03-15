@@ -9,7 +9,7 @@
 #include <memory>
 #include <Renderer/Renderer.h>
 
-Pipeline* OpenGLPipelineManager::CreatePipeline(const PipelineDescriptor& desc)
+std::shared_ptr<Pipeline> OpenGLPipelineManager::CreatePipeline(const PipelineDescriptor& desc)
 {
 	Pipeline* pipeline = new OpenGLPipeline(desc);
 	OpenGLRenderCommandQueue* queue = static_cast<OpenGLRenderCommandQueue*>(Renderer::Get()->GetCommandQueue());
@@ -17,7 +17,7 @@ Pipeline* OpenGLPipelineManager::CreatePipeline(const PipelineDescriptor& desc)
 		//Pipeline Create
 		PROFILE("Pipeline Create");
 		}));
-	return pipeline;
+	return std::shared_ptr<Pipeline>(pipeline);
 }
 
 OpenGLPipelineManager::OpenGLPipelineManager()
