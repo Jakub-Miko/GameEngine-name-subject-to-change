@@ -30,6 +30,8 @@ public:
 
     Entity CreateEntityInplace(const std::string& path, Entity parent = Entity());
 
+    Entity CreateEntityInplace(Entity base_entity, const std::string& path, Entity parent = Entity());
+
     void ClearConstructionQueue();
 
     std::deque<Construction_Entry>& GetQueue();

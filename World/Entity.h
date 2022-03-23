@@ -1,15 +1,31 @@
 #pragma once
 #include <stdint.h>
 #include <entt/entt.hpp>
+#include <Core/UnitConverter.h>
 
 enum class EntityMode : unsigned char {
-	DEFAULT = 0, STATIC = 1, DYNAMIC = 2
+	STATIC = 0 << 0,
+	DYNAMIC = 1 << 0,
+	SERIALIZABLE = 1 << 1,
+	NON_SERIALIZABLE = 0 << 1,
+	DEFAULT = STATIC | NON_SERIALIZABLE
 };
+
+inline EntityMode operator|(const EntityMode& first, const EntityMode& second) {
+	return static_cast<EntityMode>(static_cast<unsigned char>(first) | static_cast<unsigned char>(second));
+}
+
+inline EntityMode operator&(const EntityMode& first, const EntityMode& second) {
+	return static_cast<EntityMode>(static_cast<unsigned char>(first) & static_cast<unsigned char>(second));
+}
+
 
 struct EntityProperties {
 	EntityProperties(EntityMode mode = EntityMode::DEFAULT) : mode(mode) {}
 	EntityMode mode;
 };
+
+JSON_SERIALIZABLE(EntityProperties, mode)
 
 class Entity {
 public:

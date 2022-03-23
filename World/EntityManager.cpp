@@ -69,6 +69,38 @@ Entity EntityManager::CreateEntityInplace(const std::string& path, Entity parent
 	return new_ent;
 }
 
+Entity EntityManager::CreateEntityInplace(Entity base_entity, const std::string& path, Entity parent)
+{
+	auto script_vm = ScriptSystemManager::Get()->TryGetScriptSystemVM();
+
+	if (!script_vm) {
+		ScriptSystemManager::Get()->InitializeScriptSystemVM();
+		script_vm = ScriptSystemManager::Get()->TryGetScriptSystemVM();
+	}
+
+
+	EntityParseResult entity_template = EntityManager::Get()->GetEntitySignature(path);
+	World& world = Application::GetWorld();
+	Entity new_ent = base_entity;
+	world.SetComponent<LoadedComponent>(new_ent, LoadedComponent(path));
+	world.CreateEntityFromEmpty(new_ent, parent);
+	script_vm->SetEngineInitializationEntity(new_ent, path);
+	world.SetComponent<DynamicPropertiesComponent>(new_ent, DynamicPropertiesComponent(entity_template.properties));
+	script_vm->CallInitializationFunction(path, "OnConstruct");
+	world.SetComponent<InitializationComponent>(new_ent);
+
+	for (auto child : entity_template.children) {
+		EntityParseResult child_entity_template = EntityManager::Get()->GetEntitySignature(child);
+		Entity child_ent = world.CreateEntity(new_ent);
+		script_vm->SetEngineInitializationEntity(child_ent, child);
+		world.SetComponent<DynamicPropertiesComponent>(child_ent, DynamicPropertiesComponent(child_entity_template.properties));
+		script_vm->CallInitializationFunction(child, "OnConstruct");
+		world.SetComponent<InitializationComponent>(child_ent);
+	}
+
+	return new_ent;
+}
+
 void EntityManager::ClearConstructionQueue()
 {
 	std::lock_guard<std::mutex> lock(constuction_mutex);

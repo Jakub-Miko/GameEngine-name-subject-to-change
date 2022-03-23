@@ -21,10 +21,18 @@ public:
 
 class BoundingBox : public BoundingVolume {
 public:
-	BoundingBox(glm::vec3 box_size, glm::vec3 box_offset) : box_size(box_size), box_offset(box_offset) {}
+	BoundingBox(glm::vec3 box_size = glm::vec3(1.0f), glm::vec3 box_offset = glm::vec3(0.0f)) : box_size(box_size), box_offset(box_offset) {}
 
 	virtual OverlapResult OverlapsFrustum(const Frustum& frustum, const glm::mat4& model_matrix) override;
 	virtual OverlapResult OverlapsPlane(const Plane& plane, const glm::mat4& model_matrix) override;
+
+	const glm::vec3& GetBoxSize() const {
+		return box_size;
+	}
+		
+	const glm::vec3& GetBoxOffset() const {
+		return box_offset;
+	}
 
 private:
 

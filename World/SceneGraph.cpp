@@ -6,6 +6,7 @@
 #include <fstream>
 #include <glm/gtc/type_ptr.hpp>
 #include <World/EntityManager.h>
+#include <World/Components/SerializableComponent.h>
 #include <World/Components/LoadedComponent.h>
 
 static void SerializeNode(const SceneNode& node, nlohmann::json& base_object, World* world);
@@ -108,8 +109,8 @@ static void SerializeNode(const SceneNode& node, nlohmann::json& base_object, Wo
 	json& current_json_node = base_object.back();
 	//Serialize here
 	current_json_node["id"] = node.entity.id;
+	TransformComponent& transform = world->GetComponent<TransformComponent>(node.entity);
 	if (world->HasComponent<TransformComponent>(node.entity)) {
-		TransformComponent& transform = world->GetComponent<TransformComponent>(node.entity);
 		float* translation = glm::value_ptr(transform.translation);
 		float* scale = glm::value_ptr(transform.size);
 		float* rotation = glm::value_ptr(transform.rotation);
@@ -244,6 +245,8 @@ static void DeserializeNode(nlohmann::json& json, SceneNode* parent, World* worl
 	world->SetEntityRotation(entity, glm::make_quat(rotation));
 	world->SetEntityScale(entity, glm::make_vec3(scale));
 	world->SetEntityTranslation(entity, glm::make_vec3(translation));
+	world->SetComponent<SerializableComponent>(entity);
+	transform.MakeSerializable();
 
 	if (json.find("children") != json.end()) {
 		for (nlohmann::json& json_current : json["children"]) {

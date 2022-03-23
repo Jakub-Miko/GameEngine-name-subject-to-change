@@ -15,7 +15,8 @@ file(GLOB SRCS
 "./World/*.cpp"
 "./World/*/*.cpp"
 "./Renderer/*.cpp" "./Renderer/*.h"
-"./Core/*.cpp")
+"./Core/*.cpp"
+"./Core/Extensions/*.cpp")
 
 add_executable(PseudoTest ${SRCS})
 
@@ -50,7 +51,7 @@ set_property(CACHE RENDER_API PROPERTY STRINGS "OpenGL" "DirectX12")
 file(GLOB DIRECTX_SRC
 "./platform/DirectX/*.cpp" "./platform/DirectX/*.h"
 "./platform/DirectX/*/*.cpp" "./platform/DirectX/*/*.h"
-"./platform/Windows/*.cpp" "./platform/Windows/*.h" )
+"./platform/Windows/*.cpp" "./platform/Windows/*.h")
 
 target_sources(PseudoTest PRIVATE ${DIRECTX_SRC} ${OPENGL_SRC})
 

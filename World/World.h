@@ -126,6 +126,10 @@ public:
 		return m_ECS;
 	}
 
+	const SceneProxy& GetCurrentSceneProxy() const {
+		return *current_scene;
+	}
+
 	void LoadSceneFromFile(const std::string& file_path);
 
 	Entity MakeEmptyEntity();

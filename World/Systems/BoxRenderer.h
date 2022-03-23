@@ -7,7 +7,15 @@
 #include <Renderer/RenderResourceManager.h>
 #include <Renderer/ShaderManager.h>
 #include <glm/glm.hpp>
+#include <World/System.h>
 #include <Core/FrameMultiBufferResource.h>
+
+
+template<typename ... Ts>
+struct Overload : Ts ... {
+    using Ts::operator() ...;
+};
+template<class... Ts> Overload(Ts...)->Overload<Ts...>;
 
 struct Render_Box_data {
     
@@ -183,14 +191,14 @@ void Delete_Render_Box_data() {
     Get_Render_Box_data().clear();
 }
 
-void Render_Box(const glm::mat4& model_matrix,const CameraComponent& camera, const glm::mat4& camera_transform, PrimitivePolygonRenderMode render_mode = PrimitivePolygonRenderMode::DEFAULT) {
+void Render_Box(const BoundingBox& box, const glm::mat4& model_matrix,const CameraComponent& camera, const glm::mat4& camera_transform, PrimitivePolygonRenderMode render_mode = PrimitivePolygonRenderMode::DEFAULT) {
     auto command_list = Renderer::Get()->GetRenderCommandList();
     auto command_queue = Renderer::Get()->GetCommandQueue();
 	
     Render_Box_data& data = Get_Render_Box_data();
 
     Render_Box_data::Constant_buffer_type buffer = {
-         camera.GetProjectionMatrix() * camera_transform * model_matrix,
+         camera.GetProjectionMatrix() * camera_transform * model_matrix * glm::translate(glm::mat4(1.0f), box.GetBoxOffset()) * glm::scale(glm::mat4(1.0f),box.GetBoxSize()),
             glm::normalize(glm::vec4(0.20f, 1.0f, -3.0f,0.0f)),
             glm::vec4(0.3f,0.7f,1.0f,1.0f)
     };
@@ -212,5 +220,25 @@ void Render_Box(const glm::mat4& model_matrix,const CameraComponent& camera, con
     command_list->Draw(36);
 
     command_queue->ExecuteRenderCommandList(command_list);
+
+}
+
+void BoundingVolumeRender(World* world) {
+    auto update = [&world](ComponentCollection compcol, system_view_type<BoundingVolumeComponent>& comps, entt::registry* reg) {
+        for (auto& entity : comps) {
+            BoundingVolumeComponent& box = world->GetComponent<BoundingVolumeComponent>(entity);
+            TransformComponent& transform = world->GetComponent<TransformComponent>(entity);
+            std::visit(Overload{
+                [&transform](BoundingBox& box) {
+                    //Render_Box(box,transform.TransformMatrix, )
+                },
+                [](auto& everything) {
+
+                }
+
+                }, box.bounding_volume_variant);
+        }
+    };
+
 
 }

@@ -256,8 +256,8 @@ public:
         auto props = Application::Get()->GetWindow()->m_Properties;
         auto camera = CameraComponent(45.0f, 0.1f, 1000.0f, (float)props.resolution_x / (float)props.resolution_y);
         auto view_matrix = glm::lookAt(camerapos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        Render_Box(glm::translate(glm::mat4(1.0f), {0.0f,0.6f,0.0f}), camera , view_matrix);
-        Render_Box(glm::translate(glm::mat4(1.0f), { 0.0f,-0.6f,0.0f }), camera, view_matrix, PrimitivePolygonRenderMode::WIREFRAME);
+        Render_Box(BoundingBox({0.5f,0.5f,0.5f}), glm::translate(glm::mat4(1.0f), { 0.0f,0.6f,0.0f }), camera, view_matrix);
+        Render_Box(BoundingBox(), glm::translate(glm::mat4(1.0f), { 0.0f,-0.6f,0.0f }), camera, view_matrix, PrimitivePolygonRenderMode::WIREFRAME);
         PROFILE("RenderRun");
 
 
