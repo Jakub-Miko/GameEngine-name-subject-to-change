@@ -137,7 +137,7 @@ struct RootSignatureFactory<BoxPreset> {
 		if (!signature) {
 			RootSignature* sig = RootSignature::CreateSignature(RootSignatureDescriptor(
 				{
-					RootSignatureDescriptorElement("input",RootParameterType::CONSTANT_BUFFER)
+					RootSignatureDescriptorElement("conf",RootParameterType::CONSTANT_BUFFER)
 				}
 			));
 

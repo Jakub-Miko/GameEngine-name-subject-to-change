@@ -6,7 +6,7 @@ in vec4 normal;
 
 out vec4 out_normal;
 
-layout(binding = 0) uniform input
+layout(binding = 0) uniform conf 
 {
 	mat4 mvp_matrix;
 	vec4 sun_direction;
@@ -23,7 +23,7 @@ void main() {
 #Fragment //------------------------------------------------
 #version 430
 
-layout(binding = 0) uniform input
+layout(binding = 0) uniform conf 
 {
 	mat4 mvp_matrix;
 	vec4 sun_direction;

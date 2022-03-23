@@ -14,7 +14,7 @@ public:
 	};
 	
 	
-	static Plane& GetPlane(PlaneAxis axis) {
+	static Plane GetPlane(PlaneAxis axis) {
 		switch (axis) {
 		case PlaneAxis::X:
 			return Plane(glm::vec3(1.0f, 0.0f, 0.0f), 0.0f);

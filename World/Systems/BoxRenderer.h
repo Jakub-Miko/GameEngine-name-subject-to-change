@@ -216,7 +216,7 @@ void Render_Box(const BoundingBox& box, const glm::mat4& model_matrix,const Came
     }
     command_list->SetVertexBuffer(data.vertex_buffer);
     command_list->SetIndexBuffer(data.index_buffer);
-    command_list->SetConstantBuffer("input", data.constant_buffer.GetResource());
+    command_list->SetConstantBuffer("conf", data.constant_buffer.GetResource());
     command_list->Draw(36);
 
     command_queue->ExecuteRenderCommandList(command_list);
