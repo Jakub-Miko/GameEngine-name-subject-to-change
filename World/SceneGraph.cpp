@@ -7,17 +7,17 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <World/EntityManager.h>
 #include <World/Components/SerializableComponent.h>
+#include <World/Components/ConstructionComponent.h>
 #include <World/Components/LoadedComponent.h>
 
 static void SerializeNode(const SceneNode& node, nlohmann::json& base_object, World* world);
-static void DeserializeNode(nlohmann::json& json, SceneNode* parent, World* world);
+static void DeserializeNode(const nlohmann::json& json, SceneNode* parent, World* world);
 
 void SceneGraph::clear()
 {
 	m_Nodes.clear();
 	m_dirty_nodes.clear();
 	root_calclulation_nodes.clear();
-	deserialize = false;
 
 	SceneNode node;
 	node.dirty = false;
@@ -80,56 +80,30 @@ void SceneGraph::MarkEntityDirty(SceneNode* ent)
 	}
 }
 
-void SceneGraph::Serialize(const std::string& file_path)
+void SceneGraph::Serialize(nlohmann::json& output_json)
 {
 	using namespace nlohmann;
-
-	json base_object;
+	output_json["SceneGraph"] = nlohmann::json();
 	SceneNode* current_node = root_node.first_child;
 	while (current_node) {
-		SerializeNode(*current_node, base_object["SceneGraph"], m_world);
+		SerializeNode(*current_node, output_json["SceneGraph"], m_world);
 		current_node = current_node->next;
 	}
 	
-	std::ofstream file_stream(file_path);
-	if (file_stream.is_open()) {
-		file_stream << base_object;
-		file_stream.close();
-	}
-	else {
-		throw std::runtime_error("File could not be opened: " + file_path);
-	}
-
 }
 
 
 static void SerializeNode(const SceneNode& node, nlohmann::json& base_object, World* world) {
 	using namespace nlohmann;
+	
+	if (!world->HasComponent<SerializableComponent>(node.entity)) {
+		return;
+	}
 	base_object.push_back(json::object());
 	json& current_json_node = base_object.back();
 	//Serialize here
 	current_json_node["id"] = node.entity.id;
-	TransformComponent& transform = world->GetComponent<TransformComponent>(node.entity);
-	if (world->HasComponent<TransformComponent>(node.entity)) {
-		float* translation = glm::value_ptr(transform.translation);
-		float* scale = glm::value_ptr(transform.size);
-		float* rotation = glm::value_ptr(transform.rotation);
-		for (int i = 0; i < 3; i++) {
-			current_json_node["transform"]["translation"].push_back(translation[i]);
-			current_json_node["transform"]["scale"].push_back(scale[i]);
-		}
-		for (int i = 0; i < 4; i++) {
-			current_json_node["transform"]["rotation"].push_back(rotation[i]);
-		}
 
-
-	}
-
-	if (world->HasComponent<LoadedComponent>(node.entity)) {
-		LoadedComponent& loaded = world->GetComponent<LoadedComponent>(node.entity);
-		current_json_node["file_path"] = loaded.file_path;
-
-	}
 
 	//Prefab hierarchy is defined in its file not the scene file
 	if (node.prefab) {
@@ -186,71 +160,30 @@ void SceneGraph::RecalculateDownstream(SceneNode* node, SceneNode* upstream)
 	}
 }
 
-void SceneGraph::DeserializeSystem()
+
+void SceneGraph::Deserialize(const nlohmann::json& input_json)
 {
 	using namespace nlohmann;
-	if (!deserialize) return;
-	
-	std::ifstream file(deserialize_path);
-	if (!file.is_open()) {
-		throw std::runtime_error("File could not be opened: " + deserialize_path);
-	}
-	json base_json;
-	base_json << file;
 
-	for (json& current_json : base_json["SceneGraph"]) {
+	for (const json& current_json : input_json["SceneGraph"]) {
 		DeserializeNode(current_json, &root_node, m_world);
 	}
 
-	deserialize = false;
-
 }
 
-
-void SceneGraph::Deserialize(const std::string& file_path)
-{
-	deserialize_path = file_path;
-	deserialize = true;
-
-}
-
-static void DeserializeNode(nlohmann::json& json, SceneNode* parent, World* world) {
-	Entity entity;
-	if(json.find("transform") == json.end() || json["transform"].size() != 3) {
-		// Failed
-		return;
-	}
-
-	float translation[3];
-	float scale[3];
-	float rotation[4];
-
-	for (int i = 0; i < 3; i++) {
-		translation[i] = json["transform"]["translation"][i];
-		scale[i] = json["transform"]["scale"][i];
-	}
-	for (int i = 0; i < 4; i++) {
-		rotation[i] = json["transform"]["rotation"][i];
-	}
-
-
-	if (json.find("file_path") != json.end()) {
-		entity = EntityManager::Get()->CreateEntityInplace(json["file_path"].get<std::string>() , parent->entity);
-	}
-	else {
-		entity = world->CreateEntity(parent->entity); 
-	}
-
-	TransformComponent& transform = world->GetComponent<TransformComponent>(entity);
-	world->SetEntityRotation(entity, glm::make_quat(rotation));
-	world->SetEntityScale(entity, glm::make_vec3(scale));
-	world->SetEntityTranslation(entity, glm::make_vec3(translation));
+static void DeserializeNode(const nlohmann::json& json, SceneNode* parent, World* world) {
+	Entity entity(json["id"].get<uint32_t>());
+	
+	SceneNode* node = world->GetSceneGraph()->AddEntity(entity, parent);
+	world->GetComponent<TransformComponent>(entity).scene_node = node;
 	world->SetComponent<SerializableComponent>(entity);
-	transform.MakeSerializable();
+	if (world->HasComponent<LoadedComponent>(entity)) {
+		world->SetComponent<ConstructionComponent>(entity, world->GetComponent<LoadedComponent>(entity).file_path, parent->entity);
+	}
 
 	if (json.find("children") != json.end()) {
-		for (nlohmann::json& json_current : json["children"]) {
-			DeserializeNode(json_current, transform.scene_node, world);
+		for (const nlohmann::json& json_current : json["children"]) {
+			DeserializeNode(json_current, node, world);
 		}
 	}
 

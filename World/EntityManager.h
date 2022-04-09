@@ -25,16 +25,12 @@ public:
     static void Initialize();
     static EntityManager* Get();
     static void Shutdown();
-
+    
     Entity CreateEntity(const std::string& path, Entity parent = Entity());
 
     Entity CreateEntityInplace(const std::string& path, Entity parent = Entity());
 
     Entity CreateEntityInplace(Entity base_entity, const std::string& path, Entity parent = Entity());
-
-    void ClearConstructionQueue();
-
-    std::deque<Construction_Entry>& GetQueue();
 
     const EntityParseResult& GetEntitySignature(const std::string& path);
 
@@ -44,7 +40,4 @@ private:
 
     std::mutex sync_mutex;
     std::unordered_map<std::string, EntityParseResult> m_entity_cache;
-
-    std::mutex constuction_mutex;
-    std::deque<Construction_Entry> construction_queue;
 };

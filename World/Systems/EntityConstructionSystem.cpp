@@ -2,12 +2,13 @@
 #include <World/System.h>
 #include <World/Components/DynamicPropertiesComponent.h>
 #include <World/Components/LoadedComponent.h>
+#include <World/Components/ConstructionComponent.h>
 #include <World/Systems/ScriptSystemManagement.h>
 #include <World/EntityManager.h>
 
 void EntityConstructionSystem(World& world)
 {
-    auto func_1 = [&world](ComponentCollection compcol, std::deque<Construction_Entry>& queue) {
+    auto func_1 = [&world](ComponentCollection compcol, system_view_type<ConstructionComponent>& comps, entt::registry* reg) {
         
         auto script_vm = ScriptSystemManager::Get()->TryGetScriptSystemVM();
         
@@ -16,17 +17,25 @@ void EntityConstructionSystem(World& world)
             script_vm = ScriptSystemManager::Get()->TryGetScriptSystemVM();
         }
         
-        for (auto iter = queue.rbegin() + compcol.start_index; iter != queue.rbegin() + compcol.start_index + compcol.size; iter++) {
+        for (auto iter = comps.rbegin() + compcol.start_index; iter != comps.rbegin() + compcol.start_index + compcol.size; iter++) {
             PROFILE("CONSTRUCT ENTITY");
-            auto comp = *iter;
+            auto comp = world.GetComponent<ConstructionComponent>(*iter);
             EntityParseResult entity_template = EntityManager::Get()->GetEntitySignature(comp.path);
-            Entity new_ent = comp.id;
-            world.SetComponent<LoadedComponent>(new_ent, LoadedComponent(comp.path));
-            world.CreateEntityFromEmpty(new_ent, comp.parent);
-            script_vm->SetEngineInitializationEntity(new_ent,comp.path);
-            world.SetComponent<DynamicPropertiesComponent>(new_ent, DynamicPropertiesComponent(entity_template.properties));
-            script_vm->CallInitializationFunction(comp.path, "OnConstruct");
-            world.SetComponent<InitializationComponent>(new_ent);
+            Entity new_ent = *iter;
+            
+            if (world.HasComponentSynced<LoadedComponent>(new_ent)) {
+                script_vm->SetEngineInitializationEntity(new_ent, comp.path);
+                script_vm->CallInitializationFunction(comp.path, "OnConstruct");
+                world.SetComponent<InitializationComponent>(new_ent);
+            }
+            else {
+                world.SetComponent<LoadedComponent>(new_ent, LoadedComponent(comp.path));
+                world.CreateEntityFromEmpty(new_ent, comp.parent);
+                script_vm->SetEngineInitializationEntity(new_ent,comp.path);
+                world.SetComponent<DynamicPropertiesComponent>(new_ent, DynamicPropertiesComponent(entity_template.properties));
+                script_vm->CallInitializationFunction(comp.path, "OnConstruct");
+                world.SetComponent<InitializationComponent>(new_ent);
+            }
 
             for (auto child : entity_template.children) {
                 EntityParseResult child_entity_template = EntityManager::Get()->GetEntitySignature(child);
@@ -40,6 +49,6 @@ void EntityConstructionSystem(World& world)
         }
     };
 
-    RunSystemSimpleQueue(world,EntityManager::Get()->GetQueue() ,func_1);
-    EntityManager::Get()->ClearConstructionQueue();
+    RunSystemSimple<ConstructionComponent>(world, func_1);
+    world.GetRegistry().clear<ConstructionComponent>();
 }

@@ -4,9 +4,11 @@
 #include <Core/UnitConverter.h>
 #include <glm/gtx/quaternion.hpp>
 #include <World/SceneGraph.h>
+#include <Core/RuntimeTag.h>
 
 struct TransformComponent {
-
+	RuntimeTag("TransformComponent")
+	TransformComponent() : scene_node(nullptr), TransformMatrix(1.0f), translation(0.0f), size(1.0f), rotation(glm::angleAxis(glm::degrees(0.0f), glm::vec3(0.0f, 1.0f, 0.0f))) {}
 	TransformComponent(SceneNode* ptr) : scene_node(ptr), TransformMatrix(1.0f), translation(0.0f), size(1.0f), rotation(glm::angleAxis(glm::degrees(0.0f), glm::vec3(0.0f,1.0f,0.0f))) {}
 
 	TransformComponent(const TransformComponent& ref) 

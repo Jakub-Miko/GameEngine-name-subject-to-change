@@ -2,5 +2,5 @@
   "Vsync": 0,
   "Latency_Frames": 2,
   "EnableMouseMoveEvent": 1,
-  "default_scene": "save_file.json"
+  "default_scene": "Entity_snapshot.json"
 }

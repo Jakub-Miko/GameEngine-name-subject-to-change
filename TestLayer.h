@@ -24,8 +24,18 @@
 #include <Renderer/PipelineManager.h>
 #include <Core/UnitConverter.h>
 #include <World/Components/BoundingVolumeComponent.h>
+#include <Core/RuntimeTag.h>
 #include <Window.h>
 #include <FileManager.h>
+
+class test1 {
+    RuntimeTag("Test1")
+};
+
+class test2 {
+
+};
+
 
 class TestLayer : public Layer
 {
@@ -85,8 +95,10 @@ public:
                 resource2 = FrameMultiBufferResource<std::shared_ptr<RenderBufferResource>>();
             }
             else if (e->key_code == KeyCode::KEY_S && e->press_type == KeyPressType::KEY_PRESS) {
-                Application::GetWorld().GetSceneGraph()->Serialize(FileManager::Get()->GetAssetFilePath("save_file.json"));
+                Application::GetWorld().SaveScene("Entity_snapshot.json");
             }
+
+
             return false;
             });
         dispatch.Dispatch<MouseMoveEvent>([this](MouseMoveEvent* e) {
@@ -247,6 +259,21 @@ public:
             stop = false;*/
             
             //Application::GetWorld().GetSceneGraph()->Deserialize(FileManager::Get()->GetAssetFilePath("save_file.json"));
+
+            std::cout << RuntimeTag<TransformComponent>::GetName() << "\n";
+            std::cout << RuntimeTag<CameraComponent>::GetName() << "\n";
+            std::cout << RuntimeTag<int>::GetName() << "\n";
+
+            DynamicPropertiesComponent comp1;
+            comp1.m_Properties.insert(std::make_pair("string", "string"));
+            comp1.m_Properties.insert(std::make_pair("int", 5.0));
+            comp1.m_Properties.insert(std::make_pair("vec4", glm::vec4(1.0f)));
+
+            nlohmann::json json;
+            json["attrib"] = comp1;
+            std::string dump = json.dump();
+            std::cout << dump << "\n";
+            DynamicPropertiesComponent comp2 = json["attrib"];
 
             stop = false;
 

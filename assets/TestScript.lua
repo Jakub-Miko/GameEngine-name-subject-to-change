@@ -3,14 +3,19 @@
 {
 	"Properties": [
 		{
-			"Name" : "prop_int",
-			"Type" : "int",
-			"Value" : 6
+			"name" : "prop_int",
+			"type" : "vec4",
+			"value" : {
+				"x": 0,
+				"y": 0,
+				"z": 0,
+				"w": 0
+			}
 		}
 	],
 
 	"Children" : [
-		"lol", "Hello There"
+		
 	]
 
 }
@@ -33,6 +38,6 @@ end
 
 function OnConstruct()
 
-SetSquareComponent()
+SetSquareComponent({x = 0,y = 0, z = 0, w = 0})
 
 end

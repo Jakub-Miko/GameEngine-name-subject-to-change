@@ -9,9 +9,10 @@
 #include <string>
 #include <World/Components/DynamicPropertiesComponent.h>
 #include <World/World.h>
-
+#include <Core/RuntimeTag.h>
 
 class ScriptComponent {
+	RuntimeTag("ScriptComponent")
 public:
 	ScriptComponent(const std::string& ref) : script_path(ref) {}
 	ScriptComponent() : script_path("") {}

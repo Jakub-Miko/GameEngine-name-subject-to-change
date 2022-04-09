@@ -2,7 +2,16 @@
 
 {
   "Properties": [
-    
+    {
+        "name": "hello_world",
+        "type": "vec4",
+        "value": {
+            "x": 5.0,
+            "y": 5.0,
+            "z": 5.0,
+            "w": 5.0
+        }
+    }
   ],
 
   "Children": [

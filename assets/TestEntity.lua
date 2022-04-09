@@ -3,9 +3,9 @@
 {
   "Properties": [
     {
-      "Name": "prop_int",
-      "Type": "int",
-      "Value": 1
+      "name": "prop_int",
+      "type": "int",
+      "value": 1
     }
   ],
 
@@ -37,11 +37,6 @@ end
 
 @Entity:Inline_Script
 
-function OnStart()
-
-
-
-end
 
 
 function OnUpdate(delta_time)

@@ -203,33 +203,34 @@ void ScriptHandler::BindHandlerFunctions(LuaEngineClass<ScriptHandler>* script_e
 {
     std::vector<LuaEngineClass<ScriptHandler>::LuaEngine_Function_Binding> bindings{
         //This is where function bindings go
-        {"MoveSquare" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::TestChangeSquarePos>},
-        {"GetPos" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::TestGetPosition>},
-        {"GetProperty_INT" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::GetProperty<int>>},
-        {"GetProperty_FLOAT" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::GetProperty<float>>},
-        {"GetProperty_STRING" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::GetProperty<std::string>>},
-        {"GetProperty_VEC2" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::GetProperty<glm::vec2>>},
-        {"GetProperty_VEC3" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::GetProperty<glm::vec3>>},
-        {"GetProperty_VEC4" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::GetProperty<glm::vec4>>},
-        {"SetProperty_INT" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetProperty<int>>},
-        {"SetProperty_FLOAT" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetProperty<float>>},
-        {"SetProperty_VEC2" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetProperty<glm::vec2>>},
-        {"SetProperty_VEC3" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetProperty<glm::vec3>>},
-        {"SetProperty_VEC4" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetProperty<glm::vec4>>},
-        {"SetProperty_STRING" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetProperty<std::string>>},
-        {"PropertyExists" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::PropertyExists>},
-        {"SetEntityProperty_INT" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetEntityProperty<int>>},
-        {"SetEntityProperty_FLOAT" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetEntityProperty<float>>},
-        {"SetEntityProperty_VEC2" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetEntityProperty<glm::vec2>>},
-        {"SetEntityProperty_VEC3" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetEntityProperty<glm::vec3>>},
-        {"SetEntityProperty_VEC4" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetEntityProperty<glm::vec4>>},
-        {"SetEntityProperty_STRING" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetEntityProperty<std::string>>},
-        {"IsKeyPressed" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::IsKeyPressed>},
-        {"IsMouseButtonPressed" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::IsMouseButtonPressed>},
-        {"GetMousePosition", LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::GetMousePosition>},
-        {"EnableKeyPressedEvents", LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::EnableKeyPressedEvents>},
-        {"EnableMouseButtonPressedEvents", LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::EnableMouseButtonPressedEvents>},
-        {"CreateEntity", LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::CreateEntity>}
+        //TODO: implement Script modules for code reuse.
+        {"MoveSquare" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::TestChangeSquarePos>},                                //Experimental Entity Module - use adapter
+        {"GetPos" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::TestGetPosition>},                                        // LocalProperty Module - use adapter
+        {"GetProperty_INT" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::GetProperty<int>>},                              // LocalProperty Module - use adapter
+        {"GetProperty_FLOAT" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::GetProperty<float>>},                          // LocalProperty Module - use adapter
+        {"GetProperty_STRING" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::GetProperty<std::string>>},                   // LocalProperty Module - use adapter
+        {"GetProperty_VEC2" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::GetProperty<glm::vec2>>},                       // LocalProperty Module - use adapter
+        {"GetProperty_VEC3" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::GetProperty<glm::vec3>>},                       // LocalProperty Module - use adapter
+        {"GetProperty_VEC4" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::GetProperty<glm::vec4>>},                       // LocalProperty Module - use adapter
+        {"SetProperty_INT" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetProperty<int>>},                              // LocalProperty Module - use adapter
+        {"SetProperty_FLOAT" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetProperty<float>>},                          // LocalProperty Module - use adapter
+        {"SetProperty_VEC2" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetProperty<glm::vec2>>},                       // LocalProperty Module - use adapter
+        {"SetProperty_VEC3" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetProperty<glm::vec3>>},                       // LocalProperty Module - use adapter
+        {"SetProperty_VEC4" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetProperty<glm::vec4>>},                       // LocalProperty Module - use adapter
+        {"SetProperty_STRING" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetProperty<std::string>>},                   // LocalProperty Module - use adapter
+        {"PropertyExists" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::PropertyExists>},                                 // LocalProperty Module - use adapter
+        {"SetEntityProperty_INT" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetEntityProperty<int>>},                  // DefferedEntity module - stateless
+        {"SetEntityProperty_FLOAT" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetEntityProperty<float>>},              // DefferedEntity module - stateless
+        {"SetEntityProperty_VEC2" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetEntityProperty<glm::vec2>>},           // DefferedEntity module - stateless
+        {"SetEntityProperty_VEC3" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetEntityProperty<glm::vec3>>},           // DefferedEntity module - stateless
+        {"SetEntityProperty_VEC4" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetEntityProperty<glm::vec4>>},           // DefferedEntity module - stateless
+        {"SetEntityProperty_STRING" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetEntityProperty<std::string>>},       // DefferedEntity module - stateless
+        {"CreateEntity", LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::CreateEntity>},                                     // DefferedEntity module - stateless
+        {"IsKeyPressed" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::IsKeyPressed>},                                     // IO module - stateless
+        {"IsMouseButtonPressed" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::IsMouseButtonPressed>},                     // IO module - stateless
+        {"GetMousePosition", LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::GetMousePosition>},                             // IO module - stateless
+        {"EnableKeyPressedEvents", LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::EnableKeyPressedEvents>},                 // Entity ConfigModule - use adapter
+        {"EnableMouseButtonPressedEvents", LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::EnableMouseButtonPressedEvents>}  // Entity ConfigModule - use adapter
 
     };
     if (bindings.empty()) return;
@@ -240,14 +241,14 @@ void InitializationScriptHandler::BindHandlerFunctions(LuaEngineClass<Initializa
 {
     std::vector<LuaEngineClass<InitializationScriptHandler>::LuaEngine_Function_Binding> bindings{
         //This is where function bindings go
-        {"SetSquareComponent", LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::SetSquareComponent>},
-        {"SetScriptComponent", LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::SetScriptComponent>},
-        {"SetTranslation", LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::SetTranslation>},
-        {"SetScale", LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::SetScale>},
-        {"UseInlineScript", LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::UseInlineScript>},
-        {"IsKeyPressed" ,LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::IsKeyPressed>},
-        {"IsMouseButtonPressed" ,LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::IsMouseButtonPressed>},
-        {"GetMousePosition", LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::GetMousePosition>}
+        {"SetSquareComponent", LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::SetSquareComponent>},         //SetComponent Module - use adapter
+        {"SetScriptComponent", LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::SetScriptComponent>},         //SetComponent Module - use adapter
+        {"SetTranslation", LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::SetTranslation>},                 //Transform Module - use adapter
+        {"SetScale", LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::SetScale>},                             //Transform Module - use adapter
+        {"UseInlineScript", LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::UseInlineScript>},               //InitialConfig Module - use adapter
+        {"IsKeyPressed" ,LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::IsKeyPressed>},                     // IO module - stateless
+        {"IsMouseButtonPressed" ,LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::IsMouseButtonPressed>},     // IO module - stateless
+        {"GetMousePosition", LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::GetMousePosition>}              // IO module - stateless
     
     };
 

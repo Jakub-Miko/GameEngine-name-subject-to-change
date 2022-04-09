@@ -2,10 +2,13 @@
 #include <unordered_map>
 #include <variant>
 #include <glm/glm.hpp>
+#include <Core/RuntimeTag.h>
+#include <Core/UnitConverter.h>
 
 using Script_Variant_type = std::variant<int, float, double, glm::vec2, glm::vec3, glm::vec4, std::string>;
 
 class DynamicPropertiesComponent {
+	RuntimeTag("DynamicPropertiesComponent")
 public:
 
 	DynamicPropertiesComponent() : m_Properties() {}
@@ -28,3 +31,11 @@ public:
 	//TODO: Implement custom allocator
 	std::unordered_map<std::string, Script_Variant_type> m_Properties;
 };
+
+#pragma region Json_Serialization
+
+void to_json(nlohmann::json& j, const DynamicPropertiesComponent& p);
+
+void from_json(const nlohmann::json& j, DynamicPropertiesComponent& p);
+
+#pragma endregion

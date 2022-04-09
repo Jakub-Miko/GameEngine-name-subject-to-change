@@ -31,7 +31,7 @@ class Entity {
 public:
 	friend class World;
 
-	Entity() : id(0) {};
+	Entity() : id(entt::null) {};
 	Entity(const Entity& ref) : id(ref.id) {};
 	Entity& operator=(const Entity& ref) {
 		id = ref.id;

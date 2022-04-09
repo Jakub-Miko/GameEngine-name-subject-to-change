@@ -2,6 +2,7 @@
 #include <glm/glm.hpp>
 #include <World/Components/CameraComponent.h>
 #include <Core/Geometry.h>
+#include <Core/RuntimeTag.h>
 
 enum class BoundingVolumeType : unsigned char {
 	NONE = 0, BOUNDING_BOX = 1, BOUNDING_SPHERE = 2
@@ -20,6 +21,8 @@ public:
 };
 
 class BoundingBox : public BoundingVolume {
+	//For Serialization purposes
+	RuntimeTag("BoundingBox")
 public:
 	BoundingBox(glm::vec3 box_size = glm::vec3(1.0f), glm::vec3 box_offset = glm::vec3(0.0f)) : box_size(box_size), box_offset(box_offset) {}
 

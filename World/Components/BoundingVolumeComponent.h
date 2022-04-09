@@ -3,8 +3,10 @@
 #include <variant>
 #include <utility>
 #include <type_traits>
+#include <Core/RuntimeTag.h>
 
 class BoundingVolumeComponent {
+	RuntimeTag("BoundingVolumeComponent")
 public:
 	using bounding_volume_variant_type = std::variant<BoundingBox>;
 public:

@@ -1,3 +1,23 @@
 {
-  "SceneGraph" : []
+  "Properties": [
+    {
+      "name": "prop_int",
+      "type": "vec4",
+      "value": {
+        "x" "=",
+        0,
+        "y" "=",
+        0,
+        "z" "=",
+        0,
+        "w" "=",
+        0
+      }
+    }
+  ],
+
+  "Children": [
+
+  ]
+
 }

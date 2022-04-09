@@ -47,6 +47,20 @@ public:
         return root;
     }
 
+    void SaveAsFile(const std::string filepath) {
+        if (!current.empty()) {
+            root.push_back(current);
+        }
+        std::ofstream stream(FileManager::Get()->GetAssetFilePath(filepath));
+        if (!stream.is_open()) {
+            throw std::runtime_error("File could not be opened: " + filepath);
+        }
+
+        stream << root;
+
+        stream.close();
+    }
+
 private:
     nlohmann::json root;
     nlohmann::json current;
@@ -66,18 +80,27 @@ public:
         root = nlohmann::json::parse(json_string);
     };
 
-    ECS_Input_Archive(const std::string& path) : root()
+    ECS_Input_Archive(const nlohmann::json& json)
     {
-        std::ifstream stream(path);
+        root = json;
+    };
+
+    ECS_Input_Archive() : root()
+    {
+
+    };
+
+    ~ECS_Input_Archive() {
+
+    }
+
+    void LoadFromFile(const std::string& path) {
+        std::ifstream stream(FileManager::Get()->GetAssetFilePath(path));
         if (!stream.is_open()) {
             throw std::runtime_error("File could not be opened: " + path);
         }
         root << stream;
         stream.close();
-    };
-
-    ~ECS_Input_Archive() {
-
     }
 
     void next_root() {

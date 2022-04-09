@@ -1,5 +1,11 @@
 #include "World.h"
 #include <FileManager.h>
+#include <Core/Extensions/EntitySerializationECSAdapter.h>
+#include <World/Components/SerializableComponent.h>
+#include <World/Components/LoadedComponent.h>
+#include <World/Components/DynamicPropertiesComponent.h>
+#include <World/Components/TransformComponent.h>
+#include <fstream>
 
 World::World() : m_ECS(), m_SceneGraph(this), load_scene(std::make_shared<SceneProxy>())
 {
@@ -64,9 +70,19 @@ void World::LoadSceneSystem()
 		m_ECS.clear();
 		m_ECS = entt::registry();
 		m_SceneGraph.clear();
-		if ((uint32_t)(m_ECS.create()) != 0) throw std::runtime_error("A null Entity could not be reserved");
 
-		m_SceneGraph.Deserialize(FileManager::Get()->GetAssetFilePath(load_scene->scene_path));
+		std::ifstream file(FileManager::Get()->GetAssetFilePath(load_scene->scene_path));
+		if (!file.is_open()) {
+			throw std::runtime_error("File could not be opened: " + FileManager::Get()->GetAssetFilePath(load_scene->scene_path));
+		}
+		nlohmann::json json;
+		json << file;
+		file.close();
+
+		ECS_Input_Archive archive(json["Entities"]);
+		entt::snapshot_loader(m_ECS).component<TransformComponent, LoadedComponent, DynamicPropertiesComponent>(archive);
+
+		m_SceneGraph.Deserialize(json);
 		current_scene = load_scene;
 		load_scene = nullptr;
 	}
@@ -75,6 +91,27 @@ void World::LoadSceneSystem()
 void World::LoadSceneFromFile(const std::string& file_path)
 {
 	load_scene = std::make_shared<SceneProxy>(file_path);
+}
+
+void World::SaveScene(const std::string& file_path)
+{
+	ECS_Output_Archive archive;
+	entt::snapshot snapshot(m_ECS);
+	auto view_serializable = m_ECS.view<SerializableComponent>();
+	snapshot.component<TransformComponent, LoadedComponent, DynamicPropertiesComponent>(archive, view_serializable.begin(), view_serializable.end());
+
+	nlohmann::json json;
+	json["Entities"] = archive.AsJson();
+
+	m_SceneGraph.Serialize(json);
+
+	std::ofstream file(FileManager::Get()->GetAssetFilePath(file_path),std::ios_base::trunc);
+	if (!file.is_open()) {
+		throw std::runtime_error("File could not be opened: " + FileManager::Get()->GetAssetFilePath(file_path));
+	}
+	file << json;
+	file.close();
+
 }
 
 Entity World::MakeEmptyEntity()

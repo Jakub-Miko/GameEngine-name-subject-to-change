@@ -3,9 +3,9 @@
 {
   "Properties": [
     {
-      "Name": "prop_int",
-      "Type": "int",
-      "Value": 5
+      "name": "prop_int",
+      "type": "int",
+      "value": 5
     }
   ],
 

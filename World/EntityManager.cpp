@@ -2,10 +2,12 @@
 #include <sstream>
 #include <stdexcept>
 #include <Application.h>
+#include <World/Components/ConstructionComponent.h>
 #include <World/World.h>
 #include <fstream>
 #include <FileManager.h>
 #include <World/Components/LoadedComponent.h>
+#include <World/Components/SerializableComponent.h>
 #include <World/Systems/ScriptSystemManagement.h>
 
 EntityManager* EntityManager::instance = nullptr;
@@ -32,8 +34,8 @@ void EntityManager::Shutdown()
 Entity EntityManager::CreateEntity(const std::string& path, Entity parent)
 {
 	auto ent = Application::GetWorld().MakeEmptyEntity();
-	std::lock_guard<std::mutex> lock(constuction_mutex);
-	construction_queue.push_back(Construction_Entry(ent, path, parent));
+	Application::GetWorld().SetComponent<ConstructionComponent>(ent, path, parent);
+	//Application::GetWorld().SetComponent<SerializableComponent>(ent);
 	return ent;
 }
 
@@ -99,17 +101,6 @@ Entity EntityManager::CreateEntityInplace(Entity base_entity, const std::string&
 	}
 
 	return new_ent;
-}
-
-void EntityManager::ClearConstructionQueue()
-{
-	std::lock_guard<std::mutex> lock(constuction_mutex);
-	construction_queue.clear();
-}
-
-std::deque<Construction_Entry>& EntityManager::GetQueue()
-{
-	return construction_queue;
 }
 
 EntityManager::EntityManager()

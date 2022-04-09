@@ -132,6 +132,8 @@ public:
 
 	void LoadSceneFromFile(const std::string& file_path);
 
+	void SaveScene(const std::string& file_path);
+
 	Entity MakeEmptyEntity();
 
 private:

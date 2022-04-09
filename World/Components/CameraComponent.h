@@ -2,6 +2,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <Core/Geometry.h>
+#include <Core/RuntimeTag.h>
 
 struct Frustum {
 	Frustum(Plane near, Plane far, Plane right, Plane left, Plane top, Plane bottom) : near(near), far(far), right(right), left(left), top(top), bottom(bottom) {}
@@ -13,6 +14,7 @@ struct Frustum {
 
 
 class CameraComponent {
+	RuntimeTag("CameraComponent")
 public:
 	CameraComponent(float fov, float zNear, float zFar, float aspect_ratio) : fov(fov), zNear(zNear), zFar(zFar), aspect_ratio(aspect_ratio), view_frustum(),
 		projection_matrix(glm::perspective(glm::radians(fov), aspect_ratio, zNear, zFar)) 

@@ -1,6 +1,7 @@
 #pragma once
 #include <World/Entity.h>
 #include <vector>
+#include <json.hpp>
 #include <unordered_map>
 #include <mutex>
 
@@ -36,6 +37,7 @@ public:
 
 		root_node = node;
 	}
+
 	~SceneGraph() {}
 
 	void clear();
@@ -44,9 +46,6 @@ public:
 
 	void MarkEntityDirty(SceneNode* ent);
 
-	void Serialize(const std::string& file_path);
-
-	void Deserialize(const std::string& file_path);
 
 	void CalculateMatricies();
 
@@ -54,11 +53,9 @@ public:
 
 private:
 	friend class GameLayer;
-
-	void DeserializeSystem();
-
-	std::string deserialize_path = "null path";
-	bool deserialize = false;
+	
+	void Serialize(nlohmann::json& output_json);
+	void Deserialize(const nlohmann::json& input_json);
 
 	std::unordered_map<uint32_t, SceneNode> m_Nodes;
 	SceneNode root_node;

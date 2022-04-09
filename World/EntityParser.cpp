@@ -4,57 +4,6 @@
 #include <json.hpp>
 #include <sstream>
 
-template<typename T>
-class PropertyParser {
-public:
-
-	static T Parse(const nlohmann::json::value_type& json) {
-		return json["Value"].get<T>();
-	}
-
-};
-
-template<>
-class PropertyParser<glm::vec2> {
-public:
-
-	static glm::vec2 Parse(const nlohmann::json::value_type& json) {
-		glm::vec2 value;
-		std::stringstream stream(json["Value"].get<std::string>());
-		stream >> value.x >> value.y;
-		return value;
-	}
-
-};
-
-template<>
-class PropertyParser<glm::vec3> {
-public:
-
-	static glm::vec3 Parse(const nlohmann::json::value_type& json) {
-		glm::vec3 value;
-		std::stringstream stream(json["Value"].get<std::string>());
-		stream >> value.x >> value.y >> value.z;
-		return value;
-	}
-
-};
-
-template<>
-class PropertyParser<glm::vec4> {
-public:
-
-	static glm::vec4 Parse(const nlohmann::json::value_type& json) {
-		glm::vec4 value;
-		std::stringstream stream(json["Value"].get<std::string>());
-		stream >> value.x >> value.y >> value.z >> value.w;
-		return value;
-	}
-
-};
-
-
-
 EntityParseResult EntityParser::ParseEntity(const std::string& script)
 {
 	std::string json_script;
@@ -90,21 +39,7 @@ EntityParseResult EntityParser::ParseEntity(const std::string& script)
 
 	
 	if (parser.contains("Properties")) {
-		for (auto prop : parser.at("Properties")) {
-			std::string name = prop["Name"].get<std::string>();
-			std::string type_name = prop["Type"].get<std::string>();
-			Script_Variant_type val;
-
-			if (type_name == "string") val = PropertyParser<std::string>::Parse(prop);
-			else if (type_name == "int") val = PropertyParser<int>::Parse(prop);
-			else if (type_name == "float") val = PropertyParser<float>::Parse(prop);
-			else if (type_name == "double") val = PropertyParser<double>::Parse(prop);
-			else if (type_name == "vec2") val = PropertyParser<glm::vec2>::Parse(prop);
-			else if (type_name == "vec3") val = PropertyParser<glm::vec3>::Parse(prop);
-			else if (type_name == "vec3") val = PropertyParser<glm::vec4>::Parse(prop);
-
-			result.properties.m_Properties.insert(std::make_pair(name,val));
-		}
+		result.properties = parser["Properties"];
 	}
 
 	if (parser.contains("Children")) {

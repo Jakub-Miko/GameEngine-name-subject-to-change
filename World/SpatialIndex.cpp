@@ -40,7 +40,8 @@ Octree::Octree(World& world, int max_node_count) : child_nodes(), entity_list(),
 	for (int index = 0; index < 8; index++) {
 		child_nodes.emplace_back(entities_lists[index], world, max_node_count);
 	}
-}
+};
+
 
 void Octree::ProcessEntity(World& world, std::array<std::vector<Entity>, 8>& list, Entity entity)
 {

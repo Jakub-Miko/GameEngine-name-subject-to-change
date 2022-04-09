@@ -2,6 +2,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <json.hpp>
+#include <variant>
 #define JSON_SERIALIZABLE(Type, ...) NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Type, __VA_ARGS__) 
 
 //Needed for serializing glm object to json
@@ -18,6 +19,18 @@ namespace nlohmann {
 			j.at("z").get_to(vec.z);
         }
     };
+
+	template <>
+	struct adl_serializer<glm::vec2> {
+		static void to_json(json& j, const glm::vec2& vec) {
+			j = json{ {"x", vec.x}, {"y", vec.y}};
+		}
+
+		static void from_json(const json& j, glm::vec2& vec) {
+			j.at("x").get_to(vec.x);
+			j.at("y").get_to(vec.y);
+		}
+	};
 
 	template <>
 	struct adl_serializer<glm::quat> {

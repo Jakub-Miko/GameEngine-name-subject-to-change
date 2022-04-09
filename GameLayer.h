@@ -45,13 +45,12 @@ public:
 
     virtual void OnUpdate(float delta_time) override {
         m_World.LoadSceneSystem();
-        m_World.GetSceneGraph()->DeserializeSystem();
         EntityConstructionSystem(m_World);
         ScriptSystemDefferedSet(m_World);
         InitializationSystem(m_World);
         ScriptSystemUpdate(m_World,delta_time);
         m_World.UpdateTransformMatricies();
-        //SquareRenderSystem(m_World);
+        SquareRenderSystem(m_World);
     }
 
 };
