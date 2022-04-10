@@ -7,6 +7,8 @@
 #include <World/Components/ScriptComponent.h>
 #include <Application.h>
 #include <Events/KeyPressEvent.h>
+#include <World/ScriptModules/DefferedPropertySetModule.h>
+#include <World/ScriptModules/IOModule.h>
 #include <Events/MouseButtonPressEvent.h>
 #include <World/EntityManager.h>
 
@@ -148,15 +150,14 @@ void GameStateMachine::BindLuaFunctions()
 	m_LuaEngine.RunString(ScriptKeyBindings);
 	
 	auto bindings = std::vector<LuaEngine::LuaEngine_Function_Binding>{
-		{"CreateEntity",LuaEngineClass<GameStateMachine>::InvokeClass<&GameStateMachine::CreateEntity>}
+		
 	};
+
+	DefferedPropertySetModule::RegisterModule(bindings);
+	IOModule::RegisterModule(bindings);
 
 	if (!bindings.empty()) {
 		m_LuaEngine.AddBindings(bindings);
 	}
 }
 
-int GameStateMachine::CreateEntity(std::string path, int parent)
-{
-	return EntityManager::Get()->CreateEntity(path, parent).id;
-}

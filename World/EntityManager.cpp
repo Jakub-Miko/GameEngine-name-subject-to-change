@@ -35,7 +35,6 @@ Entity EntityManager::CreateEntity(const std::string& path, Entity parent)
 {
 	auto ent = Application::GetWorld().MakeEmptyEntity();
 	Application::GetWorld().SetComponent<ConstructionComponent>(ent, path, parent);
-	//Application::GetWorld().SetComponent<SerializableComponent>(ent);
 	return ent;
 }
 

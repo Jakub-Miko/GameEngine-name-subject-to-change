@@ -14,6 +14,8 @@
 #include <Application.h>
 #include <fstream>
 #include <ThreadManager.h>
+#include <World/ScriptModules/IOModule.h>
+#include <World/ScriptModules/DefferedPropertySetModule.h>
 #include <stdexcept>
 
 ScriptSystemManager* ScriptSystemManager::instance = nullptr;
@@ -201,7 +203,7 @@ void ScriptSystemVM::ResetScriptVM()
 
 void ScriptHandler::BindHandlerFunctions(LuaEngineClass<ScriptHandler>* script_engine)
 {
-    std::vector<LuaEngineClass<ScriptHandler>::LuaEngine_Function_Binding> bindings{
+    std::vector<LuaEngine::LuaEngine_Function_Binding> bindings{
         //This is where function bindings go
         //TODO: implement Script modules for code reuse.
         {"MoveSquare" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::TestChangeSquarePos>},                                //Experimental Entity Module - use adapter
@@ -219,38 +221,30 @@ void ScriptHandler::BindHandlerFunctions(LuaEngineClass<ScriptHandler>* script_e
         {"SetProperty_VEC4" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetProperty<glm::vec4>>},                       // LocalProperty Module - use adapter
         {"SetProperty_STRING" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetProperty<std::string>>},                   // LocalProperty Module - use adapter
         {"PropertyExists" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::PropertyExists>},                                 // LocalProperty Module - use adapter
-        {"SetEntityProperty_INT" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetEntityProperty<int>>},                  // DefferedEntity module - stateless
-        {"SetEntityProperty_FLOAT" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetEntityProperty<float>>},              // DefferedEntity module - stateless
-        {"SetEntityProperty_VEC2" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetEntityProperty<glm::vec2>>},           // DefferedEntity module - stateless
-        {"SetEntityProperty_VEC3" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetEntityProperty<glm::vec3>>},           // DefferedEntity module - stateless
-        {"SetEntityProperty_VEC4" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetEntityProperty<glm::vec4>>},           // DefferedEntity module - stateless
-        {"SetEntityProperty_STRING" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetEntityProperty<std::string>>},       // DefferedEntity module - stateless
-        {"CreateEntity", LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::CreateEntity>},                                     // DefferedEntity module - stateless
-        {"IsKeyPressed" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::IsKeyPressed>},                                     // IO module - stateless
-        {"IsMouseButtonPressed" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::IsMouseButtonPressed>},                     // IO module - stateless
-        {"GetMousePosition", LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::GetMousePosition>},                             // IO module - stateless
         {"EnableKeyPressedEvents", LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::EnableKeyPressedEvents>},                 // Entity ConfigModule - use adapter
         {"EnableMouseButtonPressedEvents", LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::EnableMouseButtonPressedEvents>}  // Entity ConfigModule - use adapter
 
     };
+
+    IOModule::RegisterModule(bindings);
+    DefferedPropertySetModule::RegisterModule(bindings);
+
     if (bindings.empty()) return;
     script_engine->AddBindings(bindings);
 }
 
 void InitializationScriptHandler::BindHandlerFunctions(LuaEngineClass<InitializationScriptHandler>* script_engine)
 {
-    std::vector<LuaEngineClass<InitializationScriptHandler>::LuaEngine_Function_Binding> bindings{
+    std::vector<LuaEngine::LuaEngine_Function_Binding> bindings{
         //This is where function bindings go
         {"SetSquareComponent", LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::SetSquareComponent>},         //SetComponent Module - use adapter
         {"SetScriptComponent", LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::SetScriptComponent>},         //SetComponent Module - use adapter
         {"SetTranslation", LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::SetTranslation>},                 //Transform Module - use adapter
         {"SetScale", LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::SetScale>},                             //Transform Module - use adapter
         {"UseInlineScript", LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::UseInlineScript>},               //InitialConfig Module - use adapter
-        {"IsKeyPressed" ,LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::IsKeyPressed>},                     // IO module - stateless
-        {"IsMouseButtonPressed" ,LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::IsMouseButtonPressed>},     // IO module - stateless
-        {"GetMousePosition", LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::GetMousePosition>}              // IO module - stateless
-    
     };
+
+    IOModule::RegisterModule(bindings);
 
     if (bindings.empty()) return;
     script_engine->AddBindings(bindings);
@@ -291,21 +285,6 @@ void InitializationScriptHandler::EnableMouseButtonPressedEvents()
     Application::GetWorld().SetComponent<MousePressedScriptComponent>(current_entity);
 }
 
-bool InitializationScriptHandler::IsKeyPressed(int key_code)
-{
-    return Input::Get()->IsKeyPressed((KeyCode)key_code);
-}
-
-bool InitializationScriptHandler::IsMouseButtonPressed(int key_code)
-{
-    return Input::Get()->IsMouseButtonPressed((MouseButtonCode)key_code);
-}
-
-glm::vec2 InitializationScriptHandler::GetMousePosition()
-{
-    return Input::Get()->GetMoutePosition();
-}
-
 void ScriptHandler::BindKeyCodes(LuaEngineClass<ScriptHandler>* script_engine)
 {
     script_engine->RunString(ScriptKeyBindings);
@@ -331,21 +310,6 @@ bool ScriptHandler::PropertyExists(std::string name)
     return false;
 }
 
-bool ScriptHandler::IsKeyPressed(int key_code)
-{
-    return Input::Get()->IsKeyPressed((KeyCode)key_code);
-}
-
-bool ScriptHandler::IsMouseButtonPressed(int key_code)
-{
-    return Input::Get()->IsMouseButtonPressed((MouseButtonCode)key_code);
-}
-
-glm::vec2 ScriptHandler::GetMousePosition()
-{
-    return Input::Get()->GetMoutePosition();
-}
-
 void ScriptHandler::EnableKeyPressedEvents()
 {
     Application::GetWorld().SetComponent<KeyPressedScriptComponent>(current_entity);
@@ -356,8 +320,4 @@ void ScriptHandler::EnableMouseButtonPressedEvents()
     Application::GetWorld().SetComponent<MousePressedScriptComponent>(current_entity);
 }
 
-int ScriptHandler::CreateEntity(std::string path,int parent)
-{
-    return EntityManager::Get()->CreateEntity(path, Entity(parent)).id;
-}
 

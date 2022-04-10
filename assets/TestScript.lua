@@ -3,13 +3,12 @@
 {
 	"Properties": [
 		{
-			"name" : "prop_int",
-			"type" : "vec4",
+			"name" : "position",
+			"type" : "vec3",
 			"value" : {
 				"x": 0,
 				"y": 0,
-				"z": 0,
-				"w": 0
+				"z": 0
 			}
 		}
 	],
@@ -22,14 +21,17 @@
 
 @Entity:Inline_Script
 
-function OnUpdate(delta_time)
-pos = GetPos()
 
-if not IsMouseButtonPressed(MouseButtonCode.MOUSE_BUTTON_LEFT) then	
-	MoveSquare(pos.x + 0.001*delta_time,pos.y)
-else 
-	MoveSquare(pos.x -0.001*delta_time,pos.y)
+function OnStart()
+
+prop = GetProperty_VEC3("position")
+
+MoveSquare(prop.x, prop.y)
+
 end
+
+
+function OnUpdate(delta_time)
 
 end
 
@@ -38,6 +40,8 @@ end
 
 function OnConstruct()
 
-SetSquareComponent({x = 0,y = 0, z = 0, w = 0})
+SetScale({x=0.1,y=0.1,z=1.0})
+SetSquareComponent({x = 0.5, y=0.0, z=1.0, w=1.0 })
+UseInlineScript()
 
 end

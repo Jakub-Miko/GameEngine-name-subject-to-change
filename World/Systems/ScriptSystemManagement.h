@@ -135,31 +135,10 @@ public:
 
     bool PropertyExists(std::string name);
 
-    bool IsKeyPressed(int key_code);
-
-    bool IsMouseButtonPressed(int key_code);
-
-    glm::vec2 GetMousePosition();
-
     void EnableKeyPressedEvents();
-
-    template<typename T>
-    void SetEntityProperty(int entity, std::string name, T value) {
-        auto map = ThreadManager::GetThreadLocalData<Deffered_Set_Map>();
-        auto fnd = map->find((uint32_t)entity);
-        if (fnd != map->end()) {
-            fnd->second.push_back(Script_Variant_Key_Value(value, name));
-        }
-        else {
-            ScriptSystemManager::Get()->SetEntityAsDirty(Entity(entity));
-            auto new_vec = map->insert(std::make_pair((uint32_t)entity, std::vector<Script_Variant_Key_Value>()));
-            (new_vec.first)->second.push_back(Script_Variant_Key_Value(value, name));
-        }
-    }
 
     void EnableMouseButtonPressedEvents();
 
-    int CreateEntity(std::string path, int parent);
 
 #pragma endregion
 private:
@@ -195,12 +174,6 @@ public:
     void UseInlineScript();
 
     void EnableMouseButtonPressedEvents();
-
-    bool IsKeyPressed(int key_code);
-
-    bool IsMouseButtonPressed(int key_code);
-
-    glm::vec2 GetMousePosition();
 
 #pragma endregion
 private:
