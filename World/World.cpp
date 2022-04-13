@@ -76,19 +76,19 @@ void World::RemoveEntity(Entity entity)
 
 void World::WarmUp()
 {
-	m_ECS.prepare<BoundingVolumeComponent>();
-	m_ECS.prepare<CameraComponent>();
-	m_ECS.prepare<ConstructionComponent>();
-	m_ECS.prepare<DefferedUpdateComponent>();
-	m_ECS.prepare<DynamicPropertiesComponent>();
-	m_ECS.prepare<InitializationComponent>();
-	m_ECS.prepare<KeyPressedScriptComponent>();
-	m_ECS.prepare<LoadedComponent>();
-	m_ECS.prepare<MousePressedScriptComponent>();
-	m_ECS.prepare<ScriptComponent>();
-	m_ECS.prepare<SerializableComponent>();
-	m_ECS.prepare<SquareComponent>();
-	m_ECS.prepare<TransformComponent>();
+	m_ECS.storage<BoundingVolumeComponent>();
+	m_ECS.storage<CameraComponent>();
+	m_ECS.storage<ConstructionComponent>();
+	m_ECS.storage<DefferedUpdateComponent>();
+	m_ECS.storage<DynamicPropertiesComponent>();
+	m_ECS.storage<InitializationComponent>();
+	m_ECS.storage<KeyPressedScriptComponent>();
+	m_ECS.storage<LoadedComponent>();
+	m_ECS.storage<MousePressedScriptComponent>();
+	m_ECS.storage<ScriptComponent>();
+	m_ECS.storage<SerializableComponent>();
+	m_ECS.storage<SquareComponent>();
+	m_ECS.storage<TransformComponent>();
 }
 
 void World::LoadSceneSystem()
