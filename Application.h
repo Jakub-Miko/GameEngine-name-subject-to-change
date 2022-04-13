@@ -7,6 +7,7 @@
 #include <GameLayer.h>
 #include <chrono>
 #include <Events/Event.h>
+#include <mutex>
 #include <ThreadManager.h>
 #include <Renderer/RenderFence.h>
 
@@ -56,9 +57,14 @@ public:
 
     static World& GetWorld() { return instance->m_GameLayer->GetWorld(); };
 
+    static std::mutex& GetDebugMutex() {
+        static std::mutex mutex;
+        return mutex;
+    }
 
 private:
     std::chrono::high_resolution_clock::time_point last_time_point;
+    
 
     void InitInstance();
 

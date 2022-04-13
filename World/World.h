@@ -139,6 +139,8 @@ public:
 private:
 	friend class GameLayer;
 
+	void WarmUp();
+
 	void LoadSceneSystem();
 	std::shared_ptr<SceneProxy> current_scene = nullptr;
 	std::shared_ptr<SceneProxy> load_scene = nullptr;

@@ -13,7 +13,7 @@ if(key.press_type == KeyPressType.KEY_PRESS and key.key_code == KeyCode.KEY_V) t
 
 pos = GetMousePosition()
 
-entity = CreateEntity("TestScript.lua",-1)
+entity = CreateSerializableEntity("TestScript.lua",-1)
 SetEntityProperty_VEC3(entity, "position", {x = pos.x, y = pos.y, z = 1.0})
 
 end

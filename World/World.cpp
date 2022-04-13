@@ -5,11 +5,21 @@
 #include <World/Components/LoadedComponent.h>
 #include <World/Components/DynamicPropertiesComponent.h>
 #include <World/Components/TransformComponent.h>
+#include <World/Components/BoundingVolumeComponent.h>
+#include <World/Components/CameraComponent.h>
+#include <World/Components/ConstructionComponent.h>
+#include <World/Components/DefferedUpdateComponent.h>
+#include <World/Components/InitializationComponent.h>
+#include <World/Components/KeyPressedScriptComponent.h>
+#include <World/Components/MousePressedScriptComponent.h>
+#include <World/Components/ScriptComponent.h>
+#include <World/Components/SquareComponent.h>
 #include <fstream>
 
 World::World() : m_ECS(), m_SceneGraph(this), load_scene(std::make_shared<SceneProxy>())
 {
-	if((uint32_t)(m_ECS.create())!=0) throw std::runtime_error("A null Entity could not be reserved");
+	WarmUp();
+	//if((uint32_t)(m_ECS.create())!=0) throw std::runtime_error("A null Entity could not be reserved");
 }
 
 World::~World()
@@ -64,6 +74,23 @@ void World::RemoveEntity(Entity entity)
 	m_ECS.destroy((entt::entity)entity.id);
 }
 
+void World::WarmUp()
+{
+	m_ECS.prepare<BoundingVolumeComponent>();
+	m_ECS.prepare<CameraComponent>();
+	m_ECS.prepare<ConstructionComponent>();
+	m_ECS.prepare<DefferedUpdateComponent>();
+	m_ECS.prepare<DynamicPropertiesComponent>();
+	m_ECS.prepare<InitializationComponent>();
+	m_ECS.prepare<KeyPressedScriptComponent>();
+	m_ECS.prepare<LoadedComponent>();
+	m_ECS.prepare<MousePressedScriptComponent>();
+	m_ECS.prepare<ScriptComponent>();
+	m_ECS.prepare<SerializableComponent>();
+	m_ECS.prepare<SquareComponent>();
+	m_ECS.prepare<TransformComponent>();
+}
+
 void World::LoadSceneSystem()
 {
 	if (load_scene) {
@@ -81,6 +108,8 @@ void World::LoadSceneSystem()
 
 		ECS_Input_Archive archive(json["Entities"]);
 		entt::snapshot_loader(m_ECS).component<TransformComponent, LoadedComponent, DynamicPropertiesComponent>(archive);
+
+		WarmUp();
 
 		m_SceneGraph.Deserialize(json);
 		current_scene = load_scene;

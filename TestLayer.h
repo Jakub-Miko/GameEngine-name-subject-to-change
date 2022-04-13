@@ -97,6 +97,9 @@ public:
             else if (e->key_code == KeyCode::KEY_S && e->press_type == KeyPressType::KEY_PRESS) {
                 Application::GetWorld().SaveScene("Entity_snapshot.json");
             }
+            else if (e->key_code == KeyCode::KEY_L && e->press_type == KeyPressType::KEY_PRESS) {
+                Application::GetWorld().LoadSceneFromFile("Entity_snapshot.json");
+            }
 
 
             return false;

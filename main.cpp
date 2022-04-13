@@ -14,13 +14,18 @@ int main() {
     {
         BEGIN_PROFILING("Profile", "C:/Users/mainm/Desktop/GameEngine/PseudoCode/Profile_Result1.json");
         
-
-
-        Application::Init();
-        Application::Get()->SetInitialGameState(std::make_shared<SandboxState>());
-        Application::Get()->Run();
-        Application::ShutDown();
+        try {
+            Application::Init();
+            Application::Get()->SetInitialGameState(std::make_shared<SandboxState>());
+            Application::Get()->Run();
+            Application::ShutDown();
+        }
+        catch(std::runtime_error& error) {
+            std::cout << error.what() << "\n";
+        }
+        
         END_PROFILING();
+
     }
 #ifdef WIN32
     _CrtDumpMemoryLeaks();

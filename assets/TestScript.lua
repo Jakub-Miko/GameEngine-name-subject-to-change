@@ -1,5 +1,4 @@
 @Entity
-
 {
 	"Properties": [
 		{
@@ -20,7 +19,6 @@
 }
 
 @Entity:Inline_Script
-
 
 function OnStart()
 
