@@ -7,6 +7,7 @@
 #include <World/Components/SquareComponent.h>
 #include <World/Components/KeyPressedScriptComponent.h>
 #include <World/Components/MousePressedScriptComponent.h>
+#include <World/Components/CameraComponent.h>
 #include <World/Components/DefferedUpdateComponent.h>
 #include <World/EntityManager.h>
 #include <sstream>
@@ -16,6 +17,7 @@
 #include <ThreadManager.h>
 #include <World/ScriptModules/IOModule.h>
 #include <World/ScriptModules/DefferedPropertySetModule.h>
+#include <World/ScriptModules/ApplicationDataModule.h>
 #include <stdexcept>
 
 ScriptSystemManager* ScriptSystemManager::instance = nullptr;
@@ -239,12 +241,14 @@ void InitializationScriptHandler::BindHandlerFunctions(LuaEngineClass<Initializa
         //This is where function bindings go
         {"SetSquareComponent", LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::SetSquareComponent>},         //SetComponent Module - use adapter
         {"SetScriptComponent", LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::SetScriptComponent>},         //SetComponent Module - use adapter
+        {"SetCameraComponent", LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::SetCameraComponent>},         //SetComponent Module - use adapter
         {"SetTranslation", LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::SetTranslation>},                 //Transform Module - use adapter
         {"SetScale", LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::SetScale>},                             //Transform Module - use adapter
         {"UseInlineScript", LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::UseInlineScript>},               //InitialConfig Module - use adapter
     };
 
     IOModule::RegisterModule(bindings);
+    ApplicationDataModule::RegisterModule(bindings);
 
     if (bindings.empty()) return;
     script_engine->AddBindings(bindings);
@@ -258,6 +262,11 @@ void InitializationScriptHandler::SetScriptComponent(std::string path)
 void InitializationScriptHandler::SetSquareComponent(glm::vec4 color)
 {
     Application::GetWorld().SetComponent<SquareComponent>(current_entity, SquareComponent(color));
+}
+
+void InitializationScriptHandler::SetCameraComponent(float fov, float zNear, float zFar, float aspect_ratio)
+{
+    Application::GetWorld().SetComponent<CameraComponent>(current_entity, CameraComponent(fov,zNear, zFar, aspect_ratio));
 }
 
 void InitializationScriptHandler::SetTranslation(glm::vec3 translation)

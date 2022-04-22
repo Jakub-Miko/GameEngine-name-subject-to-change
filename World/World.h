@@ -134,14 +134,29 @@ public:
 
 	void SaveScene(const std::string& file_path);
 
+	void SetPrimaryEntity(Entity entity);
+
+	bool IsSceneLoaded() const {
+		return load_scene.get();
+	}
+	
+	Entity GetPrimaryEntity() const {
+		return primary_entity;
+	}
+
 	Entity MakeEmptyEntity();
 
 private:
 	friend class GameLayer;
 
-	void WarmUp();
+	void RegistryWarmUp();
 
 	void LoadSceneSystem();
+
+	void SetPrimaryEntitySystem();
+
+	Entity set_primary_entity = Entity();
+	Entity primary_entity = Entity();
 	std::shared_ptr<SceneProxy> current_scene = nullptr;
 	std::shared_ptr<SceneProxy> load_scene = nullptr;
 	std::mutex entity_mutex;

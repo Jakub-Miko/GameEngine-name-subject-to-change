@@ -35,6 +35,10 @@ public:
 		resources.clear();
 	}
 
+	void release() {
+		resources.clear();
+	}
+
 	T& GetResource() {
 		return resources[(FrameManager::Get()->GetCurrentFrameNumber() % resources.size())];
 	}

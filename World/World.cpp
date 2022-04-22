@@ -18,7 +18,7 @@
 
 World::World() : m_ECS(), m_SceneGraph(this), load_scene(std::make_shared<SceneProxy>())
 {
-	WarmUp();
+	RegistryWarmUp();
 	//if((uint32_t)(m_ECS.create())!=0) throw std::runtime_error("A null Entity could not be reserved");
 }
 
@@ -74,7 +74,7 @@ void World::RemoveEntity(Entity entity)
 	m_ECS.destroy((entt::entity)entity.id);
 }
 
-void World::WarmUp()
+void World::RegistryWarmUp()
 {
 	m_ECS.storage<BoundingVolumeComponent>();
 	m_ECS.storage<CameraComponent>();
@@ -109,11 +109,25 @@ void World::LoadSceneSystem()
 		ECS_Input_Archive archive(json["Entities"]);
 		entt::snapshot_loader(m_ECS).component<TransformComponent, LoadedComponent, DynamicPropertiesComponent>(archive);
 
-		WarmUp();
+		RegistryWarmUp();
 
 		m_SceneGraph.Deserialize(json);
+
+		SetPrimaryEntity(load_scene->primary_entity);
+
 		current_scene = load_scene;
 		load_scene = nullptr;
+	}
+}
+
+void World::SetPrimaryEntitySystem()
+{
+	if (set_primary_entity != Entity()) {
+		if (!HasComponent<CameraComponent>(set_primary_entity)) {
+			throw std::runtime_error("Primary entity doesn't have a camera component");
+		}
+		primary_entity = set_primary_entity;
+		set_primary_entity = Entity();
 	}
 }
 
@@ -134,6 +148,10 @@ void World::SaveScene(const std::string& file_path)
 
 	m_SceneGraph.Serialize(json);
 
+	if (current_scene->primary_entity != Entity()) {
+		json["primary_entity"] = current_scene->primary_entity;
+	}
+
 	std::ofstream file(FileManager::Get()->GetAssetFilePath(file_path),std::ios_base::trunc);
 	if (!file.is_open()) {
 		throw std::runtime_error("File could not be opened: " + FileManager::Get()->GetAssetFilePath(file_path));
@@ -141,6 +159,11 @@ void World::SaveScene(const std::string& file_path)
 	file << json;
 	file.close();
 
+}
+
+void World::SetPrimaryEntity(Entity entity)
+{
+	set_primary_entity = entity;
 }
 
 Entity World::MakeEmptyEntity()

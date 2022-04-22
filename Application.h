@@ -5,6 +5,7 @@
 #include <Profiler.h>
 #include <cstddef>
 #include <GameLayer.h>
+#include <World/World.h>
 #include <chrono>
 #include <Events/Event.h>
 #include <mutex>
@@ -25,7 +26,8 @@ private:
 
     friend class GameState;
     GameLayer* m_GameLayer = nullptr;
- 
+    World* world = nullptr;
+
 public:
 
     Application(const Application& ref) = delete;
@@ -55,7 +57,7 @@ public:
 
     static void ShutDown();
 
-    static World& GetWorld() { return instance->m_GameLayer->GetWorld(); };
+    static World& GetWorld() { return *instance->world; };
 
     static std::mutex& GetDebugMutex() {
         static std::mutex mutex;
@@ -64,7 +66,7 @@ public:
 
 private:
     std::chrono::high_resolution_clock::time_point last_time_point;
-    
+  
 
     void InitInstance();
 

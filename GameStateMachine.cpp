@@ -9,6 +9,7 @@
 #include <Events/KeyPressEvent.h>
 #include <World/ScriptModules/DefferedPropertySetModule.h>
 #include <World/ScriptModules/IOModule.h>
+#include <World/ScriptModules/ApplicationDataModule.h>
 #include <Events/MouseButtonPressEvent.h>
 #include <World/EntityManager.h>
 
@@ -155,6 +156,7 @@ void GameStateMachine::BindLuaFunctions()
 
 	DefferedPropertySetModule::RegisterModule(bindings);
 	IOModule::RegisterModule(bindings);
+	ApplicationDataModule::RegisterModule(bindings);
 
 	if (!bindings.empty()) {
 		m_LuaEngine.AddBindings(bindings);

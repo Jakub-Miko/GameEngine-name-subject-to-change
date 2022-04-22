@@ -4,6 +4,7 @@
 #include <ConfigManager.h>
 #include <Renderer/Renderer.h>
 #include <World/Systems/ScriptSystemManagement.h>
+#include <World/Systems/BoxRenderer.h>
 #include "Layer.h"
 #include <World/EntityManager.h>
 #include <Profiler.h>
@@ -29,6 +30,7 @@ Window* Application::GetWindow() const
 bool Application::SendEvent(Event* event)
 {
     GameStateMachine::Get()->OnEventState(event);
+    m_GameLayer->OnEvent(event);
     return event->handled;
 }
 
@@ -57,10 +59,11 @@ Application::~Application()
     ConfigManager::Shutdown();
     FileManager::Shutdown();
     delete m_GameLayer;
+    delete world;
 }
 
 Application::Application()
-    : m_Window(nullptr)
+    : m_Window(nullptr), world()
 {
     
 }
@@ -80,6 +83,8 @@ void Application::InitInstance()
     ThreadManager::Init();
 
     m_GameLayer = new GameLayer();
+
+    world = new World();
 
     //Claim MainThread
     m_MainThread = ThreadManager::Get()->GetThread();
@@ -129,6 +134,7 @@ void Application::InitializeSystems()
 void Application::ShutdownSystems()
 {
     ScriptSystemManager::Shutdown();
+    Delete_Render_Box_data();
 }
 
 void Application::Exit()
@@ -145,11 +151,14 @@ void Application::Run()
 {
     m_running = true;
     last_time_point = std::chrono::high_resolution_clock::now();
+    
+    //THE Game Loop
     while (m_running)
     {
         PROFILE("Update");
         Update();
     }
+
     OnGameStop();
 }
 
@@ -176,15 +185,22 @@ void Application::Update()
         delta_time = 1;
     }
 
+    m_GameLayer->LoadSystem();
+    
     //Update current GameState
     GameStateMachine::Get()->UpdateNextState();
-
+   
+    //Update GameState and Layers
+    m_GameLayer->PreUpdate(delta_time);
+   
     //Poll Events and execute event and input handlers
     m_Window->PollEvents();
 
-    //Update GameState and Layers
+   
+
     PROFILE("Layer Update");
     GameStateMachine::Get()->UpdateState(delta_time);
+    m_GameLayer->OnUpdate(delta_time);
 
     //Present / Swap buffers
     PROFILE("SwapBuffers");

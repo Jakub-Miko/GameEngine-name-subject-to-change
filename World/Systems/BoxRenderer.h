@@ -33,7 +33,7 @@ struct Render_Box_data {
     void clear() {
         vertex_buffer.reset();
         index_buffer.reset();
-        constant_buffer = FrameMultiBufferResource<std::shared_ptr<RenderBufferResource>>();
+        constant_buffer.release();
     }
 
     Render_Box_data(const CameraComponent& camera, const glm::mat4& camera_transform) {
@@ -182,16 +182,17 @@ struct Render_Box_data {
     FrameMultiBufferResource<std::shared_ptr<RenderBufferResource>> constant_buffer;
 };
 
-Render_Box_data& Get_Render_Box_data() {
-    static Render_Box_data data(CameraComponent(45.0f, 0.1f, 1000.0f, 1.0f), glm::lookAt(glm::vec3(1.0f, 1.5f, -5.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
-    return data;
+static Render_Box_data& Get_Render_Box_data() {
+    static Render_Box_data* data = new Render_Box_data(CameraComponent(45.0f, 0.1f, 1000.0f, 1.0f), glm::lookAt(glm::vec3(1.0f, 1.5f, -5.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
+    return *data;
 }
 
-void Delete_Render_Box_data() {
+inline void Delete_Render_Box_data() {
     Get_Render_Box_data().clear();
+    delete &Get_Render_Box_data();
 }
 
-void Render_Box(const BoundingBox& box, const glm::mat4& model_matrix,const CameraComponent& camera, const glm::mat4& camera_transform, PrimitivePolygonRenderMode render_mode = PrimitivePolygonRenderMode::DEFAULT) {
+static void Render_Box(const BoundingBox& box, const glm::mat4& model_matrix,const CameraComponent& camera, const glm::mat4& camera_transform, PrimitivePolygonRenderMode render_mode = PrimitivePolygonRenderMode::DEFAULT) {
     auto command_list = Renderer::Get()->GetRenderCommandList();
     auto command_queue = Renderer::Get()->GetCommandQueue();
 	
@@ -223,14 +224,16 @@ void Render_Box(const BoundingBox& box, const glm::mat4& model_matrix,const Came
 
 }
 
-void BoundingVolumeRender(World* world) {
+inline void BoundingVolumeRender(World& world) {
     auto update = [&world](ComponentCollection compcol, system_view_type<BoundingVolumeComponent>& comps, entt::registry* reg) {
         for (auto& entity : comps) {
-            BoundingVolumeComponent& box = world->GetComponent<BoundingVolumeComponent>(entity);
-            TransformComponent& transform = world->GetComponent<TransformComponent>(entity);
+            BoundingVolumeComponent& box = world.GetComponent<BoundingVolumeComponent>(entity);
+            TransformComponent& transform = world.GetComponent<TransformComponent>(entity);
             std::visit(Overload{
-                [&transform](BoundingBox& box) {
-                    //Render_Box(box,transform.TransformMatrix, )
+                [&transform,&world](BoundingBox& box) {
+                    CameraComponent& camera_comp = world.GetComponent<CameraComponent>(world.GetPrimaryEntity());
+                    TransformComponent& camera_trans = world.GetComponent<TransformComponent>(world.GetPrimaryEntity());
+                    Render_Box(box, transform.TransformMatrix, camera_comp, camera_trans.TransformMatrix);
                 },
                 [](auto& everything) {
 
@@ -240,5 +243,6 @@ void BoundingVolumeRender(World* world) {
         }
     };
 
+    RunSystemSimple<BoundingVolumeComponent>(world, update);
 
 }

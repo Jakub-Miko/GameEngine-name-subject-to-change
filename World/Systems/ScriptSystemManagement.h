@@ -165,6 +165,8 @@ public:
 
     void SetSquareComponent(glm::vec4 color = glm::vec4(1.0f));
 
+    void SetCameraComponent(float fov, float zNear, float zFar, float aspect_ratio);
+
     void SetTranslation(glm::vec3 translation);
 
     void SetScale(glm::vec3 scale);

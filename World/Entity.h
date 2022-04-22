@@ -41,6 +41,16 @@ public:
 	Entity(uint32_t id) : id(id) {};
 	Entity(entt::entity id) : id((uint32_t)id) {};
 
+	bool operator==(const Entity& other) {
+		return id == other.id;
+	}
+	
+	bool operator!=(const Entity& other) {
+		return id != other.id;
+	}
+
 public:
 	uint32_t id;
 };
+
+JSON_SERIALIZABLE(Entity, id)

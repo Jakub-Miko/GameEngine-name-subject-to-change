@@ -49,6 +49,20 @@ public:
 };
 
 template<>
+class LuaEngineObjectDelegate<Entity> {
+public:
+	static void SetObject(LuaEngineProxy proxy, const Entity& value) {
+		proxy.SetTableItem((int)value.id, "id");
+		
+	}
+
+	static Entity GetObject(LuaEngineProxy proxy, int index = -1) {
+		return Entity(proxy.GetTableField<int>("id", index));
+	}
+
+};
+
+template<>
 class LuaEngineObjectDelegate<glm::vec3> {
 public:
 	static void SetObject(LuaEngineProxy proxy, const glm::vec3& value) {

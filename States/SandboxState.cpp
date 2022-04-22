@@ -9,13 +9,11 @@ SandboxState::SandboxState() : GameState("StateScript.lua",SCRIPT_FLAGS::ON_ATTA
 void SandboxState::Update(float delta_time)
 {
 	m_TestLayer->OnUpdate(delta_time);
-	GetGameLayer()->OnUpdate(delta_time);
 }
 
 bool SandboxState::OnEvent(Event* e)
 {
 	m_TestLayer->OnEvent(e);
-	GetGameLayer()->OnEvent(e);
 	return e->handled;
 }
 
