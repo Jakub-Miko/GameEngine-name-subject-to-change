@@ -26,7 +26,7 @@ pos = GetMousePosition()
 pos = GetMousePosition()
 
 
-
+jit.on()
 SetScale({x=0.1,y=0.1,z=1.0})
 SetTranslation({x=pos.x,y=-pos.y,z=0.0})
 SetSquareComponent({x = 0.5, y=0.0, z=1.0, w=1.0 })
@@ -39,7 +39,7 @@ end
 @Entity:Inline_Script
 
 function OnStart()
-
+jit.on()
 end
 
 

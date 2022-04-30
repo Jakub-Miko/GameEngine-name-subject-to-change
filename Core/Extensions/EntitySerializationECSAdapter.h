@@ -71,8 +71,8 @@ private:
     nlohmann::json root;
     nlohmann::json current;
 
-    int root_idx = -1;
-    int current_idx = 0;
+    uint32_t root_idx = -1;
+    uint32_t current_idx = 0;
 
 public:
     ECS_Input_Archive(const std::string& json_string)
@@ -99,7 +99,7 @@ public:
         if (!stream.is_open()) {
             throw std::runtime_error("File could not be opened: " + path);
         }
-        root << stream;
+        stream >> root;
         stream.close();
     }
 

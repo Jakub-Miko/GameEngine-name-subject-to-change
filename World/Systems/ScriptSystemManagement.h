@@ -104,7 +104,7 @@ public:
                 return value;
 
             } catch(std::bad_variant_access& e){
-                std::cout << e.what() << "\n";
+                //std::cout << e.what() << "\n";
                 throw std::runtime_error("Invalid Property Access");
             }
         }

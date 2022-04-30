@@ -18,9 +18,9 @@ static bool IsMouseButtonPressed(int key_code)
     return Input::Get()->IsMouseButtonPressed((MouseButtonCode)key_code);
 }
 
-void IOModule::RegisterModule(std::vector<LuaEngine::LuaEngine_Function_Binding>& binding_list)
+void IOModule::OnRegisterModule(ModuleBindingProperties& props)
 {
-    binding_list.insert(binding_list.end(), {
+    props.Add_bindings( {
         //This is where function bindings go
         LUA_FUNCTION("IsKeyPressed", IsKeyPressed),
         LUA_FUNCTION("IsMouseButtonPressed", IsMouseButtonPressed),

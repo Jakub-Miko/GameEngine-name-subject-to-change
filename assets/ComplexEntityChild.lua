@@ -16,7 +16,7 @@
 
 
 function OnConstruct()
-
+jit.on()
 
 SetScale({x=0.2,y=0.2,z=1.0})
 SetTranslation({x=0.0,y=0.0,z=0.0})
@@ -30,7 +30,7 @@ end
 @Entity:Inline_Script
 
 function OnStart()
-
+jit.on()
 
 
 end

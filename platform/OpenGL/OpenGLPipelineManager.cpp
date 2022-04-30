@@ -76,7 +76,7 @@ void OpenGLPipeline::SetDescriptorTable(const std::string& semantic_name, Render
 	for (auto entry : table_desc.table) {
 		switch (entry.type) {
 		case RootDescriptorType::CONSTANT_BUFFER:
-			for (int i = 0; i < entry.size; i++) {
+			for (uint32_t i = 0; i < entry.size; i++) {
 				if (static_cast<OpenGLRenderDescriptorAllocation*>(table.get())->descriptor_pointer[current].type == RootParameterType::CONSTANT_BUFFER) {
 					SetConstantBuffer(buf_start,
 						std::static_pointer_cast<RenderBufferResource>(static_cast<OpenGLRenderDescriptorAllocation*>(table.get())->descriptor_pointer[current].m_resource));
@@ -89,7 +89,7 @@ void OpenGLPipeline::SetDescriptorTable(const std::string& semantic_name, Render
 			}
 			break;
 		case RootDescriptorType::TEXTURE_2D:
-			for (int i = 0; i < entry.size; i++) {
+			for (uint32_t i = 0; i < entry.size; i++) {
 				if (static_cast<OpenGLRenderDescriptorAllocation*>(table.get())->descriptor_pointer[current].type == RootParameterType::TEXTURE_2D) {
 					SetTexture2D(tex_start,
 						std::static_pointer_cast<RenderTexture2DResource>(static_cast<OpenGLRenderDescriptorAllocation*>(table.get())->descriptor_pointer[current].m_resource));

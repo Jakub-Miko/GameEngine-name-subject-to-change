@@ -103,7 +103,7 @@ void World::LoadSceneSystem()
 			throw std::runtime_error("File could not be opened: " + FileManager::Get()->GetAssetFilePath(load_scene->scene_path));
 		}
 		nlohmann::json json;
-		json << file;
+		file >> json;
 		file.close();
 
 		ECS_Input_Archive archive(json["Entities"]);

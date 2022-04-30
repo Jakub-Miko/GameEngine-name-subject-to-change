@@ -1,6 +1,7 @@
 #include "Application.h"
 #include "GameLayer.h"
 #include <Profiler.h>
+#include <iostream>
 #include <States/SandboxState.h>
 #include <Renderer/RenderDescriptorHeapBlock.h>
 
@@ -13,7 +14,7 @@
 int main() {
     {
         BEGIN_PROFILING("Profile", "C:/Users/mainm/Desktop/GameEngine/PseudoCode/Profile_Result1.json");
-        
+
         try {
             Application::Init();
             Application::Get()->SetInitialGameState(std::make_shared<SandboxState>());
@@ -23,7 +24,7 @@ int main() {
         catch(std::runtime_error& error) {
             std::cout << error.what() << "\n";
         }
-        
+
         END_PROFILING();
 
     }

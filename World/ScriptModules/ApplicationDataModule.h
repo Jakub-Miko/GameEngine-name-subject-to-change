@@ -1,7 +1,8 @@
 #pragma once 
-#include "ScriptModule.h"
+#include <LuaEngine.h>
 
-class ApplicationDataModule {
+class ApplicationDataModule : public ScriptModule {
 public:
-	static void RegisterModule(std::vector<LuaEngine::LuaEngine_Function_Binding>& binding_list);
+	SCRIPT_MODULE_NAME("ApplicationDataModule");
+	virtual void OnRegisterModule(ModuleBindingProperties& props) override;
 };

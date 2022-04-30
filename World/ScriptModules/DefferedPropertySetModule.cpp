@@ -33,9 +33,9 @@ static Entity CreateSerializableEntity(std::string path, int parent)
 
 
 
-void DefferedPropertySetModule::RegisterModule(std::vector<LuaEngine::LuaEngine_Function_Binding>& binding_list)
+void DefferedPropertySetModule::OnRegisterModule(ModuleBindingProperties& props)
 {
-    binding_list.insert(binding_list.end(), {
+    props.Add_bindings( {
         //This is where function bindings go
         LUA_FUNCTION("SetEntityProperty_INT" ,SetEntityProperty<int>),                 
         LUA_FUNCTION("SetEntityProperty_FLOAT" ,SetEntityProperty<float>),             

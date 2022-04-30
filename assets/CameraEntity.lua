@@ -18,7 +18,7 @@
 function OnConstruct()
 
 res = GetWindowResolution()
-
+jit.on()
 UseInlineScript()
 SetTranslation({x=0.0,y=0.0,z=-5.0})
 SetCameraComponent(45.0, 0.1, 1000.0, res.x/res.y)
@@ -29,6 +29,12 @@ end
 @Entity:Inline_Script
 
 
+
+function OnStart() 
+
+jit.on()
+
+end
 
 function OnUpdate(delta_time)
 
@@ -46,6 +52,20 @@ y = math.sin(norm_scree_pos.y * 3.1415926 / 2),
 z = math.sin(norm_scree_pos.x * 3.1415926) * math.cos(norm_scree_pos.y * 3.1415926/2)
 }
 
-print(pos.x .. pos.y .. pos.z)
+mat_4 = mat4({
+{0,0,1,0},
+{0,1,2,0},
+{1,0,0,0},
+{0,0,0,1}})
+
+vec_4 = vec4({-1,0.5,1,2})
+
+vec_4_s = vec_4 + vec4({1,1,1,1})
+
+vec_result = multiply_matrix_vec4(mat_4, vec_4);
+
+print(vec_result.x ..", ".. vec_result.y ..", " .. vec_result.z..", " .. vec_result.w )
+print(vec_4_s.x ..", ".. vec_4_s.y ..", " .. vec_4_s.z..", " .. vec_4_s.w )
+
 
 end

@@ -3,7 +3,7 @@ function OnAttach()
 camera = CreateEntity("CameraEntity.lua",-1)
 SetPrimaryEntity(camera)
 print(GetPrimaryEntity().id)
-
+jit.on()
 end
 
 function OnUpdate(delta_time)

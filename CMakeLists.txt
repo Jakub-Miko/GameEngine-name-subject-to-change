@@ -4,6 +4,7 @@ project(PseudoTest VERSION 0.1.0)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/out")
 
+
 set(RENDER_API "" CACHE STRING "")
 
 option(ENABLE_PROFILING OFF)
@@ -19,6 +20,8 @@ file(GLOB SRCS
 "./Core/Extensions/*.cpp")
 
 add_executable(PseudoTest ${SRCS})
+
+set_target_properties(PseudoTest PROPERTIES ENABLE_EXPORTS true WINDOWS_EXPORT_ALL_SYMBOLS true)
 
 file(GLOB OPENGL_SRC 
 "./platform/OpenGL/*.cpp" "./platform/OpenGL/*.h"

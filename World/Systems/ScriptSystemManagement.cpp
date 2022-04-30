@@ -205,7 +205,9 @@ void ScriptSystemVM::ResetScriptVM()
 
 void ScriptHandler::BindHandlerFunctions(LuaEngineClass<ScriptHandler>* script_engine)
 {
-    std::vector<LuaEngine::LuaEngine_Function_Binding> bindings{
+    ModuleBindingProperties props;
+    script_engine->InitFFI();
+    props.Add_bindings( {
         //This is where function bindings go
         //TODO: implement Script modules for code reuse.
         {"MoveSquare" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::TestChangeSquarePos>},                                //Experimental Entity Module - use adapter
@@ -226,18 +228,21 @@ void ScriptHandler::BindHandlerFunctions(LuaEngineClass<ScriptHandler>* script_e
         {"EnableKeyPressedEvents", LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::EnableKeyPressedEvents>},                 // Entity ConfigModule - use adapter
         {"EnableMouseButtonPressedEvents", LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::EnableMouseButtonPressedEvents>}  // Entity ConfigModule - use adapter
 
-    };
+    });
 
-    IOModule::RegisterModule(bindings);
-    DefferedPropertySetModule::RegisterModule(bindings);
+    IOModule().RegisterModule(props);
+    DefferedPropertySetModule().RegisterModule(props);
+    ApplicationDataModule().RegisterModule(props);
 
-    if (bindings.empty()) return;
-    script_engine->AddBindings(bindings);
+    script_engine->RegisterModule(props);
 }
 
 void InitializationScriptHandler::BindHandlerFunctions(LuaEngineClass<InitializationScriptHandler>* script_engine)
 {
-    std::vector<LuaEngine::LuaEngine_Function_Binding> bindings{
+    ModuleBindingProperties props;
+    script_engine->InitFFI();
+
+    props.Add_bindings({
         //This is where function bindings go
         {"SetSquareComponent", LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::SetSquareComponent>},         //SetComponent Module - use adapter
         {"SetScriptComponent", LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::SetScriptComponent>},         //SetComponent Module - use adapter
@@ -245,13 +250,12 @@ void InitializationScriptHandler::BindHandlerFunctions(LuaEngineClass<Initializa
         {"SetTranslation", LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::SetTranslation>},                 //Transform Module - use adapter
         {"SetScale", LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::SetScale>},                             //Transform Module - use adapter
         {"UseInlineScript", LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::UseInlineScript>},               //InitialConfig Module - use adapter
-    };
+    });
 
-    IOModule::RegisterModule(bindings);
-    ApplicationDataModule::RegisterModule(bindings);
+    IOModule().RegisterModule(props);
+    ApplicationDataModule().RegisterModule(props);
 
-    if (bindings.empty()) return;
-    script_engine->AddBindings(bindings);
+    script_engine->RegisterModule(props);
 }
 
 void InitializationScriptHandler::SetScriptComponent(std::string path)

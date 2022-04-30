@@ -1,5 +1,5 @@
 function OnStart() 
-
+jit.on()
 EnableKeyPressedEvents()
 
 end

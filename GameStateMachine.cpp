@@ -149,17 +149,14 @@ void GameStateMachine::ScriptOnDeattach()
 void GameStateMachine::BindLuaFunctions()
 {
 	m_LuaEngine.RunString(ScriptKeyBindings);
-	
-	auto bindings = std::vector<LuaEngine::LuaEngine_Function_Binding>{
-		
-	};
+	m_LuaEngine.InitFFI();
 
-	DefferedPropertySetModule::RegisterModule(bindings);
-	IOModule::RegisterModule(bindings);
-	ApplicationDataModule::RegisterModule(bindings);
+	ModuleBindingProperties props;
 
-	if (!bindings.empty()) {
-		m_LuaEngine.AddBindings(bindings);
-	}
+	DefferedPropertySetModule().RegisterModule(props);
+	IOModule().RegisterModule(props);
+	ApplicationDataModule().RegisterModule(props);
+
+	m_LuaEngine.RegisterModule(props);
 }
 

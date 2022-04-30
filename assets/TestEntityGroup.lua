@@ -17,6 +17,6 @@
 
 function OnConstruct()
 
-
+jit.on()
 
 end

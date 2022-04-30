@@ -27,7 +27,7 @@
 function OnConstruct()
 
 pos = GetMousePosition()
-
+jit.on()
 pos = GetMousePosition()
 
 SetTranslation({x=pos.x,y=pos.y,z=0.0})
@@ -36,15 +36,13 @@ UseInlineScript()
 
 end
 
-
 @Entity:Inline_Script
 
 function OnStart()
 
-
+jit.on()
 
 end
-
 
 function OnUpdate(delta_time)
 
