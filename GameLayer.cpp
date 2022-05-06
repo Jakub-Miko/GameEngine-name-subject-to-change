@@ -55,6 +55,6 @@ void GameLayer::OnUpdate(float delta_time) {
     ScriptSystemUpdate(world, delta_time);
     world.UpdateTransformMatricies();
     world.SetPrimaryEntitySystem();
-    SquareRenderSystem(world);
+    //SquareRenderSystem(world);
     BoundingVolumeRender(world);
 }

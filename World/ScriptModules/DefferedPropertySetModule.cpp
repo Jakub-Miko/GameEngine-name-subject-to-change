@@ -1,6 +1,8 @@
 #include "DefferedPropertySetModule.h"
 #include <World/Components/ScriptComponent.h>
 #include <World/EntityManager.h>
+#include <World/ScriptModules/GlobalEntityModule.h>
+#include <World/ScriptModules/MathModule.h>
 #include <World/Systems/ScriptSystemManagement.h>
 #include <World/Components/SerializableComponent.h>
 
@@ -18,33 +20,70 @@ static void SetEntityProperty(Entity entity, std::string name, T value) {
     }
 }
 
-static Entity CreateEntity(std::string path, int parent)
-{
-    return EntityManager::Get()->CreateEntity(path, Entity(parent));
+extern "C" {
+    entity CreateEntity_L(const char* path, int parent)
+    {
+        return entity{ EntityManager::Get()->CreateEntity(path, Entity(parent)).id };
+    }
+
+    entity CreateSerializableEntity_L(const char* path, int parent)
+    {
+        Entity ent = EntityManager::Get()->CreateEntity(path, Entity(parent)).id;
+        Application::GetWorld().SetComponent<SerializableComponent>(ent);
+        return entity{ ent.id };
+    }
+
+    void SetEntityProperty_INT_L(entity ent, const char* name, int value) {
+        SetEntityProperty(Entity(ent.id),name , value);
+    }
+
+    void SetEntityProperty_FLOAT_L(entity ent, const char* name, float value) {
+        SetEntityProperty(Entity(ent.id), name, value);
+    }
+
+    void SetEntityProperty_VEC2_L(entity ent, const char* name, vec2 value) {
+        SetEntityProperty(Entity(ent.id), name, *reinterpret_cast<glm::vec2*>(&value));
+    }
+
+    void SetEntityProperty_VEC3_L(entity ent, const char* name, vec3 value) {
+        SetEntityProperty(Entity(ent.id), name, *reinterpret_cast<glm::vec3*>(&value));
+    }
+
+    void SetEntityProperty_VEC4_L(entity ent, const char* name, vec4 value) {
+        SetEntityProperty(Entity(ent.id), name, *reinterpret_cast<glm::vec4*>(&value));
+    }
+
+    void SetEntityProperty_STRING_L(entity ent, const char* name, const char* value) {
+        SetEntityProperty(Entity(ent.id), name, value);
+    }
+
 }
-
-
-static Entity CreateSerializableEntity(std::string path, int parent)
-{
-    Entity ent = EntityManager::Get()->CreateEntity(path, Entity(parent)).id;
-    Application::GetWorld().SetComponent<SerializableComponent>(ent);
-    return ent;
-}
-
-
 
 void DefferedPropertySetModule::OnRegisterModule(ModuleBindingProperties& props)
 {
-    props.Add_bindings( {
-        //This is where function bindings go
-        LUA_FUNCTION("SetEntityProperty_INT" ,SetEntityProperty<int>),                 
-        LUA_FUNCTION("SetEntityProperty_FLOAT" ,SetEntityProperty<float>),             
-        LUA_FUNCTION("SetEntityProperty_VEC2" ,SetEntityProperty<glm::vec2>),          
-        LUA_FUNCTION("SetEntityProperty_VEC3" ,SetEntityProperty<glm::vec3>),          
-        LUA_FUNCTION("SetEntityProperty_VEC4" ,SetEntityProperty<glm::vec4>),          
-        LUA_FUNCTION("SetEntityProperty_STRING" ,SetEntityProperty<std::string>),      
-        LUA_FUNCTION("CreateEntity", CreateEntity),
-        LUA_FUNCTION("CreateSerializableEntity", CreateSerializableEntity)
+    GlobalEntityModule().RegisterModule(props);
+    MathModule().RegisterModule(props);
 
+    props.Add_FFI_declarations(R"(
+    entity CreateEntity_L(const char* path, int parent);
+    entity CreateSerializableEntity_L(const char* path, int parent);
+    void SetEntityProperty_INT_L(entity ent, const char* name, int value);
+    void SetEntityProperty_FLOAT_L(entity ent, const char* name, float value);
+    void SetEntityProperty_VEC2_L(entity ent, const char* name, vec2 value);
+    void SetEntityProperty_VEC3_L(entity ent, const char* name, vec3 value);
+    void SetEntityProperty_VEC4_L(entity ent, const char* name, vec4 value);
+    void SetEntityProperty_STRING_L(entity ent, const char* name, const char* value);
+    )");
+
+    props.Add_FFI_aliases({
+        {"CreateEntity_L","CreateEntity"},
+        {"CreateSerializableEntity_L","CreateSerializableEntity"},
+        {"SetEntityProperty_INT_L","SetEntityProperty_INT"},
+        {"SetEntityProperty_FLOAT_L","SetEntityProperty_FLOAT"},
+        {"SetEntityProperty_VEC2_L","SetEntityProperty_VEC2"},
+        {"SetEntityProperty_VEC3_L","SetEntityProperty_VEC3"}, 
+        {"SetEntityProperty_VEC4_L","SetEntityProperty_VEC4"},
+        {"SetEntityProperty_STRING_L","SetEntityProperty_STRING"},
         });
+
 }

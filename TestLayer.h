@@ -293,9 +293,23 @@ public:
         
         auto props = Application::Get()->GetWindow()->m_Properties;
         auto camera = CameraComponent(45.0f, 0.1f, 1000.0f, (float)props.resolution_x / (float)props.resolution_y);
+
+       /* glm::vec3 pos = camerapos;
+        glm::quat rot = glm::quatLookAt(-glm::normalize(pos ), glm::vec3(0, 1, 0));
+
+        glm::mat4 rotate =  glm::toMat4(rot);
+        glm::mat4 translate = glm::translate(glm::mat4(1.0f), pos);
+        glm::mat4 result =  glm::inverse(translate * rotate);
+
+
+        glm::mat4 third_box = glm::transpose(glm::transpose(glm::translate(glm::mat4(1.0f), pos)) * glm::toMat4(rot));
+        third_box = glm::inverse(third_box);
+        
+
         auto view_matrix = glm::lookAt(camerapos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        //Render_Box(BoundingBox({0.5f,0.5f,0.5f}), glm::translate(glm::mat4(1.0f), { 0.0f,0.6f,0.0f }), camera, view_matrix);
-        //Render_Box(BoundingBox(), glm::translate(glm::mat4(1.0f), { 0.0f,-0.6f,0.0f }), camera, view_matrix, PrimitivePolygonRenderMode::WIREFRAME);
+        Render_Box(BoundingBox({0.5f,0.5f,0.5f}), glm::translate(glm::mat4(1.0f), { 0.0f,0.6f,0.0f }), camera, result);
+        Render_Box(BoundingBox(), glm::translate(glm::mat4(1.0f), { 0.0f,-0.6f,0.0f }), camera, result, PrimitivePolygonRenderMode::WIREFRAME);
+        Render_Box(BoundingBox(), third_box, camera, result, PrimitivePolygonRenderMode::WIREFRAME);*/
         PROFILE("RenderRun");
 
 

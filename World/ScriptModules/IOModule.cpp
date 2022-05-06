@@ -2,30 +2,41 @@
 #include <glm/glm.hpp>
 #include <Input/Input.h>
 #include <World/Components/ScriptComponent.h>
+#include <World/ScriptModules/MathModule.h>
 
-static glm::vec2 GetMousePosition()
-{
-    return Input::Get()->GetMoutePosition();
-}
+extern "C" {
+    vec2 GetMousePosition_L()
+    {
+        return *reinterpret_cast<vec2*>(&Input::Get()->GetMoutePosition());
+    }
 
-static bool IsKeyPressed(int key_code)
-{
-    return Input::Get()->IsKeyPressed((KeyCode)key_code);
-}
+    bool IsKeyPressed_L(int key_code)
+    {
+        return Input::Get()->IsKeyPressed((KeyCode)key_code);
+    }
 
-static bool IsMouseButtonPressed(int key_code)
-{
-    return Input::Get()->IsMouseButtonPressed((MouseButtonCode)key_code);
+    bool IsMouseButtonPressed_L(int key_code)
+    {
+        return Input::Get()->IsMouseButtonPressed((MouseButtonCode)key_code);
+    }
 }
 
 void IOModule::OnRegisterModule(ModuleBindingProperties& props)
 {
-    props.Add_bindings( {
-        //This is where function bindings go
-        LUA_FUNCTION("IsKeyPressed", IsKeyPressed),
-        LUA_FUNCTION("IsMouseButtonPressed", IsMouseButtonPressed),
-        LUA_FUNCTION("GetMousePosition", GetMousePosition)
+    MathModule().RegisterModule(props);
+
+    props.Add_FFI_declarations(R"(
+    vec2 GetMousePosition_L();
+    bool IsKeyPressed_L(int key_code);
+    bool IsMouseButtonPressed_L(int key_code);
+    )");
+
+    props.Add_FFI_aliases({
+        {"GetMousePosition_L","GetMousePosition"},
+        {"IsKeyPressed_L","IsKeyPressed"},
+        {"IsMouseButtonPressed_L","IsMouseButtonPressed_"},
         });
+
 }
 
 

@@ -233,7 +233,7 @@ inline void BoundingVolumeRender(World& world) {
                 [&transform,&world](BoundingBox& box) {
                     CameraComponent& camera_comp = world.GetComponent<CameraComponent>(world.GetPrimaryEntity());
                     TransformComponent& camera_trans = world.GetComponent<TransformComponent>(world.GetPrimaryEntity());
-                    Render_Box(box, transform.TransformMatrix, camera_comp, camera_trans.TransformMatrix);
+                    Render_Box(box, transform.TransformMatrix, camera_comp, glm::inverse(camera_trans.TransformMatrix));
                 },
                 [](auto& everything) {
 

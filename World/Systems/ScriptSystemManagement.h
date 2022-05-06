@@ -89,7 +89,6 @@ public:
     static void BindKeyCodes(LuaEngineClass<ScriptHandler>* script_engine);
     //This is where Functions which are bound to Lua go
 #pragma region LuaBound
-    void TestChangeSquarePos(float x, float y);
     glm::vec2 TestGetPosition();
 
     template<typename T>
@@ -139,6 +138,10 @@ public:
 
     void EnableMouseButtonPressedEvents();
 
+    Entity GetEntity() const {
+        return current_entity;
+    }
+
 
 #pragma endregion
 private:
@@ -177,6 +180,10 @@ public:
 
     void EnableMouseButtonPressedEvents();
 
+    Entity GetEntity() const {
+        return current_entity;
+    }
+
 #pragma endregion
 private:
     std::string current_path;
@@ -194,6 +201,19 @@ private:
     ~ScriptSystemVM();
 public:
     void SetEngineEntity(Entity ent);
+
+    Entity GetCurrentEntity() const {
+        if (init_mode) {
+            return current_Initialization_handler.GetEntity();
+        }
+        else {
+            return curentHandler.GetEntity();
+        }
+    }
+
+    Entity GetEngineEntity() const {
+        return curentHandler.GetEntity();
+    }
 
     // For Script Runtime
 
@@ -287,6 +307,10 @@ public:
     // For Initialization Scripts.
 
     void SetEngineInitializationEntity(Entity ent, const std::string& path);
+
+    Entity GetEngineInitializationEntity() const {
+        return current_Initialization_handler.GetEntity();
+    };
 
     template<typename R, typename ... Args>
     auto CallInitializationFunction(const std::string& path, const std::string& function_name, Args ... args)
@@ -382,6 +406,7 @@ public:
 
 private:
     ScriptHandler curentHandler;
+    bool init_mode = false;
 
     std::unordered_set<std::string> m_BoundScripts;
     LuaEngineClass<ScriptHandler> m_LuaEngine;

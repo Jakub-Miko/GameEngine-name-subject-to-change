@@ -18,6 +18,7 @@
 #include <World/ScriptModules/IOModule.h>
 #include <World/ScriptModules/DefferedPropertySetModule.h>
 #include <World/ScriptModules/ApplicationDataModule.h>
+#include <World/ScriptModules/LocalEntityModule.h>
 #include <stdexcept>
 
 ScriptSystemManager* ScriptSystemManager::instance = nullptr;
@@ -181,12 +182,14 @@ void ScriptSystemVM::SetEngineEntity(Entity ent)
 {
     curentHandler = ScriptHandler(ent);
     m_LuaEngine.SetClassInstance(&curentHandler);
+    init_mode = false;
 }
 
 void ScriptSystemVM::SetEngineInitializationEntity(Entity ent, const std::string& path)
 {
     current_Initialization_handler = InitializationScriptHandler(ent, path);
     m_LuaInitializationEngine.SetClassInstance(&current_Initialization_handler);
+    init_mode = true;
 }
 
 void ScriptSystemVM::ResetScriptVM()
@@ -210,7 +213,6 @@ void ScriptHandler::BindHandlerFunctions(LuaEngineClass<ScriptHandler>* script_e
     props.Add_bindings( {
         //This is where function bindings go
         //TODO: implement Script modules for code reuse.
-        {"MoveSquare" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::TestChangeSquarePos>},                                //Experimental Entity Module - use adapter
         {"GetPos" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::TestGetPosition>},                                        // LocalProperty Module - use adapter
         {"GetProperty_INT" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::GetProperty<int>>},                              // LocalProperty Module - use adapter
         {"GetProperty_FLOAT" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::GetProperty<float>>},                          // LocalProperty Module - use adapter
@@ -233,6 +235,7 @@ void ScriptHandler::BindHandlerFunctions(LuaEngineClass<ScriptHandler>* script_e
     IOModule().RegisterModule(props);
     DefferedPropertySetModule().RegisterModule(props);
     ApplicationDataModule().RegisterModule(props);
+    LocalEntityModule().RegisterModule(props);
 
     script_engine->RegisterModule(props);
 }
@@ -301,11 +304,6 @@ void InitializationScriptHandler::EnableMouseButtonPressedEvents()
 void ScriptHandler::BindKeyCodes(LuaEngineClass<ScriptHandler>* script_engine)
 {
     script_engine->RunString(ScriptKeyBindings);
-}
-
-void ScriptHandler::TestChangeSquarePos(float x, float y)
-{
-    Application::GetWorld().SetEntityTranslation(current_entity, glm::vec4(x, y, 0.0f,1.0f));
 }
 
 glm::vec2 ScriptHandler::TestGetPosition()

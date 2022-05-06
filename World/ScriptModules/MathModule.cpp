@@ -1,20 +1,49 @@
 #include "MathModule.h"
 #include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 extern "C" {
-	vec3 multiply_matrix_vec3_L(mat3 matrix, vec3* vector) {
+	vec3 multiply_matrix_vec3_L(mat3* matrix, vec3* vector) {
 		glm::mat3* mat = reinterpret_cast<glm::mat3*>(matrix);
 		glm::vec3* vec = reinterpret_cast<glm::vec3*>(vector);
 		glm::vec3 result = *mat * *vec;
 		return *reinterpret_cast<vec3*>(&result);
 	}
 
-	vec4 multiply_matrix_vec4_L(mat4 matrix, vec4* vector) {
+	vec4 multiply_matrix_vec4_L(mat4* matrix, vec4* vector) {
 		glm::mat4* mat = reinterpret_cast<glm::mat4*>(matrix);
 		glm::vec4* vec = reinterpret_cast<glm::vec4*>(vector);
 		glm::vec4 result = *mat * *vec;
 		return *reinterpret_cast<vec4*>(&result);
 	}
+
+	quat mat3_to_quat_L(mat3* matrix) {
+		glm::mat3* mat = reinterpret_cast<glm::mat3*>(matrix);
+		glm::quat quaternion = glm::quat_cast(*mat);
+		return *reinterpret_cast<quat*>(&quaternion);
+	}
+
+	mat3 multiple_mat3_L(mat3* first, mat3* second) {
+		glm::mat3* fr = reinterpret_cast<glm::mat3*>(first);
+		glm::mat3* sc = reinterpret_cast<glm::mat3*>(second);
+		glm::mat3 result = *fr * *sc;
+		return *reinterpret_cast<mat3*>(&result);
+	}
+
+	quat quat_lookat_L(vec3* direction, vec3* up_vector) {
+		glm::vec3* direction_v = reinterpret_cast<glm::vec3*>(direction);
+		glm::vec3* up_vector_v = reinterpret_cast<glm::vec3*>(up_vector);
+		glm::quat result = glm::quatLookAt(glm::normalize(*direction_v), *up_vector_v);
+		return *reinterpret_cast<quat*>(&result);
+	}
+
+	mat4 multiple_mat4_L(mat4* first, mat4* second) {
+		glm::mat4* fr = reinterpret_cast<glm::mat4*>(first);
+		glm::mat4* sc = reinterpret_cast<glm::mat4*>(second);
+		glm::mat4 result = *fr * *sc;
+		return *reinterpret_cast<mat4*>(&result);
+	}
+
 }
 
 void MathModule::OnRegisterModule(ModuleBindingProperties& props)
@@ -23,21 +52,31 @@ void MathModule::OnRegisterModule(ModuleBindingProperties& props)
 	typedef struct vec2 { float x, y; } vec2;
 	typedef struct vec3 { float x, y, z; } vec3;
 	typedef struct vec4 { float x, y, z, w; } vec4;
-	typedef vec3 mat3[3];
-	typedef vec4 mat4[4];
+	typedef struct quat { float w, x, y, z; } quat;
+	typedef struct mat3 { vec3 data[3]; } mat3;
+	typedef struct mat4 { vec4 data[4]; } mat4;
 	
 	vec3 multiply_matrix_vec3_L(mat3 matrix, vec3* vector);
 	vec4 multiply_matrix_vec4_L(mat4 matrix, vec4* vector);
+	mat4 multiple_mat4_L(mat4* first, mat4* second);
+	mat3 multiple_mat3_L(mat3* first, mat3* second);
+	quat quat_lookat_L(vec3* direction, vec3* up_vector);
+	quat mat3_to_quat_L(mat3 matrix);
 	)");
 
 	props.Add_FFI_aliases({
 		{"struct vec2", "vec2"},
 		{"struct vec3", "vec3"},
 		{"struct vec4", "vec4"},
-		{"array mat3", "mat3"},
-		{"array mat4", "mat4"},
+		{"struct quat", "quat"},
+		{"struct mat3", "mat3"},
+		{"struct mat4", "mat4"},
 		{"multiply_matrix_vec3_L","multiply_matrix_vec3"},
-		{"multiply_matrix_vec4_L","multiply_matrix_vec4"}
+		{"multiply_matrix_vec4_L","multiply_matrix_vec4"},
+		{"multiple_mat4_L","multiple_mat4"},
+		{"multiple_mat3_L","multiple_mat3"},
+		{"quat_lookat_L","quat_lookat"},
+		{"mat3_to_quat_L","mat3_to_quat"}
 		});
 
 	props.Add_init_script(R"(
@@ -63,7 +102,7 @@ void MathModule::OnRegisterModule(ModuleBindingProperties& props)
 	end
 
 	function add_vec2(num1, num2)
-	return vec4({x = num1.x + num2.x,y = num1.y + num2.y}) 
+	return vec2({x = num1.x + num2.x,y = num1.y + num2.y}) 
 	end
 
 	function subtract_vec3(num1, num2)
@@ -75,7 +114,7 @@ void MathModule::OnRegisterModule(ModuleBindingProperties& props)
 	end
 
 	function subtract_vec2(num1, num2)
-	return vec4({x = num1.x - num2.x,y = num1.y - num2.y}) 
+	return vec2({x = num1.x - num2.x,y = num1.y - num2.y}) 
 	end
 
 	function multiply_vec3(num1, num2)
@@ -87,7 +126,7 @@ void MathModule::OnRegisterModule(ModuleBindingProperties& props)
 	end
 
 	function multiply_vec2(num1, num2)
-	return vec4({x = num1.x * num2.x,y = num1.y * num2.y}) 
+	return vec2({x = num1.x * num2.x,y = num1.y * num2.y}) 
 	end
 
 	function divide_vec3(num1, num2)
@@ -99,29 +138,49 @@ void MathModule::OnRegisterModule(ModuleBindingProperties& props)
 	end
 
 	function divide_vec2(num1, num2)
-	return vec4({x = num1.x / num2.x,y = num1.y / num2.y}) 
+	return vec2({x = num1.x / num2.x,y = num1.y / num2.y}) 
 	end
+
+	
 
 	mt_vec3 = {
 	__add = add_vec3,
 	__sub = subtract_vec3,
 	__mul = multiply_vec3,
-	__div = divide_vec3
+	__div = divide_vec3,
+	__unm = function(value) return vec3({-value.x,-value.y,-value.z}) end
 	}
 
 	mt_vec4 = {
 	__add = add_vec4,
 	__sub = subtract_vec4,
 	__mul = multiply_vec4,
-	__div = divide_vec4
+	__div = divide_vec4,
+	__unm = function(value) return vec3({-value.x,-value.y,-value.z,-value.w}) end
 	}
 
 	mt_vec2 = {
 	__add = add_vec2,
 	__sub = subtract_vec2,
 	__mul = multiply_vec2,
-	__div = divide_vec2
+	__div = divide_vec2,
+	__unm = function(value) return vec3({-value.x,-value.y}) end
 	}	
+
+	mt_mat3 = {
+	__index = function(table,key) return table.data[key] end,
+	__newindex = function(table,key,value) table.data[key] = value end,
+	__mul = multiple_mat3,
+	__new = function(ctype, data) return ffi.new("struct mat3",{data}) end
+	}
+
+	mt_mat4 = {
+	__index = function(table,key) return table.data[key] end,
+	__newindex = function(table,key,value) table.data[key] = value end,
+	__mul = multiple_mat4,
+	__new = function(ctype, data) return ffi.new("struct mat4",{data}) end
+	}
+
 
 	ffi.metatype("vec4", mt_vec4)
 	
@@ -129,6 +188,9 @@ void MathModule::OnRegisterModule(ModuleBindingProperties& props)
 
 	ffi.metatype("vec2", mt_vec2)
 
+	ffi.metatype("mat3", mt_mat3)
+	
+	ffi.metatype("mat4", mt_mat4)
 	
 
 	)");

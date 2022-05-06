@@ -5,9 +5,9 @@
 #include <Application.h>
 #include <glm/glm.hpp>
 #include <iostream>
+#include "GlobalEntityModule.h"
 
 extern "C" {
-    typedef struct entity { uint32_t id; } entity;
 
     void print_s(const char* string) {
         std::cout << "FFI says: " << string << "\n";
@@ -30,10 +30,10 @@ extern "C" {
 
 void ApplicationDataModule::OnRegisterModule(ModuleBindingProperties& props)
 {
+    GlobalEntityModule().RegisterModule(props);
     MathModule().RegisterModule(props);
 
     props.Add_FFI_declarations(R"(
-            typedef struct entity { uint32_t id; } entity;
             vec2 GetWindowResolution_L();
             void SetPrimaryEntity_L(entity ent);
             void print_s(const char* string);
@@ -45,7 +45,6 @@ void ApplicationDataModule::OnRegisterModule(ModuleBindingProperties& props)
         {"print_s","print_s"},
         {"GetPrimaryEntity_L","GetPrimaryEntity"},
         {"SetPrimaryEntity_L","SetPrimaryEntity"},
-        {"struct vec2", "vec2"}
         });
 
 }

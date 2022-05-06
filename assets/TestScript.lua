@@ -24,7 +24,7 @@ function OnStart()
 
 prop = GetProperty_VEC3("position")
 jit.on()
-MoveSquare(prop.x, prop.y)
+SetTranslation(vec3({prop.x, prop.y, 0}))
 
 end
 
@@ -46,7 +46,7 @@ end
 
 	position2 = GetProperty_VEC3("position")
 
-	MoveSquare(position2.x + pos2,position2.y + pos)
+	SetTranslation(vec3({position2.x + pos2,position2.y + pos, z = 0 }))
 
 end
 
