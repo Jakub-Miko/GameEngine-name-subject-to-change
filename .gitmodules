@@ -7,7 +7,6 @@
 [submodule "Utilities"]
 	path = Utilities
 	url = https://github.com/MainManTV/GameEngineUtilities.git
-	branch = LuaJIT
 [submodule "dependencies/EnTT"]
 	path = dependencies/EnTT
 	url = https://github.com/skypjack/entt.git
