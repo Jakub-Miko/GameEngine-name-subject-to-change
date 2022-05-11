@@ -10,7 +10,7 @@ OverlapResult BoundingBox::OverlapsFrustum(const Frustum& frustum, const glm::ma
 	bool inside = false;
 	bool outside = false;
 	for (auto& point : box_points) {
-		if (OverlapPointFrustum(glm::vec4(point * (box_size / 2.0f) + box_offset,1.0f) * model_matrix, frustum)) {
+		if (OverlapPointFrustum(model_matrix * glm::vec4(point * (box_size / 2.0f) + box_offset,1.0f), frustum)) {
 			inside = true;
 		}
 		else {
@@ -30,7 +30,7 @@ OverlapResult BoundingBox::OverlapsPlane(const Plane& plane, const glm::mat4& mo
 	bool inside = false;
 	bool outside = false;
 	for (auto& point : box_points) {
-		if (OverlapPointPlane(glm::vec4(point * (box_size / 2.0f) + box_offset, 1.0f) * model_matrix, plane)) {
+		if (OverlapPointPlane(model_matrix * glm::vec4(point * (box_size / 2.0f) + box_offset, 1.0f), plane)) {
 			inside = true;
 		}
 		else {

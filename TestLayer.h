@@ -3,6 +3,7 @@
 #include "Layer.h"
 #include "Application.h"
 #include <iostream>
+#include <World/SpatialIndex.h>
 #include <TaskSystem.h>
 #include <cmath>
 #include <Promise.h>
@@ -53,7 +54,7 @@ public:
     std::shared_ptr<RenderTexture2DResource> color_texture;
     std::shared_ptr<RenderTexture2DResource> depth_texture;
     std::shared_ptr<RenderFrameBufferResource> frame_buffer;
-
+    SpatialIndex* index = nullptr;
     RenderDescriptorTable table1;
     RenderDescriptorTable table2;
 
@@ -70,6 +71,7 @@ public:
     ~TestLayer() {
         //delete pipeline;
         //delete pipeline_2;
+        delete index;
         //Delete_Render_Box_data();
     }
 
@@ -283,16 +285,34 @@ public:
             Entity entity_2 = Application::GetWorld().CreateEntity();
             Application::GetWorld().SetComponent<BoundingVolumeComponent>(entity_1, BoundingBox());
             Application::GetWorld().SetComponent<BoundingVolumeComponent>(entity_2, BoundingBox());
-            Application::GetWorld().SetEntityTranslation(entity_1, { 0.0,2.0,0.0 });
-            Application::GetWorld().SetEntityTranslation(entity_2, { 0.0,-2.0,0.0 });
+            Application::GetWorld().SetEntityTranslation(entity_1, { -1.9,-1.7,-1.9 });
+            Application::GetWorld().SetEntityTranslation(entity_2, { -1.8,-1.9,-1.9 });
 
             stop = false;
+
+            Application::GetWorld().GetSceneGraph()->CalculateMatricies();
+            index = new SpatialIndex(Application::GetWorld(), BoundingBox({10,10,10}));
 
         }
         
         
         auto props = Application::Get()->GetWindow()->m_Properties;
         auto camera = CameraComponent(45.0f, 0.1f, 1000.0f, (float)props.resolution_x / (float)props.resolution_y);
+
+        std::vector<Entity> entities;
+
+        index->Visualize();
+        if (Application::GetWorld().GetPrimaryEntity() != Entity()) {
+            auto& camera = Application::GetWorld().GetComponent<CameraComponent>(Application::GetWorld().GetPrimaryEntity());
+            auto& trans = Application::GetWorld().GetComponent<TransformComponent>(Application::GetWorld().GetPrimaryEntity());
+            Application::GetWorld().GetComponent<CameraComponent>(Application::GetWorld().GetPrimaryEntity()).UpdateViewFrustum(trans.TransformMatrix);
+            index->FrustumCulling(Application::GetWorld(), Application::GetWorld().GetComponent<CameraComponent>(Application::GetWorld().GetPrimaryEntity()).GetViewFrustum(), entities);
+        }
+
+        for (auto ent : entities) {
+            std::cout << ent.id << ", ";
+        }
+        std::cout << std::endl;
 
        /* glm::vec3 pos = camerapos;
         glm::quat rot = glm::quatLookAt(-glm::normalize(pos ), glm::vec3(0, 1, 0));

@@ -25,8 +25,8 @@ public:
 	void UpdateViewFrustum(const glm::mat4& model_matrix) {
 		glm::vec3 up = model_matrix * glm::vec4(0.0f, 1.0f, 0.0f,0.0f);
 		glm::vec3 right = model_matrix * glm::vec4(1.0f, 0.0f, 0.0f,0.0f);
-		glm::vec3 forward = model_matrix * glm::vec4(0.0f, 0.0f, 1.0f,0.0f);
-		glm::vec3 translation = model_matrix[4];
+		glm::vec3 forward = model_matrix * glm::vec4(0.0f, 0.0f, -1.0f,0.0f);
+		glm::vec3 translation = model_matrix[3];
 
 		float vertical_size = (glm::tan(glm::radians(fov) / 2) * zFar);
 		float horizontal_size = vertical_size * aspect_ratio;
@@ -35,8 +35,8 @@ public:
 		view_frustum.far = Plane(-forward, translation + zFar * forward);
 		view_frustum.right = Plane(glm::normalize(glm::cross(up, (forward * zFar) + right*horizontal_size)), translation);
 		view_frustum.left = Plane(glm::normalize(glm::cross((forward * zFar) - right * horizontal_size,up)), translation);
-		view_frustum.top = Plane(glm::normalize(glm::cross(right,(forward * zFar) + up*vertical_size)), translation);
-		view_frustum.bottom = Plane(glm::normalize(glm::cross((forward * zFar) - up * vertical_size, right)), translation);
+		view_frustum.top = Plane(glm::normalize(glm::cross(right,(forward * zFar) - up*vertical_size)), translation);
+		view_frustum.bottom = Plane(glm::normalize(glm::cross((forward * zFar) + up * vertical_size, right)), translation);
 	}
 
 

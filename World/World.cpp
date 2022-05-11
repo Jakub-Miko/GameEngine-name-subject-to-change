@@ -114,7 +114,7 @@ void World::LoadSceneSystem()
 		m_SceneGraph.Deserialize(json);
 
 		SetPrimaryEntity(load_scene->primary_entity);
-
+		primary_entity = load_scene->primary_entity;
 		current_scene = load_scene;
 		load_scene = nullptr;
 	}

@@ -23,6 +23,7 @@ struct Render_Box_data {
         glm::mat4 mvp_matrix;
         glm::vec4 sun_direction;
         glm::vec4 color;
+        glm::vec4 options;
     };
 
     Render_Box_data() : pipeline(),
@@ -155,7 +156,8 @@ struct Render_Box_data {
         Constant_buffer_type constant_buf_data = {
             camera.GetProjectionMatrix() * camera_transform,
             glm::normalize(glm::vec4(0.20f, 1.0f, -3.0f,0.0f)),
-            glm::vec4(0.3f,0.7f,1.0f,1.0f)
+            glm::vec4(0.3f,0.7f,1.0f,1.0f),
+            glm::vec4(0,0,0,0)
         };
 
         
@@ -182,7 +184,7 @@ struct Render_Box_data {
     FrameMultiBufferResource<std::shared_ptr<RenderBufferResource>> constant_buffer;
 };
 
-static Render_Box_data& Get_Render_Box_data() {
+inline Render_Box_data& Get_Render_Box_data() {
     static Render_Box_data* data = new Render_Box_data(CameraComponent(45.0f, 0.1f, 1000.0f, 1.0f), glm::lookAt(glm::vec3(1.0f, 1.5f, -5.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
     return *data;
 }
@@ -192,16 +194,17 @@ inline void Delete_Render_Box_data() {
     delete &Get_Render_Box_data();
 }
 
-static void Render_Box(const BoundingBox& box, const glm::mat4& model_matrix,const CameraComponent& camera, const glm::mat4& camera_transform, PrimitivePolygonRenderMode render_mode = PrimitivePolygonRenderMode::DEFAULT) {
+inline void Render_Box(const BoundingBox& box, const glm::mat4& model_matrix,const CameraComponent& camera, const glm::mat4& camera_transform, PrimitivePolygonRenderMode render_mode = PrimitivePolygonRenderMode::DEFAULT) {
     auto command_list = Renderer::Get()->GetRenderCommandList();
     auto command_queue = Renderer::Get()->GetCommandQueue();
 	
     Render_Box_data& data = Get_Render_Box_data();
 
     Render_Box_data::Constant_buffer_type buffer = {
-         camera.GetProjectionMatrix() * camera_transform * model_matrix * glm::translate(glm::mat4(1.0f), box.GetBoxOffset()) * glm::scale(glm::mat4(1.0f),box.GetBoxSize()),
+         camera.GetProjectionMatrix() * glm::inverse(camera_transform) * model_matrix * glm::translate(glm::mat4(1.0f), box.GetBoxOffset()) * glm::scale(glm::mat4(1.0f),box.GetBoxSize()),
             glm::normalize(glm::vec4(0.20f, 1.0f, -3.0f,0.0f)),
-            glm::vec4(0.3f,0.7f,1.0f,1.0f)
+            glm::vec4(0.3f,0.7f,1.0f,1.0f),
+            glm::vec4(render_mode == PrimitivePolygonRenderMode::WIREFRAME ? 1.0 : 0.0,0,0,0)
     };
 
     RenderResourceManager::Get()->UploadDataToBuffer(command_list, data.constant_buffer.GetResource(), &buffer, sizeof(buffer), 0);
@@ -233,7 +236,7 @@ inline void BoundingVolumeRender(World& world) {
                 [&transform,&world](BoundingBox& box) {
                     CameraComponent& camera_comp = world.GetComponent<CameraComponent>(world.GetPrimaryEntity());
                     TransformComponent& camera_trans = world.GetComponent<TransformComponent>(world.GetPrimaryEntity());
-                    Render_Box(box, transform.TransformMatrix, camera_comp, glm::inverse(camera_trans.TransformMatrix));
+                    Render_Box(box, transform.TransformMatrix, camera_comp, camera_trans.TransformMatrix);
                 },
                 [](auto& everything) {
 

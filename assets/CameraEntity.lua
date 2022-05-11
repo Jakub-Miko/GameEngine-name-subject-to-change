@@ -2,7 +2,11 @@
 
 {
   "Properties": [
-    
+		{
+			"name" : "distance",
+			"type" : "int",
+			"value" : 5
+		}
   ],
 
   "Children": [
@@ -45,7 +49,15 @@ norm_scree_pos = offset + norm_scree_pos;
 
 norm_scree_pos = norm_scree_pos * vec2({-1,-1});
 norm_scree_pos.y = math.min(math.max(-0.8, norm_scree_pos.y),0.8)
-distance = 5.0;
+distance = GetProperty_INT("distance");
+
+if IsKeyPressed(KeyCode.KEY_UP) then
+		SetProperty_INT("distance", distance - 1)
+end
+
+if IsKeyPressed(KeyCode.KEY_DOWN) then
+		SetProperty_INT("distance", distance + 1)
+end
 
 pos = {
 x = math.sin(norm_scree_pos.x * 3.1415926) * math.cos(norm_scree_pos.y * 3.1415926/2) ,
