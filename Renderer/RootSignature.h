@@ -170,6 +170,28 @@ struct VertexLayoutFactory<BoxPreset> {
 	}
 
 };
+
+class MeshPreset { };
+
+template<>
+struct VertexLayoutFactory<MeshPreset> {
+
+	static VertexLayout* GetLayout() {
+		static VertexLayout* layout = nullptr;
+		if (!layout) {
+			VertexLayout* layout_new = new VertexLayout({
+				VertexLayoutElement(RenderPrimitiveType::FLOAT,3),
+				VertexLayoutElement(RenderPrimitiveType::FLOAT,3)
+				});
+
+			PipelineManager::Get()->AddLayout(layout_new);
+
+			layout = layout_new;
+		}
+		return layout;
+	}
+
+};
 #pragma endregion
 
 

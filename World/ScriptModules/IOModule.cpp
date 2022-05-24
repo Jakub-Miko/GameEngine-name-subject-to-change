@@ -8,7 +8,7 @@ extern "C" {
     vec2 GetMousePosition_L()
     {
         auto pos = Input::Get()->GetMoutePosition();
-        return *reinterpret_cast<vec2*>(&pos);
+        return vec2{ pos.x,pos.y };
     }
 
     bool IsKeyPressed_L(int key_code)

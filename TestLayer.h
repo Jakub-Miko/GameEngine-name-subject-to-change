@@ -18,8 +18,12 @@
 #include <Renderer/RenderResourceManager.h>
 #include <stb_image.h>
 #include <Renderer/ShaderManager.h>
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
 #include <Core/FrameMultiBufferResource.h>
 #include <Renderer/RootSignature.h>
+#include <Renderer/MeshManager.h>
 #include <World/Systems/BoxRenderer.h>
 #include <Renderer/RenderDescriptorHeapBlock.h>
 #include <Renderer/PipelineManager.h>
@@ -50,17 +54,22 @@ public:
     std::shared_ptr<RenderBufferResource> resource_vertex;
     std::shared_ptr<RenderBufferResource> resource_index;
     std::shared_ptr<RenderTexture2DResource> texture;
-    RenderDescriptorHeap* heap;
+
     std::shared_ptr<RenderTexture2DResource> color_texture;
     std::shared_ptr<RenderTexture2DResource> depth_texture;
     std::shared_ptr<RenderFrameBufferResource> frame_buffer;
     SpatialIndex* index = nullptr;
+    BoundingBox box;
     RenderDescriptorTable table1;
     RenderDescriptorTable table2;
+    size_t index_count;
+
+    std::shared_ptr<Mesh> mesh;
+
+    FrameMultiBufferResource<std::shared_ptr<RenderBufferResource>> constant_buffer;
 
     std::unique_ptr<TextureSampler> sampler;
-    Pipeline* pipeline;
-    Pipeline* pipeline_2;
+    std::shared_ptr<Pipeline> pipeline;
     FrameMultiBufferResource<std::shared_ptr<RenderBufferResource>> resource2;
     glm::vec2 position = { 0,0 };
     glm::vec3 camerapos = {1.0f, 1.5f, -5.0f};
@@ -75,7 +84,7 @@ public:
         //Delete_Render_Box_data();
     }
 
-    TestLayer() : Layer(), heap(new RenderDescriptorHeap(10)){
+    TestLayer() : Layer(){
         glm::vec2 origin = { -4,-4 };
         //for (int i = 0; i < 10; i++) {
         //    for (int y = 0; y < 10; y++) {
@@ -101,6 +110,11 @@ public:
             }
             else if (e->key_code == KeyCode::KEY_L && e->press_type == KeyPressType::KEY_PRESS) {
                 Application::GetWorld().LoadSceneFromFile("Entity_snapshot.json");
+            }
+            else if (e->key_code == KeyCode::KEY_Q && e->press_type == KeyPressType::KEY_PRESS) {
+                
+                
+                Application::Get()->Exit();
             }
 
 
@@ -130,8 +144,8 @@ public:
 
         //    stop2 = false;
         //}
-        
-        #pragma region Test1
+
+#pragma region Test1
 
 
         if (stop) {
@@ -154,16 +168,16 @@ public:
             //    block->FlushDescriptorDeallocations(FrameManager::Get()->GetCurrentFrameNumber());
             //    std::cout << "Stop";
             //}
-            
-            
-           /* 
+
+
+           /*
             PROFILE("RendererInit");
             struct data_type {
                 glm::vec4 color;
                 glm::vec2 scale;
             };
-            
-            
+
+
             struct Vertex {
                 glm::vec2 pos;
                 glm::vec2 uv;
@@ -208,7 +222,7 @@ public:
 
             RenderBufferDescriptor desc_ind(sizeof(ind), RenderBufferType::DEFAULT, RenderBufferUsage::INDEX_BUFFER);
             resource_index = RenderResourceManager::Get()->CreateBuffer(desc_ind);
- 
+
             RenderBufferDescriptor desc(sizeof(d), RenderBufferType::DEFAULT, RenderBufferUsage::CONSTANT_BUFFER);
             resource = RenderResourceManager::Get()->CreateBuffer(desc);
 
@@ -263,7 +277,7 @@ public:
 
             Renderer::Get()->GetCommandQueue()->ExecuteRenderCommandList(list);
             stop = false;*/
-            
+
             //Application::GetWorld().GetSceneGraph()->Deserialize(FileManager::Get()->GetAssetFilePath("save_file.json"));
 
             std::cout << RuntimeTag<TransformComponent>::GetName() << "\n";
@@ -288,16 +302,80 @@ public:
             Application::GetWorld().SetEntityTranslation(entity_1, { -1.9,-1.7,-1.9 });
             Application::GetWorld().SetEntityTranslation(entity_2, { -1.8,-1.9,-1.9 });
 
-            stop = false;
 
             Application::GetWorld().GetSceneGraph()->CalculateMatricies();
-            index = new SpatialIndex(Application::GetWorld(), BoundingBox({10,10,10}));
+            index = new SpatialIndex(Application::GetWorld(), BoundingBox({ 10,10,10 }));
+
+          
+
+            auto command_list = Renderer::Get()->GetRenderCommandList();
+            auto command_queue = Renderer::Get()->GetCommandQueue();
+
+            PipelineDescriptor pipeline_desc;
+            pipeline_desc.flags = PipelineFlags::ENABLE_DEPTH_TEST;
+            pipeline_desc.layout = VertexLayoutFactory<MeshPreset>::GetLayout();
+            pipeline_desc.scissor_rect = RenderScissorRect();
+            pipeline_desc.viewport = RenderViewport();
+            pipeline_desc.signature = RootSignatureFactory<BoxPreset>::GetRootSignature();
+            pipeline_desc.shader = ShaderManager::Get()->GetShader("MeshShader.glsl");
+
+            pipeline = PipelineManager::Get()->CreatePipeline(pipeline_desc);
+
+            Render_Box_data::Constant_buffer_type constant_buf_data = {
+                glm::mat4(1.0f),
+                glm::normalize(glm::vec4(0.20f, 1.0f, -3.0f,0.0f)),
+                glm::vec4(0.3f,0.7f,1.0f,1.0f),
+                glm::vec4(0,0,0,0)
+            };
+
+
+
+            constant_buffer = FrameMultiBufferResource<std::shared_ptr<RenderBufferResource>>([&]() -> std::shared_ptr<RenderBufferResource> {
+                RenderBufferDescriptor constant_buffer_desc(sizeof(constant_buf_data), RenderBufferType::DEFAULT, RenderBufferUsage::CONSTANT_BUFFER);
+
+                std::shared_ptr<RenderBufferResource> constant_buffer_instance = RenderResourceManager::Get()->CreateBuffer(constant_buffer_desc);
+                RenderResourceManager::Get()->UploadDataToBuffer(command_list, constant_buffer_instance, &constant_buf_data, sizeof(constant_buf_data), 0);
+                return constant_buffer_instance;
+                });
+
+            command_queue->ExecuteRenderCommandList(command_list);
+
+            mesh = MeshManager::Get()->LoadMeshFromFile("C:/Users/mainm/Desktop/Pillar.obj");
+
+            stop = false;
 
         }
-        
-        
-        auto props = Application::Get()->GetWindow()->m_Properties;
-        auto camera = CameraComponent(45.0f, 0.1f, 1000.0f, (float)props.resolution_x / (float)props.resolution_y);
+        if (Application::GetWorld().GetPrimaryEntity() != Entity()) {
+            auto& camera = Application::GetWorld().GetComponent<CameraComponent>(Application::GetWorld().GetPrimaryEntity());
+            auto& trans = Application::GetWorld().GetComponent<TransformComponent>(Application::GetWorld().GetPrimaryEntity());
+
+            auto command_list = Renderer::Get()->GetRenderCommandList();
+            auto command_queue = Renderer::Get()->GetCommandQueue();
+
+            Render_Box_data& data = Get_Render_Box_data();
+
+            Render_Box_data::Constant_buffer_type buffer = {
+                 (camera.GetProjectionMatrix() * glm::inverse(trans.TransformMatrix)) * glm::translate(glm::mat4(1.0f), glm::vec3(0,-5,0)),
+                    glm::normalize(glm::vec4(0.20f, 1.0f, -3.0f,0.0f)),
+                    glm::vec4(0.6f,0.6f,0.6f,1.0f),
+                    glm::vec4(0,0,0,0)
+            };
+
+            RenderResourceManager::Get()->UploadDataToBuffer(command_list, constant_buffer.GetResource(), &buffer, sizeof(buffer), 0);
+
+            command_list->SetDefaultRenderTarget();
+            command_list->SetPipeline(pipeline);
+            command_list->SetVertexBuffer(mesh->GetVertexBuffer());
+            command_list->SetIndexBuffer(mesh->GetIndexBuffer());
+            command_list->SetConstantBuffer("conf", constant_buffer.GetResource());
+            command_list->Draw(mesh->GetIndexCount());
+            
+            command_queue->ExecuteRenderCommandList(command_list);
+
+            
+
+        }
+
 
         std::vector<Entity> entities;
 
@@ -305,6 +383,7 @@ public:
         if (Application::GetWorld().GetPrimaryEntity() != Entity()) {
             auto& camera = Application::GetWorld().GetComponent<CameraComponent>(Application::GetWorld().GetPrimaryEntity());
             auto& trans = Application::GetWorld().GetComponent<TransformComponent>(Application::GetWorld().GetPrimaryEntity());
+
             Application::GetWorld().GetComponent<CameraComponent>(Application::GetWorld().GetPrimaryEntity()).UpdateViewFrustum(trans.TransformMatrix);
             index->FrustumCulling(Application::GetWorld(), Application::GetWorld().GetComponent<CameraComponent>(Application::GetWorld().GetPrimaryEntity()).GetViewFrustum(), entities);
         }

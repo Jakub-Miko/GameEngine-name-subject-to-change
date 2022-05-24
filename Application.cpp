@@ -1,4 +1,5 @@
 #include "Application.h"
+#include <Renderer/MeshManager.h>
 #include "Window.h"
 #include <FileManager.h>
 #include <ConfigManager.h>
@@ -46,6 +47,7 @@ Application::~Application()
 
     FrameManager::Shutdown();
 
+    MeshManager::Shutdown();
     Renderer::Shutdown();
     delete m_Window;
     
@@ -111,6 +113,7 @@ void Application::InitInstance()
     //Window and renderer Initialization phase
     m_Window->Init();
     Renderer::Get()->Init();
+    MeshManager::Init();
 
     FrameManager::Initialize();
 

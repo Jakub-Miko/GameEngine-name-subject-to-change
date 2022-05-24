@@ -13,3 +13,6 @@
 [submodule "dependencies/stb_image"]
 	path = dependencies/stb_image
 	url = https://github.com/nothings/stb.git
+[submodule "dependencies/assimp"]
+	path = dependencies/assimp
+	url = https://github.com/assimp/assimp.git
