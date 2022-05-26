@@ -5,6 +5,7 @@
 #include <ConfigManager.h>
 #include <Renderer/Renderer.h>
 #include <World/Systems/ScriptSystemManagement.h>
+#include <World/Components/MeshComponent.h>
 #include <World/Systems/BoxRenderer.h>
 #include "Layer.h"
 #include <World/EntityManager.h>
@@ -51,7 +52,7 @@ Application::~Application()
     Renderer::Shutdown();
     delete m_Window;
     
-
+    delete async_dispather;
     TaskSystem::Shutdown();
     ShutdownThread();
     m_TaskThreads.clear();
@@ -83,6 +84,10 @@ void Application::InitInstance()
 
     //ThreadManagerStartup
     ThreadManager::Init();
+
+    async_dispather = new AsyncTaskDispatcher;
+
+    async_dispather->Run([]() {PROFILE("AsyncThread");});
 
     m_GameLayer = new GameLayer();
 
@@ -137,6 +142,8 @@ void Application::InitializeSystems()
 void Application::ShutdownSystems()
 {
     ScriptSystemManager::Shutdown();
+    GetWorld().GetRegistry().clear<MeshComponent>();
+    GetWorld().GetRegistry().clear<LoadingMeshComponent>();
     Delete_Render_Box_data();
 }
 
@@ -211,6 +218,7 @@ void Application::Update()
 
     //Flush TaskSystem MemoryPool deallocations
     TaskSystem::Get()->FlushDeallocations();
+    async_dispather->FlushDeallocations();
 }
 
 void Application::InitThread()

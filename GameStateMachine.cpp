@@ -10,6 +10,7 @@
 #include <World/ScriptModules/DefferedPropertySetModule.h>
 #include <World/ScriptModules/IOModule.h>
 #include <World/ScriptModules/ApplicationDataModule.h>
+#include <World/ScriptModules/TimeModule.h>
 #include <Events/MouseButtonPressEvent.h>
 #include <World/EntityManager.h>
 
@@ -156,6 +157,7 @@ void GameStateMachine::BindLuaFunctions()
 	DefferedPropertySetModule().RegisterModule(props);
 	IOModule().RegisterModule(props);
 	ApplicationDataModule().RegisterModule(props);
+	TimeModule().RegisterModule(props);
 
 	m_LuaEngine.RegisterModule(props);
 }

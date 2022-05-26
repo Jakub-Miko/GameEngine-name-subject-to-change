@@ -18,6 +18,7 @@
 #include <World/ScriptModules/IOModule.h>
 #include <World/ScriptModules/DefferedPropertySetModule.h>
 #include <World/ScriptModules/ApplicationDataModule.h>
+#include <World/ScriptModules/TimeModule.h>
 #include <World/ScriptModules/LocalEntityModule.h>
 #include <stdexcept>
 
@@ -233,6 +234,7 @@ void ScriptHandler::BindHandlerFunctions(LuaEngineClass<ScriptHandler>* script_e
     });
 
     IOModule().RegisterModule(props);
+    TimeModule().RegisterModule(props);
     DefferedPropertySetModule().RegisterModule(props);
     ApplicationDataModule().RegisterModule(props);
     LocalEntityModule().RegisterModule(props);
@@ -256,6 +258,7 @@ void InitializationScriptHandler::BindHandlerFunctions(LuaEngineClass<Initializa
     });
 
     IOModule().RegisterModule(props);
+    TimeModule().RegisterModule(props);
     ApplicationDataModule().RegisterModule(props);
 
     script_engine->RegisterModule(props);

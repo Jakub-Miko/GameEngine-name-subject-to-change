@@ -5,6 +5,7 @@
 #include <TaskSystemFence.h>
 #include <Renderer/Renderer.h>
 #include <World/World.h>
+#include <Application.h>
 #include <TaskSystem.h>
 #include <cmath>
 
@@ -58,7 +59,12 @@ auto RunSystem(World& world, system_function sys_func, result_function res_func,
 	entt::registry& reg = world.GetRegistry();
 	auto comps = reg.view<Component>();
 
-	ComponentCollectionParameters params = GetCollectionsFromSize(comps.size(), TaskSystem::Get()->GetProps().num_of_threads + 1, min_num_of_tasks_per_thread);
+	auto dispatcher = Application::GetAsyncDispather();
+	bool include_async_thread = !dispatcher->IsRunning();
+
+	if (comps.size() == 0) return;
+
+	ComponentCollectionParameters params = GetCollectionsFromSize(comps.size(), TaskSystem::Get()->GetProps().num_of_threads + (include_async_thread ? 2 : 1), min_num_of_tasks_per_thread);
 
 	std::vector<Future<return_type*>> lists;
 	lists.reserve(params.num_of_collections);
@@ -76,13 +82,27 @@ auto RunSystem(World& world, system_function sys_func, result_function res_func,
 		TaskSystem::Get()->Submit(task1);
 	}
 
-	TaskSystemFence fence;
-	auto task5 = [&fence]() {
-		fence.Signal(1); TaskSystem::Get()->FlushLoop();
+	std::shared_ptr<TaskSystemFence> fence(new TaskSystemFence);
+	auto task5 = [fence]() {
+		fence->Signal(1);
+		TaskSystem::Get()->FlushLoop();
 	};
 	TaskSystem::Get()->SetIdleTask(TaskSystem::Get()->CreateTask(task5));
-	TaskSystem::Get()->JoinTaskSystem([&fence]() -> bool {
-		return fence.IsValue(1);
+
+	if (include_async_thread) {
+		auto dispatch_task = dispatcher->CreateTask<void>([fence]() {
+			TaskSystem::Get()->JoinTaskSystem([fence]() -> bool {
+				return fence->IsValue(1);
+				});
+			TaskSystem::Get()->FlushLoop();
+			});
+
+		dispatcher->Submit(dispatch_task);
+	}
+
+
+	TaskSystem::Get()->JoinTaskSystem([fence]() -> bool {
+		return fence->IsValue(1);
 		});
 
 	res_func(params, lists);
@@ -96,8 +116,12 @@ auto RunSystemSimple(World& world, system_function sys_func, int min_num_of_task
 {
 	entt::registry& reg = world.GetRegistry();
 	auto comps = reg.view<Component>();
+	auto dispatcher = Application::GetAsyncDispather();
+	bool include_async_thread = !dispatcher->IsRunning();
 
-	ComponentCollectionParameters params = GetCollectionsFromSize(comps.size(), TaskSystem::Get()->GetProps().num_of_threads + 1, min_num_of_tasks_per_thread);
+	if (comps.size() == 0) return;
+
+	ComponentCollectionParameters params = GetCollectionsFromSize(comps.size(), TaskSystem::Get()->GetProps().num_of_threads + (include_async_thread ? 2 : 1), min_num_of_tasks_per_thread);
 
 	for (int i = 0; i < params.num_of_collections; i++) {
 		ComponentCollection comp{ params.collection_size,params.collection_size * i };
@@ -110,13 +134,27 @@ auto RunSystemSimple(World& world, system_function sys_func, int min_num_of_task
 		TaskSystem::Get()->Submit(task1);
 	}
 
-	TaskSystemFence fence;
-	auto task5 = [&fence]() {
-		fence.Signal(1); TaskSystem::Get()->FlushLoop();
+	std::shared_ptr<TaskSystemFence> fence(new TaskSystemFence);
+	auto task5 = [fence]() {
+		fence->Signal(1); 
+		TaskSystem::Get()->FlushLoop();
 	};
 	TaskSystem::Get()->SetIdleTask(TaskSystem::Get()->CreateTask(task5));
-	TaskSystem::Get()->JoinTaskSystem([&fence]() -> bool {
-		return fence.IsValue(1);
+
+
+	if (include_async_thread) {
+	auto dispatch_task = dispatcher->CreateTask<void>([fence]() {
+		TaskSystem::Get()->JoinTaskSystem([fence]() -> bool {
+			return fence->IsValue(1);
+			});
+		TaskSystem::Get()->FlushLoop();
+		});
+
+		dispatcher->Submit(dispatch_task);
+	}
+
+	TaskSystem::Get()->JoinTaskSystem([fence]() -> bool {
+		return fence->IsValue(1);
 		});
 
 }
@@ -128,7 +166,12 @@ auto RunSystemSimpleQueue(World& world,std::deque<Queue>& queue, system_function
 -> decltype((void(),
 	sys_func(std::declval<ComponentCollection>(), std::declval<std::deque<Queue>&>())))
 {
-	ComponentCollectionParameters params = GetCollectionsFromSize(queue.size(), TaskSystem::Get()->GetProps().num_of_threads + 1, min_num_of_tasks_per_thread);
+	auto dispatcher = Application::GetAsyncDispather();
+	bool include_async_thread = !dispatcher->IsRunning();
+
+	if (queue.size() == 0) return;
+
+	ComponentCollectionParameters params = GetCollectionsFromSize(queue.size(), TaskSystem::Get()->GetProps().num_of_threads + (include_async_thread ? 2 : 1), min_num_of_tasks_per_thread);
 
 	for (int i = 0; i < params.num_of_collections; i++) {
 		ComponentCollection comp{ params.collection_size,params.collection_size * i };
@@ -141,13 +184,27 @@ auto RunSystemSimpleQueue(World& world,std::deque<Queue>& queue, system_function
 		TaskSystem::Get()->Submit(task1);
 	}
 
-	TaskSystemFence fence;
-	auto task5 = [&fence]() {
-		fence.Signal(1); TaskSystem::Get()->FlushLoop();
+	std::shared_ptr<TaskSystemFence> fence(new TaskSystemFence);
+	auto task5 = [fence]() {
+		fence->Signal(1);
+		TaskSystem::Get()->FlushLoop();
 	};
 	TaskSystem::Get()->SetIdleTask(TaskSystem::Get()->CreateTask(task5));
-	TaskSystem::Get()->JoinTaskSystem([&fence]() -> bool {
-		return fence.IsValue(1);
+
+	if (include_async_thread) {
+		auto dispatch_task = dispatcher->CreateTask<void>([fence]() {
+			TaskSystem::Get()->JoinTaskSystem([fence]() -> bool {
+				return fence->IsValue(1);
+				});
+			TaskSystem::Get()->FlushLoop();
+			});
+
+		dispatcher->Submit(dispatch_task);
+	}
+
+
+	TaskSystem::Get()->JoinTaskSystem([fence]() -> bool {
+		return fence->IsValue(1);
 		});
 
 }
@@ -158,7 +215,12 @@ auto RunSystemSimpleVector(World& world, const std::vector<Vector>& vector, syst
 -> decltype((void(),
 	sys_func(std::declval<ComponentCollection>(), std::declval<const std::vector<Vector>&>())))
 {
-	ComponentCollectionParameters params = GetCollectionsFromSize(vector.size(), TaskSystem::Get()->GetProps().num_of_threads + 1, min_num_of_tasks_per_thread);
+	auto dispatcher = Application::GetAsyncDispather();
+	bool include_async_thread = !dispatcher->IsRunning();
+
+	if (vector.size() == 0) return;
+
+	ComponentCollectionParameters params = GetCollectionsFromSize(vector.size(), TaskSystem::Get()->GetProps().num_of_threads + (include_async_thread ? 2 : 1), min_num_of_tasks_per_thread);
 
 	for (int i = 0; i < params.num_of_collections; i++) {
 		ComponentCollection comp{ params.collection_size,params.collection_size * i };
@@ -171,13 +233,26 @@ auto RunSystemSimpleVector(World& world, const std::vector<Vector>& vector, syst
 		TaskSystem::Get()->Submit(task1);
 	}
 
-	TaskSystemFence fence;
-	auto task5 = [&fence]() {
-		fence.Signal(1); TaskSystem::Get()->FlushLoop();
+	std::shared_ptr<TaskSystemFence> fence(new TaskSystemFence);
+	auto task5 = [fence]() {
+		fence->Signal(1);
+		TaskSystem::Get()->FlushLoop();
 	};
 	TaskSystem::Get()->SetIdleTask(TaskSystem::Get()->CreateTask(task5));
-	TaskSystem::Get()->JoinTaskSystem([&fence]() -> bool {
-		return fence.IsValue(1);
+
+	if (include_async_thread) {
+		auto dispatch_task = dispatcher->CreateTask<void>([fence]() {
+			TaskSystem::Get()->JoinTaskSystem([fence]() -> bool {
+				return fence->IsValue(1);
+				});
+			TaskSystem::Get()->FlushLoop();
+			});
+
+		dispatcher->Submit(dispatch_task);
+	}
+
+	TaskSystem::Get()->JoinTaskSystem([fence]() -> bool {
+		return fence->IsValue(1);
 		});
 
 }

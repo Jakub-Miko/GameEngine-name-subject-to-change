@@ -10,6 +10,7 @@
 #include <Renderer/Renderer.h>
 #include <World/Components/ScriptComponent.h>
 #include <World/Components/SquareComponent.h>
+#include <World/Components/MeshComponent.h>
 #include <Input/Input.h>
 #include <Events/KeyPressEvent.h>
 #include <Events/MouseButtonPressEvent.h>
@@ -49,6 +50,7 @@ public:
     bool stop = true;
     bool stop2 = true;
     Entity entity1;
+    Entity mesh_enity;
     Entity field[10][10];
     std::shared_ptr<RenderBufferResource> resource;
     std::shared_ptr<RenderBufferResource> resource_vertex;
@@ -64,7 +66,7 @@ public:
     RenderDescriptorTable table2;
     size_t index_count;
 
-    std::shared_ptr<Mesh> mesh;
+    Future<std::shared_ptr<Mesh>> mesh;
 
     FrameMultiBufferResource<std::shared_ptr<RenderBufferResource>> constant_buffer;
 
@@ -340,14 +342,25 @@ public:
 
             command_queue->ExecuteRenderCommandList(command_list);
 
-            mesh = MeshManager::Get()->LoadMeshFromFile("C:/Users/mainm/Desktop/Pillar.obj");
+            mesh_enity = Application::GetWorld().CreateEntity();
+            Application::GetWorld().SetComponent<MeshComponent>(mesh_enity, "C:/Users/mainm/Desktop/Pillar.obj");
+            
+          
+
+
+
 
             stop = false;
 
         }
+        
+
         if (Application::GetWorld().GetPrimaryEntity() != Entity()) {
             auto& camera = Application::GetWorld().GetComponent<CameraComponent>(Application::GetWorld().GetPrimaryEntity());
             auto& trans = Application::GetWorld().GetComponent<TransformComponent>(Application::GetWorld().GetPrimaryEntity());
+            auto& mesh_mesh = Application::GetWorld().GetComponent<MeshComponent>(mesh_enity);
+
+            auto mesh_m = mesh_mesh.mesh;
 
             auto command_list = Renderer::Get()->GetRenderCommandList();
             auto command_queue = Renderer::Get()->GetCommandQueue();
@@ -365,10 +378,10 @@ public:
 
             command_list->SetDefaultRenderTarget();
             command_list->SetPipeline(pipeline);
-            command_list->SetVertexBuffer(mesh->GetVertexBuffer());
-            command_list->SetIndexBuffer(mesh->GetIndexBuffer());
+            command_list->SetVertexBuffer(mesh_m->GetVertexBuffer());
+            command_list->SetIndexBuffer(mesh_m->GetIndexBuffer());
             command_list->SetConstantBuffer("conf", constant_buffer.GetResource());
-            command_list->Draw(mesh->GetIndexCount());
+            command_list->Draw(mesh_m->GetIndexCount());
             
             command_queue->ExecuteRenderCommandList(command_list);
 

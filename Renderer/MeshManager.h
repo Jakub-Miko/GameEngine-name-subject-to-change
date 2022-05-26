@@ -3,6 +3,8 @@
 #include <unordered_map>
 #include <Renderer/RendererDefines.h>
 #include <Renderer/RenderResource.h>
+#include <AsyncTaskDispatcher.h>
+#include <mutex>
 #include <memory>
 
 enum class Mesh_status : char {
@@ -14,9 +16,8 @@ class MeshManager;
 class Mesh {
 public:
 	friend MeshManager;
-	Mesh(const std::shared_ptr<RenderBufferResource>& vertex_buffer, const std::shared_ptr<RenderBufferResource>& index_buffer, size_t num_of_indicies) 
-		: num_of_indicies(num_of_indicies), vertex_buffer(vertex_buffer), index_buffer(index_buffer), status(Mesh_status::READY) {}
-
+	Mesh(const std::shared_ptr<RenderBufferResource>& vertex_buffer, const std::shared_ptr<RenderBufferResource>& index_buffer, size_t num_of_indicies)
+		: num_of_indicies(num_of_indicies), vertex_buffer(vertex_buffer), index_buffer(index_buffer) {}
 	Mesh() = default;
 
 	std::shared_ptr<RenderBufferResource> GetVertexBuffer() const {
@@ -32,15 +33,12 @@ public:
 	}
 
 private:
-	Mesh(const std::shared_ptr<RenderBufferResource>& vertex_buffer, const std::shared_ptr<RenderBufferResource>& index_buffer, size_t num_of_indicies,const std::string& path, Mesh_status status = Mesh_status::UNINITIALIZED)
-		: num_of_indicies(num_of_indicies), vertex_buffer(vertex_buffer), index_buffer(index_buffer), file_path(path), status(status) {}
+
+
 
 	size_t num_of_indicies = 0;
-	std::string file_path = "None";
 	std::shared_ptr<RenderBufferResource> vertex_buffer = nullptr;
 	std::shared_ptr<RenderBufferResource> index_buffer = nullptr;
-	Mesh_status status = Mesh_status::UNINITIALIZED;
-
 };
 
 class MeshManager {
@@ -53,7 +51,13 @@ public:
 
 	
 	std::shared_ptr<Mesh> LoadMeshFromFile(const std::string& file_path,int mesh_index = 0);
+
+	Future<std::shared_ptr<Mesh>> LoadMeshFromFileAsync(const std::string& file_path, int mesh_index = 0);
 	
+	std::shared_ptr<Mesh> GetDefaultMesh() const {
+		return default_mesh;
+	}
+
 	static void Init();
 	
 	static MeshManager* Get();
@@ -62,11 +66,9 @@ public:
 private:
 	MeshManager();
 
-	
-	
-
+	std::shared_ptr<Mesh> default_mesh;
+	std::mutex mesh_Map_mutex;
 	std::unordered_map<std::string, std::shared_ptr<Mesh>> mesh_Map;
-	
 	
 	static MeshManager* instance;
 };

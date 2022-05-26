@@ -9,6 +9,7 @@
 #include <chrono>
 #include <Events/Event.h>
 #include <mutex>
+#include <AsyncTaskDispatcher.h>
 #include <ThreadManager.h>
 #include <Renderer/RenderFence.h>
 
@@ -23,7 +24,7 @@ private:
     std::vector<std::shared_ptr<ThreadObject>> m_TaskThreads;
     std::shared_ptr<ThreadObject> m_MainThread;
     bool m_running = false;
-
+    AsyncTaskDispatcher* async_dispather = nullptr;
     friend class GameState;
     GameLayer* m_GameLayer = nullptr;
     World* world = nullptr;
@@ -58,6 +59,8 @@ public:
     static void ShutDown();
 
     static World& GetWorld() { return *instance->world; };
+
+    static AsyncTaskDispatcher* GetAsyncDispather() { return instance->async_dispather; }
 
     static std::mutex& GetDebugMutex() {
         static std::mutex mutex;
