@@ -47,12 +47,12 @@ Application::~Application()
     GameStateMachine::Shutdown();
 
     FrameManager::Shutdown();
+    delete async_dispather;
 
     MeshManager::Shutdown();
     Renderer::Shutdown();
     delete m_Window;
     
-    delete async_dispather;
     TaskSystem::Shutdown();
     ShutdownThread();
     m_TaskThreads.clear();
