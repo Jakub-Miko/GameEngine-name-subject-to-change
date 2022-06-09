@@ -2,8 +2,7 @@
 #include <stdint.h>
 #include <vector>
 #include <glm/glm.hpp>
-
-
+#include <stdexcept>
 enum class RenderState : unsigned char
 {
 	UNINITIALIZED = 0, READ = 1, WRITE = 2, COMMON = 3, EMPTY = 4, IN_USE_VERTEX_BUFFER = 5, IN_USE_INDEX_BUFFER = 6
@@ -114,9 +113,13 @@ struct RootMappingEntry {
 };
 
 struct VertexLayoutElement {
-	VertexLayoutElement(RenderPrimitiveType type, uint32_t size) : type(type), size(size) {}
-	RenderPrimitiveType type;
-	uint32_t size;
+	VertexLayoutElement() = default;
+	VertexLayoutElement(RenderPrimitiveType type, uint32_t size, const std::string& name) : type(type), size(size), name(name){}
+
+	std::string name = "Undefined";
+	int offset = -1;
+	RenderPrimitiveType type = RenderPrimitiveType::UNKNOWN;
+	uint32_t size = 0;
 };
 
 struct VertexLayout {
@@ -139,6 +142,41 @@ struct VertexLayout {
 
 	}
 
+	bool has_normal() const {
+		for (auto& element : layout) {
+			if (element.name == "normal") {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	bool has_position() const {
+		for (auto& element : layout) {
+			if (element.name == "position") {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	bool has_uv() const {
+		return num_of_uv_channels != 0;
+	}
+
+	int GetUvCount() const {
+		return num_of_uv_channels;
+	}
+	
+	const VertexLayoutElement& GetElement(const std::string& name) const {
+		for (auto& element : layout) {
+			if (element.name == name) {
+				return element;
+			}
+		}
+		throw std::runtime_error("Incompatible VertexLayout");
+	}
+
 	VertexLayout& operator=(const VertexLayout& ref) {
 		layout = ref.layout;
 		stride = ref.stride;
@@ -153,6 +191,7 @@ struct VertexLayout {
 
 	std::vector<VertexLayoutElement> layout;
 	int stride;
+	int num_of_uv_channels = 0;
 private:
 
 	void CalculateStride();

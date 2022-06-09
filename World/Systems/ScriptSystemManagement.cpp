@@ -18,6 +18,7 @@
 #include <World/ScriptModules/IOModule.h>
 #include <World/ScriptModules/DefferedPropertySetModule.h>
 #include <World/ScriptModules/ApplicationDataModule.h>
+#include <World/ScriptModules/LocalPropertySetModule.h>
 #include <World/ScriptModules/TimeModule.h>
 #include <World/ScriptModules/LocalEntityModule.h>
 #include <stdexcept>
@@ -211,29 +212,21 @@ void ScriptHandler::BindHandlerFunctions(LuaEngineClass<ScriptHandler>* script_e
         //This is where function bindings go
         //TODO: implement Script modules for code reuse.
         {"GetPos" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::TestGetPosition>},                                        // LocalProperty Module - use adapter
-        {"GetProperty_INT" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::GetProperty<int>>},                              // LocalProperty Module - use adapter
-        {"GetProperty_FLOAT" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::GetProperty<float>>},                          // LocalProperty Module - use adapter
-        {"GetProperty_STRING" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::GetProperty<std::string>>},                   // LocalProperty Module - use adapter
-        {"GetProperty_VEC2" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::GetProperty<glm::vec2>>},                       // LocalProperty Module - use adapter
-        {"GetProperty_VEC3" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::GetProperty<glm::vec3>>},                       // LocalProperty Module - use adapter
-        {"GetProperty_VEC4" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::GetProperty<glm::vec4>>},                       // LocalProperty Module - use adapter
-        {"SetProperty_INT" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetProperty<int>>},                              // LocalProperty Module - use adapter
-        {"SetProperty_FLOAT" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetProperty<float>>},                          // LocalProperty Module - use adapter
-        {"SetProperty_VEC2" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetProperty<glm::vec2>>},                       // LocalProperty Module - use adapter
-        {"SetProperty_VEC3" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetProperty<glm::vec3>>},                       // LocalProperty Module - use adapter
-        {"SetProperty_VEC4" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetProperty<glm::vec4>>},                       // LocalProperty Module - use adapter
-        {"SetProperty_STRING" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::SetProperty<std::string>>},                   // LocalProperty Module - use adapter
-        {"PropertyExists" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::PropertyExists>},                                 // LocalProperty Module - use adapter
+        
+        
         {"EnableKeyPressedEvents", LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::EnableKeyPressedEvents>},                 // Entity ConfigModule - use adapter
         {"EnableMouseButtonPressedEvents", LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::EnableMouseButtonPressedEvents>}  // Entity ConfigModule - use adapter
 
     });
+
+
 
     IOModule().RegisterModule(props);
     TimeModule().RegisterModule(props);
     DefferedPropertySetModule().RegisterModule(props);
     ApplicationDataModule().RegisterModule(props);
     LocalEntityModule().RegisterModule(props);
+    LocalPropertySetModule().RegisterModule(props);
 
     script_engine->RegisterModule(props);
 }
@@ -256,6 +249,7 @@ void InitializationScriptHandler::BindHandlerFunctions(LuaEngineClass<Initializa
     IOModule().RegisterModule(props);
     TimeModule().RegisterModule(props);
     ApplicationDataModule().RegisterModule(props);
+
 
     script_engine->RegisterModule(props);
 }

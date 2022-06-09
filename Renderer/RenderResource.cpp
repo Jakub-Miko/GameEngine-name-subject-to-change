@@ -1,7 +1,7 @@
 #include "RenderResource.h"
 #include <platform/OpenGL/OpenGLRenderResource.h>
 
-TextureSampler* TextureSampler::CreateSampler(const TextureSamplerDescritor& desc)
+std::shared_ptr<TextureSampler> TextureSampler::CreateSampler(const TextureSamplerDescritor& desc)
 {
-	return new OpenGLTextureSampler(desc);
+	return std::shared_ptr<OpenGLTextureSampler>(new OpenGLTextureSampler(desc));
 }

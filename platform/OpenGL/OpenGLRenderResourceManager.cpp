@@ -126,7 +126,7 @@ void OpenGLRenderResourceManager::UploadToTexture2DFromFile(RenderCommandList* l
 	}
 }
 
-std::shared_ptr<RenderTexture2DResource> OpenGLRenderResourceManager::CreateTextureFromFile(RenderCommandList* list, const std::string& filepath, TextureSampler* sampler)
+std::shared_ptr<RenderTexture2DResource> OpenGLRenderResourceManager::CreateTextureFromFile(RenderCommandList* list, const std::string& filepath, std::shared_ptr<TextureSampler> sampler)
 {
 	int x, y, channel;
 	unsigned char* data = stbi_load(FileManager::Get()->GetAssetFilePath(filepath).c_str(), &x, &y, &channel, 4);

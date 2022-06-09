@@ -1,5 +1,6 @@
 #include "Application.h"
 #include <Renderer/MeshManager.h>
+#include <Renderer/TextureManager.h>
 #include "Window.h"
 #include <FileManager.h>
 #include <ConfigManager.h>
@@ -49,6 +50,7 @@ Application::~Application()
     FrameManager::Shutdown();
     delete async_dispather;
 
+    TextureManager::Shutdown();
     MeshManager::Shutdown();
     Renderer::Shutdown();
     delete m_Window;
@@ -119,6 +121,7 @@ void Application::InitInstance()
     m_Window->Init();
     Renderer::Get()->Init();
     MeshManager::Init();
+    TextureManager::Init();
 
     FrameManager::Initialize();
 

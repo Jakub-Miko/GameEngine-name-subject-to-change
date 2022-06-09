@@ -17,7 +17,7 @@
 #include <World/Systems/InitializationSystem.h>
 #include <World/Systems/KeyPressedScriptSystem.h>
 #include <World/Systems/MousePressedScriptSystem.h>
-#include <World/Systems/LoadingMeshSystem.h>
+#include <Renderer/MeshManager.h>
 #include <World/Systems/EntityConstructionSystem.h>
 #include <World/SceneGraph.h>
 
@@ -56,7 +56,7 @@ void GameLayer::OnUpdate(float delta_time) {
     ScriptSystemUpdate(world, delta_time);
     world.UpdateTransformMatricies();
     world.SetPrimaryEntitySystem();
-    LoadingMeshSystem(world);
+    MeshManager::Get()->UpdateLoadedMeshes(); // MultiThread
     //SquareRenderSystem(world);
     BoundingVolumeRender(world);
 }

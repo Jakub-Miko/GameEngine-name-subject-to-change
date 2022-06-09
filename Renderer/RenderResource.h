@@ -1,7 +1,9 @@
 #pragma once
 #include <atomic>
+#include <Core/Hash.h>
 #include <vector>
 #include <memory>
+#include <unordered_map>
 #include <Renderer/RendererDefines.h>
 
 class RenderResourceDescriptor {
@@ -60,11 +62,62 @@ protected:
 struct TextureSamplerDescritor {
 	TextureAddressMode AddressMode_U, AddressMode_V, AddressMode_W;
 	TextureFilter filter;
-	float LOD_bias;
 	glm::vec4 border_color;
+	float LOD_bias;
 	float min_LOD;
 	float max_LOD;
+
+	bool operator==(const TextureSamplerDescritor& other)const
+	{
+		return ((char)AddressMode_U == (char)other.AddressMode_U) &&
+			((char)AddressMode_V == (char)other.AddressMode_V) &&
+			((char)AddressMode_W == (char)other.AddressMode_W) &&
+			((char)filter == (char)other.AddressMode_U) &&
+			(border_color == other.border_color) &&
+			(min_LOD == other.min_LOD) &&
+			(max_LOD == other.max_LOD) &&
+			(LOD_bias == other.LOD_bias);
+	}
+
+	size_t hash() {
+		size_t value = 0;
+		hash_combine(value, (int)AddressMode_U);
+		hash_combine(value, (int)AddressMode_V);
+		hash_combine(value, (int)AddressMode_W);
+		hash_combine(value, (int)filter);
+		hash_combine(value, border_color.x);
+		hash_combine(value, border_color.y);
+		hash_combine(value, border_color.z);
+		hash_combine(value, border_color.w);
+		hash_combine(value, LOD_bias);
+		hash_combine(value, max_LOD);
+		hash_combine(value, min_LOD);
+		return value;
+	}
+
 };
+
+template <>
+struct std::hash<TextureSamplerDescritor>
+{
+	std::size_t operator()(const TextureSamplerDescritor& k) const
+	{
+		size_t value = 0;
+		hash_combine(value, (int)k.AddressMode_U);
+		hash_combine(value, (int)k.AddressMode_V);
+		hash_combine(value, (int)k.AddressMode_W);
+		hash_combine(value, (int)k.filter);
+		hash_combine(value, k.border_color.x);
+		hash_combine(value, k.border_color.y);
+		hash_combine(value, k.border_color.z);
+		hash_combine(value, k.border_color.w);
+		hash_combine(value, k.LOD_bias);
+		hash_combine(value, k.max_LOD);
+		hash_combine(value, k.min_LOD);
+		return value;
+	}
+};
+
 
 
 
@@ -77,7 +130,7 @@ public:
 
 	const TextureSamplerDescritor& GetDescriptor() const { return descriptor; }
 
-	static TextureSampler* CreateSampler(const TextureSamplerDescritor& desc);
+	static std::shared_ptr<TextureSampler> CreateSampler(const TextureSamplerDescritor& desc);
 
 private:
 
@@ -89,7 +142,7 @@ private:
 struct RenderTexture2DDescriptor {
 	int width, height;
 	TextureFormat format;
-	TextureSampler* sampler = nullptr;
+	std::shared_ptr<TextureSampler> sampler = nullptr;
 };
 
 class RenderTexture2DResource : public RenderResource {

@@ -25,6 +25,7 @@
 #include <Core/FrameMultiBufferResource.h>
 #include <Renderer/RootSignature.h>
 #include <Renderer/MeshManager.h>
+#include <Renderer/TextureManager.h>
 #include <World/Systems/BoxRenderer.h>
 #include <Renderer/RenderDescriptorHeapBlock.h>
 #include <Renderer/PipelineManager.h>
@@ -55,7 +56,7 @@ public:
     std::shared_ptr<RenderBufferResource> resource;
     std::shared_ptr<RenderBufferResource> resource_vertex;
     std::shared_ptr<RenderBufferResource> resource_index;
-    std::shared_ptr<RenderTexture2DResource> texture;
+    Future<std::shared_ptr<RenderTexture2DResource>> texture;
 
     std::shared_ptr<RenderTexture2DResource> color_texture;
     std::shared_ptr<RenderTexture2DResource> depth_texture;
@@ -68,9 +69,12 @@ public:
 
     Future<std::shared_ptr<Mesh>> mesh;
 
+
     FrameMultiBufferResource<std::shared_ptr<RenderBufferResource>> constant_buffer;
 
-    std::unique_ptr<TextureSampler> sampler;
+    
+
+    std::shared_ptr<TextureSampler> sampler;
     std::shared_ptr<Pipeline> pipeline;
     FrameMultiBufferResource<std::shared_ptr<RenderBufferResource>> resource2;
     glm::vec2 position = { 0,0 };
@@ -112,6 +116,9 @@ public:
             }
             else if (e->key_code == KeyCode::KEY_L && e->press_type == KeyPressType::KEY_PRESS) {
                 Application::GetWorld().LoadSceneFromFile("Entity_snapshot.json");
+            }
+            else if (e->key_code == KeyCode::KEY_B && e->press_type == KeyPressType::KEY_PRESS) {
+                MeshManager::Get()->MakeMeshFromObjectFile("C:/Users/mainm/Desktop/Pillar.obj", FileManager::Get()->GetAssetFilePath("OutMesh.mesh"),*VertexLayoutFactory<MeshPreset>::GetLayout() , 0);
             }
             else if (e->key_code == KeyCode::KEY_Q && e->press_type == KeyPressType::KEY_PRESS) {
                 
@@ -341,16 +348,27 @@ public:
                 });
 
             command_queue->ExecuteRenderCommandList(command_list);
-
-            mesh_enity = Application::GetWorld().CreateEntity();
-            Application::GetWorld().SetComponent<MeshComponent>(mesh_enity, "C:/Users/mainm/Desktop/Pillar.obj");
             
-          
+            mesh_enity = Application::GetWorld().CreateEntity();
+            Application::GetWorld().SetComponent<MeshComponent>(mesh_enity,FileManager::Get()->GetAssetFilePath("OutMesh.mesh"));
+            
+            
+            TextureSamplerDescritor desc_sample;
+            desc_sample.AddressMode_U = TextureAddressMode::BORDER;
+            desc_sample.AddressMode_V = TextureAddressMode::BORDER;
+            desc_sample.AddressMode_W = TextureAddressMode::BORDER;
+            desc_sample.border_color = glm::vec4(0.2f, 0.7f, 1.0f, 1.0f);
+            desc_sample.filter = TextureFilter::POINT_MIN_MAG_MIP;
+            desc_sample.LOD_bias = 0.0f;
+            desc_sample.max_LOD = 10;
+            desc_sample.min_LOD = 0;
 
+            TextureManager::Get()->MakeTextureFromImageAsync(FileManager::Get()->GetAssetFilePath("Heaven.png"), FileManager::Get()->GetAssetFilePath("image_texture.tex"), desc_sample);
 
-
+            texture = TextureManager::Get()->LoadTextureFromFileAsync(FileManager::Get()->GetAssetFilePath("image_texture.tex"), true);
 
             stop = false;
+
 
         }
         
@@ -402,9 +420,9 @@ public:
         }
 
         for (auto ent : entities) {
-            std::cout << ent.id << ", ";
+            //std::cout << ent.id << ", ";
         }
-        std::cout << std::endl;
+        //std::cout << std::endl;
 
        /* glm::vec3 pos = camerapos;
         glm::quat rot = glm::quatLookAt(-glm::normalize(pos ), glm::vec3(0, 1, 0));

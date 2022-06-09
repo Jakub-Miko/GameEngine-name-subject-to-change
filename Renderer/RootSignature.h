@@ -111,8 +111,8 @@ struct VertexLayoutFactory<TestPreset> {
 		static VertexLayout* layout = nullptr;
 		if (!layout) {
 			VertexLayout* layout_new = new VertexLayout({
-				VertexLayoutElement(RenderPrimitiveType::FLOAT,2),
-				VertexLayoutElement(RenderPrimitiveType::FLOAT,2)
+				VertexLayoutElement(RenderPrimitiveType::FLOAT,2, "position"),
+				VertexLayoutElement(RenderPrimitiveType::FLOAT,2, "normal")
 				});
 
 			PipelineManager::Get()->AddLayout(layout_new);
@@ -158,8 +158,8 @@ struct VertexLayoutFactory<BoxPreset> {
 		static VertexLayout* layout = nullptr;
 		if (!layout) {
 			VertexLayout* layout_new = new VertexLayout({
-				VertexLayoutElement(RenderPrimitiveType::FLOAT,4),
-				VertexLayoutElement(RenderPrimitiveType::FLOAT,4)
+				VertexLayoutElement(RenderPrimitiveType::FLOAT,4,"position"),
+				VertexLayoutElement(RenderPrimitiveType::FLOAT,4,"normal")
 				});
 
 			PipelineManager::Get()->AddLayout(layout_new);
@@ -180,8 +180,8 @@ struct VertexLayoutFactory<MeshPreset> {
 		static VertexLayout* layout = nullptr;
 		if (!layout) {
 			VertexLayout* layout_new = new VertexLayout({
-				VertexLayoutElement(RenderPrimitiveType::FLOAT,3),
-				VertexLayoutElement(RenderPrimitiveType::FLOAT,3)
+				VertexLayoutElement(RenderPrimitiveType::FLOAT,3,"position"),
+				VertexLayoutElement(RenderPrimitiveType::FLOAT,3,"normal")
 				});
 
 			PipelineManager::Get()->AddLayout(layout_new);

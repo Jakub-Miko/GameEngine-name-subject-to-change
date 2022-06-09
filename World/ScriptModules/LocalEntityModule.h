@@ -3,6 +3,7 @@
 #include <ThreadManager.h>
 #include <World/Systems/ScriptSystemManagement.h>
 #include "GlobalEntityModule.h"
+#include "MathModule.h"
 
 
 extern "C" {

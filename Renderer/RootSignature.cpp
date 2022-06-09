@@ -20,7 +20,12 @@ RootSignature* RootSignature::CreateSignature(const RootSignatureDescriptor& des
 
 void VertexLayout::CalculateStride()
 {
-	for (auto element : layout) {
+	for (auto& element : layout) {
+		if (element.name.find("uv" + std::to_string(num_of_uv_channels)) != element.name.npos) {
+			num_of_uv_channels += 1;
+		}
+
+		element.offset = stride;
 		stride += element.size * OpenGLUnitConverter::PrimitiveSize(element.type);
 	}
 }
