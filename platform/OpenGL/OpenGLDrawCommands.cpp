@@ -28,7 +28,7 @@ void OpenGLImplicitDrawCommand::Execute()
 			glBindBuffer(GL_ARRAY_BUFFER, gl_buffer->GetRenderId());
 			for (auto attrib : gl_pipeline->GetLayout().layout) {
 				glEnableVertexAttribArray(count);
-				glVertexAttribPointer(count, attrib.size, OpenGLUnitConverter::PrimitiveToGL(attrib.type), GL_FALSE, stride, (void*)offset);
+				glVertexAttribPointer(count, attrib.size, OpenGLUnitConverter::PrimitiveToGL(attrib.type), attrib.normalized, stride, (void*)offset);
 				offset += attrib.size * OpenGLUnitConverter::PrimitiveSize(attrib.type);
 				count++;
 			}
@@ -42,5 +42,5 @@ void OpenGLImplicitDrawCommand::Execute()
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, static_cast<OpenGLRenderBufferResource*>(index_buffer.get())->GetRenderId()); 
 	}
 	PROFILE("DrawCall draw");
-	glDrawElements(GL_TRIANGLES, index_count, GL_UNSIGNED_INT, nullptr);
+	glDrawElements(GL_TRIANGLES, index_count, use_unsined_short_as_index ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, (void*)index_offset);
 }

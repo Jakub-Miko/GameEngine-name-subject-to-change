@@ -8,6 +8,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/out")
 set(RENDER_API "" CACHE STRING "")
 
 option(ENABLE_PROFILING OFF)
+option(EDITOR ON)
 
 file(GLOB SRCS 
 "./*.cpp" "./*.h" 
@@ -22,6 +23,7 @@ file(GLOB SRCS
 add_executable(PseudoTest ${SRCS})
 
 set_target_properties(PseudoTest PROPERTIES ENABLE_EXPORTS true WINDOWS_EXPORT_ALL_SYMBOLS true)
+
 
 file(GLOB OPENGL_SRC 
 "./platform/OpenGL/*.cpp" "./platform/OpenGL/*.h"
@@ -52,6 +54,20 @@ target_include_directories(glew_s PUBLIC "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR
 target_link_libraries(PseudoTest PRIVATE glfw glew_s glm Profiler MemoryManagement 
 TaskSystem LuaEngine RuntimeTypeIdentifier ThreadManager FileManager ConfigManager EnTT::EnTT RuntimeTypeIdentifier JsonParser STB_Image assimp)
 
+
+if(EDITOR)
+
+file(GLOB EDITOR_FILES
+ "./Editor/*.cpp"  "./Editor/*.h"
+ "./Editor/*/*.cpp" "./Editor/*/*.h")
+
+target_sources(PseudoTest PRIVATE ${EDITOR_FILES})
+
+target_compile_definitions(PseudoTest PRIVATE EDITOR)
+
+target_link_libraries(PseudoTest PRIVATE IMGUI)
+
+endif()
 
 
 if(WIN32) 

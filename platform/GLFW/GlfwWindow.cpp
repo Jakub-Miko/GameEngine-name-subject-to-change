@@ -15,7 +15,10 @@ void GlfwWindow::Init()
 {
     auto list = reinterpret_cast<OpenGLRenderCommandList*>(Renderer::Get()->GetRenderCommandList());
     list->BindOpenGLContext();
+    std::shared_ptr<RenderFence> fence = std::shared_ptr<RenderFence>( Renderer::Get()->GetFence());
     Renderer::Get()->GetCommandQueue()->ExecuteRenderCommandList( reinterpret_cast<RenderCommandList*>(list) );
+    Renderer::Get()->GetCommandQueue()->Signal(fence, 1);
+    fence->WaitForValue(1);
 }
 
 void GlfwWindow::PreInit()

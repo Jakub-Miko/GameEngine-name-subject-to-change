@@ -46,6 +46,7 @@ public:
 
 	virtual Shader* GetShader(const std::string& name) override;
 	virtual Shader* CreateShader(const std::string& path) override;
+	virtual Shader* CreateShaderFromString(const std::string& source) override;
 
 private:
 	OpenGLShaderManager();

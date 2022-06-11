@@ -9,12 +9,14 @@
 class OpenGLImplicitDrawCommand : public OpenGLRenderCommand {
 public:
 	OpenGLImplicitDrawCommand(std::shared_ptr<Pipeline> pipeline, std::shared_ptr<RenderBufferResource> index_buffer,
-		std::shared_ptr<RenderBufferResource> vertex_buffer, uint32_t index_count) 
-		: index_buffer(index_buffer), index_count(index_count), vertex_buffer(vertex_buffer), pipeline(pipeline) {};
+		std::shared_ptr<RenderBufferResource> vertex_buffer, uint32_t index_count, bool use_unsined_short_as_index = false, int index_offset = 0)
+		: index_buffer(index_buffer), index_count(index_count), vertex_buffer(vertex_buffer), pipeline(pipeline), index_offset(index_offset), use_unsined_short_as_index(use_unsined_short_as_index){};
 	virtual void Execute() override;
 private:
 	std::shared_ptr<RenderBufferResource> index_buffer;
 	std::shared_ptr<RenderBufferResource> vertex_buffer;
 	std::shared_ptr<Pipeline> pipeline;
+	bool use_unsined_short_as_index;
+	int index_offset;
 	uint32_t index_count;
 };

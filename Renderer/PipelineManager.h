@@ -10,6 +10,18 @@
 struct VertexLayout;
 class RootSignature;
 
+struct PipelineBlendFunctions {
+	BlendFunction srcRGB = BlendFunction::ONE, dstRGB = BlendFunction::ZERO, srcAlpha = BlendFunction::ONE, dstAlpha = BlendFunction::ZERO;
+
+	bool operator==(const PipelineBlendFunctions& other) const {
+		return srcRGB == other.srcRGB && srcAlpha == other.srcAlpha && dstRGB == other.dstRGB && dstAlpha == other.dstAlpha;
+	}
+
+	bool operator!=(const PipelineBlendFunctions& other) const {
+		return !operator==(other);
+	}
+
+};
 
 struct PipelineDescriptor {
 	
@@ -18,7 +30,7 @@ struct PipelineDescriptor {
 	PipelineDescriptor() = default;
 
 	PipelineDescriptor(const PipelineDescriptor& desc) : layout(desc.layout), signature(desc.signature), shader(desc.shader), viewport(desc.viewport), scissor_rect(desc.scissor_rect),
-		flags(desc.flags), polygon_render_mode(desc.polygon_render_mode)
+		flags(desc.flags), polygon_render_mode(desc.polygon_render_mode), blend_functions(blend_functions)
 	{
 
 	}
@@ -46,6 +58,10 @@ struct PipelineDescriptor {
 	const PipelineFlags& GetPipelineFlags() const {
 		return flags;
 	}
+
+	const PipelineBlendFunctions& GetPipelineBlendFunctions() const {
+		return blend_functions;
+	}
 	
 	const PrimitivePolygonRenderMode& GetPrimitivePolygonRenderMode() const {
 		return polygon_render_mode;
@@ -59,6 +75,7 @@ public:
 	RenderViewport viewport = RenderViewport();
 	RenderScissorRect scissor_rect = RenderScissorRect();
 	PipelineFlags flags = PipelineFlags::DEFAULT;
+	PipelineBlendFunctions blend_functions;
 	PrimitivePolygonRenderMode polygon_render_mode = PrimitivePolygonRenderMode::DEFAULT;
 };
 
@@ -89,6 +106,10 @@ public:
 		return shader;
 	}
 	
+	const PipelineBlendFunctions& GetPipelineBlendFunctions() const {
+		return blend_functions;
+	}
+
 	const PipelineFlags& GetPipelineFlags() const {
 		return flags;
 	}
@@ -99,7 +120,7 @@ public:
 
 protected:
 	Pipeline(const PipelineDescriptor& desc) : layout(desc.layout), signature(desc.signature), shader(desc.shader), viewport(desc.viewport), scissor_rect(desc.scissor_rect),
-		flags(desc.flags), polygon_render_mode(desc.polygon_render_mode)
+		flags(desc.flags), polygon_render_mode(desc.polygon_render_mode), blend_functions(desc.blend_functions)
 	{
 
 	}
@@ -114,6 +135,7 @@ protected:
 	RenderViewport viewport = RenderViewport();
 	RenderScissorRect scissor_rect = RenderScissorRect();
 	PipelineFlags flags = PipelineFlags::DEFAULT;
+	PipelineBlendFunctions blend_functions;
 	PrimitivePolygonRenderMode polygon_render_mode = PrimitivePolygonRenderMode::DEFAULT;
 };
 

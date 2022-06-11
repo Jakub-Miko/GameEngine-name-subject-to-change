@@ -55,6 +55,10 @@ public:
 		current_state.shader = shader;
 	}
 
+	void SetBlendFunctions(const PipelineBlendFunctions& blend_functions) {
+		current_state.blend_functions = blend_functions;
+	}
+
 	void SetPrimitivePolygonRenderMode(const PrimitivePolygonRenderMode& mode) {
 		current_state.polygon_render_mode = mode;
 	}

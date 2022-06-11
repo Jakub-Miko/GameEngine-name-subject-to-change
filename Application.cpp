@@ -18,6 +18,11 @@
 #include <stdexcept>
 #include <FrameManager.h>
 
+#ifdef EDITOR
+#include <Editor/Editor.h>
+#endif
+
+
 Application* Application::instance = nullptr;
 
 Application *Application::Get()
@@ -39,6 +44,11 @@ bool Application::SendEvent(Event* event)
 
 Application::~Application()
 {
+
+#ifdef EDITOR
+    Editor::Shutdown();
+#endif
+    
     ShutdownSystems();
     
     EntityManager::Shutdown();
@@ -130,6 +140,12 @@ void Application::InitInstance()
     EntityManager::Initialize();
 
     InitializeSystems();
+
+#ifdef EDITOR
+    Editor::Init();
+#endif
+
+
 }
 
 void Application::PreInitializeSystems()
@@ -215,6 +231,10 @@ void Application::Update()
     GameStateMachine::Get()->UpdateState(delta_time);
     m_GameLayer->OnUpdate(delta_time);
 
+#ifdef EDITOR
+    Editor::Run();
+    Editor::Render();
+#endif
     //Present / Swap buffers
     PROFILE("SwapBuffers");
     Renderer::Get()->GetCommandQueue()->Present();

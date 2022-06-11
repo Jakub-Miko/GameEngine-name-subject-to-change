@@ -27,9 +27,11 @@ public:
     virtual void SetDefaultRenderTarget() = 0;
     virtual void SetIndexBuffer(std::shared_ptr<RenderBufferResource> buffer) = 0;
     virtual void SetVertexBuffer(std::shared_ptr<RenderBufferResource> vertex_buffer) = 0;
+    virtual void SetScissorRect(const RenderScissorRect& scissor_rect) = 0;
+    virtual void SetViewport(const RenderViewport& viewport) = 0;
     virtual void SetDescriptorTable(const std::string& semantic_name, RenderDescriptorTable table) = 0;
     virtual void GenerateMIPs(std::shared_ptr<RenderTexture2DResource> texture) = 0;
-    virtual void Draw(uint32_t index_count) = 0;
+    virtual void Draw(uint32_t index_count, bool use_unsined_short_as_index = false,int index_offset = 0) = 0;
 
     virtual void DrawSquare(glm::vec2 pos, glm::vec2 size, glm::vec4 color = {1.f,1.f,1.f,1.f}) = 0;
     virtual void DrawSquare(const glm::mat4& transform, glm::vec4 color = { 1.f,1.f,1.f,1.f }) = 0;

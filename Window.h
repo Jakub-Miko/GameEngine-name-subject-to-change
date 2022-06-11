@@ -2,7 +2,7 @@
 #include <string>
 
 struct WindowProperties {
-    int resolution_x = 800, resolution_y = 600;
+    int resolution_x = 1280, resolution_y = 720;
     std::string name = "Hello World";
 };
 

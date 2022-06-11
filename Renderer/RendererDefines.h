@@ -22,6 +22,7 @@ enum class PipelineFlags : uint32_t {
 	ENABLE_DEPTH_TEST = (1 << 0),
 	ENABLE_STENCIL_TEST = (1 << 1),
 	ENABLE_SCISSOR_TEST = (1 << 2),
+	ENABLE_BLEND = (1 << 3),
 	DEFAULT = 0
 };
 
@@ -36,6 +37,10 @@ inline PipelineFlags operator|(const PipelineFlags& flags_1, const PipelineFlags
 inline PipelineFlags operator&(const PipelineFlags& flags_1, const PipelineFlags& flags_2) {
 	return (PipelineFlags)((uint32_t)flags_1 & (uint32_t)flags_2);
 }
+
+enum class BlendFunction : uint32_t {
+	ZERO = 0, ONE = 1, SRC_COLOR = 2, ONE_MINUS_SRC_COLOR = 3, DST_COLOR= 4, ONE_MINUS_DST_COLOR = 5, SRC_ALPHA = 6, ONE_MINUS_SRC_ALPHA = 7, DST_ALPHA = 8, ONE_MINUS_DST_ALPHA = 9
+};
 
 
 
@@ -59,6 +64,7 @@ struct RenderViewport {
 
 struct RenderScissorRect {
 	RenderScissorRect(glm::vec2 offset = { 0,0 }, glm::vec2 size = {-1,-1}) : offset(offset), size(size) {}
+
 
 	bool operator==(const RenderScissorRect& other) const {
 		return (offset == other.offset && size == other.size);
@@ -114,8 +120,8 @@ struct RootMappingEntry {
 
 struct VertexLayoutElement {
 	VertexLayoutElement() = default;
-	VertexLayoutElement(RenderPrimitiveType type, uint32_t size, const std::string& name) : type(type), size(size), name(name){}
-
+	VertexLayoutElement(RenderPrimitiveType type, uint32_t size, const std::string& name, bool normalized = false) : type(type), size(size), name(name), normalized(normalized){}
+	bool normalized = false;
 	std::string name = "Undefined";
 	int offset = -1;
 	RenderPrimitiveType type = RenderPrimitiveType::UNKNOWN;

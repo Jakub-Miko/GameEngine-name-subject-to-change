@@ -140,3 +140,17 @@ Shader* OpenGLShaderManager::CreateShader(const std::string& path)
 	return static_cast<Shader*>(new_shader);
 }
 
+Shader* OpenGLShaderManager::CreateShaderFromString(const std::string& source)
+{
+	OpenGLShader* new_shader = new OpenGLShader;
+	OpenGLRenderCommandQueue* queue = static_cast<OpenGLRenderCommandQueue*>(Renderer::Get()->GetCommandQueue());
+	queue->ExecuteCustomCommand(new ExecutableCommandAdapter([new_shader, source]() {
+		if (new_shader->GetShaderProgram() == 0) {
+			new_shader->SetShaderProgram(LinkShader(ParseShader(source)));
+			new_shader->SetId("Unknown");
+		}
+		}));
+
+	return static_cast<Shader*>(new_shader);
+}
+

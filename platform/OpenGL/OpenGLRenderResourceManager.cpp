@@ -52,6 +52,13 @@ void OpenGLRenderResourceManager::UploadDataToBuffer(RenderCommandList* list, st
 	static_cast<OpenGLRenderCommandList*>(list)->UpdateBufferResource(resource, allocated, size, offset);
 }
 
+void OpenGLRenderResourceManager::ReallocateAndUploadBuffer(RenderCommandList* list, std::shared_ptr<RenderBufferResource> resource, void* data, size_t size)
+{
+	void* allocated = new char[size];
+	memcpy(allocated, data, size);
+	static_cast<OpenGLRenderCommandList*>(list)->UpdateBufferResourceAndReallocate(resource, allocated, size);
+}
+
 std::shared_ptr<RenderTexture2DResource> OpenGLRenderResourceManager::CreateTexture(const RenderTexture2DDescriptor& buffer_desc)
 {
 	if (!buffer_desc.sampler) {

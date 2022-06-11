@@ -119,6 +119,16 @@ void OpenGLRenderCommandList::SetDefaultRenderTarget()
     PushCommand<OpenGLSetDefaultRenderTargetCommand>();
 }
 
+void OpenGLRenderCommandList::SetScissorRect(const RenderScissorRect& scissor_rect)
+{
+    PushCommand<OpenGLSetScissorRect>(scissor_rect);
+}
+
+void OpenGLRenderCommandList::SetViewport(const RenderViewport& viewport)
+{
+    PushCommand<OpenGLSetViewport>(viewport);
+}
+
 void OpenGLRenderCommandList::GenerateMIPs(std::shared_ptr<RenderTexture2DResource> texture)
 {
     PushCommand<OpenGLGenerateMIPsCommand>(texture);
@@ -133,9 +143,9 @@ void OpenGLRenderCommandList::DrawSquare(const glm::mat4& transform, glm::vec4 c
     PushCommand<OpenGLDrawCommand>(transform, color);
 }
 
-void OpenGLRenderCommandList::Draw(uint32_t index_count)
+void OpenGLRenderCommandList::Draw(uint32_t index_count, bool use_unsined_short_as_index, int index_offset)
 {
-    PushCommand<OpenGLImplicitDrawCommand>(current_pipeline,index_buffer,vertex_buffer, index_count);
+    PushCommand<OpenGLImplicitDrawCommand>(current_pipeline,index_buffer,vertex_buffer, index_count, use_unsined_short_as_index, index_offset);
 }
 
 void OpenGLRenderCommandList::BindOpenGLContext()
@@ -154,6 +164,26 @@ void OpenGLRenderCommandList::UpdateBufferResource(std::shared_ptr<RenderBufferR
             }
             glBindBuffer(GL_COPY_WRITE_BUFFER, static_cast<OpenGLRenderBufferResource*>(resource.get())->GetRenderId());
             glBufferSubData(GL_COPY_WRITE_BUFFER, offset, size, data);
+            glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
+            resource->SetRenderState(RenderState::COMMON);
+            delete[] static_cast<char*>(data);
+        }
+        else {
+            delete[] static_cast<char*>(data);
+            throw std::runtime_error("Can't update an Uninitialized resource");
+        }
+        });
+    PushCommand<decltype(command)>(command);
+}
+
+void OpenGLRenderCommandList::UpdateBufferResourceAndReallocate(std::shared_ptr<RenderBufferResource> resource, void* data, size_t size)
+{
+    auto command = OpenGLRenderCommandAdapter([resource, data, size]() {
+        RenderState state = RenderState::COMMON;
+        resource->GetRenderStateAtomic().compare_exchange_strong(state, RenderState::WRITE);
+        if (state == RenderState::COMMON) {
+            glBindBuffer(GL_COPY_WRITE_BUFFER, static_cast<OpenGLRenderBufferResource*>(resource.get())->GetRenderId());
+            glBufferData(GL_COPY_WRITE_BUFFER, size, data, resource->GetBufferDescriptor().type == RenderBufferType::DEFAULT ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW);
             glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
             resource->SetRenderState(RenderState::COMMON);
             delete[] static_cast<char*>(data);
