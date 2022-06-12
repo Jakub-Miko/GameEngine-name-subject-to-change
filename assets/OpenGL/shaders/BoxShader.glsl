@@ -1,12 +1,12 @@
 #Vertex //--------------------------------------------------
-#version 430
+#version 410
 
 in vec4 position;
 in vec4 normal;
 
 out vec4 out_normal;
 
-layout(binding = 0) uniform conf 
+uniform conf 
 {
 	mat4 mvp_matrix;
 	vec4 sun_direction;
@@ -22,9 +22,9 @@ void main() {
 
 #end
 #Fragment //------------------------------------------------
-#version 430
+#version 410
 
-layout(binding = 0) uniform conf 
+uniform conf 
 {
 	mat4 mvp_matrix;
 	vec4 sun_direction;

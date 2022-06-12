@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <cstring>
 #include <unordered_map>
 #include <Renderer/RendererDefines.h>
 #include <Renderer/RenderResource.h>
@@ -76,14 +77,14 @@ public:
 				for (int i = 0; i < input_data.num_of_verticies; i++) {
 					glm::vec3 pos_data = input_data.position[i];
 					void* data = (void*)(vertex_buffer +((layout.stride * i) + pos_element.offset));
-					memcpy_s(data, sizeof(glm::vec3), &pos_data, sizeof(glm::vec3));
+					std::memcpy(data, &pos_data, sizeof(glm::vec3));
 				}
 				break;
 			case 4:
 				for (int i = 0; i < input_data.num_of_verticies; i++) {
 					glm::vec4 pos_data = glm::vec4(input_data.position[i],1.0f);
 					void* data = (void*)(vertex_buffer + ((layout.stride * i) + pos_element.offset));
-					memcpy_s(data, sizeof(glm::vec4), &pos_data, sizeof(glm::vec4));
+					std::memcpy(data, &pos_data, sizeof(glm::vec4));
 				}
 			}
 		}
@@ -94,14 +95,14 @@ public:
 				for (int i = 0; i < input_data.num_of_verticies; i++) {
 					glm::vec3 normal_data = input_data.normal[i];
 					void* data = (void*)(vertex_buffer + ((layout.stride * i) + normal_element.offset));
-					memcpy_s(data, sizeof(glm::vec3), &normal_data, sizeof(glm::vec3));
+					std::memcpy(data, &normal_data, sizeof(glm::vec3));
 				}
 				break;
 			case 4:
 				for (int i = 0; i < input_data.num_of_verticies; i++) {
 					glm::vec4 normal_data = glm::vec4(input_data.normal[i], 1.0f);
 					void* data = (void*)(vertex_buffer + ((layout.stride * i) + normal_element.offset));
-					memcpy_s(data, sizeof(glm::vec4), &normal_data, sizeof(glm::vec4));
+					std::memcpy(data, &normal_data, sizeof(glm::vec4));
 				}
 			}
 		}
@@ -110,7 +111,7 @@ public:
 			for (int i = 0; i < input_data.num_of_verticies; i++) {
 				glm::vec2 uv_data = input_data.uvs[x][i];
 				void* data = (void*)(vertex_buffer + ((layout.stride * i) + uv_elements[x].offset));
-				memcpy_s(data, sizeof(glm::vec3), &uv_data, sizeof(glm::vec3));
+				std::memcpy(data,&uv_data, sizeof(glm::vec3));
 			}
 		}
 

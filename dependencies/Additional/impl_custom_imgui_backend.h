@@ -5,9 +5,8 @@
 #include <Core/FrameMultiBufferResource.h>
 
 class impl_custom_imgui_backend {
-public:
 	struct backend_data;
-
+public:
 	static void Init();
 	static void Shutdown();
 

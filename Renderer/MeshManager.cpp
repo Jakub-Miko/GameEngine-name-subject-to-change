@@ -233,12 +233,12 @@ MeshManager::mesh_native_input_data MeshManager::Fetch_Native_Data(const std::st
     std::string check;
     mesh_native_input_data data;
 
-    int num_of_índicies;;
+    int num_of_indicies;
     int num_of_verticies;
 
     input_file >> check;
     if (check != "mesh_info") throw std::runtime_error("Invalid Native Mesh Format");
-    input_file >> num_of_índicies;
+    input_file >> num_of_indicies;
     input_file >> num_of_verticies;
     input_file >> check; // skip this since we dont need num_of_uv_channels
 
@@ -268,14 +268,14 @@ MeshManager::mesh_native_input_data MeshManager::Fetch_Native_Data(const std::st
     input_file >> check;
     if (check != "index_buffer") throw std::runtime_error("Invalid Native Mesh Format");
     input_file.get();
-    unsigned int* index_buffer = new unsigned int[num_of_índicies];
-    input_file.read((char*)index_buffer, sizeof(unsigned int) * num_of_índicies);
+    unsigned int* index_buffer = new unsigned int[num_of_indicies];
+    input_file.read((char*)index_buffer, sizeof(unsigned int) * num_of_indicies);
     input_file >> check;
     if (check != "end") throw std::runtime_error("Invalid Native Mesh Format");
 
     data.index_buffer = index_buffer;
     data.vertex_buffer = vertex_buffer;
-    data.index_count = num_of_índicies;
+    data.index_count = num_of_indicies;
     data.vertex_count = num_of_verticies;
     data.vertex_size = layout.stride;
     data.layout = layout;

@@ -1,12 +1,12 @@
 #Vertex //--------------------------------------------------
-#version 430
+#version 410
 
 in vec2 pos;
 in vec2 uv;
 
 out vec2 vertex_uv;
 
-layout(binding = 0) uniform Testblock_0
+uniform Testblock_0
 {
 	vec4 in_color;
 	vec2 scale;
@@ -20,13 +20,13 @@ void main() {
 
 #end
 #Fragment //------------------------------------------------
-#version 430
+#version 410
 
 out vec4 color;
 
 in vec2 vertex_uv;
 
-layout(binding = 0) uniform sampler2D TestTexture[1];
+uniform sampler2D TestTexture[1];
 
 uniform Testblock_0 {
 	vec4 in_color;
