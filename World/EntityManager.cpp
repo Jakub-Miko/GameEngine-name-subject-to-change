@@ -102,6 +102,28 @@ Entity EntityManager::CreateEntityInplace(Entity base_entity, const std::string&
 	return new_ent;
 }
 
+Entity EntityManager::CreateEntity(const std::string& name, const std::string& path, Entity parent)
+{
+	auto ent = Application::GetWorld().MakeEmptyEntity();
+	Application::GetWorld().SetComponent<ConstructionComponent>(ent, path, parent);
+	Application::GetWorld().SetComponent<LabelComponent>(ent, name);
+	return ent;
+}
+
+Entity EntityManager::CreateEntityInplace(const std::string& name, const std::string& path, Entity parent)
+{
+	auto ent = CreateEntityInplace(path, parent);
+	Application::GetWorld().SetComponent<LabelComponent>(ent, name);
+	return ent;
+}
+
+Entity EntityManager::CreateEntityInplace(const std::string& name, Entity base_entity, const std::string& path, Entity parent)
+{
+	auto ent = CreateEntityInplace(base_entity, path,parent);
+	Application::GetWorld().SetComponent<LabelComponent>(ent, name);
+	return ent;
+}
+
 EntityManager::EntityManager()
 {
 

@@ -34,6 +34,16 @@ public:
 
     static void Create();
 
+    std::shared_ptr<RenderFrameBufferResource> GetDefaultFrameBuffer() {
+        std::lock_guard<std::mutex> lock(default_frame_buffer_mutex);
+        return default_frame_buffer;
+    }
+
+    void SetDefaultFrameBuffer(std::shared_ptr<RenderFrameBufferResource> buffer = nullptr) {
+        std::lock_guard<std::mutex> lock(default_frame_buffer_mutex);
+        default_frame_buffer = buffer;
+    }
+
     void ReuseAllocator(RenderCommandAllocator* alloc);
 
 private:
@@ -45,6 +55,9 @@ private:
     std::vector<RenderCommandAllocator*> m_Allocators;
     std::vector<RenderCommandAllocator*> m_FreeAllocators;
     std::array<RenderCommandQueue*, 3> m_CommandQueues;
+
+    std::mutex default_frame_buffer_mutex;
+    std::shared_ptr<RenderFrameBufferResource> default_frame_buffer = nullptr;
 
     std::mutex m_List_mutex;
     int max_allocators = 50;

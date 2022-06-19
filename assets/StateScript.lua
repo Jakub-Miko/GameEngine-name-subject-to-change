@@ -1,6 +1,7 @@
 function OnAttach()
 
-camera = CreateEntity("CameraEntity.lua",-1)
+camera = CreateSerializableEntity("CameraEntity.lua",-1)
+CreateSerializableEntity("CameraEntity2.lua",-1)
 SetPrimaryEntity(camera)
 print(GetPrimaryEntity().id)
 end
@@ -15,7 +16,7 @@ if(key.press_type == KeyPressType.KEY_PRESS and key.key_code == KeyCode.KEY_V) t
 
 pos = GetMousePosition()
 
-entity = CreateSerializableEntity("TestScript.lua",-1)
+entity = CreateSerializableEntityNamed("TestEntity","TestScript.lua",-1)
 SetEntityProperty_VEC3(entity, "position", {x = pos.x, y = pos.y, z = 1.0})
 
 end

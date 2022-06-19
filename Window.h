@@ -3,7 +3,7 @@
 
 struct WindowProperties {
     int resolution_x = 1280, resolution_y = 720;
-    std::string name = "Hello World";
+    std::string name = "GameEngine NSTC";
 };
 
 class Window {

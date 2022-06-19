@@ -3,6 +3,7 @@
 #include <World/EntityTypes.h>
 #include <World/SceneGraph.h>
 #include <World/Components/InitializationComponent.h>
+#include <World/Components/LabelComponent.h>
 #include <World/Entity.h>
 #include <mutex>
 #include <glm/glm.hpp>
@@ -64,12 +65,30 @@ public:
 		return ent;
 	}
 
+	template<typename T = EntityType, typename ... Args>
+	auto CreateEntity(const std::string& name, Entity parent = Entity(), Args&& ... args) -> decltype(T::CreateEntity(std::declval<World&>(), std::declval<Entity>(), std::declval<Entity>(), std::declval<Args>()...), Entity())
+	{
+		auto ent = MakeEmptyEntity();
+		T::CreateEntity(*this, ent, parent, std::forward<Args>(args)...);
+		SetComponent<LabelComponent>(ent, name);
+		return ent;
+	}
+
 
 	template<typename T = EntityType, typename ... Args>
 	auto CreateEntityFromEmpty(Entity ent, Entity parent = Entity(), Args&& ... args) -> decltype(T::CreateEntity(std::declval<World&>(), std::declval<Entity>(), std::declval<Entity>(), std::declval<Args>()...), Entity())
 	{
 		T::CreateEntity(*this, ent, parent, std::forward<Args>(args)...);
 		SetComponent<InitializationComponent>(ent);
+		return ent;
+	}
+
+	template<typename T = EntityType, typename ... Args>
+	auto CreateEntityFromEmpty(const std::string& name, Entity ent, Entity parent = Entity(), Args&& ... args) -> decltype(T::CreateEntity(std::declval<World&>(), std::declval<Entity>(), std::declval<Entity>(), std::declval<Args>()...), Entity())
+	{
+		T::CreateEntity(*this, ent, parent, std::forward<Args>(args)...);
+		SetComponent<InitializationComponent>(ent);
+		SetComponent<LabelComponent>(ent, name);
 		return ent;
 	}
 
@@ -146,6 +165,10 @@ public:
 
 	Entity MakeEmptyEntity();
 
+	bool EntityExists(Entity entity) {
+		return m_ECS.valid((entt::entity)entity.id);
+	}
+
 private:
 	friend class GameLayer;
 
@@ -157,6 +180,7 @@ private:
 
 	Entity set_primary_entity = Entity();
 	Entity primary_entity = Entity();
+
 	std::shared_ptr<SceneProxy> current_scene = nullptr;
 	std::shared_ptr<SceneProxy> load_scene = nullptr;
 	std::mutex entity_mutex;

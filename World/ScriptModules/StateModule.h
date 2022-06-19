@@ -1,9 +1,8 @@
-
 #pragma once 
 #include <LuaEngine.h>
 
-class IOModule : public ScriptModule {
+class StateModule : public ScriptModule {
 public:
-	SCRIPT_MODULE_NAME("IOModule");
+	SCRIPT_MODULE_NAME("StateModule");
 	virtual void OnRegisterModule(ModuleBindingProperties& props) override;
 };

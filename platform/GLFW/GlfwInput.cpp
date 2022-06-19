@@ -36,17 +36,17 @@ GlfwInput::GlfwInput()
 	}
 }
 
-bool GlfwInput::IsKeyPressed(KeyCode key_code)
+bool GlfwInput::IsKeyPressed_impl(KeyCode key_code)
 {
 	return glfwGetKey(reinterpret_cast<GlfwWindow*>(Application::Get()->GetWindow())->GetHandle(),(int)key_code) == GLFW_PRESS;
 }
 
-bool GlfwInput::IsMouseButtonPressed(MouseButtonCode key_code)
+bool GlfwInput::IsMouseButtonPressed_impl(MouseButtonCode key_code)
 {
 	return glfwGetMouseButton(reinterpret_cast<GlfwWindow*>(Application::Get()->GetWindow())->GetHandle(), (int)key_code) == GLFW_PRESS;
 }
 
-glm::vec2 GlfwInput::GetMoutePosition()
+glm::vec2 GlfwInput::GetMoutePosition_impl()
 {
 	double x, y;
 	glfwGetCursorPos(reinterpret_cast<GlfwWindow*>(Application::Get()->GetWindow())->GetHandle(), &x, &y);

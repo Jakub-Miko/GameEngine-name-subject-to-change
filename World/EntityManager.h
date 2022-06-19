@@ -32,6 +32,12 @@ public:
 
     Entity CreateEntityInplace(Entity base_entity, const std::string& path, Entity parent = Entity());
 
+    Entity CreateEntity(const std::string& name, const std::string& path, Entity parent = Entity());
+
+    Entity CreateEntityInplace(const std::string& name, const std::string& path, Entity parent = Entity());
+
+    Entity CreateEntityInplace(const std::string& name, Entity base_entity, const std::string& path, Entity parent = Entity());
+
     const EntityParseResult& GetEntitySignature(const std::string& path);
 
 private:

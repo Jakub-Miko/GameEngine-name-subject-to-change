@@ -35,7 +35,7 @@ void IOModule::OnRegisterModule(ModuleBindingProperties& props)
     props.Add_FFI_aliases({
         {"GetMousePosition_L","GetMousePosition"},
         {"IsKeyPressed_L","IsKeyPressed"},
-        {"IsMouseButtonPressed_L","IsMouseButtonPressed_"},
+        {"IsMouseButtonPressed_L","IsMouseButtonPressed"},
         });
 
 }

@@ -33,6 +33,18 @@ extern "C" {
         return entity{ ent.id };
     }
 
+    entity CreateEntityNamed_L(const char* name ,const char* path, int parent)
+    {
+        return entity{ EntityManager::Get()->CreateEntity(name, path, Entity(parent)).id };
+    }
+
+    entity CreateSerializableEntityNamed_L(const char* name, const char* path, int parent)
+    {
+        Entity ent = EntityManager::Get()->CreateEntity(name, path, Entity(parent)).id;
+        Application::GetWorld().SetComponent<SerializableComponent>(ent);
+        return entity{ ent.id };
+    }
+
     void SetEntityProperty_INT_L(entity ent, const char* name, int value) {
         SetEntityProperty(Entity(ent.id),name , value);
     }
@@ -67,6 +79,8 @@ void DefferedPropertySetModule::OnRegisterModule(ModuleBindingProperties& props)
     props.Add_FFI_declarations(R"(
     entity CreateEntity_L(const char* path, int parent);
     entity CreateSerializableEntity_L(const char* path, int parent);
+    entity CreateEntityNamed_L(const char* name ,const char* path, int parent);
+    entity CreateSerializableEntityNamed_L(const char* name, const char* path, int parent);
     void SetEntityProperty_INT_L(entity ent, const char* name, int value);
     void SetEntityProperty_FLOAT_L(entity ent, const char* name, float value);
     void SetEntityProperty_VEC2_L(entity ent, const char* name, vec2 value);
@@ -78,6 +92,8 @@ void DefferedPropertySetModule::OnRegisterModule(ModuleBindingProperties& props)
     props.Add_FFI_aliases({
         {"CreateEntity_L","CreateEntity"},
         {"CreateSerializableEntity_L","CreateSerializableEntity"},
+        {"CreateEntityNamed_L","CreateEntityNamed"},
+        {"CreateSerializableEntityNamed_L","CreateSerializableEntityNamed"},
         {"SetEntityProperty_INT_L","SetEntityProperty_INT"},
         {"SetEntityProperty_FLOAT_L","SetEntityProperty_FLOAT"},
         {"SetEntityProperty_VEC2_L","SetEntityProperty_VEC2"},

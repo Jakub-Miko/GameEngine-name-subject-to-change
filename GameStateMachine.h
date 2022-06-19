@@ -3,6 +3,7 @@
 #include <memory>
 #include <LuaEngine.h>
 #include <unordered_set>
+#include <functional>
 #include <string>
 
 class GameState;
@@ -52,8 +53,24 @@ public:
 	void UpdateState(float delta_time);
 	void OnEventState(Event* e);
 
+	template<typename T>
+	void RegisterState() {
+		constexpr std::string_view name = RuntimeTag<T>::GetName();
+		static_assert(name != "Unidentified");
+		state_map.insert(std::make_pair(name, std::make_shared<T>));
+	}
+
+	std::shared_ptr<GameState> GetStateFromName(const std::string& name) {
+		auto fnd = state_map.find(name);
+		if (fnd == state_map.end()) throw std::runtime_error("State with name " + name + " wasn't registered");
+		std::function<std::shared_ptr<GameState>()> construct = fnd->second;
+		return construct();
+
+	}
+
 private:
 	static GameStateMachine* instance;
+	friend class World;
 
 	GameStateMachine();
 	~GameStateMachine();
@@ -61,6 +78,7 @@ private:
 	void ScriptOnUpdate(float delta_time);
 	void ScriptOnEvent(Event* e);
 
+	void RegisterStates();
 
 	void ScriptOnAttach();
 	void ScriptOnDeattach();
@@ -72,10 +90,10 @@ private:
 	LuaEngineClass<GameStateMachine> m_LuaEngine;
 	std::unordered_set<std::string> m_Loaded_Modules;
 
+	std::unordered_map<std::string, std::function<std::shared_ptr<GameState>()>> state_map;
+
 private:
 	void BindLuaFunctions();
 	//Lua Bindings
-
-	int CreateEntity(std::string path, int parent);
 
 };

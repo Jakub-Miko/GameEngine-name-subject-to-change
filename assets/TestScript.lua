@@ -13,7 +13,7 @@
 	],
 
 	"Children" : [
-		
+		"TestEntity.lua"
 	]
 
 }

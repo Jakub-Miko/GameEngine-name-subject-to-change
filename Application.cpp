@@ -37,6 +37,12 @@ Window* Application::GetWindow() const
 
 bool Application::SendEvent(Event* event)
 {
+#ifdef EDITOR
+    if (Editor::Get()->OnEvent(event)) {
+        return true;
+    }
+#endif
+    
     GameStateMachine::Get()->OnEventState(event);
     m_GameLayer->OnEvent(event);
     return event->handled;
@@ -85,11 +91,11 @@ Application::Application()
 
 void Application::InitInstance()
 {
+    //Initialize Config store
+    ConfigManager::Init(FileManager::GetRelativeBinaryPath("/../config.json"));
+    
     //Initialize FileManager
     FileManager::Init();
-
-    //Initialize Config store
-    ConfigManager::Init(FileManager::Get()->GetRelativeFilepath("config.json"));
 
     //Init GameState
     GameStateMachine::Init();
@@ -203,6 +209,10 @@ void Application::SetInitialGameState(std::shared_ptr<GameState> state)
 
 void Application::Update()
 {
+#ifdef EDITOR
+    Editor::Get()->ViewportBegin();
+#endif
+    
     //Synchronize with RenderThread
     FrameManager::Get()->StartFrame();
 
@@ -232,8 +242,9 @@ void Application::Update()
     m_GameLayer->OnUpdate(delta_time);
 
 #ifdef EDITOR
-    Editor::Run();
-    Editor::Render();
+    Editor::Get()->ViewportEnd();
+    Editor::Get()->Run();
+    Editor::Get()->Render();
 #endif
     //Present / Swap buffers
     PROFILE("SwapBuffers");

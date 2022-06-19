@@ -8,8 +8,10 @@
 #include <World/Components/BoundingVolumeComponent.h>
 #include <World/Components/CameraComponent.h>
 #include <World/Components/ConstructionComponent.h>
+#include <World/Components/LabelComponent.h>
 #include <World/Components/DefferedUpdateComponent.h>
 #include <World/Components/InitializationComponent.h>
+#include <GameStateMachine.h>
 #include <World/Components/KeyPressedScriptComponent.h>
 #include <World/Components/MousePressedScriptComponent.h>
 #include <World/Components/ScriptComponent.h>
@@ -94,20 +96,24 @@ void World::RegistryWarmUp()
 void World::LoadSceneSystem()
 {
 	if (load_scene) {
+		if (GameStateMachine::Get()->current_state) {
+			GameStateMachine::Get()->ScriptOnDeattach();
+		}
+		primary_entity = Entity();
 		m_ECS.clear();
 		m_ECS = entt::registry();
 		m_SceneGraph.clear();
 
-		std::ifstream file(FileManager::Get()->GetAssetFilePath(load_scene->scene_path));
+		std::ifstream file(load_scene->scene_path);
 		if (!file.is_open()) {
-			throw std::runtime_error("File could not be opened: " + FileManager::Get()->GetAssetFilePath(load_scene->scene_path));
+			throw std::runtime_error("File could not be opened: " + load_scene->scene_path);
 		}
 		nlohmann::json json;
 		file >> json;
 		file.close();
 
 		ECS_Input_Archive archive(json["Entities"]);
-		entt::snapshot_loader(m_ECS).component<TransformComponent, LoadedComponent, DynamicPropertiesComponent>(archive);
+		entt::snapshot_loader(m_ECS).component<TransformComponent, LoadedComponent, DynamicPropertiesComponent, LabelComponent>(archive);
 
 		RegistryWarmUp();
 
@@ -117,6 +123,10 @@ void World::LoadSceneSystem()
 		primary_entity = load_scene->primary_entity;
 		current_scene = load_scene;
 		load_scene = nullptr;
+
+		if (GameStateMachine::Get()->current_state) {
+			GameStateMachine::Get()->ScriptOnAttach();
+		}
 	}
 }
 
@@ -141,7 +151,8 @@ void World::SaveScene(const std::string& file_path)
 	ECS_Output_Archive archive;
 	entt::snapshot snapshot(m_ECS);
 	auto view_serializable = m_ECS.view<SerializableComponent>();
-	snapshot.component<TransformComponent, LoadedComponent, DynamicPropertiesComponent>(archive, view_serializable.begin(), view_serializable.end());
+	snapshot.component<TransformComponent, LoadedComponent, DynamicPropertiesComponent, LabelComponent>(archive, view_serializable.begin(), view_serializable.end());
+
 
 	nlohmann::json json;
 	json["Entities"] = archive.AsJson();
@@ -152,9 +163,9 @@ void World::SaveScene(const std::string& file_path)
 		json["primary_entity"] = current_scene->primary_entity;
 	}
 
-	std::ofstream file(FileManager::Get()->GetAssetFilePath(file_path),std::ios_base::trunc);
+	std::ofstream file(file_path,std::ios_base::trunc);
 	if (!file.is_open()) {
-		throw std::runtime_error("File could not be opened: " + FileManager::Get()->GetAssetFilePath(file_path));
+		throw std::runtime_error("File could not be opened: " + file_path);
 	}
 	file << json;
 	file.close();

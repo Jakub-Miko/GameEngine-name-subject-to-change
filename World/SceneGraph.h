@@ -46,6 +46,9 @@ public:
 
 	void MarkEntityDirty(SceneNode* ent);
 
+	const SceneNode* GetRootNode() const {
+		return &root_node;
+	}
 
 	void CalculateMatricies();
 

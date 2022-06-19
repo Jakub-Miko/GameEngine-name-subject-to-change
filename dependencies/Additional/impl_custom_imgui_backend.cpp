@@ -253,6 +253,7 @@ void impl_custom_imgui_backend::DrawData(ImDrawData* draw_data)
     list->SetConstantBuffer("conf", current_backend_data->constant_buffer.GetResource());
     list->SetVertexBuffer(current_backend_data->vertex_buffer.GetResource());
     list->SetIndexBuffer(current_backend_data->index_buffer.GetResource());
+    list->SetDefaultRenderTarget();
 
 
     ImVec2 clip_off = draw_data->DisplayPos;      

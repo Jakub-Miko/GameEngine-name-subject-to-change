@@ -25,6 +25,7 @@ public:
     virtual void SetTexture2D(const std::string& semantic_name, std::shared_ptr<RenderTexture2DResource> texture) = 0;
     virtual void SetRenderTarget(std::shared_ptr<RenderFrameBufferResource> framebuffer) = 0;
     virtual void SetDefaultRenderTarget() = 0;
+    virtual void Clear() = 0;
     virtual void SetIndexBuffer(std::shared_ptr<RenderBufferResource> buffer) = 0;
     virtual void SetVertexBuffer(std::shared_ptr<RenderBufferResource> vertex_buffer) = 0;
     virtual void SetScissorRect(const RenderScissorRect& scissor_rect) = 0;

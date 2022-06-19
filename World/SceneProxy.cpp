@@ -7,8 +7,8 @@
 
 SceneProxy::SceneProxy() : script_path("Undefined"), scene_path(), primary_entity(Entity()) {
 	using namespace nlohmann;
-	scene_path = ConfigManager::Get()->GetString("default_scene");
-	std::string path = FileManager::Get()->GetAssetFilePath(scene_path);
+	scene_path = FileManager::Get()->GetPath(ConfigManager::Get()->GetString("default_scene"));
+	std::string path = FileManager::Get()->GetPath(ConfigManager::Get()->GetString("default_scene"));
 	std::ifstream file_stream(path);
 	if (!file_stream.is_open()) {
 		throw std::runtime_error("File could not be loaded: " + path);
@@ -32,7 +32,7 @@ SceneProxy::SceneProxy() : script_path("Undefined"), scene_path(), primary_entit
 
 SceneProxy::SceneProxy(const std::string& scene_path) : script_path("Undefined"), scene_path(scene_path) {
 	using namespace nlohmann;
-	std::string path = FileManager::Get()->GetAssetFilePath(scene_path);
+	std::string path = scene_path;
 	std::ifstream file_stream(path);
 	if (!file_stream.is_open()) {
 		throw std::runtime_error("File could not be loaded: " + path);

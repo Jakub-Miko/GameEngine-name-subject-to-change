@@ -7,8 +7,10 @@
 #include <World/Components/ScriptComponent.h>
 #include <Application.h>
 #include <Events/KeyPressEvent.h>
+#include <States/SandboxState.h>
 #include <World/ScriptModules/DefferedPropertySetModule.h>
 #include <World/ScriptModules/IOModule.h>
+#include <World/ScriptModules/StateModule.h>
 #include <World/ScriptModules/ApplicationDataModule.h>
 #include <World/ScriptModules/TimeModule.h>
 #include <Events/MouseButtonPressEvent.h>
@@ -89,9 +91,10 @@ void GameStateMachine::OnEventState(Event* e)
 	current_state->OnEvent(e);
 }
 
-GameStateMachine::GameStateMachine() : m_States(), m_LuaEngine(this), m_Loaded_Modules()
+GameStateMachine::GameStateMachine() : m_States(), m_LuaEngine(this), m_Loaded_Modules(), state_map()
 {
 	BindLuaFunctions();
+	RegisterStates();
 }
 
 GameStateMachine::~GameStateMachine()
@@ -99,6 +102,7 @@ GameStateMachine::~GameStateMachine()
 	ScriptOnDeattach();
 	current_state->OnDeattach();
 }
+
 
 void GameStateMachine::ScriptOnUpdate(float delta_time)
 {
@@ -124,6 +128,11 @@ void GameStateMachine::ScriptOnEvent(Event* e)
 				});
 		}
 	}
+}
+
+void GameStateMachine::RegisterStates()
+{
+	RegisterState<SandboxState>();
 }
 
 void GameStateMachine::ScriptOnAttach()
@@ -154,6 +163,7 @@ void GameStateMachine::BindLuaFunctions()
 
 	ModuleBindingProperties props;
 
+	StateModule().RegisterModule(props);
 	DefferedPropertySetModule().RegisterModule(props);
 	IOModule().RegisterModule(props);
 	ApplicationDataModule().RegisterModule(props);

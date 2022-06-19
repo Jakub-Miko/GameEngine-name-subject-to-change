@@ -60,12 +60,12 @@ protected:
 };
 
 struct TextureSamplerDescritor {
-	TextureAddressMode AddressMode_U, AddressMode_V, AddressMode_W;
-	TextureFilter filter;
-	glm::vec4 border_color;
-	float LOD_bias;
-	float min_LOD;
-	float max_LOD;
+	TextureAddressMode AddressMode_U = TextureAddressMode::MIRROR, AddressMode_V = TextureAddressMode::MIRROR, AddressMode_W = TextureAddressMode::MIRROR;
+	TextureFilter filter = TextureFilter::LINEAR_MIN_MAG_MIP;
+	glm::vec4 border_color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+	float LOD_bias = 0;
+	float min_LOD = 0;
+	float max_LOD = 15;
 
 	bool operator==(const TextureSamplerDescritor& other)const
 	{

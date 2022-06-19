@@ -1,8 +1,10 @@
 #pragma once
 #include <GameState.h>
 #include <Layer.h>
+#include <Core/RuntimeTag.h>
 
 class SandboxState : public GameState{
+	RuntimeTag("SandboxState");
 public:
 	SandboxState();
 	virtual void Update(float delta_time) override;

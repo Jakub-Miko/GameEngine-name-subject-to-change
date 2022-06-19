@@ -52,6 +52,14 @@ void OpenGLRenderCommandList::SetPipeline(std::shared_ptr<Pipeline> pipeline)
     PushCommand<OpenGLSetPipelineCommand>(pipeline);
 }
 
+void OpenGLRenderCommandList::Clear()
+{
+    auto command = OpenGLRenderCommandAdapter([]() {
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        });
+    PushCommand<decltype(command)>(command);
+}
+
 void OpenGLRenderCommandList::SetDescriptorTable(const std::string& semantic_name, RenderDescriptorTable table)
 {
     if (current_pipeline) {
@@ -116,7 +124,7 @@ void OpenGLRenderCommandList::SetRenderTarget(std::shared_ptr<RenderFrameBufferR
 
 void OpenGLRenderCommandList::SetDefaultRenderTarget()
 {
-    PushCommand<OpenGLSetDefaultRenderTargetCommand>();
+    PushCommand<OpenGLSetDefaultRenderTargetCommand>(Renderer::Get()->GetDefaultFrameBuffer());
 }
 
 void OpenGLRenderCommandList::SetScissorRect(const RenderScissorRect& scissor_rect)

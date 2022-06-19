@@ -7,7 +7,7 @@ private:
 	~GlfwInput();
 	GlfwInput();
 public:
-	bool IsKeyPressed(KeyCode key_code) override;
-	virtual bool IsMouseButtonPressed(MouseButtonCode key_code) override;
-	virtual glm::vec2 GetMoutePosition() override;
+	bool IsKeyPressed_impl(KeyCode key_code) override;
+	virtual bool IsMouseButtonPressed_impl(MouseButtonCode key_code) override;
+	virtual glm::vec2 GetMoutePosition_impl() override;
 };

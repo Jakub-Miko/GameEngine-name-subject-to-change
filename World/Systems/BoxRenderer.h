@@ -21,6 +21,7 @@ struct Render_Box_data {
     
     struct Constant_buffer_type {
         glm::mat4 mvp_matrix;
+        glm::mat4 model;
         glm::vec4 sun_direction;
         glm::vec4 color;
         glm::vec4 options;
@@ -155,6 +156,7 @@ struct Render_Box_data {
 
         Constant_buffer_type constant_buf_data = {
             camera.GetProjectionMatrix() * camera_transform,
+            glm::mat4(1.0f),
             glm::normalize(glm::vec4(0.20f, 1.0f, -3.0f,0.0f)),
             glm::vec4(0.3f,0.7f,1.0f,1.0f),
             glm::vec4(0,0,0,0)
@@ -202,6 +204,7 @@ inline void Render_Box(const BoundingBox& box, const glm::mat4& model_matrix,con
 
     Render_Box_data::Constant_buffer_type buffer = {
          camera.GetProjectionMatrix() * glm::inverse(camera_transform) * model_matrix * glm::translate(glm::mat4(1.0f), box.GetBoxOffset()) * glm::scale(glm::mat4(1.0f),box.GetBoxSize()),
+         model_matrix,
             glm::normalize(glm::vec4(0.20f, 1.0f, -3.0f,0.0f)),
             glm::vec4(0.3f,0.7f,1.0f,1.0f),
             glm::vec4(render_mode == PrimitivePolygonRenderMode::WIREFRAME ? 1.0 : 0.0,0,0,0)

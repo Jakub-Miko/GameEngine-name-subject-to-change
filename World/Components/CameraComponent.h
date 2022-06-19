@@ -39,6 +39,10 @@ public:
 		view_frustum.bottom = Plane(glm::normalize(glm::cross((forward * zFar) + up * vertical_size, right)), translation);
 	}
 
+	void UpdateProjectionMatrix() {
+		projection_matrix = glm::perspective(glm::radians(fov), aspect_ratio, zNear, zFar);
+	}
+
 
 	float GetFOV() const {
 		return fov;
@@ -65,6 +69,10 @@ public:
 	}
 
 private:
+#ifdef EDITOR
+	friend class PropertiesPanel;
+#endif // EDITOR
+
 	float fov;
 	float zNear;
 	float zFar;

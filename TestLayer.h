@@ -34,6 +34,11 @@
 #include <Core/RuntimeTag.h>
 #include <Window.h>
 #include <FileManager.h>
+#ifdef EDITOR
+#include <Editor/Editor.h>
+#include <imgui.h>
+#endif
+
 
 class test1 {
     RuntimeTag("Test1")
@@ -332,6 +337,7 @@ public:
 
             Render_Box_data::Constant_buffer_type constant_buf_data = {
                 glm::mat4(1.0f),
+                glm::mat4(1.0f),
                 glm::normalize(glm::vec4(0.20f, 1.0f, -3.0f,0.0f)),
                 glm::vec4(0.3f,0.7f,1.0f,1.0f),
                 glm::vec4(0,0,0,0)
@@ -350,7 +356,7 @@ public:
             command_queue->ExecuteRenderCommandList(command_list);
             
             mesh_enity = Application::GetWorld().CreateEntity();
-            Application::GetWorld().SetComponent<MeshComponent>(mesh_enity,FileManager::Get()->GetAssetFilePath("OutMesh.mesh"));
+            Application::GetWorld().SetComponent<MeshComponent>(mesh_enity,"asset:OutMesh.mesh"_path);
             
             
             TextureSamplerDescritor desc_sample;
@@ -363,9 +369,13 @@ public:
             desc_sample.max_LOD = 10;
             desc_sample.min_LOD = 0;
 
-            TextureManager::Get()->MakeTextureFromImageAsync(FileManager::Get()->GetAssetFilePath("Heaven.png"), FileManager::Get()->GetAssetFilePath("image_texture.tex"), desc_sample);
+            TextureManager::Get()->MakeTextureFromImageAsync("asset:Heaven.png"_path, "asset:image_texture.tex"_path, desc_sample);
 
-            texture = TextureManager::Get()->LoadTextureFromFileAsync(FileManager::Get()->GetAssetFilePath("image_texture.tex"), true);
+            texture = TextureManager::Get()->LoadTextureFromFileAsync("asset:image_texture.tex"_path, true);
+
+
+
+
 
             stop = false;
 
@@ -373,7 +383,7 @@ public:
         }
         
 
-        if (Application::GetWorld().GetPrimaryEntity() != Entity()) {
+        if (Application::GetWorld().EntityExists(mesh_enity) && Application::GetWorld().HasComponent<MeshComponent>(mesh_enity)  && Application::GetWorld().GetPrimaryEntity() != Entity()) {
             auto& camera = Application::GetWorld().GetComponent<CameraComponent>(Application::GetWorld().GetPrimaryEntity());
             auto& trans = Application::GetWorld().GetComponent<TransformComponent>(Application::GetWorld().GetPrimaryEntity());
             auto& mesh_mesh = Application::GetWorld().GetComponent<MeshComponent>(mesh_enity);
@@ -387,6 +397,7 @@ public:
 
             Render_Box_data::Constant_buffer_type buffer = {
                  (camera.GetProjectionMatrix() * glm::inverse(trans.TransformMatrix)) * glm::translate(glm::mat4(1.0f), glm::vec3(0,-5,0)),
+                 glm::mat4(1.0f),
                     glm::normalize(glm::vec4(0.20f, 1.0f, -3.0f,0.0f)),
                     glm::vec4(0.6f,0.6f,0.6f,1.0f),
                     glm::vec4(0,0,0,0)
@@ -403,21 +414,16 @@ public:
             
             command_queue->ExecuteRenderCommandList(command_list);
 
-            
+            std::string path1 = "asset:lol1.txt"_path;
+            std::string path2 = "engine_asset:lol5.txt"_path;
+            std::string path3 = "api:lol18.txt"_path;
+            std::string path4 = "lol1.txt"_path;
 
         }
 
 
         std::vector<Entity> entities;
 
-        index->Visualize();
-        if (Application::GetWorld().GetPrimaryEntity() != Entity()) {
-            auto& camera = Application::GetWorld().GetComponent<CameraComponent>(Application::GetWorld().GetPrimaryEntity());
-            auto& trans = Application::GetWorld().GetComponent<TransformComponent>(Application::GetWorld().GetPrimaryEntity());
-
-            Application::GetWorld().GetComponent<CameraComponent>(Application::GetWorld().GetPrimaryEntity()).UpdateViewFrustum(trans.TransformMatrix);
-            index->FrustumCulling(Application::GetWorld(), Application::GetWorld().GetComponent<CameraComponent>(Application::GetWorld().GetPrimaryEntity()).GetViewFrustum(), entities);
-        }
 
         for (auto ent : entities) {
             //std::cout << ent.id << ", ";

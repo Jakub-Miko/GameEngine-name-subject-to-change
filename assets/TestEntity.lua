@@ -38,15 +38,20 @@ end
 @Entity:Inline_Script
 
 
+function OnStart() 
+
+
+end
+
 
 function OnUpdate(delta_time)
 
 pos = GetPos()
 
 if not IsMouseButtonPressed(MouseButtonCode.MOUSE_BUTTON_LEFT) then	
-	MoveSquare(pos.x + GetProperty_INT("prop_int") *0.001*delta_time,pos.y)
+	
 else 
-	MoveSquare(pos.x -0.001*delta_time,pos.y)
+	
 end
 
 end
