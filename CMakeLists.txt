@@ -97,7 +97,7 @@ file(GLOB LINUX_SRC
 "./platform/Linux/*.cpp" "./platform/Linux/*.h"
 )
 
-target_sources(PseudoTest PRIVATE ${LINUX_SRC})
+target_sources(PseudoTest PRIVATE ${LINUX_SRC} ${OPENGL_SRC})
 
 endif()
 
