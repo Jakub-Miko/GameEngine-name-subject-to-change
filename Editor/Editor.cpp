@@ -65,6 +65,7 @@ void Editor::Run()
 
 		auto save_id = ImGui::GetID("Save Dialog");
 		auto load_id = ImGui::GetID("Load Dialog");
+		auto import_id = ImGui::GetID("Import Dialog");
 
 		ImGui::BeginMainMenuBar();
 
@@ -84,6 +85,14 @@ void Editor::Run()
 			};
 			if (ImGui::MenuItem("Load Scene")) {
 				ImGui::OpenPopup(load_id);
+			};
+
+			ImGui::EndMenu();
+		}
+
+		if (ImGui::BeginMenu("Import")) {
+			if (ImGui::MenuItem("Import Mesh")) {
+				ImGui::OpenPopup(import_id);
 			};
 
 			ImGui::EndMenu();
@@ -147,6 +156,21 @@ void Editor::Run()
 			ImGui::EndPopup();
 			ImGui::OpenPopup("Error##load");
 		}
+		try {
+			if (ImGui::BeginPopupModal("Import Dialog", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+
+				ImGui::Text("Not Implemented");
+				if (ImGui::Button("Close")) {
+					ImGui::CloseCurrentPopup();
+					file_dialog_text_buffer[0] = '\0';
+				}
+				ImGui::EndPopup();
+			}
+		}
+		catch (...) {
+			ImGui::EndPopup();
+			ImGui::OpenPopup("Error##import");
+		}
 
 		if (ImGui::BeginPopupModal("Error##load", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
 
@@ -175,6 +199,7 @@ void Editor::Run()
 
 		scene_graph.Render();
 		properties_panel.Render();
+		explorer.Render();
 
 		viewport.Render();
 		if (!enabled) {
@@ -209,7 +234,7 @@ Editor* Editor::Get()
 	return instance;
 }
 
-Editor::Editor() : viewport(), scene_graph(), properties_panel()
+Editor::Editor() : viewport(), scene_graph(), properties_panel(), explorer()
 {
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();

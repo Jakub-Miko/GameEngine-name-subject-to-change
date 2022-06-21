@@ -12,6 +12,7 @@
 #include <AsyncTaskDispatcher.h>
 #include <ThreadManager.h>
 #include <Renderer/RenderFence.h>
+#include <OSApi.h>
 
 class Window;
 class Renderer;
@@ -21,6 +22,7 @@ class Application {
 private:
     static Application* instance;
     Window* m_Window;
+    OSApi* os_api;
     std::vector<std::shared_ptr<ThreadObject>> m_TaskThreads;
     std::shared_ptr<ThreadObject> m_MainThread;
     bool m_running = false;
@@ -39,6 +41,10 @@ public:
     static Application* Get();
 
     Window* GetWindow() const;
+
+    OSApi* GetOsApi() const {
+        return os_api;
+    }
 
     bool SendEvent(Event* event);
 

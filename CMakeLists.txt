@@ -79,13 +79,25 @@ file(GLOB DIRECTX_SRC
 "./platform/DirectX/*/*.cpp" "./platform/DirectX/*/*.h"
 "./platform/Windows/*.cpp" "./platform/Windows/*.h")
 
+target_compile_definitions(PseudoTest PRIVATE "WINDOWS")
+
 target_sources(PseudoTest PRIVATE ${DIRECTX_SRC} ${OPENGL_SRC})
 
-else()
+target_link_libraries(PseudoTest PRIVATE Shlwapi.lib )
 
+endif()
+
+if(UNIX AND NOT APPLE)
+    
 set_property(CACHE RENDER_API PROPERTY STRINGS "OpenGL")
 
-target_sources(PseudoTest PRIVATE ${OPENGL_SRC})
+target_compile_definitions(PseudoTest PRIVATE "LINUX")
+
+file(GLOB LINUX_SRC
+"./platform/Linux/*.cpp" "./platform/Linux/*.h"
+)
+
+target_sources(PseudoTest PRIVATE ${LINUX_SRC})
 
 endif()
 

@@ -374,9 +374,6 @@ public:
             texture = TextureManager::Get()->LoadTextureFromFileAsync("asset:image_texture.tex"_path, true);
 
 
-
-
-
             stop = false;
 
 

@@ -2,6 +2,7 @@
 #include <Editor/Viewport.h>
 #include <Editor/SceneGraphViewer.h>
 #include <Editor/PropertiesPanel.h>
+#include <Editor/FileExplorer.h>
 #include <Events/Event.h>
 #include <World/Entity.h>
 
@@ -60,6 +61,7 @@ private:
 	Viewport viewport;
 	SceneGraphViewer scene_graph;
 	PropertiesPanel properties_panel;
+	FileExplorer explorer;
 
 	ImGuiIO* io = nullptr;
 	Editor();

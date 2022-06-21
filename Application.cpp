@@ -70,6 +70,7 @@ Application::~Application()
     MeshManager::Shutdown();
     Renderer::Shutdown();
     delete m_Window;
+    delete os_api;
     
     TaskSystem::Shutdown();
     ShutdownThread();
@@ -115,6 +116,8 @@ void Application::InitInstance()
     m_MainThread = ThreadManager::Get()->GetThread();
 
     ThreadManager::Get()->JoinedThreadRegister(m_MainThread);
+
+    os_api = OSApi::CreateOSApi();
 
     //Create window and Renderer
     m_Window = Window::CreateWindow();
