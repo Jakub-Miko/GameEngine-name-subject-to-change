@@ -3,6 +3,7 @@
 #include <Renderer/Renderer.h>
 #include <platform/OpenGL/OpenGLRenderCommandList.h>
 #include <GLFW/glfw3.h>
+#include <vector>
 #include <Application.h>
 
 GlfwWindow::GlfwWindow(const WindowProperties& props)
@@ -19,6 +20,8 @@ void GlfwWindow::Init()
     Renderer::Get()->GetCommandQueue()->ExecuteRenderCommandList( reinterpret_cast<RenderCommandList*>(list) );
     Renderer::Get()->GetCommandQueue()->Signal(fence, 1);
     fence->WaitForValue(1);
+    glfwSetDropCallback(m_Window, &DropCallback);
+    RegistorDragAndDropCallback(&DefaultDropCallback);
 }
 
 void GlfwWindow::PreInit()
@@ -55,8 +58,28 @@ void GlfwWindow::SwapBuffers()
     glfwSwapBuffers(m_Window);
 }
 
+void GlfwWindow::RegistorDragAndDropCallback(void(*callback)(int count, std::vector<std::string>paths))
+{
+    drop_callback = callback;
+}
+
 
 GlfwWindow::~GlfwWindow()
 {
     glfwTerminate();
 }
+
+void GlfwWindow::DropCallback(GLFWwindow* window, int count, const char** paths)
+{
+    std::vector<std::string> paths_vec;
+    for (int i = 0; i < count; i++) {
+        paths_vec.push_back(paths[i]);
+    }
+
+    static_cast<GlfwWindow*>(Application::Get()->GetWindow())->drop_callback(count, paths_vec);
+}
+
+void GlfwWindow::DefaultDropCallback(int count, std::vector<std::string> paths)
+{
+}
+

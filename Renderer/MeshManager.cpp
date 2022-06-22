@@ -5,6 +5,7 @@
 #include <Renderer/RenderResourceManager.h>
 #include <assimp/postprocess.h>
 #include <Application.h>
+#include <FileManager.h>
 
 MeshManager* MeshManager::instance = nullptr;
 
@@ -38,8 +39,13 @@ Mesh MeshManager::LoadMeshFromFileImpl(const std::string& file_path)
 
 std::shared_ptr<Mesh> MeshManager::LoadMeshFromFileAsync(const std::string& file_path)
 {
+    using namespace std::filesystem;
+    std::string absolute_path = absolute(path(file_path)).generic_string();
+    std::string relative_path = FileManager::Get()->GetRelativeFilePath(absolute_path);
+
+
     std::unique_lock<std::mutex> lock(mesh_Map_mutex);
-    auto fnd = mesh_Map.find(file_path); //TODO: Make sure the file path is in an appropriate format
+    auto fnd = mesh_Map.find(relative_path); //TODO: Make sure the file path is in an appropriate format
     if (fnd != mesh_Map.end()) {
         return fnd->second;
     }
@@ -52,13 +58,13 @@ std::shared_ptr<Mesh> MeshManager::LoadMeshFromFileAsync(const std::string& file
     mesh.vertex_buffer = GetDefaultMesh()->vertex_buffer;
     
 
-    auto mesh_final = RegisterMesh(std::make_unique<Mesh>(mesh), file_path);
+    auto mesh_final = RegisterMesh(std::make_unique<Mesh>(mesh), relative_path);
 
 
     auto async_queue = Application::GetAsyncDispather();
 
-    auto task = async_queue->CreateTask<Mesh>([file_path, this]() -> Mesh {
-        return LoadMeshFromFileImpl(file_path);
+    auto task = async_queue->CreateTask<Mesh>([absolute_path, this]() -> Mesh {
+            return LoadMeshFromFileImpl(absolute_path);
         });
 
     async_queue->Submit(task);
@@ -66,6 +72,7 @@ std::shared_ptr<Mesh> MeshManager::LoadMeshFromFileAsync(const std::string& file
     mesh_load_future future;
     future.future = task->GetFuture();
     future.mesh = mesh_final;
+    future.path = relative_path;
 
     std::lock_guard<std::mutex> lock2(mesh_Load_queue_mutex);
     mesh_Load_queue.push_back(future);
@@ -78,15 +85,20 @@ void MeshManager::UpdateLoadedMeshes()
     std::lock_guard<std::mutex> lock(mesh_Load_queue_mutex);
     for (auto& loaded_mesh : mesh_Load_queue) {
         if (!loaded_mesh.future.IsAvailable() || loaded_mesh.destroyed) continue;
-
-        auto mesh_l = loaded_mesh.future.GetValue();
-
-        loaded_mesh.mesh->index_buffer = mesh_l.index_buffer;
-        loaded_mesh.mesh->vertex_buffer = mesh_l.vertex_buffer;
-        loaded_mesh.mesh->num_of_indicies = mesh_l.num_of_indicies;
-        loaded_mesh.mesh->status = Mesh_status::READY;
-        loaded_mesh.destroyed = true;
-
+        try {
+            auto mesh_l = loaded_mesh.future.GetValue();
+            loaded_mesh.mesh->index_buffer = mesh_l.index_buffer;
+            loaded_mesh.mesh->vertex_buffer = mesh_l.vertex_buffer;
+            loaded_mesh.mesh->num_of_indicies = mesh_l.num_of_indicies;
+            loaded_mesh.mesh->status = Mesh_status::READY;
+            loaded_mesh.destroyed = true;
+        }
+        catch (...) {
+            loaded_mesh.mesh->status = Mesh_status::ERROR;
+            std::lock_guard<std::mutex> lock(mesh_Map_mutex);
+            mesh_Map.erase(loaded_mesh.path);
+            loaded_mesh.destroyed = true;
+        }
     }
    
     
@@ -225,7 +237,14 @@ std::shared_ptr<Mesh> MeshManager::RegisterMesh(std::shared_ptr<Mesh> mesh_to_re
 
 MeshManager::mesh_native_input_data MeshManager::Fetch_Native_Data(const std::string& in_file_path)
 {
-    std::ifstream input_file(in_file_path, std::ios_base::binary | std::ios_base::in);
+    std::ifstream input_file;
+    try {
+        input_file.open(in_file_path, std::ios_base::binary | std::ios_base::in);
+    }
+    catch(...) {
+        throw std::runtime_error("File " + in_file_path + " could not be opened");
+    }
+    
     if (!input_file.is_open()) {
         throw std::runtime_error("File " + in_file_path + " could not be opened");
     }

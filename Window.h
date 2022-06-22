@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <vector>
 
 struct WindowProperties {
     int resolution_x = 1280, resolution_y = 720;
@@ -21,6 +22,8 @@ public:
     }
 
     virtual void SwapBuffers() = 0;
+
+    virtual void RegistorDragAndDropCallback(void(*callback)(int count, std::vector<std::string> paths)) = 0;
 
     virtual ~Window() {};
 public:

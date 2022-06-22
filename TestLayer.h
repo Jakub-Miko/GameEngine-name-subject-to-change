@@ -384,6 +384,7 @@ public:
             auto& camera = Application::GetWorld().GetComponent<CameraComponent>(Application::GetWorld().GetPrimaryEntity());
             auto& trans = Application::GetWorld().GetComponent<TransformComponent>(Application::GetWorld().GetPrimaryEntity());
             auto& mesh_mesh = Application::GetWorld().GetComponent<MeshComponent>(mesh_enity);
+            auto& mesh_transform = Application::GetWorld().GetComponent<TransformComponent>(mesh_enity);
 
             auto mesh_m = mesh_mesh.mesh;
 
@@ -393,8 +394,8 @@ public:
             Render_Box_data& data = Get_Render_Box_data();
 
             Render_Box_data::Constant_buffer_type buffer = {
-                 (camera.GetProjectionMatrix() * glm::inverse(trans.TransformMatrix)) * glm::translate(glm::mat4(1.0f), glm::vec3(0,-5,0)),
-                 glm::mat4(1.0f),
+                 (camera.GetProjectionMatrix() * glm::inverse(trans.TransformMatrix)) * mesh_transform.TransformMatrix,
+                 mesh_transform.TransformMatrix,
                     glm::normalize(glm::vec4(0.20f, 1.0f, -3.0f,0.0f)),
                     glm::vec4(0.6f,0.6f,0.6f,1.0f),
                     glm::vec4(0,0,0,0)

@@ -9,7 +9,7 @@
 #include <memory>
 
 enum class Mesh_status : char {
-	UNINITIALIZED = 0, LOADING = 1, READY = 2
+	UNINITIALIZED = 0, LOADING = 1, READY = 2, ERROR = 3
 };
 
 class MeshManager;
@@ -20,6 +20,8 @@ public:
 	Mesh(const std::shared_ptr<RenderBufferResource>& vertex_buffer, const std::shared_ptr<RenderBufferResource>& index_buffer, size_t num_of_indicies)
 		: num_of_indicies(num_of_indicies), vertex_buffer(vertex_buffer), index_buffer(index_buffer) {}
 	Mesh() = default;
+
+	Mesh(const Mesh& other) = default;
 
 	std::shared_ptr<RenderBufferResource> GetVertexBuffer() const {
 		return vertex_buffer;
@@ -175,6 +177,7 @@ private:
 		std::shared_ptr<Mesh> mesh;
 		Future<Mesh> future;
 		bool destroyed = false;
+		std::string path;
 	};
 
 

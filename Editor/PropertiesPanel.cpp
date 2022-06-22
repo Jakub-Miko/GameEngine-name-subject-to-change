@@ -5,19 +5,37 @@
 #include <Application.h>
 #include <World/Components/TransformComponent.h>
 #include <World/Components/CameraComponent.h>
+#include <World/Components/MeshComponent.h>
+#include <FileManager.h>
 
 PropertiesPanel::PropertiesPanel()
 {
+	text_buffer = new char[buffer_size];
+	text_buffer[0] = '\0';
 }
 
 PropertiesPanel::~PropertiesPanel()
 {
+	delete[] text_buffer;
 }
 
 void PropertiesPanel::Render()
 {
 	Entity selected = Editor::Get()->GetSelectedEntity();
 	World& world = Application::GetWorld();
+	int mesh_error_id = ImGui::GetID("Error##mesh");
+
+	if (ImGui::BeginPopupModal("Error##mesh", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+
+		ImGui::Text("Invalid or corrupted Mesh file");
+
+		if (ImGui::Button("Close")) {
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::EndPopup();
+	}
+	
+	
 	ImGui::Begin("Properties");
 
 
@@ -97,6 +115,42 @@ void PropertiesPanel::Render()
 		}
 	}
 
+	if (world.HasComponent<MeshComponent>(selected)) {
+		if (ImGui::TreeNode("Mesh")) {
+			MeshComponent& mesh = world.GetComponent<MeshComponent>(selected);
+			if (last_entity != selected) {
+				text_buffer[0] = '\0';
+				memcpy(text_buffer, mesh.file_path.c_str(), mesh.file_path.size() + 1);
+				last_entity = selected;
+			}
+			bool enter = ImGui::InputText("Mesh path", text_buffer, buffer_size, ImGuiInputTextFlags_EnterReturnsTrue);
+			if (ImGui::Button("Reload") || enter) {
+				try {
+					mesh.ChangeMesh(FileManager::Get()->GetPath(text_buffer));
+				}
+				catch (std::runtime_error* e) {
+					ImGui::OpenPopup(mesh_error_id);
+					text_buffer[0] = '\0';
+					memcpy(text_buffer, mesh.file_path.c_str(), mesh.file_path.size() + 1);
+				}
+			}
+			ImGui::SameLine();
+			if (mesh.mesh->GetMeshStatus() == Mesh_status::ERROR) {
+				mesh.mesh = MeshManager::Get()->GetDefaultMesh();
+				mesh.file_path = "Unknown";
+				ImGui::OpenPopup(mesh_error_id);
+				text_buffer[0] = '\0';
+				memcpy(text_buffer, mesh.file_path.c_str(), mesh.file_path.size() + 1);
+			}
+			if (ImGui::Button("SetSelected")) {
+				mesh.ChangeMesh(Editor::Get()->GetSelectedFilePath());
+				memcpy(text_buffer, mesh.file_path.c_str(), mesh.file_path.size() + 1);
+			}
+
+
+			ImGui::TreePop();
+		}
+	}
 	
 	ImGui::End();
 

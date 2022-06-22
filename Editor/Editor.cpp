@@ -65,9 +65,17 @@ void Editor::Run()
 
 		auto save_id = ImGui::GetID("Save Dialog");
 		auto load_id = ImGui::GetID("Load Dialog");
-		auto import_id = ImGui::GetID("Import Dialog");
+		auto import_id = ImGui::GetID("Import Mesh Dialog");
+		if (are_files_dropped) {
+			are_files_dropped = false;
+			if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceExtern)) {
+				ImGui::SetDragDropPayload("files", &drop_callback_strings, sizeof(std::vector<std::string>));
+				ImGui::EndDragDropSource();
+			}
+		}
 
 		ImGui::BeginMainMenuBar();
+
 
 		if (ImGui::BeginMenu("Workspace")) {
 			if (ImGui::MenuItem("Save Workspace")) {
@@ -156,21 +164,6 @@ void Editor::Run()
 			ImGui::EndPopup();
 			ImGui::OpenPopup("Error##load");
 		}
-		try {
-			if (ImGui::BeginPopupModal("Import Dialog", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
-
-				ImGui::Text("Not Implemented");
-				if (ImGui::Button("Close")) {
-					ImGui::CloseCurrentPopup();
-					file_dialog_text_buffer[0] = '\0';
-				}
-				ImGui::EndPopup();
-			}
-		}
-		catch (...) {
-			ImGui::EndPopup();
-			ImGui::OpenPopup("Error##import");
-		}
 
 		if (ImGui::BeginPopupModal("Error##load", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
 
@@ -234,6 +227,12 @@ Editor* Editor::Get()
 	return instance;
 }
 
+void Editor::DropCallback(int count, std::vector<std::string> files)
+{
+	Editor::Get()->drop_callback_strings = files;
+	Editor::Get()->are_files_dropped = true;
+}
+
 Editor::Editor() : viewport(), scene_graph(), properties_panel(), explorer()
 {
 	IMGUI_CHECKVERSION();
@@ -258,8 +257,9 @@ Editor::Editor() : viewport(), scene_graph(), properties_panel(), explorer()
 	io->ConfigFlags = ImGuiConfigFlags_DockingEnable;
 
 
-
 	
+	Application::Get()->GetWindow()->RegistorDragAndDropCallback(&DropCallback);
+
 }
 
 Editor::~Editor()

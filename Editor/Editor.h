@@ -38,14 +38,32 @@ public:
 		return selected_entity;
 	}
 
+	std::string GetSelectedFilePath() const {
+		return explorer.GetSelectedFilePath();
+	}
+
 	void SetSelectedEntity(Entity ent) {
 		selected_entity = ent;
 	}
 
+	std::vector<std::string> GetDragAndDropFiles() const {
+		return drop_callback_strings;
+	}
+
 	void ViewportEnd();
+
+	void ResetFilesDropped() {
+		are_files_dropped = false;
+	}
 
 	static Editor* Get();
 private:
+	
+	static void DropCallback(int count, std::vector<std::string> files);
+
+	std::vector<std::string> drop_callback_strings;
+	bool are_files_dropped = false;
+
 	static Editor* instance;
 	friend Viewport;
 
