@@ -41,6 +41,8 @@ public:
 		return default_texture;
 	}
 
+	void ReleaseTexture(const std::string& file_path);
+
 	static void Init();
 
 	static TextureManager* Get();

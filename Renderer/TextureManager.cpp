@@ -10,38 +10,71 @@ TextureManager* TextureManager::instance = nullptr;
 void TextureManager::MakeTextureFromImage(const std::string& input_image_path, const std::string& output_image_path, const TextureSamplerDescritor& sampler)
 {
     PROFILE("Texture Conversion");
-    int x, y, ch;
-    unsigned char* image = stbi_load(input_image_path.c_str(), &x, &y, &ch, 4);
-    if (!image) {
-        throw std::runtime_error(stbi_failure_reason());
+    if (!stbi_is_hdr(input_image_path.c_str())) {
+
+        int x, y, ch;
+        unsigned char* image = stbi_load(input_image_path.c_str(), &x, &y, &ch, 0);
+        if (!image) {
+            throw std::runtime_error(stbi_failure_reason());
+        }
+
+        std::ofstream output_file(output_image_path, std::ios_base::binary);
+        if (!output_file.is_open()) {
+            throw std::runtime_error("File " + output_image_path + " could not be created");
+        }
+        auto desc = sampler;
+
+        output_file << "texture_info\n";
+        output_file << x << " " << y << " " << ch << "\n";
+        output_file << "ldr\n";
+        output_file << "sampler\n";
+        output_file << (int)desc.AddressMode_U << " " << (int)desc.AddressMode_V << " " << (int)desc.AddressMode_W << "\n";
+        output_file << desc.border_color.r << " " << desc.border_color.g << " " << desc.border_color.b << "\n";
+        output_file << (int)desc.filter << "\n";
+        output_file << desc.LOD_bias << "\n";
+        output_file << desc.max_LOD << "\n";
+        output_file << desc.min_LOD << "\n";
+
+        output_file << "texture\n";
+        output_file.write(const_cast<const char*>((char*)image), x * y * ch);
+        output_file << "\nend";
+
+        output_file.close();
+
+        stbi_image_free(image);
     }
-    if (ch != 4) {
-        throw std::runtime_error("Texture doesnt contain alpha");
+    else {
+        int x, y, ch;
+        float* image = stbi_loadf(input_image_path.c_str(), &x, &y, &ch, 0);
+        if (!image) {
+            throw std::runtime_error(stbi_failure_reason());
+        }
+
+        std::ofstream output_file(output_image_path, std::ios_base::binary);
+        if (!output_file.is_open()) {
+            throw std::runtime_error("File " + output_image_path + " could not be created");
+        }
+        auto desc = sampler;
+
+        output_file << "texture_info\n";
+        output_file << x << " " << y << " " << ch << "\n";
+        output_file << "hdr\n";
+        output_file << "sampler\n";
+        output_file << (int)desc.AddressMode_U << " " << (int)desc.AddressMode_V << " " << (int)desc.AddressMode_W << "\n";
+        output_file << desc.border_color.r << " " << desc.border_color.g << " " << desc.border_color.b << "\n";
+        output_file << (int)desc.filter << "\n";
+        output_file << desc.LOD_bias << "\n";
+        output_file << desc.max_LOD << "\n";
+        output_file << desc.min_LOD << "\n";
+
+        output_file << "texture\n";
+        output_file.write(const_cast<const char*>((char*)image), x * y * ch * sizeof(float));
+        output_file << "\nend";
+
+        output_file.close();
+
+        stbi_image_free(image);
     }
-
-    std::ofstream output_file(output_image_path, std::ios_base::binary);
-    if (!output_file.is_open()) {
-        throw std::runtime_error("File " + output_image_path + " could not be created");
-    }
-    auto desc = sampler;
-
-    output_file << "texture_info\n";
-    output_file << x << " " << y << " " << ch << "\n";
-    output_file << "sampler\n";
-    output_file << (int)desc.AddressMode_U << " " << (int)desc.AddressMode_V << " " << (int)desc.AddressMode_W << "\n";
-    output_file << desc.border_color.r << " " << desc.border_color.g << " " << desc.border_color.b << "\n";
-    output_file << (int)desc.filter << "\n";
-    output_file << desc.LOD_bias << "\n";
-    output_file << desc.max_LOD << "\n";
-    output_file << desc.min_LOD << "\n";
-    
-    output_file << "texture\n";
-    output_file.write(const_cast<const char*>((char*)image), x * y * ch);
-    output_file << "\nend";
-
-    output_file.close();
-
-    stbi_image_free(image);
 
 }
 
@@ -70,6 +103,8 @@ std::shared_ptr<RenderTexture2DResource> TextureManager::LoadTextureFromFile(con
     }
     lock.unlock();
 
+    bool is_hdr = false;
+
     //If it hasn't been loaded open a filestream of the filepath to load it.
     std::ifstream input_file(file_path, std::ios_base::binary | std::ios_base::in);
     if (!input_file.is_open()) {
@@ -83,6 +118,11 @@ std::shared_ptr<RenderTexture2DResource> TextureManager::LoadTextureFromFile(con
     input_file >> check;
     if (check != "texture_info") throw std::runtime_error("Invalid format on file: " + file_path);
     input_file >> texture.res_x >> texture.res_y >> texture.channels;
+    input_file >> check;
+    if (check == "hdr") {
+        is_hdr = true;
+    }
+
     input_file >> check;
     if (check != "sampler") throw std::runtime_error("Invalid format on file: " + file_path);
     int u, v, w;
@@ -102,14 +142,26 @@ std::shared_ptr<RenderTexture2DResource> TextureManager::LoadTextureFromFile(con
 
     input_file >> check;
     if (check != "texture") throw std::runtime_error("Invalid format on file: " + file_path);
-    int size = texture.channels * texture.res_x * texture.res_y;
-    char* data = new char[size];
-    input_file.get();
-    input_file.read(data, size);
-    input_file >> check;
-    if (check != "end") throw std::runtime_error("Invalid format on file: " + file_path);
-    texture.tex_data = (unsigned char*)data;
+    if (!is_hdr) {
 
+        int size = texture.channels * texture.res_x * texture.res_y;
+        char* data = new char[size];
+        input_file.get();
+        input_file.read(data, size);
+        input_file >> check;
+        if (check != "end") throw std::runtime_error("Invalid format on file: " + file_path);
+        texture.tex_data = (unsigned char*)data;
+    }
+    else {
+        int size = texture.channels * texture.res_x * texture.res_y * sizeof(float);
+        char* data = new char[size];
+        input_file.get();
+        input_file.read(data, size);
+        input_file >> check;
+        if (check != "end") throw std::runtime_error("Invalid format on file: " + file_path);
+        texture.tex_data = (unsigned char*)data;
+    }
+    
     //Check if an identical sampler already exists. If not Create it.
     std::unique_lock<std::mutex> lock2(sampler_cache_mutex);
     std::shared_ptr<TextureSampler> sampler;
@@ -124,7 +176,12 @@ std::shared_ptr<RenderTexture2DResource> TextureManager::LoadTextureFromFile(con
 
     //Create the texture, upload data into it and optionally generate mip maps.
     RenderTexture2DDescriptor texture_desc;
-    texture_desc.format = texture.channels == 3 ? TextureFormat::RGB_UNSIGNED_CHAR : TextureFormat::RGBA_UNSIGNED_CHAR;
+    if (!is_hdr) {
+        texture_desc.format = texture.channels == 3 ? TextureFormat::RGB_UNSIGNED_CHAR : TextureFormat::RGBA_UNSIGNED_CHAR;
+    }
+    else {
+        texture_desc.format = TextureFormat::RGB_32FLOAT;
+    }
     texture_desc.height = texture.res_y;
     texture_desc.width = texture.res_x;
     texture_desc.sampler = sampler;
@@ -158,6 +215,13 @@ Future<std::shared_ptr<RenderTexture2DResource>> TextureManager::LoadTextureFrom
     async_queue->Submit(task);
 
     return task->GetFuture();
+
+}
+
+void TextureManager::ReleaseTexture(const std::string& file_path)
+{
+    std::lock_guard<std::mutex> lock(texture_Map_mutex);
+    texture_Map.erase(file_path);
 
 }
 

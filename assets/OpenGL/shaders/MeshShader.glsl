@@ -3,6 +3,9 @@
 
 in vec3 position;
 in vec3 normal;
+in vec3 tangent;
+in vec2 uv0;
+
 
 out vec4 out_normal;
 

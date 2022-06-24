@@ -190,11 +190,11 @@ void Editor::Run()
 
 
 
-		scene_graph.Render();
-		properties_panel.Render();
-		explorer.Render();
+		scene_graph->Render();
+		properties_panel->Render();
+		explorer->Render();
 
-		viewport.Render();
+		viewport->Render();
 		if (!enabled) {
 			is_viewport_focused = true;
 		}
@@ -211,15 +211,24 @@ void Editor::Render()
 void Editor::ViewportBegin()
 {
 	if (enabled) {
-		viewport.BeginViewportFrameBuffer();
+		viewport->BeginViewportFrameBuffer();
 	}
 }
 
 void Editor::ViewportEnd()
 {
 	if (enabled) {
-		viewport.EndViewportFrameBuffer();
+		viewport->EndViewportFrameBuffer();
 	}
+}
+
+void Editor::Reset()
+{
+	properties_panel.reset(new PropertiesPanel());
+	explorer.reset(new FileExplorer());
+	scene_graph.reset(new SceneGraphViewer());
+	viewport.reset(new Viewport());
+	selected_entity = Entity();
 }
 
 Editor* Editor::Get()
@@ -233,7 +242,7 @@ void Editor::DropCallback(int count, std::vector<std::string> files)
 	Editor::Get()->are_files_dropped = true;
 }
 
-Editor::Editor() : viewport(), scene_graph(), properties_panel(), explorer()
+Editor::Editor() : viewport(new Viewport), scene_graph(new SceneGraphViewer), properties_panel(new PropertiesPanel), explorer(new FileExplorer)
 {
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();

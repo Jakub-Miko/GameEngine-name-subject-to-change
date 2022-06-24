@@ -130,6 +130,15 @@ public:
                 
                 Application::Get()->Exit();
             }
+            else if (e->key_code == KeyCode::KEY_KP_5 && e->press_type == KeyPressType::KEY_PRESS) {
+                TextureManager::Get()->ReleaseTexture("asset:Heaven.png"_path);
+                texture.GetValue().reset();
+                texture.~Future();
+            }
+
+            else if (e->key_code == KeyCode::KEY_KP_2 && e->press_type == KeyPressType::KEY_PRESS) {
+                texture = TextureManager::Get()->LoadTextureFromFileAsync("asset:Heaven.png"_path, false);
+            }
 
 
             return false;
@@ -356,8 +365,8 @@ public:
             command_queue->ExecuteRenderCommandList(command_list);
             
             mesh_enity = Application::GetWorld().CreateEntity();
-            Application::GetWorld().SetComponent<MeshComponent>(mesh_enity,"asset:OutMesh.mesh"_path);
-            
+            Application::GetWorld().SetComponent<MeshComponent>(mesh_enity,"asset:Pillar_with_uvs.mesh"_path);
+            Application::GetWorld().SetEntityTranslation(mesh_enity, glm::vec3(0.0f, -5.0f, 0.0f));
             
             TextureSamplerDescritor desc_sample;
             desc_sample.AddressMode_U = TextureAddressMode::BORDER;
@@ -371,7 +380,7 @@ public:
 
             TextureManager::Get()->MakeTextureFromImageAsync("asset:Heaven.png"_path, "asset:image_texture.tex"_path, desc_sample);
 
-            texture = TextureManager::Get()->LoadTextureFromFileAsync("asset:image_texture.tex"_path, true);
+            texture = TextureManager::Get()->LoadTextureFromFileAsync("asset:image_texture.tex"_path, false);
 
 
             stop = false;

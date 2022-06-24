@@ -79,10 +79,9 @@ std::shared_ptr<RenderTexture2DResource> OpenGLRenderResourceManager::CreateText
 			unsigned int texture;
 			glGenTextures(1, &texture);
 			glBindTexture(GL_TEXTURE_2D, texture);
-
 			//TODO: The usage choice needs to be reworked
 			glTexImage2D(GL_TEXTURE_2D, 0, OpenGLUnitConverter::TextureFormatToGLInternalformat(ptr->GetBufferDescriptor().format), ptr->GetBufferDescriptor().width,
-				ptr->GetBufferDescriptor().height,0, OpenGLUnitConverter::TextureFormatToGLInternalformat(ptr->GetBufferDescriptor().format),
+				ptr->GetBufferDescriptor().height,0, OpenGLUnitConverter::TextureFormatToGLFormat(ptr->GetBufferDescriptor().format),
 				OpenGLUnitConverter::TextureFormatToGLDataType(ptr->GetBufferDescriptor().format),NULL);
 
 			const TextureSamplerDescritor& sampler = ptr->GetBufferDescriptor().sampler->GetDescriptor();
@@ -111,7 +110,7 @@ void OpenGLRenderResourceManager::UploadDataToTexture2D(RenderCommandList* list,
 	size_t offset_x, size_t offset_y, int level)
 {
 	size_t size = OpenGLUnitConverter::TextureFormatToTexelSize(resource->GetBufferDescriptor().format) * width * height;
-	void* allocated = new char[size];
+	char* allocated = new char[size];
 	memcpy(allocated, data, size);
 	static_cast<OpenGLRenderCommandList*>(list)->UpdateTexture2DResource(resource, level, allocated,width,height,offset_x,offset_y);
 }

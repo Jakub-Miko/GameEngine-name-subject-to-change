@@ -214,8 +214,10 @@ void OpenGLRenderCommandList::UpdateTexture2DResource(std::shared_ptr<RenderText
                 throw std::runtime_error("Buffer out of range.");
             }
             glBindTexture(GL_TEXTURE_2D, static_cast<OpenGLRenderTexture2DResource*>(resource.get())->GetRenderId());
-            glTexSubImage2D(GL_TEXTURE_2D, level, offset_x, offset_y, width, height, OpenGLUnitConverter::TextureFormatToGLInternalformat(resource->GetBufferDescriptor().format),
+            glTexSubImage2D(GL_TEXTURE_2D, level, offset_x, offset_y, width, height, OpenGLUnitConverter::TextureFormatToGLFormat(resource->GetBufferDescriptor().format),
                 OpenGLUnitConverter::TextureFormatToGLDataType(resource->GetBufferDescriptor().format),data);
+
+
             glBindTexture(GL_TEXTURE_2D, 0);
             resource->SetRenderState(RenderState::COMMON);
             delete[] static_cast<char*>(data);

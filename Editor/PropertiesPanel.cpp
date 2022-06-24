@@ -142,7 +142,7 @@ void PropertiesPanel::Render()
 				text_buffer[0] = '\0';
 				memcpy(text_buffer, mesh.file_path.c_str(), mesh.file_path.size() + 1);
 			}
-			if (ImGui::Button("SetSelected")) {
+			if (ImGui::Button("Set Selected")) {
 				mesh.ChangeMesh(Editor::Get()->GetSelectedFilePath());
 				memcpy(text_buffer, mesh.file_path.c_str(), mesh.file_path.size() + 1);
 			}

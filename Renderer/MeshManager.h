@@ -62,12 +62,14 @@ public:
 		props.has_normal = layout.has_normal();
 		props.has_position= layout.has_position();
 		props.num_of_uv_channels = layout.GetUvCount();
+		props.has_tangent = layout.has_tangent();
 		mesh_assimp_input_data input_data = Fetch_Assimp_Data(props, in_file_path, mesh_index);
 
 		size_t num_vertecies = input_data.num_of_verticies;
 		char* vertex_buffer = new char[num_vertecies * layout.stride];
 		auto pos_element = layout.GetElement("position");
 		auto normal_element = layout.GetElement("normal");
+		auto tangent_element = layout.GetElement("tangent");
 		VertexLayoutElement* uv_elements = new VertexLayoutElement[props.num_of_uv_channels];
 		for (int i = 0; i < props.num_of_uv_channels; i++) {
 			uv_elements[i] = layout.GetElement("uv" + std::to_string(i));
@@ -109,11 +111,29 @@ public:
 			}
 		}
 
+		if (props.has_tangent) {
+			switch (tangent_element.size) {
+			case 3:
+				for (int i = 0; i < input_data.num_of_verticies; i++) {
+					glm::vec3 tangent_data = input_data.tangent[i];
+					void* data = (void*)(vertex_buffer + ((layout.stride * i) + tangent_element.offset));
+					std::memcpy(data, &tangent_data, sizeof(glm::vec3));
+				}
+				break;
+			case 4:
+				for (int i = 0; i < input_data.num_of_verticies; i++) {
+					glm::vec4 tangent_data = glm::vec4(input_data.normal[i], 1.0f);
+					void* data = (void*)(vertex_buffer + ((layout.stride * i) + tangent_element.offset));
+					std::memcpy(data, &tangent_data, sizeof(glm::vec4));
+				}
+			}
+		}
+
 		for (int x = 0; x < props.num_of_uv_channels; x++) {
 			for (int i = 0; i < input_data.num_of_verticies; i++) {
 				glm::vec2 uv_data = input_data.uvs[x][i];
 				void* data = (void*)(vertex_buffer + ((layout.stride * i) + uv_elements[x].offset));
-				std::memcpy(data,&uv_data, sizeof(glm::vec3));
+				std::memcpy(data,&uv_data, sizeof(glm::vec2));
 			}
 		}
 
@@ -145,11 +165,13 @@ private:
 		uint32_t num_of_uv_channels = 0;
 		bool has_position = true;
 		bool has_normal = true;
+		bool has_tangent = true;
 	};
 
 	struct mesh_assimp_input_data {
 		glm::vec3* position = nullptr;
 		glm::vec3* normal = nullptr;
+		glm::vec3* tangent = nullptr;
 		glm::vec3** uvs = nullptr;
 		unsigned int *indicies = nullptr;
 		int num_of_indicies;

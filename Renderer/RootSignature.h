@@ -181,7 +181,9 @@ struct VertexLayoutFactory<MeshPreset> {
 		if (!layout) {
 			VertexLayout* layout_new = new VertexLayout({
 				VertexLayoutElement(RenderPrimitiveType::FLOAT,3,"position"),
-				VertexLayoutElement(RenderPrimitiveType::FLOAT,3,"normal")
+				VertexLayoutElement(RenderPrimitiveType::FLOAT,3,"normal"),
+				VertexLayoutElement(RenderPrimitiveType::FLOAT,3,"tangent"),
+				VertexLayoutElement(RenderPrimitiveType::FLOAT,2,"uv0")
 				});
 
 			PipelineManager::Get()->AddLayout(layout_new);

@@ -16,6 +16,9 @@
 #include <World/Components/MousePressedScriptComponent.h>
 #include <World/Components/ScriptComponent.h>
 #include <World/Components/SquareComponent.h>
+#ifdef EDITOR
+#include <Editor/Editor.h>
+#endif
 #include <fstream>
 
 World::World() : m_ECS(), m_SceneGraph(this), load_scene(std::make_shared<SceneProxy>())
@@ -99,6 +102,9 @@ void World::LoadSceneSystem()
 		if (GameStateMachine::Get()->current_state) {
 			GameStateMachine::Get()->ScriptOnDeattach();
 		}
+#ifdef EDITOR
+		Editor::Get()->Reset();
+#endif
 		primary_entity = Entity();
 		m_ECS.clear();
 		m_ECS = entt::registry();

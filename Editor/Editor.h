@@ -27,7 +27,7 @@ public:
 	void ViewportBegin();
 
 	const Viewport* GetViewport() const {
-		return &viewport;
+		return viewport.get();
 	}
 
 	bool IsViewportFocused() const {
@@ -39,7 +39,7 @@ public:
 	}
 
 	std::string GetSelectedFilePath() const {
-		return explorer.GetSelectedFilePath();
+		return explorer->GetSelectedFilePath();
 	}
 
 	void SetSelectedEntity(Entity ent) {
@@ -55,6 +55,8 @@ public:
 	void ResetFilesDropped() {
 		are_files_dropped = false;
 	}
+
+	void Reset();
 
 	static Editor* Get();
 private:
@@ -76,10 +78,10 @@ private:
 
 	bool enabled = true;
 
-	Viewport viewport;
-	SceneGraphViewer scene_graph;
-	PropertiesPanel properties_panel;
-	FileExplorer explorer;
+	std::unique_ptr<Viewport> viewport;
+	std::unique_ptr<SceneGraphViewer> scene_graph;
+	std::unique_ptr<PropertiesPanel> properties_panel;
+	std::unique_ptr<FileExplorer> explorer;
 
 	ImGuiIO* io = nullptr;
 	Editor();

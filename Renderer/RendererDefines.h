@@ -85,7 +85,7 @@ enum class RenderPrimitiveType : unsigned char
 };
 
 enum class TextureFormat : unsigned char {
-	RGBA_UNSIGNED_CHAR = 0, RGB_UNSIGNED_CHAR = 1, DEPTH24_STENCIL8_UNSIGNED_CHAR = 2, RGBA_16FLOAT = 3
+	RGBA_UNSIGNED_CHAR = 0, RGB_UNSIGNED_CHAR = 1, DEPTH24_STENCIL8_UNSIGNED_CHAR = 2, RGB_32FLOAT = 3
 };
 
 enum class TextureAddressMode : unsigned char {
@@ -151,6 +151,15 @@ struct VertexLayout {
 	bool has_normal() const {
 		for (auto& element : layout) {
 			if (element.name == "normal") {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	bool has_tangent() const {
+		for (auto& element : layout) {
+			if (element.name == "tangent") {
 				return true;
 			}
 		}

@@ -146,7 +146,11 @@ MeshManager::mesh_assimp_input_data MeshManager::Fetch_Assimp_Data(const mesh_ve
     data.importer = importer;
 
     Mesh mesh;
-    const aiScene* scene = importer->ReadFile(in_file_path, aiProcess_GenBoundingBoxes & (props.has_normal ? aiProcess_GenNormals : 0)); //TODO: Handle bounding boxes somehow
+    unsigned int flags = 0;
+    flags |= aiProcess_GenBoundingBoxes | (props.has_normal ? aiProcess_GenNormals : 0);
+    flags |= aiProcess_GenBoundingBoxes | (props.has_tangent ? aiProcess_CalcTangentSpace : 0);
+
+    const aiScene* scene = importer->ReadFile(in_file_path, flags); //TODO: Handle bounding boxes somehow
     aiMesh* imported_mesh = scene->mMeshes[mesh_index];
 
 
@@ -163,6 +167,15 @@ MeshManager::mesh_assimp_input_data MeshManager::Fetch_Assimp_Data(const mesh_ve
     if (props.has_normal && imported_mesh->HasNormals()) {
         if (imported_mesh->HasNormals()) {
             data.normal = reinterpret_cast<glm::vec3*>(imported_mesh->mNormals);
+        }
+        else {
+            throw std::runtime_error("Normals could not be generated.");
+        }
+    }
+
+    if (props.has_tangent && imported_mesh->HasTangentsAndBitangents()) {
+        if (imported_mesh->HasNormals()) {
+            data.tangent = reinterpret_cast<glm::vec3*>(imported_mesh->mTangents);
         }
         else {
             throw std::runtime_error("Normals could not be generated.");
