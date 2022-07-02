@@ -2,6 +2,7 @@
 #include <World/Components/ScriptComponent.h>
 #include <World/EntityManager.h>
 #include <World/ScriptModules/GlobalEntityModule.h>
+#include <FileManager.h>
 #include <World/ScriptModules/MathModule.h>
 #include <World/Systems/ScriptSystemManagement.h>
 #include <World/Components/SerializableComponent.h>
@@ -23,24 +24,24 @@ static void SetEntityProperty(Entity entity, std::string name, T value) {
 extern "C" {
     entity CreateEntity_L(const char* path, int parent)
     {
-        return entity{ EntityManager::Get()->CreateEntity(path, Entity(parent)).id };
+        return entity{ EntityManager::Get()->CreateEntity(FileManager::Get()->GetPath(path), Entity(parent)).id };
     }
 
     entity CreateSerializableEntity_L(const char* path, int parent)
     {
-        Entity ent = EntityManager::Get()->CreateEntity(path, Entity(parent)).id;
+        Entity ent = EntityManager::Get()->CreateEntity(FileManager::Get()->GetPath(path), Entity(parent)).id;
         Application::GetWorld().SetComponent<SerializableComponent>(ent);
         return entity{ ent.id };
     }
 
     entity CreateEntityNamed_L(const char* name ,const char* path, int parent)
     {
-        return entity{ EntityManager::Get()->CreateEntity(name, path, Entity(parent)).id };
+        return entity{ EntityManager::Get()->CreateEntity(name, FileManager::Get()->GetPath(path), Entity(parent)).id };
     }
 
     entity CreateSerializableEntityNamed_L(const char* name, const char* path, int parent)
     {
-        Entity ent = EntityManager::Get()->CreateEntity(name, path, Entity(parent)).id;
+        Entity ent = EntityManager::Get()->CreateEntity(name, FileManager::Get()->GetPath(path), Entity(parent)).id;
         Application::GetWorld().SetComponent<SerializableComponent>(ent);
         return entity{ ent.id };
     }

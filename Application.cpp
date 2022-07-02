@@ -6,6 +6,7 @@
 #include <ConfigManager.h>
 #include <Renderer/Renderer.h>
 #include <World/Systems/ScriptSystemManagement.h>
+#include <World/Systems/MeshRenderSystem.h>
 #include <World/Components/MeshComponent.h>
 #include <World/Systems/BoxRenderer.h>
 #include "Layer.h"
@@ -164,15 +165,17 @@ void Application::PreInitializeSystems()
 
 void Application::InitializeSystems()
 {
-    
+    InitMeshRenderSystem();
 }
 
 void Application::ShutdownSystems()
 {
+    SutdownMeshRenderSystem();
     ScriptSystemManager::Shutdown();
     GetWorld().GetRegistry().clear<MeshComponent>();
     GetWorld().GetRegistry().clear<LoadingMeshComponent>();
     Delete_Render_Box_data();
+
 }
 
 void Application::Exit()

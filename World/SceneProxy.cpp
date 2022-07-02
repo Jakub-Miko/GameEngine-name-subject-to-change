@@ -25,7 +25,7 @@ SceneProxy::SceneProxy() : script_path("Undefined"), scene_path(), primary_entit
 
 
 	if (json_config.find("primary_entity") != json_config.end()) {
-		primary_entity = json_config["primary_entity"].get<uint32_t>();
+		primary_entity = json_config["primary_entity"].get<Entity>();
 	}
 
 }
@@ -48,7 +48,7 @@ SceneProxy::SceneProxy(const std::string& scene_path) : script_path("Undefined")
 	}
 
 	if (json_config.find("primary_entity") != json_config.end()) {
-		primary_entity = json_config["primary_entity"].get<uint32_t>();
+		primary_entity = json_config["primary_entity"].get<Entity>();
 	}
 
 }

@@ -9,6 +9,9 @@ public:
 	void Render();
 
 private:
+
+	void AddComponent();
+
 	char* text_buffer = nullptr;
 	int buffer_size = 200;
 	Entity last_entity = Entity();

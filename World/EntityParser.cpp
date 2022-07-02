@@ -49,6 +49,11 @@ EntityParseResult EntityParser::ParseEntity(const std::string& script)
 		}
 	}
 
+	if (parser.contains("Components")) {
+
+		result.component_json = parser["Components"].dump();
+	}
+
 	auto construct = script.find("@Entity:Construction_Script", 0);
 	if (construct != script.npos) {
 		construct += strlen("@Entity:Construction_Script");

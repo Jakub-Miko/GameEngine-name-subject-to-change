@@ -160,6 +160,17 @@ void SceneGraph::RecalculateDownstream(SceneNode* node, SceneNode* upstream)
 	}
 }
 
+SceneNode* SceneGraph::GetSceneGraphNode(Entity entity)
+{
+	std::lock_guard<std::mutex> lock(addition_mutex);
+	auto fnd = m_Nodes.find(entity.id);
+	if (fnd == m_Nodes.end()) {
+		return nullptr;
+	} 
+
+	return &fnd->second;
+}
+
 
 void SceneGraph::Deserialize(const nlohmann::json& input_json)
 {
@@ -175,7 +186,6 @@ static void DeserializeNode(const nlohmann::json& json, SceneNode* parent, World
 	Entity entity(json["id"].get<uint32_t>());
 	
 	SceneNode* node = world->GetSceneGraph()->AddEntity(entity, parent);
-	world->GetComponent<TransformComponent>(entity).scene_node = node;
 	world->SetComponent<SerializableComponent>(entity);
 	if (world->HasComponent<LoadedComponent>(entity)) {
 		world->SetComponent<ConstructionComponent>(entity, world->GetComponent<LoadedComponent>(entity).file_path, parent->entity);

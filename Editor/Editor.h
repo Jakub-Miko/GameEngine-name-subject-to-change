@@ -5,6 +5,7 @@
 #include <Editor/FileExplorer.h>
 #include <Events/Event.h>
 #include <World/Entity.h>
+#include <Editor/PrefabEditor.h>
 
 struct ImGuiIO;
 
@@ -52,6 +53,14 @@ public:
 
 	void ViewportEnd();
 
+	void OpenPrefabEditorWindow(Entity entity) {
+		prefab_editor->OpenPrefabEditorWindow(entity);
+	}
+
+	void ClosePrefabEditorWindow(Entity entity) {
+		prefab_editor->ClosePrefabEditorWindow(entity);
+	}
+
 	void ResetFilesDropped() {
 		are_files_dropped = false;
 	}
@@ -79,6 +88,7 @@ private:
 	bool enabled = true;
 
 	std::unique_ptr<Viewport> viewport;
+	std::unique_ptr<PrefabEditor> prefab_editor;
 	std::unique_ptr<SceneGraphViewer> scene_graph;
 	std::unique_ptr<PropertiesPanel> properties_panel;
 	std::unique_ptr<FileExplorer> explorer;

@@ -8,6 +8,10 @@
 class MeshComponent {
 	RuntimeTag("MeshComponent")
 public:
+	MeshComponent() : file_path("Unknown"), mesh(nullptr) {
+		mesh = MeshManager::Get()->GetDefaultMesh();
+	}
+	
 	MeshComponent(const std::string& filepath,int index = 0) : file_path("Unknown"), mesh(nullptr){
 		mesh = MeshManager::Get()->LoadMeshFromFileAsync(filepath);
 		file_path = FileManager::Get()->GetRelativeFilePath(filepath);
@@ -31,3 +35,16 @@ public:
 	Future<std::shared_ptr<Mesh>> mesh_future;
 };
 
+
+#pragma region Json_Serialization
+
+inline void to_json(nlohmann::json& j, const MeshComponent& p) {
+	j["path"] = p.file_path;
+
+}
+
+inline void from_json(const nlohmann::json& j, MeshComponent& p) {
+	p.ChangeMesh(FileManager::Get()->GetPath(j["path"].get<std::string>()));
+}
+
+#pragma endregion

@@ -1,3 +1,5 @@
+@Section:Root
+
 @Entity 
 
 {
@@ -11,7 +13,13 @@
 
   "Children": [
 
-  ]
+  ],
+
+  "Components": {
+		"LabelComponent" : {
+			"label": "Test 2"
+		}
+  }
 
 }
 
@@ -55,3 +63,5 @@ else
 end
 
 end
+
+@EndSection

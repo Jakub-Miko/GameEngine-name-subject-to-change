@@ -54,6 +54,8 @@ public:
 
 	void RecalculateDownstream(SceneNode* node, SceneNode* upstream);
 
+	SceneNode* GetSceneGraphNode(Entity entity);
+
 private:
 	friend class GameLayer;
 	

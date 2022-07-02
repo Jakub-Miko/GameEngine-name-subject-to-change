@@ -5,7 +5,7 @@
 #include <unordered_map>
 
 struct EntityParseResult {
-	
+	std::string component_json = "";
 	std::string construction_script = "";
 	std::string inline_script = "";
 	DynamicPropertiesComponent properties;

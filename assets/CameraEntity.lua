@@ -11,7 +11,13 @@
 
   "Children": [
 
-  ]
+  ],
+
+  "Components": {
+		"LabelComponent" : {
+			"label": "Mesh lool"
+		}
+  }
 
 }
 

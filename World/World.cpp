@@ -7,6 +7,7 @@
 #include <World/Components/TransformComponent.h>
 #include <World/Components/BoundingVolumeComponent.h>
 #include <World/Components/CameraComponent.h>
+#include <World/Components/MeshComponent.h>
 #include <World/Components/ConstructionComponent.h>
 #include <World/Components/LabelComponent.h>
 #include <World/Components/DefferedUpdateComponent.h>
@@ -40,7 +41,7 @@ void World::UpdateTransformMatricies()
 void World::SetEntityTranslation(Entity ent, const glm::vec3& translation)
 {
 	m_ECS.get<TransformComponent>((entt::entity)ent.id).translation = translation;
-	m_SceneGraph.MarkEntityDirty(m_ECS.get<TransformComponent>((entt::entity)ent.id).scene_node);
+	m_SceneGraph.MarkEntityDirty(m_SceneGraph.GetSceneGraphNode(ent));
 }
 
 void World::SetEntityTranslationSync(Entity ent, const glm::vec3& translation)
@@ -52,7 +53,7 @@ void World::SetEntityTranslationSync(Entity ent, const glm::vec3& translation)
 void World::SetEntityRotation(Entity ent, const glm::quat& rotation)
 {
 	m_ECS.get<TransformComponent>((entt::entity)ent.id).rotation = rotation;
-	m_SceneGraph.MarkEntityDirty(m_ECS.get<TransformComponent>((entt::entity)ent.id).scene_node);
+	m_SceneGraph.MarkEntityDirty(m_SceneGraph.GetSceneGraphNode(ent));
 }
 
 void World::SetEntityRotationSync(Entity ent, const glm::quat& rotation)
@@ -64,7 +65,7 @@ void World::SetEntityRotationSync(Entity ent, const glm::quat& rotation)
 void World::SetEntityScale(Entity ent, const glm::vec3& scale)
 {
 	m_ECS.get<TransformComponent>((entt::entity)ent.id).size = scale;
-	m_SceneGraph.MarkEntityDirty(m_ECS.get<TransformComponent>((entt::entity)ent.id).scene_node);
+	m_SceneGraph.MarkEntityDirty(m_SceneGraph.GetSceneGraphNode(ent));
 }
 
 void World::SetEntityScaleSync(Entity ent, const glm::vec3& scale)
@@ -93,6 +94,7 @@ void World::RegistryWarmUp()
 	m_ECS.storage<ScriptComponent>();
 	m_ECS.storage<SerializableComponent>();
 	m_ECS.storage<SquareComponent>();
+	m_ECS.storage<MeshComponent>();
 	m_ECS.storage<TransformComponent>();
 }
 
@@ -118,16 +120,24 @@ void World::LoadSceneSystem()
 		file >> json;
 		file.close();
 
-		ECS_Input_Archive archive(json["Entities"]);
-		entt::snapshot_loader(m_ECS).component<TransformComponent, LoadedComponent, DynamicPropertiesComponent, LabelComponent>(archive);
-
 		RegistryWarmUp();
+
+		ECS_Input_Archive archive(json["Entities"]);
+		entt::snapshot_loader(m_ECS).component<TransformComponent, LoadedComponent, DynamicPropertiesComponent, LabelComponent,MeshComponent, CameraComponent>(archive);
+
 
 		m_SceneGraph.Deserialize(json);
 
 		SetPrimaryEntity(load_scene->primary_entity);
+
 		primary_entity = load_scene->primary_entity;
 		current_scene = load_scene;
+		if (load_scene->primary_entity == Entity()) {
+			auto ent = CreateEntity();
+			SetComponent<CameraComponent>(ent);
+			SetComponent<LabelComponent>(ent,"Default Camera");
+			primary_entity = ent;
+		}
 		load_scene = nullptr;
 
 		if (GameStateMachine::Get()->current_state) {
@@ -152,12 +162,19 @@ void World::LoadSceneFromFile(const std::string& file_path)
 	load_scene = std::make_shared<SceneProxy>(file_path);
 }
 
+void World::LoadEmptyScene()
+{
+	load_scene = std::make_shared<SceneProxy>("engine_asset:EmptyScene.json"_path);
+}
+
 void World::SaveScene(const std::string& file_path)
 {
 	ECS_Output_Archive archive;
 	entt::snapshot snapshot(m_ECS);
 	auto view_serializable = m_ECS.view<SerializableComponent>();
-	snapshot.component<TransformComponent, LoadedComponent, DynamicPropertiesComponent, LabelComponent>(archive, view_serializable.begin(), view_serializable.end());
+	auto view_serializable_non_prefabs = m_ECS.view<SerializableComponent>(entt::exclude<LoadedComponent>);
+	snapshot.component<TransformComponent, LoadedComponent, DynamicPropertiesComponent, LabelComponent,MeshComponent, CameraComponent>(archive, view_serializable.begin(), view_serializable.end());
+	snapshot.component<MeshComponent, CameraComponent>(archive, view_serializable_non_prefabs.begin(), view_serializable_non_prefabs.end());
 
 
 	nlohmann::json json;
@@ -165,8 +182,8 @@ void World::SaveScene(const std::string& file_path)
 
 	m_SceneGraph.Serialize(json);
 
-	if (current_scene->primary_entity != Entity()) {
-		json["primary_entity"] = current_scene->primary_entity;
+	if (primary_entity != Entity() && HasComponent<SerializableComponent>(primary_entity)) {
+		json["primary_entity"] = primary_entity;
 	}
 
 	std::ofstream file(file_path,std::ios_base::trunc);

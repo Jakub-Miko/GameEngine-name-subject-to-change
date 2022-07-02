@@ -1,5 +1,7 @@
 #pragma once
 #include <glm/glm.hpp>
+#include <Window.h>
+#include <Application.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <Core/Geometry.h>
 #include <Core/RuntimeTag.h>
@@ -16,6 +18,14 @@ struct Frustum {
 class CameraComponent {
 	RuntimeTag("CameraComponent")
 public:
+	CameraComponent() : fov(45.0f), zNear(0.1), zFar(1000), view_frustum()
+	{
+		auto props = Application::Get()->GetWindow()->GetProperties();
+		aspect_ratio = (float)props.resolution_x / (float)props.resolution_y;
+		projection_matrix = glm::perspective(glm::radians(fov), aspect_ratio, zNear, zFar);
+
+
+	}
 	CameraComponent(float fov, float zNear, float zFar, float aspect_ratio) : fov(fov), zNear(zNear), zFar(zFar), aspect_ratio(aspect_ratio), view_frustum(),
 		projection_matrix(glm::perspective(glm::radians(fov), aspect_ratio, zNear, zFar)) 
 	{
@@ -68,7 +78,7 @@ public:
 		return view_frustum;
 	}
 
-private:
+public:
 #ifdef EDITOR
 	friend class PropertiesPanel;
 #endif // EDITOR
@@ -78,7 +88,9 @@ private:
 	float zFar;
 	float aspect_ratio;
 
-	Frustum view_frustum;
+	Frustum view_frustum = Frustum();
 
-	glm::mat4 projection_matrix;
+	glm::mat4 projection_matrix = glm::mat4(1.0f);
 };
+
+JSON_SERIALIZABLE(CameraComponent, fov, zNear, zFar, aspect_ratio)

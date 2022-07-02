@@ -15,6 +15,7 @@
 #include <World/Systems/SquareRenderSystem.h>
 #include <World/Systems/BoxRenderer.h>
 #include <World/Systems/InitializationSystem.h>
+#include <World/Systems/MeshRenderSystem.h>
 #include <World/Systems/KeyPressedScriptSystem.h>
 #include <World/Systems/MousePressedScriptSystem.h>
 #include <Renderer/MeshManager.h>
@@ -59,4 +60,5 @@ void GameLayer::OnUpdate(float delta_time) {
     MeshManager::Get()->UpdateLoadedMeshes(); // MultiThread
     //SquareRenderSystem(world);
     BoundingVolumeRender(world);
+    MeshRenderSystem(world);
 }

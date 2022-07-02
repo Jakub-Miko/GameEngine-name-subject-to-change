@@ -193,6 +193,7 @@ void Editor::Run()
 		scene_graph->Render();
 		properties_panel->Render();
 		explorer->Render();
+		prefab_editor->Render();
 
 		viewport->Render();
 		if (!enabled) {
@@ -242,7 +243,7 @@ void Editor::DropCallback(int count, std::vector<std::string> files)
 	Editor::Get()->are_files_dropped = true;
 }
 
-Editor::Editor() : viewport(new Viewport), scene_graph(new SceneGraphViewer), properties_panel(new PropertiesPanel), explorer(new FileExplorer)
+Editor::Editor() : viewport(new Viewport), scene_graph(new SceneGraphViewer), properties_panel(new PropertiesPanel), explorer(new FileExplorer), prefab_editor(new PrefabEditor)
 {
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();

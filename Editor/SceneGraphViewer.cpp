@@ -1,4 +1,6 @@
 #include "SceneGraphViewer.h"
+#include <World/Components/SerializableComponent.h>
+#include <World/EntityManager.h>
 #include <World/SceneGraph.h>
 #include <World/World.h>
 #include <Editor/Editor.h>
@@ -53,6 +55,18 @@ void SceneGraphViewer::Render()
 
 	ImGui::SetNextWindowSizeConstraints({ (float)Application::Get()->GetWindow()->GetProperties().resolution_x / 6.0f,0 }, { 10000,10000 });
 	ImGui::Begin("SceneGraph");
+
+	if (ImGui::Button("Create Empty Entity")) {
+		Entity ent = Application::GetWorld().CreateEntity(Editor::Get()->GetSelectedEntity());
+		Application::GetWorld().SetComponent<SerializableComponent>(ent);
+		Editor::Get()->SetSelectedEntity(ent);
+	}
+
+	if (ImGui::Button("Deselect Entity")) {
+		Editor::Get()->SetSelectedEntity(Entity());
+	}
+
+	ImGui::Separator();
 
 	const SceneNode* root_node = scene_garph->GetRootNode();
 	SceneNode* current_node = root_node->first_child;

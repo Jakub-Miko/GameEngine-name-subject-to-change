@@ -14,7 +14,6 @@
 class EntityType;
 class World;
 
-
 template<typename T>
 class ComponentInitProxy {
 public:
@@ -149,7 +148,9 @@ public:
 		return *current_scene;
 	}
 
-	void LoadSceneFromFile(const std::string& file_path);
+	void LoadSceneFromFile(const std::string& file_path = "Empty");
+
+	void LoadEmptyScene();
 
 	void SaveScene(const std::string& file_path);
 

@@ -389,7 +389,7 @@ public:
         }
         
 
-        if (Application::GetWorld().EntityExists(mesh_enity) && Application::GetWorld().HasComponent<MeshComponent>(mesh_enity)  && Application::GetWorld().GetPrimaryEntity() != Entity()) {
+       /* if (Application::GetWorld().EntityExists(mesh_enity) && Application::GetWorld().HasComponent<MeshComponent>(mesh_enity)  && Application::GetWorld().GetPrimaryEntity() != Entity()) {
             auto& camera = Application::GetWorld().GetComponent<CameraComponent>(Application::GetWorld().GetPrimaryEntity());
             auto& trans = Application::GetWorld().GetComponent<TransformComponent>(Application::GetWorld().GetPrimaryEntity());
             auto& mesh_mesh = Application::GetWorld().GetComponent<MeshComponent>(mesh_enity);
@@ -426,7 +426,7 @@ public:
             std::string path3 = "api:lol18.txt"_path;
             std::string path4 = "lol1.txt"_path;
 
-        }
+        }*/
 
 
         std::vector<Entity> entities;

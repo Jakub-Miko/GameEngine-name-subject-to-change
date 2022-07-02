@@ -57,7 +57,8 @@ std::string& ScriptSystemManager::GetScript(const std::string& path)
         return (*file).second.script;
     }
     else {
-        std::string str = LuaEngineUtilities::LoadScript(path);
+        std::string str = FileManager::Get()->OpenFile(path);
+        str = LuaEngineUtilities::ParseScript(str, LuaEngineUtilities::ScriptHash(path, false));
         auto it = m_ScriptCache.insert_or_assign(LuaEngineUtilities::ScriptHash(path),ScriptObject(str)).first;
         return (*it).second.script;
     }
@@ -71,7 +72,9 @@ std::string& ScriptSystemManager::GetConstructionScript(const std::string& path)
         return (*file).second.script;
     }
     else {
-        std::string str = LuaEngineUtilities::LoadScript(path, true);
+        
+        std::string str = FileManager::Get()->OpenFile(path);
+        str = LuaEngineUtilities::ParseScript(str, LuaEngineUtilities::ScriptHash(path, true),true);
         auto it = m_ScriptCache.insert_or_assign(LuaEngineUtilities::ScriptHash(path, true), ScriptObject(str)).first;
         return (*it).second.script;
     }

@@ -4,6 +4,7 @@
 #include <Editor/Editor.h>
 #include <Application.h>
 #include <World/Components/TransformComponent.h>
+#include <World/Components/LoadedComponent.h>
 #include <World/Components/CameraComponent.h>
 #include <World/Components/MeshComponent.h>
 #include <FileManager.h>
@@ -43,6 +44,10 @@ void PropertiesPanel::Render()
 		ImGui::End();
 		return;
 	}
+	bool is_prefab = world.HasComponent<LoadedComponent>(selected);
+	if (!is_prefab) {
+		AddComponent();
+	}
 	bool is_camera = world.HasComponent<CameraComponent>(selected);
 
 	if (ImGui::TreeNode("Label")) {
@@ -73,13 +78,11 @@ void PropertiesPanel::Render()
 		}
 		ImGui::SameLine();
 		ImGui::DragFloat3("Translation", glm::value_ptr(translation));
-		if (!is_camera) {
-			if (ImGui::Button("Reset##1")) {
-				transform.size = glm::vec3(1.0f);
-			}
-			ImGui::SameLine();
-			ImGui::DragFloat3("Scale", glm::value_ptr(size));
+		if (ImGui::Button("Reset##1")) {
+			transform.size = glm::vec3(1.0f);
 		}
+		ImGui::SameLine();
+		ImGui::DragFloat3("Scale", glm::value_ptr(size));
 		if (ImGui::Button("Reset##2")) {
 			transform.rotation = glm::quat(glm::vec3(0.0f));
 		}
@@ -90,12 +93,12 @@ void PropertiesPanel::Render()
 			transform.rotation = transform.rotation * glm::quat(rotation / 180.0f * glm::pi<float>());
 		}
 
-		world.GetSceneGraph()->MarkEntityDirty(world.GetComponent<TransformComponent>(selected).scene_node);
+		world.GetSceneGraph()->MarkEntityDirty(world.GetSceneGraph()->GetSceneGraphNode(selected));
 
 		ImGui::TreePop();
 	}
 
-	if (is_camera) {
+	if (is_camera && !is_prefab) {
 		if (ImGui::TreeNode("Camera")) {
 			auto& camera = world.GetComponent<CameraComponent>(selected);
 
@@ -115,7 +118,7 @@ void PropertiesPanel::Render()
 		}
 	}
 
-	if (world.HasComponent<MeshComponent>(selected)) {
+	if (world.HasComponent<MeshComponent>(selected) && !is_prefab) {
 		if (ImGui::TreeNode("Mesh")) {
 			MeshComponent& mesh = world.GetComponent<MeshComponent>(selected);
 			if (last_entity != selected) {
@@ -151,7 +154,68 @@ void PropertiesPanel::Render()
 			ImGui::TreePop();
 		}
 	}
+
+	if(world.HasComponent<LoadedComponent>(selected)) {
+		if (ImGui::TreeNode("Prefab Setting")) {
+			if (ImGui::Button("OpenPrefabEditor")) {
+				Editor::Get()->OpenPrefabEditorWindow(selected);
+			}
+
+			ImGui::TreePop();
+		}
+	}
 	
 	ImGui::End();
 
+}
+
+void PropertiesPanel::AddComponent()
+{
+	auto& world = Application::GetWorld();
+	if (ImGui::TreeNode("Add Component")) {
+		bool has_mesh = world.HasComponent<MeshComponent>(Editor::Get()->GetSelectedEntity());
+		if (has_mesh) {
+			ImGui::BeginDisabled();
+		}
+		if (ImGui::Button("Add Mesh Component")) {
+			world.SetComponent<MeshComponent>(Editor::Get()->GetSelectedEntity());	
+		}
+		if (has_mesh) {
+			ImGui::EndDisabled();
+		} 
+		ImGui::SameLine();
+		if (!has_mesh) {
+			ImGui::BeginDisabled();
+		}
+		if (ImGui::Button("Remove Mesh Component")) {
+			world.RemoveComponent<MeshComponent>(Editor::Get()->GetSelectedEntity());
+			memcpy(text_buffer,"Unknown",strlen("Unknown")+1);
+		}
+		if (!has_mesh) {
+			ImGui::EndDisabled();
+		}
+
+
+		bool has_camera = world.HasComponent<CameraComponent>(Editor::Get()->GetSelectedEntity());
+		if (has_camera) {
+			ImGui::BeginDisabled();
+		}
+		if (ImGui::Button("Add Camera Component")) {
+			world.SetComponent<CameraComponent>(Editor::Get()->GetSelectedEntity());
+		}
+		if (has_camera) {
+			ImGui::EndDisabled();
+		}
+		ImGui::SameLine();
+		if (!has_camera) {
+			ImGui::BeginDisabled();
+		}
+		if (ImGui::Button("Remove Camera Component")) {
+			world.RemoveComponent<CameraComponent>(Editor::Get()->GetSelectedEntity());
+		}
+		if (!has_camera) {
+			ImGui::EndDisabled();
+		}
+		ImGui::TreePop();
+	}
 }

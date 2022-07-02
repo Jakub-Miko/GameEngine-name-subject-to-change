@@ -10,12 +10,12 @@ void EntityType::CreateEntity(World& world, Entity entity, Entity parent)
 		parent_node = nullptr;
 	}
 	else {
-		parent_node = world.GetComponentSync<TransformComponent>(parent).scene_node;
+		parent_node = world.GetSceneGraph()->GetSceneGraphNode(parent);
 	}
 	
 	SceneNode* new_node = world.GetSceneGraph()->AddEntity(entity, parent_node);
 
-	world.SetComponent<TransformComponent>(entity, TransformComponent(new_node));
+	world.SetComponent<TransformComponent>(entity);
 }
 
 void EntityType::CreateEntity(World& world, Entity entity, Entity parent, const glm::vec3& translation, const glm::vec3& scale, const glm::vec3& rotation_axis, float rotation_angle)
@@ -25,12 +25,12 @@ void EntityType::CreateEntity(World& world, Entity entity, Entity parent, const 
 		parent_node = nullptr;
 	}
 	else {
-		parent_node = world.GetComponentSync<TransformComponent>(parent).scene_node;
+		parent_node = world.GetSceneGraph()->GetSceneGraphNode(parent);
 	}
 
 	SceneNode* new_node = world.GetSceneGraph()->AddEntity(entity, parent_node);
 	
-	world.SetComponent<TransformComponent>(entity, TransformComponent(new_node,translation,scale,rotation_axis,rotation_angle));
+	world.SetComponent<TransformComponent>(entity, TransformComponent(translation,scale,rotation_axis,rotation_angle));
 }
 
 
