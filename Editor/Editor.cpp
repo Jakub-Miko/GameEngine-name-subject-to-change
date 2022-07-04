@@ -1,11 +1,18 @@
 #include "Editor.h"
 #include <dependencies/imgui/imgui.h>
 #include <dependencies/Additional/impl_custom_imgui_backend.h>
+#include <dependencies/Additional/impl_custom_imgui_platform.h>
 #include <dependencies/imgui/backends/imgui_impl_glfw.h>
 #include <platform/GLFW/GlfwWindow.h>
 #include <Application.h>
 #include <fstream>
 #include <FileManager.h>
+
+#ifdef OpenGL
+#include <GLFW/glfw3.h>
+#include <platform/OpenGL/OpenGLRenderCommandQueue.h>
+#include <platform/OpenGL/OpenGLRenderCommand.h>
+#endif
 
 Editor* Editor::instance = nullptr;
 
@@ -21,6 +28,18 @@ void Editor::Shutdown()
 	if (instance) {
 		delete instance;
 	}
+}
+
+void Editor::PreShutdown()
+{
+	viewport.release();
+	delete[] file_dialog_text_buffer;
+	ImGui_ImplGlfw_Shutdown();
+	impl_custom_imgui_backend::PreShutdown();
+	impl_custom_imgui_backend::Shutdown();
+	impl_custom_imgui_platform::shutdown_custom_imgui_platform();
+	ImGui::DestroyContext();
+	
 }
 
 bool Editor::OnEvent(Event* e)
@@ -58,6 +77,7 @@ bool Editor::OnEvent(Event* e)
 void Editor::Run()
 {
 	ImGui_ImplGlfw_NewFrame();
+	impl_custom_imgui_backend::NewFrame();
 	ImGui::NewFrame();
 	if (enabled) {
 
@@ -127,7 +147,15 @@ void Editor::Run()
 
 		try {
 			if (ImGui::BeginPopupModal("Save Dialog", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
-				if (ImGui::InputText("Filepath", file_dialog_text_buffer, file_dialog_text_buffer_size, ImGuiInputTextFlags_EnterReturnsTrue) || ImGui::Button("Save")) {
+				bool enter_pressed = ImGui::InputText("Filepath", file_dialog_text_buffer, file_dialog_text_buffer_size, ImGuiInputTextFlags_EnterReturnsTrue);
+				ImGui::SameLine();
+				if (ImGui::Button("Set Selected")) {
+					std::string path = FileManager::Get()->GetRelativeFilePath(Editor::Get()->GetSelectedFilePath());
+					memcpy(file_dialog_text_buffer, path.c_str(), std::min((int)path.size(), file_dialog_text_buffer_size));
+					file_dialog_text_buffer[std::min((int)path.size(), file_dialog_text_buffer_size)] = '\0';
+				}
+
+				if (enter_pressed || ImGui::Button("Save")) {
 					Application::GetWorld().SaveScene(FileManager::Get()->GetPath(file_dialog_text_buffer));
 					ImGui::CloseCurrentPopup();
 					file_dialog_text_buffer[0] = '\0';
@@ -147,7 +175,15 @@ void Editor::Run()
 		try {
 			if (ImGui::BeginPopupModal("Load Dialog", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
 
-				if (ImGui::InputText("Filepath", file_dialog_text_buffer, file_dialog_text_buffer_size, ImGuiInputTextFlags_EnterReturnsTrue) || ImGui::Button("Load")) {
+				bool enter_pressed = ImGui::InputText("Filepath", file_dialog_text_buffer, file_dialog_text_buffer_size, ImGuiInputTextFlags_EnterReturnsTrue);
+				ImGui::SameLine();
+				if (ImGui::Button("Set Selected")) {
+					std::string path = FileManager::Get()->GetRelativeFilePath(Editor::Get()->GetSelectedFilePath());
+					memcpy(file_dialog_text_buffer, path.c_str(), std::min((int)path.size(), file_dialog_text_buffer_size));
+					file_dialog_text_buffer[std::min((int)path.size(), file_dialog_text_buffer_size)] = '\0';
+				}
+
+				if (enter_pressed || ImGui::Button("Load")) {
 					Application::GetWorld().LoadSceneFromFile(FileManager::Get()->GetPath(file_dialog_text_buffer));
 					ImGui::CloseCurrentPopup();
 					file_dialog_text_buffer[0] = '\0';
@@ -201,7 +237,31 @@ void Editor::Run()
 		}
 	}
 	ImGui::Render();
+
 	impl_custom_imgui_backend::DrawData(ImGui::GetDrawData());
+#ifdef OpenGL
+
+	if (io->ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+	{
+		std::promise<GLFWwindow*>* window_promise = new std::promise<GLFWwindow*>;
+		auto future = window_promise->get_future().share();
+
+		auto queue = static_cast<OpenGLRenderCommandQueue*>(Renderer::Get()->GetCommandQueue());
+		auto command_1 = (ExecutableCommand*)new OpenGLRenderCommandAdapter([window_promise]() {
+			window_promise->set_value(glfwGetCurrentContext());
+
+			});
+		auto command_2 = (ExecutableCommand*)new OpenGLRenderCommandAdapter([window_promise, future]() {
+			glfwMakeContextCurrent(future.get());
+			delete window_promise;
+			});
+
+		queue->ExecuteCommand(command_1);
+		ImGui::UpdatePlatformWindows();
+		ImGui::RenderPlatformWindowsDefault();
+		queue->ExecuteCommand(command_2);
+	}
+#endif
 
 }
 
@@ -251,8 +311,10 @@ Editor::Editor() : viewport(new Viewport), scene_graph(new SceneGraphViewer), pr
 	file_dialog_text_buffer = new char[file_dialog_text_buffer_size];
 	file_dialog_text_buffer[0] = '\0';
 	ImGui::StyleColorsDark();
+	io_1.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
 	ImGui_ImplGlfw_InitForOther(static_cast<GlfwWindow*>(Application::Get()->GetWindow())->GetHandle(), true);
+	impl_custom_imgui_platform::init_custom_imgui_platform();
 	impl_custom_imgui_backend::Init();
 	if (std::filesystem::exists("asset:workspace.ini"_path)) {
 		ImGui::LoadIniSettingsFromDisk("asset:workspace.ini"_path.c_str());
@@ -264,7 +326,7 @@ Editor::Editor() : viewport(new Viewport), scene_graph(new SceneGraphViewer), pr
 
 
 	io->IniFilename = NULL;
-	io->ConfigFlags = ImGuiConfigFlags_DockingEnable;
+	io->ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
 
 	
@@ -274,8 +336,5 @@ Editor::Editor() : viewport(new Viewport), scene_graph(new SceneGraphViewer), pr
 
 Editor::~Editor()
 {
-	delete[] file_dialog_text_buffer;
-	impl_custom_imgui_backend::Shutdown();
-	ImGui_ImplGlfw_Shutdown();
-	ImGui::DestroyContext();
+
 }

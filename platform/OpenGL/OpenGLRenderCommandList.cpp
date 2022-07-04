@@ -20,6 +20,7 @@
 #include "OpenGLFrameBufferCommands.h"
 #include "OpenGLDrawCommands.h"
 #include "OpenGLVertexIndexBufferCommands.h"
+#include "OpenGLPipelineManager.h"
 
 template<typename T, typename ...Args>
 void OpenGLRenderCommandList::PushCommand(Args&& ...args)
@@ -115,6 +116,14 @@ void OpenGLRenderCommandList::SetVertexBuffer(std::shared_ptr<RenderBufferResour
         throw std::runtime_error("Buffer must be an Vertex buffer");
     }
     vertex_buffer = vertex_buffer_in;
+
+    if (bool(current_pipeline->GetPipelineFlags() & PipelineFlags::IS_MULTI_WINDOW)) {
+        auto command = OpenGLRenderCommandAdapter([vertex_buffer_in, this]() {
+            static_cast<OpenGLPipeline*>(current_pipeline.get())->BeginVertexContext(vertex_buffer_in);
+            });
+        PushCommand<decltype(command)>(command);
+    }
+
 }
 
 void OpenGLRenderCommandList::SetRenderTarget(std::shared_ptr<RenderFrameBufferResource> framebuffer)
@@ -159,6 +168,14 @@ void OpenGLRenderCommandList::Draw(uint32_t index_count, bool use_unsined_short_
 void OpenGLRenderCommandList::BindOpenGLContext()
 {
     PushCommand<OpenGLBindOpenGLContextCommand>();
+}
+
+void OpenGLRenderCommandList::RefreshVertexContext()
+{
+    auto command = OpenGLRenderCommandAdapter([this]() {
+        static_cast<OpenGLPipeline*>(current_pipeline.get())->EndVertexContext();
+        });
+    PushCommand<decltype(command)>(command);
 }
 
 void OpenGLRenderCommandList::UpdateBufferResource(std::shared_ptr<RenderBufferResource> resource, void* data, size_t size, size_t offset)

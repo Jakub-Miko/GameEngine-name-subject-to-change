@@ -19,6 +19,8 @@ public:
 	static void Init();
 	static void Shutdown();
 
+	void PreShutdown();
+
 	bool OnEvent(Event* e);
 
 	void Run();

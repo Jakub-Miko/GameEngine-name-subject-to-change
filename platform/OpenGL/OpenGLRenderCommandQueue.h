@@ -27,6 +27,8 @@ public:
 	OpenGLRenderCommandQueue(OpenGLRenderCommandQueue&& ref) = delete;
 	OpenGLRenderCommandQueue& operator=(OpenGLRenderCommandQueue&& ref) = delete;
 
+	void ExecuteCommand(ExecutableCommand* command);
+
 	virtual void ExecuteRenderCommandLists(std::vector<RenderCommandList*>& lists) override;
 	virtual void ExecuteRenderCommandList(RenderCommandList* list) override;
 

@@ -10,6 +10,14 @@ OpenGLRenderCommandQueue::OpenGLRenderCommandQueue() : current_state(), m_queue_
 	Render_Thread = new std::thread(&OpenGLRenderCommandQueue::RenderLoop,this);
 }
 
+void OpenGLRenderCommandQueue::ExecuteCommand(ExecutableCommand* command)
+{
+	std::unique_lock<std::mutex> lock(m_queue_mutex);
+	m_Lists.push(command);
+	lock.unlock();
+	m_cond_var.notify_one();
+}
+
 void OpenGLRenderCommandQueue::ExecuteRenderCommandLists(std::vector<RenderCommandList*>& lists)
 {
 	std::unique_lock<std::mutex> lock(m_queue_mutex);

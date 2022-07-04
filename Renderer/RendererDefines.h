@@ -23,6 +23,7 @@ enum class PipelineFlags : uint32_t {
 	ENABLE_STENCIL_TEST = (1 << 1),
 	ENABLE_SCISSOR_TEST = (1 << 2),
 	ENABLE_BLEND = (1 << 3),
+	IS_MULTI_WINDOW = (1 << 4),
 	DEFAULT = 0
 };
 

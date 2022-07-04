@@ -6,6 +6,7 @@
 #include <platform/OpenGL/OpenGLRenderResource.h>
 #include <platform/OpenGL/OpenGLRootSignature.h>
 #include <platform/OpenGL/OpenGLRenderDescriptorHeapBlock.h>
+#include <platform/OpenGL/OpenGLUnitConverter.h>
 #include <memory>
 #include <Renderer/Renderer.h>
 
@@ -28,6 +29,11 @@ OpenGLPipelineManager::OpenGLPipelineManager()
 RootBinding OpenGLPipeline::GetBindingId(const std::string& name)
 {
 	return RootBinding();
+}
+
+OpenGLPipeline::~OpenGLPipeline()
+{
+
 }
 
 void OpenGLPipeline::SetConstantBuffer(RootBinding binding_id, std::shared_ptr<RenderBufferResource> buffer)
@@ -62,6 +68,50 @@ void OpenGLPipeline::SetTexture2D(const std::string& semantic_name, std::shared_
 	int index = sig->GetTextureSlot(semantic_name);
 	glActiveTexture(GL_TEXTURE0 + index);
 	glBindTexture(GL_TEXTURE_2D, static_cast<OpenGLRenderTexture2DResource*>(texture.get())->GetRenderId());
+}
+
+//NOTE: Internal and for advanced use only
+//Should Be used every time a new vertex buffer is bound in a different context then it was last time.
+void OpenGLPipeline::BeginVertexContext(std::shared_ptr<RenderBufferResource> vertex_buffer)
+{
+	if (!(bool)(flags & PipelineFlags::IS_MULTI_WINDOW)) {
+		throw std::runtime_error("BeginVertexContext should only be used with IS_MULTI_WINDOW pipeline flags and EndVertexContext should always be called in the same context");
+	}
+	if (extra_id != 0) {
+		return;
+	}
+	auto gl_buffer = static_cast<OpenGLRenderBufferResource*>(vertex_buffer.get());
+	int stride = GetLayout().stride;
+	int offset = 0;
+	int count = 0;
+	unsigned int vao = 0;
+	glGenVertexArrays(1, &vao);
+	auto error = glGetError();
+	glBindVertexArray(vao);
+	glBindBuffer(GL_ARRAY_BUFFER, gl_buffer->GetRenderId());
+	for (auto attrib : GetLayout().layout) {
+		glEnableVertexAttribArray(count);
+		glVertexAttribPointer(count, attrib.size, OpenGLUnitConverter::PrimitiveToGL(attrib.type), attrib.normalized, stride, (void*)offset);
+		offset += attrib.size * OpenGLUnitConverter::PrimitiveSize(attrib.type);
+		count++;
+	}
+	extra_id = vao;
+
+}
+
+//NOTE: Internal and for advanced use only
+//Should always be called after BeginVertexContext when the vertex buffer is no longer going to be used, but should be called before a context switch. 
+void OpenGLPipeline::EndVertexContext()
+{
+	if (!(bool)(flags & PipelineFlags::IS_MULTI_WINDOW)) {
+		throw std::runtime_error("EndVertexContext should always be called after BeginVertexContext when the vertex buffer is no longer going to be used, but should be called before a context switch");
+	}
+	if (extra_id == 0) {
+		return;
+	}
+	glDeleteVertexArrays(1, &extra_id);
+	extra_id = 0;
+
 }
 
 //TODO: FIX THIS, IT MIGHT WORK, BUT I DONT LIKE IT !!!!!!!!!!!!!!!!!!!!!!

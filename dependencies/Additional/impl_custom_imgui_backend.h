@@ -9,16 +9,20 @@ class impl_custom_imgui_backend {
 public:
 	static void Init();
 	static void Shutdown();
-
+	static void NewFrame();
 	static backend_data* GetBackendData() {
 		return current_backend_data;
 	}
 
-	static void DrawData(ImDrawData* draw_data);
+	static void PreShutdown();
 
+	static void DrawData(ImDrawData* draw_data);
 	
+	
+	static void CreateObjects();
 private:
 
+	static bool objects_init;
 	struct backend_data {
 		Shader* shader = nullptr;
 		std::shared_ptr<Pipeline> pipeline = nullptr;

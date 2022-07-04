@@ -53,7 +53,7 @@ Application::~Application()
 {
 
 #ifdef EDITOR
-    Editor::Shutdown();
+    Editor::Get()->PreShutdown();
 #endif
     
     ShutdownSystems();
@@ -70,6 +70,11 @@ Application::~Application()
     TextureManager::Shutdown();
     MeshManager::Shutdown();
     Renderer::Shutdown();
+
+#ifdef EDITOR
+    Editor::Shutdown();
+#endif
+
     delete m_Window;
     delete os_api;
     

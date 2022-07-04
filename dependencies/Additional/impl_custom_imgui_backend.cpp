@@ -1,11 +1,15 @@
 #include "impl_custom_imgui_backend.h"
 #include <stdexcept>
 
-#ifdef OpenGL
-#include <GL/glew.h>
-#include <platform/OpenGL/OpenGLRenderResource.h>
+#ifdef  OpenGL
+#include <platform/OpenGL/OpenGLRenderCommandList.h>
 #endif
 
+bool impl_custom_imgui_backend::objects_init = false;
+
+static void ImGui_custom_RenderWindow(ImGuiViewport* viewport, void*);
+static void ImGui_custom_InitPlatformInterface();
+static void ImGui_custom_ShutdownPlatformInterface();
 
 impl_custom_imgui_backend::backend_data* impl_custom_imgui_backend::current_backend_data = nullptr;
 
@@ -77,6 +81,12 @@ static void ResetState(ImDrawData* data, int width, int height) {
     list->SetVertexBuffer(impl_custom_imgui_backend::GetBackendData()->vertex_buffer.GetResource());
     list->SetIndexBuffer(impl_custom_imgui_backend::GetBackendData()->index_buffer.GetResource());
 
+    #ifdef  OpenGL
+    //Used to deal with opengl multi contexts not sharing vaos.
+    static_cast<OpenGLRenderCommandList*>(list)->RefreshVertexContext();
+#endif //  OpenGL
+
+
     queue->ExecuteRenderCommandList(list);
 }
 
@@ -121,7 +131,7 @@ static void CreateShaders() {
 static void CreatePipeline() {
     PipelineDescriptor desc;
 
-    desc.flags = PipelineFlags::ENABLE_SCISSOR_TEST | PipelineFlags::ENABLE_BLEND;
+    desc.flags = PipelineFlags::ENABLE_SCISSOR_TEST | PipelineFlags::ENABLE_BLEND | PipelineFlags::IS_MULTI_WINDOW;
     desc.layout = VertexLayoutFactory<ImGUI_Shader>::GetLayout();
     desc.polygon_render_mode = PrimitivePolygonRenderMode::DEFAULT;
     desc.scissor_rect = RenderScissorRect();
@@ -160,21 +170,10 @@ static void CreateBuffers() {
 
 }
 
-void impl_custom_imgui_backend::Init()
-{
-    ImGuiIO& io = ImGui::GetIO();
-
-    io.BackendRendererUserData = GetBackendData();
-    io.BackendRendererName = "imgui_impl_custom";
-    
-    if (current_backend_data) throw std::runtime_error("ImGUI Backend is already inintialized");
-	current_backend_data = new backend_data;
+static void CreateTextures() {
     auto queue = Renderer::Get()->GetCommandQueue();
     auto list = Renderer::Get()->GetRenderCommandList();
-
-#pragma region Create_Texture_Atlas
-
-
+    ImGuiIO& io = ImGui::GetIO();
     // Build texture atlas
     unsigned char* pixels;
     int width, height;
@@ -184,7 +183,7 @@ void impl_custom_imgui_backend::Init()
     desc.format = TextureFormat::RGBA_UNSIGNED_CHAR;
     desc.height = height;
     desc.width = width;
-    
+
     TextureSamplerDescritor sampler_desc;
     sampler_desc.AddressMode_U = TextureAddressMode::CLAMP;
     sampler_desc.AddressMode_V = TextureAddressMode::CLAMP;
@@ -200,28 +199,58 @@ void impl_custom_imgui_backend::Init()
     desc.sampler = sampler;
 
     auto texture = RenderResourceManager::Get()->CreateTexture(desc);
-    current_backend_data->atlas_texture = texture;
+    impl_custom_imgui_backend::GetBackendData()->atlas_texture = texture;
 
     RenderResourceManager::Get()->UploadDataToTexture2D(list, texture, pixels, width, height, 0, 0, 0);
 
 
-#pragma endregion
-    CreateShaders();
-    CreatePipeline();
-    CreateBuffers();
     std::shared_ptr<RenderFence> fence = std::shared_ptr<RenderFence>(Renderer::Get()->GetFence());
     queue->ExecuteRenderCommandList(list);
     queue->Signal(fence, 1);
     fence->WaitForValue(1);
-    
+
     io.Fonts->SetTexID((ImTextureID)texture.get());
+}
+
+void impl_custom_imgui_backend::CreateObjects() {
+    CreateShaders();
+    CreatePipeline();
+    CreateBuffers();
+    CreateTextures();
+}
+
+void impl_custom_imgui_backend::Init()
+{
+    ImGuiIO& io = ImGui::GetIO();
+
+    io.BackendRendererUserData = GetBackendData();
+    io.BackendRendererName = "imgui_impl_custom";
+    io.BackendFlags |= ImGuiBackendFlags_PlatformHasViewports;
+    io.BackendFlags |= ImGuiBackendFlags_RendererHasViewports;
+    if (current_backend_data) throw std::runtime_error("ImGUI Backend is already inintialized");
+	current_backend_data = new backend_data;
 
 
+    ImGui_custom_InitPlatformInterface();
 
 }
 
 void impl_custom_imgui_backend::Shutdown()
 {
+    
+}
+
+void impl_custom_imgui_backend::NewFrame()
+{
+    if (objects_init == false) {
+        CreateObjects();
+        objects_init = true;
+    }
+}
+
+void impl_custom_imgui_backend::PreShutdown()
+{
+    ImGui_custom_ShutdownPlatformInterface();
     delete current_backend_data->shader;
     delete current_backend_data;
 }
@@ -307,8 +336,33 @@ void impl_custom_imgui_backend::DrawData(ImDrawData* draw_data)
         }
 
     }
+    
 
     queue->ExecuteRenderCommandList(list);
     ResetState(draw_data, fb_width, fb_height);
 
+}
+
+static void ImGui_custom_RenderWindow(ImGuiViewport* viewport, void*)
+{
+    if (!(viewport->Flags & ImGuiViewportFlags_NoRendererClear))
+    {
+        auto queue = Renderer::Get()->GetCommandQueue();
+        auto list = Renderer::Get()->GetRenderCommandList();
+        list->Clear();
+        queue->ExecuteRenderCommandList(list);
+    }
+    impl_custom_imgui_backend::DrawData(viewport->DrawData);
+
+}
+
+static void ImGui_custom_InitPlatformInterface()
+{
+    ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
+    platform_io.Renderer_RenderWindow = ImGui_custom_RenderWindow;
+}
+
+static void ImGui_custom_ShutdownPlatformInterface()
+{
+    ImGui::DestroyPlatformWindows();
 }

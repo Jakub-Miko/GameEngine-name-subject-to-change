@@ -35,6 +35,9 @@ public:
     virtual ~OpenGLRenderCommandList();
     
     void BindOpenGLContext();
+    
+    //Should be used with IS_MULTI_WINDOW pipeline every time before a context switch or within the same context after vertex buffer change
+    void RefreshVertexContext();
 
 private:
     std::shared_ptr<Pipeline> current_pipeline = nullptr;

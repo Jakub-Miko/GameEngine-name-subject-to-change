@@ -105,7 +105,7 @@ public:
 	const Shader* GetShader() const {
 		return shader;
 	}
-	
+
 	const PipelineBlendFunctions& GetPipelineBlendFunctions() const {
 		return blend_functions;
 	}

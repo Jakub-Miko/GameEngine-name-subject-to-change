@@ -27,7 +27,7 @@ void OpenGLSetPipelineCommand::Execute()
 	const PipelineFlags& flags = pipeline->GetPipelineFlags();
 	unsigned int shader = static_cast<const OpenGLShader*>(pipeline->GetShader())->GetShaderProgram();
 
-	if (current_state.flags != flags) {
+	if (current_state.flags != flags || (bool)(pipeline->GetPipelineFlags() & PipelineFlags::IS_MULTI_WINDOW)) {
 		if (uint32_t(flags & PipelineFlags::ENABLE_DEPTH_TEST)) glEnable(GL_DEPTH_TEST);
 		else glDisable(GL_DEPTH_TEST);
 
@@ -42,7 +42,7 @@ void OpenGLSetPipelineCommand::Execute()
 		queue->SetFlags(flags);
 	}
 	
-	if (current_state.GetPipelineBlendFunctions() != blend_func) {
+	if (current_state.GetPipelineBlendFunctions() != blend_func || (bool)(pipeline->GetPipelineFlags() & PipelineFlags::IS_MULTI_WINDOW)) {
 		glBlendFuncSeparate(OpenGLUnitConverter::BlendFunctiontoGLenum(blend_func.srcRGB),
 			OpenGLUnitConverter::BlendFunctiontoGLenum(blend_func.dstRGB),
 			OpenGLUnitConverter::BlendFunctiontoGLenum(blend_func.srcAlpha),
@@ -50,12 +50,12 @@ void OpenGLSetPipelineCommand::Execute()
 		queue->SetBlendFunctions(blend_func);
 	}
 
-	if (current_state.GetPrimitivePolygonRenderMode() != rendermode) {
+	if (current_state.GetPrimitivePolygonRenderMode() != rendermode || (bool)(pipeline->GetPipelineFlags() & PipelineFlags::IS_MULTI_WINDOW)) {
 		glPolygonMode(GL_FRONT_AND_BACK, OpenGLUnitConverter::PrimitivePolygonRenderModetoGLenum(rendermode));
 		queue->SetPrimitivePolygonRenderMode(rendermode);
 	}
 
-	if (!current_shader || current_shader->GetShaderProgram() != shader) {
+	if (!current_shader || current_shader->GetShaderProgram() != shader || (bool)(pipeline->GetPipelineFlags() & PipelineFlags::IS_MULTI_WINDOW)) {
 		glUseProgram(shader);
 		queue->SetShader(pipeline->GetShader());
 	}
@@ -67,13 +67,13 @@ void OpenGLSetPipelineCommand::Execute()
 		scissor.size = { props.resolution_x,props.resolution_y };
 	}
 	
-	if (current_state.GetViewport() != viewport) {
+	if (current_state.GetViewport() != viewport || (bool)(pipeline->GetPipelineFlags() & PipelineFlags::IS_MULTI_WINDOW)) {
 		glViewport(viewport.offset.x, viewport.offset.y, viewport.size.x, viewport.size.y);
 		glDepthRange(viewport.min_depth, viewport.max_depth);
 		queue->SetViewport(viewport);
 	}
 	
-	if (current_state.scissor_rect != scissor) {
+	if (current_state.scissor_rect != scissor || (bool)(pipeline->GetPipelineFlags() & PipelineFlags::IS_MULTI_WINDOW)) {
 		glScissor(scissor.offset.x, scissor.offset.y, scissor.size.x, scissor.size.y);
 		queue->SetScissorRect(scissor);
 	}

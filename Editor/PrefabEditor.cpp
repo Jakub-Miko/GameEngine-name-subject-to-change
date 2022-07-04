@@ -52,8 +52,7 @@ void PrefabEditor::RenderWindow(PrefabEditorWindow& window)
 
 		ImGui::DockBuilderAddNode(dock_id, ImGuiDockNodeFlags_DockSpace);
 
-		ImGui::DockBuilderSetNodeSize(dock_id, ImGui::GetContentRegionAvail
-		());
+		ImGui::DockBuilderSetNodeSize(dock_id, ImGui::GetContentRegionAvail());
 		auto left = ImGui::DockBuilderSplitNode(dock_id, ImGuiDir_Left, 0.5f, NULL, &dock_id);
 
 		ImGui::DockBuilderDockWindow("Window2", left);
