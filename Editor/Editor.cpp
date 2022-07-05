@@ -32,7 +32,7 @@ void Editor::Shutdown()
 
 void Editor::PreShutdown()
 {
-	viewport.release();
+	viewport.reset();
 	delete[] file_dialog_text_buffer;
 	ImGui_ImplGlfw_Shutdown();
 	impl_custom_imgui_backend::PreShutdown();
