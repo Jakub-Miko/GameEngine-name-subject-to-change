@@ -1,5 +1,6 @@
 #include "impl_custom_imgui_platform.h"
 #include <imgui.h>
+#include <imgui_internal.h>
 #include <Renderer/Renderer.h>
 #include <future>
 #include <Editor/Editor.h>
