@@ -134,7 +134,7 @@ void EntityManager::InitializeFromTemplate(Entity target_entity, Entity template
 	entt::entity tg_ent = (entt::entity)(uint32_t)target_entity.id;
 	entt::entity tmp_ent = (entt::entity)(uint32_t)template_entity.id;
 	auto& reg = Application::GetWorld().GetRegistry();
-	for (auto& stor : auxilary_registry.storage()) {
+	for (auto stor : auxilary_registry.storage()) {
 		if (stor.second.contains(tmp_ent)) {
 			reg.storage(stor.first)->second.emplace(tg_ent, stor.second.get(tmp_ent));
 		}
@@ -274,7 +274,7 @@ EntityTemplate EntityManager::ParseEntityTemplate(const std::string& raw_string)
 	return temp;
 }
 
-const EntityTemplate& EntityManager::GetEntitySignature(const std::string& path)
+const EntityTemplate& EntityManager::GetEntitySignature(const std::string& path) 
 {
 	std::unique_lock<std::mutex> lock(sync_mutex);
 	auto ent = m_entity_cache.find(path);

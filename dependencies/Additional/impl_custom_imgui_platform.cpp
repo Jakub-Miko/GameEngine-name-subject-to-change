@@ -1,12 +1,15 @@
 #include "impl_custom_imgui_platform.h"
 #include <imgui.h>
 #include <Renderer/Renderer.h>
+#include <future>
+#include <Editor/Editor.h>
 
 #ifdef OpenGL
 #include <GLFW/glfw3.h>
 #include <dependencies/imgui/backends/imgui_impl_glfw.h>
 #include <platform/OpenGL/OpenGLRenderCommandQueue.h>
 #include <platform/OpenGL/OpenGLRenderCommand.h>
+#include <platform/GLFW/GlfwWindow.h>
 
 #ifdef _WIN32
 #undef APIENTRY
@@ -22,7 +25,6 @@ enum GlfwClientApi
     GlfwClientApi_OpenGL,
     GlfwClientApi_Vulkan
 };
-
 
 struct ImGui_ImplGlfw_Data_internal
 {
@@ -49,6 +51,8 @@ struct ImGui_ImplGlfw_Data_internal
     ImGui_ImplGlfw_Data_internal() { memset((void*)this, 0, sizeof(*this)); }
 };
 
+
+
 struct ImGui_ImplGlfw_ViewportData_internal
 {
     GLFWwindow* Window;
@@ -67,8 +71,42 @@ static ImGui_ImplGlfw_Data_internal* ImGui_ImplGlfw_GetBackendData()
 
 static void ImGui_ImplGlfw_CreateWindow(ImGuiViewport* viewport);
 
+
 void impl_custom_imgui_platform::shutdown_custom_imgui_platform()
 {
+
+}
+
+void impl_custom_imgui_platform::UpdatePlatformWindows()
+{
+    ImGuiContext* g = ImGui::GetCurrentContext();
+    if (g->DragDropActive) {
+    
+    }
+    if (Editor::Get()->IsEditorEnabled() && g->DragDropActive && strcmp(g->DragDropPayload.DataType, IMGUI_PAYLOAD_TYPE_WINDOW) == 0)  {
+        auto gl_command_queue = static_cast<OpenGLRenderCommandQueue*>(Renderer::Get()->GetCommandQueue());
+        std::shared_ptr<RenderFence> fence = std::shared_ptr<RenderFence>(Renderer::Get()->GetFence());
+        gl_command_queue->Signal(fence, 1);
+        fence->WaitForValue(1);
+    }
+
+    std::promise<GLFWwindow*>* window_promise = new std::promise<GLFWwindow*>;
+    auto future = window_promise->get_future().share();
+    auto queue = static_cast<OpenGLRenderCommandQueue*>(Renderer::Get()->GetCommandQueue());
+    auto command_1 = (ExecutableCommand*)new OpenGLRenderCommandAdapter([window_promise]() {
+        window_promise->set_value(glfwGetCurrentContext());
+
+        });
+    auto command_2 = (ExecutableCommand*)new OpenGLRenderCommandAdapter([window_promise, future]() {
+        glfwMakeContextCurrent(future.get());
+        delete window_promise;
+        });
+
+
+    queue->ExecuteCommand(command_1);
+    ImGui::UpdatePlatformWindows();
+    ImGui::RenderPlatformWindowsDefault();
+    queue->ExecuteCommand(command_2);
 }
 
 static void ImGui_custom_SwapBuffers(ImGuiViewport* viewport, void*)
@@ -131,8 +169,7 @@ static void ImGui_ImplGlfw_WindowSizeCallback(GLFWwindow* window, int, int)
     }
 }
 
-
-static void ImGui_custom_CreateWindow(ImGuiViewport* viewport)
+void impl_custom_imgui_platform::ImGui_custom_CreateWindow(ImGuiViewport* viewport)
 {
     auto gl_command_queue = static_cast<OpenGLRenderCommandQueue*>(Renderer::Get()->GetCommandQueue());
     std::shared_ptr<RenderFence> fence = std::shared_ptr<RenderFence>(Renderer::Get()->GetFence());
@@ -178,6 +215,8 @@ static void ImGui_custom_CreateWindow(ImGuiViewport* viewport)
         glfwSetWindowPosCallback(vd->Window, ImGui_ImplGlfw_WindowPosCallback);
         glfwSetWindowSizeCallback(vd->Window, ImGui_ImplGlfw_WindowSizeCallback);
 
+        glfwSetDropCallback(vd->Window, &GlfwWindow::DropCallback);
+
 
 }
 
@@ -215,9 +254,10 @@ void impl_custom_imgui_platform::init_custom_imgui_platform()
 {
     ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
     platform_io.Platform_RenderWindow = ImGui_custom_RenderWindow;
-    platform_io.Platform_CreateWindow = ImGui_custom_CreateWindow;
+    platform_io.Platform_CreateWindow = impl_custom_imgui_platform::ImGui_custom_CreateWindow;
     platform_io.Platform_SwapBuffers = ImGui_custom_SwapBuffers;
     platform_io.Platform_DestroyWindow = ImGui_custom_DestroyWindow;
+
 }
 
 

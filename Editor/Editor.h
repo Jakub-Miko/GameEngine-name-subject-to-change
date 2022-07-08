@@ -37,6 +37,10 @@ public:
 		return is_viewport_focused;
 	}
 
+	bool IsEditorEnabled() const {
+		return enabled;
+	}
+
 	Entity GetSelectedEntity() const {
 		return selected_entity;
 	}

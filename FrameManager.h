@@ -17,6 +17,10 @@ public:
 		return frame_number;
 	}
 
+	uint32_t GetRendererFrameNumber() const {
+		return m_Sync_Fence->GetValue();
+	}
+
 	uint32_t GetLatencyFrames() const {
 		return latency;
 	}

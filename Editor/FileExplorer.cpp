@@ -89,8 +89,7 @@ void FileExplorer::Render()
 
 
 	ImGui::Begin("File Explorer");
-	
-	ImGui::SetCursorPos({ 0,0 });
+	ImGui::SetCursorPos({ ImGui::GetStyle().WindowPadding.x ,ImGui::GetFrameHeight() + ImGui::GetStyle().WindowPadding.y });
 	ImGui::Dummy(ImGui::GetWindowSize());
 	if (ImGui::BeginDragDropTarget()) {
 		if (auto payload = ImGui::AcceptDragDropPayload("files")) {

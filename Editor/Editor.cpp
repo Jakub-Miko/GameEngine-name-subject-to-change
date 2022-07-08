@@ -240,26 +240,18 @@ void Editor::Run()
 
 	impl_custom_imgui_backend::DrawData(ImGui::GetDrawData());
 #ifdef OpenGL
-
+	
 	if (io->ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
 	{
-		std::promise<GLFWwindow*>* window_promise = new std::promise<GLFWwindow*>;
-		auto future = window_promise->get_future().share();
+		//NOTE: This synchronization is needed to keep the editor windows in sync but slows the engine down so its disabled when the editor is disabled. As for why its needed i have no idea.
+		//IDEA: Maybe if I delay execution of UpdatePlatformWindows to after the current command queue I might not need this thing, but I cant really save previous window states unless I modify imgui.cpp.
+		//another option is to delay window callbacks. Specificaly GetWindowPos and SetWindowPos in PlatformIO
 
-		auto queue = static_cast<OpenGLRenderCommandQueue*>(Renderer::Get()->GetCommandQueue());
-		auto command_1 = (ExecutableCommand*)new OpenGLRenderCommandAdapter([window_promise]() {
-			window_promise->set_value(glfwGetCurrentContext());
 
-			});
-		auto command_2 = (ExecutableCommand*)new OpenGLRenderCommandAdapter([window_promise, future]() {
-			glfwMakeContextCurrent(future.get());
-			delete window_promise;
-			});
-
-		queue->ExecuteCommand(command_1);
-		ImGui::UpdatePlatformWindows();
-		ImGui::RenderPlatformWindowsDefault();
-		queue->ExecuteCommand(command_2);
+		
+	
+		impl_custom_imgui_platform::UpdatePlatformWindows();
+			
 	}
 #endif
 

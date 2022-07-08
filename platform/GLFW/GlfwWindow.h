@@ -6,6 +6,7 @@ class OpenGLRenderContext;
 
 class GlfwWindow : public Window {
 public:
+    friend class impl_custom_imgui_platform;
     GlfwWindow(const WindowProperties& props);
     
     virtual void Init() override;
