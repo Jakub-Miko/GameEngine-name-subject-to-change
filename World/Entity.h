@@ -6,9 +6,7 @@
 enum class EntityMode : unsigned char {
 	STATIC = 0 << 0,
 	DYNAMIC = 1 << 0,
-	SERIALIZABLE = 1 << 1,
-	NON_SERIALIZABLE = 0 << 1,
-	DEFAULT = STATIC | NON_SERIALIZABLE
+	DEFAULT = STATIC
 };
 
 inline EntityMode operator|(const EntityMode& first, const EntityMode& second) {

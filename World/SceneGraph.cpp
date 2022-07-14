@@ -8,7 +8,7 @@
 #include <World/EntityManager.h>
 #include <World/Components/SerializableComponent.h>
 #include <World/Components/ConstructionComponent.h>
-#include <World/Components/LoadedComponent.h>
+#include <World/Components/PrefabComponent.h>
 
 static void SerializeNode(const SceneNode& node, nlohmann::json& base_object, World* world);
 static void DeserializeNode(const nlohmann::json& json, SceneNode* parent, World* world);
@@ -20,7 +20,7 @@ void SceneGraph::clear()
 	root_calclulation_nodes.clear();
 
 	SceneNode node;
-	node.dirty = false;
+	node.state = SceneNodeState(0);
 	node.entity = Entity();
 	node.first_child = nullptr;
 	node.next = nullptr;
@@ -45,11 +45,11 @@ SceneNode* SceneGraph::AddEntity(Entity ent, SceneNode* parent)
 	node.parent = parent_node;
 	node.next = parent_node->first_child;
 	node.previous = nullptr;
-	node.dirty = false;
+	node.state = SceneNodeState(0);
 	node.entity = ent;
 
-	if (m_world->HasComponent<LoadedComponent>(ent)) {
-		node.prefab = true;
+	if (m_world->HasComponent<PrefabComponent>(ent)) {
+		node.state = node.state | SceneNodeState::PREFAB;
 	}
 
 
@@ -63,15 +63,93 @@ SceneNode* SceneGraph::AddEntity(Entity ent, SceneNode* parent)
 	return parent_node->first_child;
 }
 
+void SceneGraph::RemoveEntity(Entity entity)
+{
+	SceneNode* node = GetSceneGraphNode(entity);
+	if (!node) {
+		throw std::runtime_error("Trying to remove entity that doesn't exist in the SceneGraph");
+	}
+	if (node->next) {
+		node->next->previous = node->previous;
+	}
+	if (node->previous) {
+		node->previous->next = node->next;
+	}
+	if (node->parent->first_child == node) {
+		if (node->previous) {
+			node->parent->first_child = node->previous;
+		}
+		else if (node->next) {
+			node->parent->first_child = node->next;
+		}
+		else {
+			node->parent->first_child = nullptr;
+		}
+	}
+
+	std::lock_guard<std::mutex> lock(addition_mutex);
+	auto fnd = m_Nodes.find(entity.id);
+	if (fnd != m_Nodes.end()) {
+		m_Nodes.erase(entity.id);
+	}
+	else {
+		throw std::runtime_error("Trying to remove entity that doesn't exist in the SceneGraph");
+	}
+
+}
+
+SceneNode* SceneGraph::AddEntityToPrefabRoot(Entity ent, SceneNode* parent_node)
+{
+	if (!parent_node) {
+		throw std::runtime_error("In AddEntityToPrefabRoot a parent must be specified");
+	}
+
+	if (!m_world->HasComponent<PrefabComponent>(parent_node->entity)) {
+		throw std::runtime_error("In AddEntityToPrefabRoot a parent must be a Prefab Root (must contain a prefab component).");
+	}
+
+	SceneNode* first_child_scenenode = nullptr;
+	PrefabComponent& parent_prefab = m_world->GetComponent<PrefabComponent>(parent_node->entity);
+	if (parent_prefab.first_child != Entity()) {
+		first_child_scenenode = GetSceneGraphNode(parent_prefab.first_child);
+		parent_prefab.first_child = ent;
+	}
+	else {
+		parent_prefab.first_child = ent;
+	}
+	
+
+	SceneNode node;
+	node.first_child = nullptr;
+	node.parent = parent_node;
+	node.next = first_child_scenenode;
+	node.previous = nullptr;
+	node.state = SceneNodeState(0);
+	node.entity = ent;
+
+	if (m_world->HasComponent<PrefabComponent>(ent)) {
+		node.state = node.state | SceneNodeState::PREFAB;
+	}
+
+
+	std::lock_guard<std::mutex> lock(addition_mutex);
+	auto new_node = m_Nodes.insert(std::make_pair(ent.id, node));
+	if (first_child_scenenode) {
+		first_child_scenenode->previous = &((new_node.first)->second);
+	}
+	MarkEntityDirty(&((new_node.first)->second));
+	return &((new_node.first)->second);
+}
+
 void SceneGraph::MarkEntityDirty(SceneNode* ent)
 {
 	if (ent) {
-		if (ent->dirty) {
+		if (ent->IsDirty()) {
 			return;
 		}
 		else {
 			std::lock_guard<std::mutex> lock(dirty_mutex);
-			ent->dirty = true;
+			ent->state = ent->state | SceneNodeState::DIRTY;
 			m_dirty_nodes.push_back(ent);
 		}
 	}
@@ -104,12 +182,6 @@ static void SerializeNode(const SceneNode& node, nlohmann::json& base_object, Wo
 	//Serialize here
 	current_json_node["id"] = node.entity.id;
 
-
-	//Prefab hierarchy is defined in its file not the scene file
-	if (node.prefab) {
-		return;
-	}
-
 	SceneNode* current_node = node.first_child;
 	while (current_node) {
 		SerializeNode(*current_node, current_json_node["children"], world);
@@ -125,7 +197,7 @@ void SceneGraph::CalculateMatricies()
 	for (auto node : m_dirty_nodes) {
 		SceneNode* current = node->parent;
 		while (current != &root_node) {
-			if (current->dirty) break;
+			if (current->IsDirty()) break;
 			current = current->parent;
 		}
 		if (current == &root_node) {
@@ -142,7 +214,7 @@ void SceneGraph::CalculateMatricies()
 
 void SceneGraph::RecalculateDownstream(SceneNode* node, SceneNode* upstream)
 {
-	node->dirty = false;
+	node->state = node->state & ~(SceneNodeState::DIRTY);
 	TransformComponent& transform = m_world->GetRegistry().get<TransformComponent>((entt::entity)node->entity.id);
 	glm::mat4 upstream_transform = glm::mat4(1.0f);
 	if (upstream != &root_node) {
@@ -158,6 +230,15 @@ void SceneGraph::RecalculateDownstream(SceneNode* node, SceneNode* upstream)
 		RecalculateDownstream(children, node);
 		children = children->next;
 	}
+	if (node->IsPrefab()) {
+		Entity first_ent = m_world->GetComponent<PrefabComponent>(node->entity).first_child;
+		SceneNode* prefab_child = GetSceneGraphNode(first_ent);
+		while (prefab_child) {
+			RecalculateDownstream(prefab_child, node);
+			prefab_child = prefab_child->next;
+		}
+	}
+
 }
 
 SceneNode* SceneGraph::GetSceneGraphNode(Entity entity)
@@ -187,8 +268,8 @@ static void DeserializeNode(const nlohmann::json& json, SceneNode* parent, World
 	
 	SceneNode* node = world->GetSceneGraph()->AddEntity(entity, parent);
 	world->SetComponent<SerializableComponent>(entity);
-	if (world->HasComponent<LoadedComponent>(entity)) {
-		world->SetComponent<ConstructionComponent>(entity, world->GetComponent<LoadedComponent>(entity).file_path, parent->entity);
+	if (world->HasComponent<PrefabComponent>(entity)) {
+		world->SetComponent<ConstructionComponent>(entity, world->GetComponent<PrefabComponent>(entity).file_path, parent->entity);
 	}
 
 	if (json.find("children") != json.end()) {

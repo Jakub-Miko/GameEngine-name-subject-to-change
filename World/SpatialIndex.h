@@ -30,18 +30,19 @@ public:
 
 public:
 
-	void VisualizeBoxes();
+	void VisualizeBoxes();  
 
 	Octree* parent = nullptr;
 	BoundingBox node_box;
 	Plane planes[3];
 	std::vector<Entity> entity_list;
-	std::vector<Octree> child_nodes;
+	std::vector<Octree> child_nodes; 
 	int max_node_count = 100;
 	char active = 0;
 
 	void FrustumCulling(World& world, const Frustum& frustum, std::vector<Entity>& entities);
-
+	
+	void AddEntity(Entity ent);
 
 private:
 	void Compute_Planes();
@@ -49,6 +50,7 @@ private:
 	Octree(Octree* parent,const BoundingBox& node_box, World& world,int max_node_count = 1);
 
 	void ProcessEntity(World& world, std::array<std::vector<Entity>, 8>& list, Entity entity);
+	bool ProcessEntity(World& world, char& index, Entity entity);
 
 };
 
@@ -63,6 +65,10 @@ public:
 
 	void FrustumCulling(World& world, const Frustum& frustum, std::vector<Entity>& entities) {
 		octree_base.FrustumCulling(world, frustum, entities);
+	}
+
+	void AddEntity(Entity ent) {
+		octree_base.AddEntity(ent);
 	}
 
 	void Rebuild() {

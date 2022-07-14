@@ -1,7 +1,6 @@
 function OnAttach()
 
-camera = CreateEntity("asset:CameraEntity.lua",-1)
-CreateEntity("asset:CameraEntity2.lua",-1)
+
 
 end
 
@@ -17,6 +16,7 @@ pos = GetMousePosition()
 
 entity = CreateSerializableEntityNamed("TestEntity","asset:TestScript.lua",-1)
 SetEntityProperty_VEC3(entity, "position", {x = pos.x, y = pos.y, z = 1.0})
+
 
 end
 

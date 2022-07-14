@@ -52,7 +52,7 @@ void SceneGraphViewer::Render()
 {
 	auto scene_garph = Application::GetWorld().GetSceneGraph();
 
-
+	 
 	ImGui::SetNextWindowSizeConstraints({ (float)Application::Get()->GetWindow()->GetProperties().resolution_x / 6.0f,0 }, { 10000,10000 });
 	ImGui::Begin("SceneGraph");
 
@@ -62,11 +62,14 @@ void SceneGraphViewer::Render()
 		Editor::Get()->SetSelectedEntity(ent);
 	}
 
-	if (ImGui::Button("Deselect Entity")) {
+	if (ImGui::Button("Delete Entity") && Editor::Get()->GetSelectedEntity() != Entity()) {
+		Application::GetWorld().RemoveEntity(Editor::Get()->GetSelectedEntity());
 		Editor::Get()->SetSelectedEntity(Entity());
 	}
 
 	ImGui::Separator();
+
+
 
 	const SceneNode* root_node = scene_garph->GetRootNode();
 	SceneNode* current_node = root_node->first_child;
@@ -74,6 +77,13 @@ void SceneGraphViewer::Render()
 		RenderNode(current_node);
 		current_node = current_node->next;
 	}
+
+	auto pos = ImGui::GetCursorPos();
+	ImGui::Dummy(ImVec2{ ImGui::GetContentRegionAvail().x,std::max(ImGui::GetContentRegionAvail().y,200.0f) }); 
+	if (ImGui::IsItemClicked()) {
+		Editor::Get()->SetSelectedEntity(Entity());
+	}
+	ImGui::SetCursorPos(pos);
 
 
 	ImGui::End();

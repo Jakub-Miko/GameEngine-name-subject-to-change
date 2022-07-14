@@ -46,7 +46,7 @@ public:
 
     Entity CreateEntityInplace(const std::string& name, Entity base_entity, const std::string& path, Entity parent = Entity());
 
-    void InitializeFromTemplate(Entity target_entity, Entity template_entity);
+    void InitializeFromTemplate(Entity target_entity, Entity template_entity, const std::vector<std::string>& exclude_ids = std::vector<std::string>());
 
     void DeserializeEntityPrefab(Entity target_entity, const std::string& path, Entity parent = Entity());
 
@@ -54,8 +54,14 @@ public:
 
     const EntityTemplate& GetEntitySignature(const std::string& path);
 
+    std::string SerializeComponentsToJson(Entity entity);
+
 private:
-    void DeserializeEntityPrefab_impl( const std::string& path, Entity parent = Entity());
+
+    const EntityTemplate& GetEntitySignatureLocal(const std::string& path, const std::string& file_buffer);
+
+    void DeserializeEntityPrefab_impl( const std::string& path, const std::string& original_path ,const std::string& local_file_buffer, Entity parent = Entity());
+
 
     void DeserializeComponentsToTemplate(Entity target_entity, const std::string& json_string);
 

@@ -5,6 +5,13 @@
 
 class World;
 
+class PrefabChildEntityType : public Entity {
+public:
+	static void CreateEntity(World& world, Entity entity, Entity parent, bool include_transform = false);
+	static void CreateEntity(World& world, Entity entity, Entity parent, const glm::vec3& translation, const glm::vec3& scale = glm::vec3(1.0f),
+		const glm::vec3& rotation_axis = glm::vec3(0, 1, 0), float rotation_angle = 0.0f);
+};
+
 class EntityType : public Entity {
 public:
 

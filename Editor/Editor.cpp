@@ -114,6 +114,9 @@ void Editor::Run()
 			if (ImGui::MenuItem("Load Scene")) {
 				ImGui::OpenPopup(load_id);
 			};
+			if (ImGui::MenuItem("Empty Scene")) {
+				Application::GetWorld().LoadEmptyScene();
+			};
 
 			ImGui::EndMenu();
 		}
@@ -281,7 +284,13 @@ void Editor::Reset()
 	explorer.reset(new FileExplorer());
 	scene_graph.reset(new SceneGraphViewer());
 	viewport.reset(new Viewport());
+	prefab_editor.reset(new PrefabEditor());
 	selected_entity = Entity();
+}
+
+void Editor::Refresh()
+{
+	properties_panel->Refresh();
 }
 
 Editor* Editor::Get()

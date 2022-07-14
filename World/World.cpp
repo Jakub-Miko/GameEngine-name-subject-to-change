@@ -12,17 +12,19 @@
 #include <World/Components/LabelComponent.h>
 #include <World/Components/DefferedUpdateComponent.h>
 #include <World/Components/InitializationComponent.h>
+#include <World/Components/PrefabComponent.h>
 #include <GameStateMachine.h>
 #include <World/Components/KeyPressedScriptComponent.h>
 #include <World/Components/MousePressedScriptComponent.h>
 #include <World/Components/ScriptComponent.h>
 #include <World/Components/SquareComponent.h>
+#include <World/EntityManager.h>
 #ifdef EDITOR
 #include <Editor/Editor.h>
 #endif
 #include <fstream>
 
-World::World() : m_ECS(), m_SceneGraph(this), load_scene(std::make_shared<SceneProxy>())
+World::World() : m_ECS(), m_SceneGraph(this), load_scene(std::make_shared<SceneProxy>()), deletion_queue(), deletion_mutex()
 {
 	RegistryWarmUp();
 	//if((uint32_t)(m_ECS.create())!=0) throw std::runtime_error("A null Entity could not be reserved");
@@ -41,7 +43,7 @@ void World::UpdateTransformMatricies()
 void World::SetEntityTranslation(Entity ent, const glm::vec3& translation)
 {
 	m_ECS.get<TransformComponent>((entt::entity)ent.id).translation = translation;
-	m_SceneGraph.MarkEntityDirty(m_SceneGraph.GetSceneGraphNode(ent));
+	MarkEntityDirty(ent);
 }
 
 void World::SetEntityTranslationSync(Entity ent, const glm::vec3& translation)
@@ -53,7 +55,7 @@ void World::SetEntityTranslationSync(Entity ent, const glm::vec3& translation)
 void World::SetEntityRotation(Entity ent, const glm::quat& rotation)
 {
 	m_ECS.get<TransformComponent>((entt::entity)ent.id).rotation = rotation;
-	m_SceneGraph.MarkEntityDirty(m_SceneGraph.GetSceneGraphNode(ent));
+	MarkEntityDirty(ent);
 }
 
 void World::SetEntityRotationSync(Entity ent, const glm::quat& rotation)
@@ -65,7 +67,7 @@ void World::SetEntityRotationSync(Entity ent, const glm::quat& rotation)
 void World::SetEntityScale(Entity ent, const glm::vec3& scale)
 {
 	m_ECS.get<TransformComponent>((entt::entity)ent.id).size = scale;
-	m_SceneGraph.MarkEntityDirty(m_SceneGraph.GetSceneGraphNode(ent));
+	MarkEntityDirty(ent); 
 }
 
 void World::SetEntityScaleSync(Entity ent, const glm::vec3& scale)
@@ -74,10 +76,118 @@ void World::SetEntityScaleSync(Entity ent, const glm::vec3& scale)
 	SetEntityScale(ent, scale);
 }
 
-void World::RemoveEntity(Entity entity)
+void World::RemoveEntity(Entity entity, RemoveEntityAction action)
 {
-	std::lock_guard<std::mutex> lock(entity_mutex);
-	m_ECS.destroy((entt::entity)entity.id);
+	std::lock_guard<std::mutex> lock(deletion_mutex);
+	deletion_queue.push(RemoveEntityRequest{entity, action});
+}
+
+void World::MarkEntityDirty(Entity entity)
+{
+	SceneNode* node = m_SceneGraph.GetSceneGraphNode(entity);
+	m_SceneGraph.MarkEntityDirty(node);
+
+}
+
+static std::string GetPrefabSectionName(Entity ent) {
+	std::string name;
+	if (Application::GetWorld().HasComponent<LabelComponent>(ent)) {
+		name = Application::GetWorld().GetComponent<LabelComponent>(ent).label + "_" + std::to_string(ent.id);
+	}
+	else {
+		name = std::to_string(ent.id);
+	}
+	auto fnd = name.find(' ');
+	while (fnd != name.npos) {
+		name = name.replace(fnd, 1, "_");
+		fnd = name.find(' ', fnd);
+	}
+
+	return name;
+}
+
+void World::SerializePrefab(Entity entity, const std::string& path)
+{
+	if (!HasComponent<PrefabComponent>(entity)) {
+		throw std::runtime_error("Entity must contain Prefab Component");
+	}
+	
+	std::vector<std::pair<std::string, std::string>> file_structure;
+
+	EntityParseResult result;
+
+	PrefabComponent& prefab = GetComponent<PrefabComponent>(entity);
+
+	result.component_json = EntityManager::Get()->SerializeComponentsToJson(entity);
+	if (HasComponent<DynamicPropertiesComponent>(entity)) {
+		result.properties = GetComponent<DynamicPropertiesComponent>(entity);
+	}
+	SceneNode* node = GetSceneGraph()->GetSceneGraphNode(prefab.first_child);
+	while (node) {
+		result.children.push_back("local#" + GetPrefabSectionName(node->entity));
+		SerializePrefabChild(node->entity, file_structure);
+		node = node->next;
+	}
+	std::stringstream stream;
+	stream << "@Entity \n";
+	stream << "{\n";
+	stream << "\"Components\": " << result.component_json << ",\n";
+	nlohmann::json children_array = nlohmann::json::array();
+	for (auto& child : result.children)
+	{
+		children_array.push_back(child);
+	}
+	stream << "\"Children\": " << children_array.dump() << "\n";
+	stream << "}\n";
+
+	file_structure.push_back(std::make_pair("Root", stream.str()));
+
+	std::stringstream final_stream;
+	for (auto pair : file_structure) {
+		final_stream << "@Section:" << pair.first << "\n";
+		final_stream << pair.second << "\n";
+		final_stream << "@EndSection\n";
+	}
+	std::ofstream file_stream(path);
+	if (!file_stream.is_open()) {
+		throw std::runtime_error("Could not open file " + path);
+	}
+
+	file_stream << final_stream.str();
+
+	file_stream.close();
+}
+
+void World::SerializePrefabChild(Entity child, std::vector<std::pair<std::string, std::string>>& file_structure)
+{
+	EntityParseResult result;
+
+	result.component_json = EntityManager::Get()->SerializeComponentsToJson(child);
+	if (!result.properties.m_Properties.empty()) {
+		result.properties = GetComponent<DynamicPropertiesComponent>(child);
+	}
+	SceneNode* node = GetSceneGraph()->GetSceneGraphNode(child)->first_child;
+	while (node) {
+		result.children.push_back("local#" + GetPrefabSectionName(node->entity));
+		SerializePrefabChild(node->entity, file_structure);
+		node = node->next;
+	}
+	std::stringstream stream;
+	stream << "@Entity \n";
+	stream << "{\n";
+	stream << "\"Components\": " << result.component_json << ",\n";
+	nlohmann::json children_array = nlohmann::json::array();
+	for (auto& child : result.children)
+	{
+		children_array.push_back(child);
+	}
+	stream << "\"Children\": " << children_array.dump() << "\n";
+	stream << "}\n";
+	std::string name;
+
+
+
+	file_structure.push_back(std::make_pair(GetPrefabSectionName(child), stream.str()));
 }
 
 void World::RegistryWarmUp()
@@ -89,11 +199,11 @@ void World::RegistryWarmUp()
 	m_ECS.storage<DynamicPropertiesComponent>();
 	m_ECS.storage<InitializationComponent>();
 	m_ECS.storage<KeyPressedScriptComponent>();
-	m_ECS.storage<LoadedComponent>();
 	m_ECS.storage<MousePressedScriptComponent>();
 	m_ECS.storage<ScriptComponent>();
 	m_ECS.storage<SerializableComponent>();
 	m_ECS.storage<SquareComponent>();
+	m_ECS.storage<PrefabComponent>();
 	m_ECS.storage<MeshComponent>();
 	m_ECS.storage<TransformComponent>();
 }
@@ -123,7 +233,7 @@ void World::LoadSceneSystem()
 		RegistryWarmUp();
 
 		ECS_Input_Archive archive(json["Entities"]);
-		entt::snapshot_loader(m_ECS).component<TransformComponent, LoadedComponent, DynamicPropertiesComponent, LabelComponent,MeshComponent, CameraComponent>(archive);
+		entt::snapshot_loader(m_ECS).component<TransformComponent, PrefabComponent, DynamicPropertiesComponent, LabelComponent,MeshComponent, CameraComponent>(archive);
 
 
 		m_SceneGraph.Deserialize(json);
@@ -144,6 +254,129 @@ void World::LoadSceneSystem()
 			GameStateMachine::Get()->ScriptOnAttach();
 		}
 	}
+}
+
+void World::DeletionSystem()
+{
+	std::lock_guard<std::mutex> lock(deletion_mutex);
+	if (deletion_queue.empty()) {
+		return;
+	}
+	Entity ent;
+	RemoveEntityAction action;
+	while (!deletion_queue.empty()) {
+		ent = deletion_queue.front().entity;
+		action = deletion_queue.front().action;
+		deletion_queue.pop();
+		if (action == RemoveEntityAction::REMOVE) {
+			SceneNode* first_node = m_SceneGraph.GetSceneGraphNode(ent)->first_child;
+			while (first_node)
+			{
+				SceneNode* temp_node = first_node;
+				first_node = first_node->next;
+				DeleteNode(temp_node);
+			}
+			if (HasComponent<PrefabComponent>(ent)) {
+#ifdef EDITOR
+				Editor::Get()->ClosePrefabEditorWindow(ent);
+#endif
+				SceneNode* node = m_SceneGraph.GetSceneGraphNode(GetComponent<PrefabComponent>(ent).first_child);
+				while (node) {
+					SceneNode* temp_node = node;
+					node = node->next;
+					DeleteNode(temp_node);
+				}
+			}
+			m_SceneGraph.RemoveEntity(ent);
+			m_ECS.destroy((entt::entity)ent.id);
+		}
+		else if (action == RemoveEntityAction::RELOAD_PREFAB) {
+			try {
+
+				if (!HasComponent<PrefabComponent>(ent)) {
+					throw std::runtime_error("Cannot Reload Prefab if entity is not a prefab");
+				}
+#ifdef EDITOR
+				Editor::Get()->ClosePrefabEditorWindow(ent);
+#endif
+				SceneNode* node = m_SceneGraph.GetSceneGraphNode(GetComponent<PrefabComponent>(ent).first_child);
+				while (node) {
+					SceneNode* temp_node = node;
+					node = node->next;
+					DeleteNode(temp_node);
+				}
+			
+				for (auto stor : m_ECS.storage()) {
+					if (stor.second.type().name() == "struct TransformComponent" || stor.second.type().name() == "class LabelComponent" || stor.second.type().name() == "struct PrefabComponent") {
+						continue;
+					}
+					stor.second.remove((entt::entity)ent.id);
+				}
+				auto& prefab = GetComponent<PrefabComponent>(ent);
+				prefab.first_child = Entity();
+				EntityManager::Get()->DeserializeEntityPrefab(ent, GetComponent<PrefabComponent>(ent).file_path);
+			}
+			catch (...) {
+				if (HasComponent<PrefabComponent>(ent)) {
+					auto& comp = GetComponent<PrefabComponent>(ent);
+					comp.status = PrefabStatus::ERROR;
+					comp.file_path = "Unknown";
+					for (auto stor : m_ECS.storage()) {
+						if (stor.second.type().name() == "struct TransformComponent" || stor.second.type().name() == "class LabelComponent" || stor.second.type().name() == "struct PrefabComponent") {
+							continue;
+						}
+						stor.second.remove((entt::entity)ent.id);
+					}
+					auto& prefab = GetComponent<PrefabComponent>(ent);
+					prefab.first_child = Entity();
+				}
+			}
+
+		}
+		else if (action == RemoveEntityAction::REMOVE_PREFABS) {
+			if (!HasComponent<PrefabComponent>(ent)) {
+				throw std::runtime_error("Cannot Reload Prefab if entity is not a prefab");
+			}
+#ifdef EDITOR
+			Editor::Get()->ClosePrefabEditorWindow(ent);
+#endif
+			SceneNode* node = m_SceneGraph.GetSceneGraphNode(GetComponent<PrefabComponent>(ent).first_child);
+			while (node) {
+				SceneNode* temp_node = node;
+				node = node->next;
+				DeleteNode(temp_node);
+			}
+			Application::GetWorld().RemoveComponent<PrefabComponent>(ent);
+
+		}
+	}
+
+
+}
+
+void World::DeleteNode(SceneNode* node)
+{
+
+	SceneNode* first_node = node->first_child;
+	while (first_node)
+	{
+		SceneNode* temp_node = first_node;
+		first_node = first_node->next;
+		DeleteNode(temp_node);
+	}
+	if (HasComponent<PrefabComponent>(node->entity)) {
+#ifdef EDITOR
+		Editor::Get()->ClosePrefabEditorWindow(node->entity);
+#endif
+		SceneNode* node_iter = m_SceneGraph.GetSceneGraphNode(GetComponent<PrefabComponent>(node->entity).first_child);
+		while (node_iter) {
+			DeleteNode(node_iter);
+			node_iter = node_iter->next;
+		}
+	}
+	auto entity = node->entity;
+	m_SceneGraph.RemoveEntity(node->entity);
+	m_ECS.destroy((entt::entity)entity.id);
 }
 
 void World::SetPrimaryEntitySystem()
@@ -173,7 +406,7 @@ void World::SaveScene(const std::string& file_path)
 	entt::snapshot snapshot(m_ECS);
 	auto view_serializable = m_ECS.view<SerializableComponent>();
 	auto view_serializable_non_prefabs = m_ECS.view<SerializableComponent>(entt::exclude<LoadedComponent>);
-	snapshot.component<TransformComponent, LoadedComponent, DynamicPropertiesComponent, LabelComponent,MeshComponent, CameraComponent>(archive, view_serializable.begin(), view_serializable.end());
+	snapshot.component<TransformComponent, PrefabComponent, DynamicPropertiesComponent, LabelComponent,MeshComponent, CameraComponent>(archive, view_serializable.begin(), view_serializable.end());
 	snapshot.component<MeshComponent, CameraComponent>(archive, view_serializable_non_prefabs.begin(), view_serializable_non_prefabs.end());
 
 

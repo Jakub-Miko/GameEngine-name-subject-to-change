@@ -1,4 +1,5 @@
 #pragma once 
+#include <queue>
 #include <entt/entt.hpp>
 #include <World/EntityTypes.h>
 #include <World/SceneGraph.h>
@@ -24,6 +25,9 @@ public:
 
 };
 
+enum class RemoveEntityAction : char {
+	REMOVE = 0, RELOAD_PREFAB = 1, REMOVE_PREFABS = 2
+};
 
 class World {
 	template<typename T>
@@ -95,8 +99,7 @@ public:
 		return &m_SceneGraph;
 	}
 
-	//Should only be used when no other threads are currently accesing the components
-	void RemoveEntity(Entity entity);
+	void RemoveEntity(Entity entity, RemoveEntityAction action = RemoveEntityAction::REMOVE);
 
 	template<typename T, typename ... Args>
 	void SetComponent(Entity entity, Args&& ... args) {
@@ -170,12 +173,27 @@ public:
 		return m_ECS.valid((entt::entity)entity.id);
 	}
 
+	void MarkEntityDirty(Entity entity);
+
+	void SerializePrefab(Entity entity, const std::string& path);
+
 private:
 	friend class GameLayer;
+
+	void SerializePrefabChild(Entity child, std::vector<std::pair<std::string, std::string>>& file_structure);
 
 	void RegistryWarmUp();
 
 	void LoadSceneSystem();
+
+	struct RemoveEntityRequest {
+		Entity entity;
+		RemoveEntityAction action;
+	};
+	
+	void DeletionSystem();
+
+	void DeleteNode(SceneNode* node);
 
 	void SetPrimaryEntitySystem();
 
@@ -184,6 +202,8 @@ private:
 
 	std::shared_ptr<SceneProxy> current_scene = nullptr;
 	std::shared_ptr<SceneProxy> load_scene = nullptr;
+	std::mutex deletion_mutex;
+	std::queue<RemoveEntityRequest> deletion_queue;
 	std::mutex entity_mutex;
 	SceneGraph m_SceneGraph;
 	entt::registry m_ECS;

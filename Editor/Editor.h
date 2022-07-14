@@ -73,6 +73,9 @@ public:
 
 	void Reset();
 
+	void Refresh();
+
+
 	static Editor* Get();
 private:
 	

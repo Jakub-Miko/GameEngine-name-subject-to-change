@@ -15,7 +15,7 @@ enum class OverlapResult : unsigned char {
 class BoundingVolume {
 public:
 
-	virtual OverlapResult OverlapsFrustum(const Frustum& frustum, const glm::mat4& model_matrix) = 0;
+	virtual bool OverlapsFrustum(const Frustum& frustum, const glm::mat4& model_matrix) = 0;
 	virtual OverlapResult OverlapsPlane(const Plane& plane, const glm::mat4& model_matrix) = 0;
 
 };
@@ -26,7 +26,7 @@ class BoundingBox : public BoundingVolume {
 public:
 	BoundingBox(glm::vec3 box_size = glm::vec3(1.0f), glm::vec3 box_offset = glm::vec3(0.0f)) : box_size(box_size), box_offset(box_offset) {}
 
-	virtual OverlapResult OverlapsFrustum(const Frustum& frustum, const glm::mat4& model_matrix) override;
+	virtual bool OverlapsFrustum(const Frustum& frustum, const glm::mat4& model_matrix) override;
 	virtual OverlapResult OverlapsPlane(const Plane& plane, const glm::mat4& model_matrix) override;
 
 	const glm::vec3& GetBoxSize() const {
@@ -41,6 +41,7 @@ private:
 
 	bool OverlapPointPlane(const glm::vec3& point, const Plane& plane);
 	bool OverlapPointFrustum(const glm::vec3& point, const Frustum& frustum);
+	bool OverlapBoxPlane(const glm::mat4& transform, const Plane& plane);
 
 private:
 

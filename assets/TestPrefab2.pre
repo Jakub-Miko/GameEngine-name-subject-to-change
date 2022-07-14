@@ -1,0 +1,40 @@
+@Section:Camera_Inner_7
+@Entity 
+{
+"Components": {"CameraComponent":{"aspect_ratio":1.7777777910232544,"fov":45.0,"zFar":1000.0,"zNear":0.10000000149011612},"LabelComponent":{"label":"Camera Inner"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":0.9563045501708984,"x":-0.2923716902732849,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":0.0,"y":12.0,"z":9.0}}},
+"Children": []
+}
+
+@EndSection
+@Section:Mesh2_6
+@Entity 
+{
+"Components": {"LabelComponent":{"label":"Mesh2"},"MeshComponent":{"path":"assets/Pillar_with_uvs.mesh"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":6.0,"y":0.0,"z":0.0}}},
+"Children": ["local#Camera_Inner_7"]
+}
+
+@EndSection
+@Section:Mesh_Inner_5
+@Entity 
+{
+"Components": {"LabelComponent":{"label":"Mesh Inner"},"MeshComponent":{"path":"assets/Pillar_with_uvs.mesh"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":0.9529646039009094,"x":0.07825153321027756,"y":0.29266923666000366,"z":-0.008851679041981697},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":0.0,"y":0.0,"z":3.0}}},
+"Children": []
+}
+
+@EndSection
+@Section:Mesh1_4
+@Entity 
+{
+"Components": {"LabelComponent":{"label":"Mesh1"},"MeshComponent":{"path":"assets/Pillar_with_uvs.mesh"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":-6.0,"y":0.0,"z":0.0}}},
+"Children": ["local#Mesh_Inner_5"]
+}
+
+@EndSection
+@Section:Root
+@Entity 
+{
+"Components": {"LabelComponent":{"label":"Prefab"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":0.0,"y":0.0,"z":0.0}}},
+"Children": ["local#Mesh2_6","local#Mesh1_4"]
+}
+
+@EndSection

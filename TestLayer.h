@@ -122,9 +122,6 @@ public:
             else if (e->key_code == KeyCode::KEY_L && e->press_type == KeyPressType::KEY_PRESS) {
                 Application::GetWorld().LoadSceneFromFile("Entity_snapshot.json");
             }
-            else if (e->key_code == KeyCode::KEY_B && e->press_type == KeyPressType::KEY_PRESS) {
-                MeshManager::Get()->MakeMeshFromObjectFile("C:/Users/mainm/Desktop/Pillar.obj", FileManager::Get()->GetAssetFilePath("OutMesh.mesh"),*VertexLayoutFactory<MeshPreset>::GetLayout() , 0);
-            }
             else if (e->key_code == KeyCode::KEY_Q && e->press_type == KeyPressType::KEY_PRESS) {
                 
                 
@@ -318,18 +315,9 @@ public:
             std::cout << dump << "\n";
             DynamicPropertiesComponent comp2 = json["attrib"];
 
-            Entity entity_1 = Application::GetWorld().CreateEntity();
-            Entity entity_2 = Application::GetWorld().CreateEntity();
-            Application::GetWorld().SetComponent<BoundingVolumeComponent>(entity_1, BoundingBox());
-            Application::GetWorld().SetComponent<BoundingVolumeComponent>(entity_2, BoundingBox());
-            Application::GetWorld().SetEntityTranslation(entity_1, { -1.9,-1.7,-1.9 });
-            Application::GetWorld().SetEntityTranslation(entity_2, { -1.8,-1.9,-1.9 });
 
 
-            Application::GetWorld().GetSceneGraph()->CalculateMatricies();
-            index = new SpatialIndex(Application::GetWorld(), BoundingBox({ 10,10,10 }));
-
-          
+            
 
             auto command_list = Renderer::Get()->GetRenderCommandList();
             auto command_queue = Renderer::Get()->GetCommandQueue();
@@ -381,14 +369,35 @@ public:
             TextureManager::Get()->MakeTextureFromImageAsync("asset:Heaven.png"_path, "asset:image_texture.tex"_path, desc_sample);
 
             texture = TextureManager::Get()->LoadTextureFromFileAsync("asset:image_texture.tex"_path, false);
+            
+            Entity entity_1 = Application::GetWorld().CreateEntity();
+            Application::GetWorld().SetComponent<BoundingVolumeComponent>(entity_1, BoundingBox());
+            Application::GetWorld().SetEntityTranslation(entity_1, { -1.9,-1.7,-1.9 });
+            Entity entity_2 = Application::GetWorld().CreateEntity();
+            Application::GetWorld().SetComponent<BoundingVolumeComponent>(entity_2, BoundingBox());
+            Application::GetWorld().SetEntityTranslation(entity_2, { -1.8,-1.9,-1.9 });
+            Application::GetWorld().GetSceneGraph()->CalculateMatricies();
+            index = new SpatialIndex(Application::GetWorld(), BoundingBox({ 10,10,10 }));
+
+            auto ent_1 = Application::GetWorld().CreateEntity();
+            Application::GetWorld().SetComponent<BoundingVolumeComponent>(ent_1, BoundingBox({ 1,10,1 }, { 0,0,0 }));
+            Application::GetWorld().GetSceneGraph()->CalculateMatricies();
+            index->AddEntity(entity_1);
+            index->AddEntity(entity_2);
+            index->AddEntity(ent_1);
 
 
             stop = false;
 
 
         }
-        
-
+        std::vector<Entity> entities;
+        Application::GetWorld().GetComponent<CameraComponent>(Application::GetWorld().GetPrimaryEntity()).UpdateViewFrustum(Application::GetWorld().GetComponent<TransformComponent>(Application::GetWorld().GetPrimaryEntity()).TransformMatrix);
+        index->FrustumCulling(Application::GetWorld(), Application::GetWorld().GetComponent<CameraComponent>(Application::GetWorld().GetPrimaryEntity()).GetViewFrustum(), entities);
+        index->Visualize();
+        for (auto ent : entities) {
+            std::cout << ent.id << ", ";
+        }
        /* if (Application::GetWorld().EntityExists(mesh_enity) && Application::GetWorld().HasComponent<MeshComponent>(mesh_enity)  && Application::GetWorld().GetPrimaryEntity() != Entity()) {
             auto& camera = Application::GetWorld().GetComponent<CameraComponent>(Application::GetWorld().GetPrimaryEntity());
             auto& trans = Application::GetWorld().GetComponent<TransformComponent>(Application::GetWorld().GetPrimaryEntity());
@@ -429,12 +438,7 @@ public:
         }*/
 
 
-        std::vector<Entity> entities;
-
-
-        for (auto ent : entities) {
-            //std::cout << ent.id << ", ";
-        }
+        
         //std::cout << std::endl;
 
        /* glm::vec3 pos = camerapos;

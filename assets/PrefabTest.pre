@@ -1,0 +1,32 @@
+@Section:Mystery_0
+@Entity 
+{
+"Components": {"LabelComponent":{"label":"Mystery"},"MeshComponent":{"path":"assets/Pillar_with_uvs.mesh"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":-6.0,"y":0.0,"z":0.0}}},
+"Children": []
+}
+
+@EndSection
+@Section:Test_Nested_2_5
+@Entity 
+{
+"Components": {"LabelComponent":{"label":"Test Nested 2"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":0.8384405970573425,"x":-0.21683552861213684,"y":0.48407384753227234,"z":0.12518998980522156},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":0.0,"y":0.0,"z":0.0}}},
+"Children": ["local#Mystery_0"]
+}
+
+@EndSection
+@Section:Test_Nested_8
+@Entity 
+{
+"Components": {"LabelComponent":{"label":"Test Nested"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":0.0,"y":0.0,"z":0.0}}},
+"Children": ["local#Test_Nested_2_5"]
+}
+
+@EndSection
+@Section:Root
+@Entity 
+{
+"Components": {"LabelComponent":{"label":"TestEntity"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":0.8949325084686279,"x":0.0,"y":0.4461965560913086,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":0.0,"y":0.0,"z":0.0}}},
+"Children": ["local#Test_Nested_8"]
+}
+
+@EndSection

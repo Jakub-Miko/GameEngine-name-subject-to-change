@@ -61,4 +61,5 @@ void GameLayer::OnUpdate(float delta_time) {
     //SquareRenderSystem(world);
     BoundingVolumeRender(world);
     MeshRenderSystem(world);
+    world.DeletionSystem();
 }

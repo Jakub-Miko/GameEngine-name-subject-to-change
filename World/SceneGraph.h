@@ -7,6 +7,22 @@
 
 class World;
 
+enum class SceneNodeState : char {
+	DIRTY = 1, PREFAB = 2
+};
+
+inline SceneNodeState operator|(const SceneNodeState& first, const SceneNodeState& second) {
+	return SceneNodeState((char)first | (char)second);
+}
+
+inline SceneNodeState operator&(const SceneNodeState& first, const SceneNodeState& second) {
+	return SceneNodeState((char)first & (char)second);
+}
+
+inline SceneNodeState operator~(const SceneNodeState& first) {
+	return SceneNodeState(~(char)first);
+}
+
 struct SceneNode {
 
 	Entity entity;
@@ -14,8 +30,13 @@ struct SceneNode {
 	SceneNode* first_child = nullptr;
 	SceneNode* next = nullptr;
 	SceneNode* previous = nullptr;
-	bool dirty = false;
-	bool prefab = false;
+	SceneNodeState state; 
+	bool IsDirty() const {
+		return (char)state & (char)SceneNodeState::DIRTY;
+	}
+	bool IsPrefab() const {
+		return (char)state & (char)SceneNodeState::PREFAB;
+	}
 
 };
 
@@ -28,7 +49,7 @@ public:
 	SceneGraph(World* world) : m_world(world), m_Nodes(), dirty_mutex(), m_dirty_nodes(), root_calclulation_nodes(), addition_mutex()
 	{
 		SceneNode node;
-		node.dirty = false;
+		node.state = SceneNodeState(0);
 		node.entity = Entity();
 		node.first_child = nullptr;
 		node.next = nullptr;
@@ -43,6 +64,11 @@ public:
 	void clear();
 
 	SceneNode* AddEntity(Entity ent, SceneNode* parent = nullptr);
+
+	void RemoveEntity(Entity entity);
+
+	//USed internally to diferentiate between preab children and scenegraph children
+	SceneNode* AddEntityToPrefabRoot(Entity ent, SceneNode* parent = nullptr);
 
 	void MarkEntityDirty(SceneNode* ent);
 
