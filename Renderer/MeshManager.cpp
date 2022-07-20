@@ -16,7 +16,7 @@ Mesh MeshManager::LoadMeshFromFileImpl(const std::string& file_path)
 
     Mesh mesh;
     mesh.status = Mesh_status::READY;
-
+    mesh.bounding_box = import_data.bounding_box;
     auto command_list = Renderer::Get()->GetRenderCommandList(); //TODO:Make sure you dont use too many command lists.
     auto command_queue = Renderer::Get()->GetCommandQueue();
 
@@ -149,9 +149,14 @@ MeshManager::mesh_assimp_input_data MeshManager::Fetch_Assimp_Data(const mesh_ve
     unsigned int flags = 0;
     flags |= aiProcess_GenBoundingBoxes | (props.has_normal ? aiProcess_GenNormals : 0);
     flags |= aiProcess_GenBoundingBoxes | (props.has_tangent ? aiProcess_CalcTangentSpace : 0);
-
     const aiScene* scene = importer->ReadFile(in_file_path, flags); //TODO: Handle bounding boxes somehow
     aiMesh* imported_mesh = scene->mMeshes[mesh_index];
+
+    auto& aabb = imported_mesh->mAABB;
+
+    auto size = aabb.mMax - aabb.mMin;
+    auto pos = (aabb.mMax + aabb.mMin) / aiVector3D(2.0);
+    data.bounding_box = BoundingBox(*reinterpret_cast<glm::vec3*>(&size), *reinterpret_cast<glm::vec3*>(&pos));
 
 
     if (props.has_position) {
@@ -230,6 +235,9 @@ void MeshManager::Write_assimp_processed_data(void* vertex_data, size_t vertex_s
     output_file.write((const char*)vertex_data, vertex_size * import_data.num_of_verticies);
     output_file << "\nindex_buffer\n";
     output_file.write((const char*)import_data.indicies, sizeof(unsigned int) * import_data.num_of_indicies);
+    output_file << "\nbounding_box\n";
+    output_file << import_data.bounding_box.GetBoxSize().x << " " << import_data.bounding_box.GetBoxSize().y << " " << import_data.bounding_box.GetBoxSize().z << "\n";
+    output_file << import_data.bounding_box.GetBoxOffset().x << " " << import_data.bounding_box.GetBoxOffset().y << " " << import_data.bounding_box.GetBoxOffset().z << "\n";
     output_file << "\nend";
 
     output_file.close();
@@ -303,6 +311,16 @@ MeshManager::mesh_native_input_data MeshManager::Fetch_Native_Data(const std::st
     unsigned int* index_buffer = new unsigned int[num_of_indicies];
     input_file.read((char*)index_buffer, sizeof(unsigned int) * num_of_indicies);
     input_file >> check;
+    if (check == "bounding_box") {
+        glm::vec3 siŸe_aabb;
+        glm::vec3 pos_aabb;
+        input_file >> siŸe_aabb.x >> siŸe_aabb.y >> siŸe_aabb.z;
+        input_file >> pos_aabb.x >> pos_aabb.y >> pos_aabb.z;
+        data.bounding_box = BoundingBox (siŸe_aabb, pos_aabb);
+        input_file >> check;
+    }
+    
+    
     if (check != "end") throw std::runtime_error("Invalid Native Mesh Format");
 
     data.index_buffer = index_buffer;

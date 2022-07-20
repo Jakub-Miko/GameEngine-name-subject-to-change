@@ -3,6 +3,7 @@
 #include <entt/entt.hpp>
 #include <World/EntityTypes.h>
 #include <World/SceneGraph.h>
+#include <World/SpatialIndex.h>
 #include <World/Components/InitializationComponent.h>
 #include <World/Components/LabelComponent.h>
 #include <World/Entity.h>
@@ -37,6 +38,7 @@ class World {
 	}
 
 public:
+	void Init();
 
 	World();
 	~World();
@@ -177,6 +179,10 @@ public:
 
 	void SerializePrefab(Entity entity, const std::string& path);
 
+	SpatialIndex& GetSpatialIndex() {
+		return m_SpatialIndex;
+	}
+
 private:
 	friend class GameLayer;
 
@@ -206,5 +212,6 @@ private:
 	std::queue<RemoveEntityRequest> deletion_queue;
 	std::mutex entity_mutex;
 	SceneGraph m_SceneGraph;
+	SpatialIndex m_SpatialIndex;
 	entt::registry m_ECS;
 };

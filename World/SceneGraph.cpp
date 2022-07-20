@@ -64,7 +64,7 @@ SceneNode* SceneGraph::AddEntity(Entity ent, SceneNode* parent)
 }
 
 void SceneGraph::RemoveEntity(Entity entity)
-{
+{ 
 	SceneNode* node = GetSceneGraphNode(entity);
 	if (!node) {
 		throw std::runtime_error("Trying to remove entity that doesn't exist in the SceneGraph");
@@ -85,6 +85,10 @@ void SceneGraph::RemoveEntity(Entity entity)
 		else {
 			node->parent->first_child = nullptr;
 		}
+	}
+	 
+	if (node->spatial_index_node) {
+		m_world->GetSpatialIndex().RemoveEntity(entity);
 	}
 
 	std::lock_guard<std::mutex> lock(addition_mutex);
@@ -224,6 +228,11 @@ void SceneGraph::RecalculateDownstream(SceneNode* node, SceneNode* upstream)
 	transform.TransformMatrix = glm::translate(glm::mat4(1.0f), transform.translation) * glm::toMat4(transform.rotation) * glm::scale(glm::mat4(1.0f), transform.size);
 
 	transform.TransformMatrix = upstream_transform * transform.TransformMatrix;
+
+	if (node->spatial_index_node) {
+		m_world->GetSpatialIndex().RemoveEntity(node->entity);
+	}
+	m_world->GetSpatialIndex().AddEntity(node->entity);
 
 	SceneNode* children = node->first_child;
 	while (children != nullptr) {

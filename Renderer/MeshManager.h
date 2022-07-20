@@ -2,6 +2,7 @@
 #include <string>
 #include <cstring>
 #include <unordered_map>
+#include <Core/BoundingVolumes.h>
 #include <Renderer/RendererDefines.h>
 #include <Renderer/RenderResource.h>
 #include <AsyncTaskDispatcher.h>
@@ -39,11 +40,14 @@ public:
 		return num_of_indicies;
 	}
 
+	const BoundingBox& GetBoundingBox() const {
+		return bounding_box;
+	}
+
 private:
 
-
-
 	size_t num_of_indicies = 0;
+	BoundingBox bounding_box = BoundingBox();
 	Mesh_status status = Mesh_status::UNINITIALIZED;
 	std::shared_ptr<RenderBufferResource> vertex_buffer = nullptr;
 	std::shared_ptr<RenderBufferResource> index_buffer = nullptr;
@@ -169,6 +173,7 @@ private:
 	};
 
 	struct mesh_assimp_input_data {
+		BoundingBox bounding_box = BoundingBox();
 		glm::vec3* position = nullptr;
 		glm::vec3* normal = nullptr;
 		glm::vec3* tangent = nullptr;
@@ -185,6 +190,7 @@ private:
 
 	
 	struct mesh_native_input_data {
+		BoundingBox bounding_box = BoundingBox();
 		void* vertex_buffer = nullptr;
 		uint32_t vertex_count = 0;
 		unsigned int* index_buffer = nullptr;

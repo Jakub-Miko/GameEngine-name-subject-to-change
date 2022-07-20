@@ -196,7 +196,8 @@ inline void Delete_Render_Box_data() {
     delete &Get_Render_Box_data();
 }
 
-inline void Render_Box(const BoundingBox& box, const glm::mat4& model_matrix,const CameraComponent& camera, const glm::mat4& camera_transform, PrimitivePolygonRenderMode render_mode = PrimitivePolygonRenderMode::DEFAULT) {
+inline void Render_Box(const BoundingBox& box, const glm::mat4& model_matrix,const CameraComponent& camera, const glm::mat4& camera_transform, 
+    PrimitivePolygonRenderMode render_mode = PrimitivePolygonRenderMode::DEFAULT, const glm::vec3& color = glm::vec3(0.3f, 0.7f, 1.0f)) {
     auto command_list = Renderer::Get()->GetRenderCommandList();
     auto command_queue = Renderer::Get()->GetCommandQueue();
 	
@@ -206,7 +207,7 @@ inline void Render_Box(const BoundingBox& box, const glm::mat4& model_matrix,con
          camera.GetProjectionMatrix() * glm::inverse(camera_transform) * model_matrix * glm::translate(glm::mat4(1.0f), box.GetBoxOffset()) * glm::scale(glm::mat4(1.0f),box.GetBoxSize()),
          model_matrix,
             glm::normalize(glm::vec4(0.20f, 1.0f, -3.0f,0.0f)),
-            glm::vec4(0.3f,0.7f,1.0f,1.0f),
+            glm::vec4(color,1.0f),
             glm::vec4(render_mode == PrimitivePolygonRenderMode::WIREFRAME ? 1.0 : 0.0,0,0,0)
     };
 

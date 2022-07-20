@@ -98,6 +98,8 @@ void PropertiesPanel::RenderProperties(Entity entity, const PropertiesPanel_pers
 			char* buf = new char[50];
 			memcpy(buf, label.label.c_str(), label.label.size() + 1);
 			ImGui::InputText("Label", buf, 50);
+			ImGui::SameLine();
+			ImGui::TextUnformatted(("(id: " + std::to_string(selected.id) + ")").c_str());
 			label.label = buf;
 			delete[] buf;
 

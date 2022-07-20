@@ -24,7 +24,12 @@
 #endif
 #include <fstream>
 
-World::World() : m_ECS(), m_SceneGraph(this), load_scene(std::make_shared<SceneProxy>()), deletion_queue(), deletion_mutex()
+void World::Init()
+{
+	m_SpatialIndex.Init(SpatialIndexProperties());
+}
+
+World::World() : m_ECS(), m_SceneGraph(this), load_scene(std::make_shared<SceneProxy>()), deletion_queue(), deletion_mutex(), m_SpatialIndex()
 {
 	RegistryWarmUp();
 	//if((uint32_t)(m_ECS.create())!=0) throw std::runtime_error("A null Entity could not be reserved");
@@ -211,6 +216,7 @@ void World::RegistryWarmUp()
 void World::LoadSceneSystem()
 {
 	if (load_scene) {
+		
 		if (GameStateMachine::Get()->current_state) {
 			GameStateMachine::Get()->ScriptOnDeattach();
 		}
@@ -253,6 +259,8 @@ void World::LoadSceneSystem()
 		if (GameStateMachine::Get()->current_state) {
 			GameStateMachine::Get()->ScriptOnAttach();
 		}
+		m_SpatialIndex.Rebuild();
+
 	}
 }
 
@@ -307,7 +315,8 @@ void World::DeletionSystem()
 				}
 			
 				for (auto stor : m_ECS.storage()) {
-					if (stor.second.type().name() == "struct TransformComponent" || stor.second.type().name() == "class LabelComponent" || stor.second.type().name() == "struct PrefabComponent") {
+					if (stor.second.type().name() == "struct TransformComponent" || stor.second.type().name() == "class LabelComponent" || stor.second.type().name() == "struct PrefabComponent" 
+						| stor.second.type().name() == "class SerializableComponent") {
 						continue;
 					}
 					stor.second.remove((entt::entity)ent.id);
@@ -322,7 +331,8 @@ void World::DeletionSystem()
 					comp.status = PrefabStatus::ERROR;
 					comp.file_path = "Unknown";
 					for (auto stor : m_ECS.storage()) {
-						if (stor.second.type().name() == "struct TransformComponent" || stor.second.type().name() == "class LabelComponent" || stor.second.type().name() == "struct PrefabComponent") {
+						if (stor.second.type().name() == "struct TransformComponent" || stor.second.type().name() == "class LabelComponent" || stor.second.type().name() == "struct PrefabComponent" 
+							|| stor.second.type().name() == "class SerializableComponent") {
 							continue;
 						}
 						stor.second.remove((entt::entity)ent.id);

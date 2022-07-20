@@ -1,5 +1,5 @@
 #include "BoundingVolumes.h"
-
+#include <World/Components/CameraComponent.h>
 
 bool BoundingBox::OverlapsFrustum(const Frustum& frustum, const glm::mat4& model_matrix)
 {
@@ -28,16 +28,23 @@ OverlapResult BoundingBox::OverlapsPlane(const Plane& plane, const glm::mat4& mo
 	return outside ? (inside ? OverlapResult::PARTIAL_OVERLAP : OverlapResult::NO_OVERLAP) : OverlapResult::FULL_OVERLAP;
 }
 
-bool BoundingBox::OverlapPointPlane(const glm::vec3& point, const Plane& plane)
+bool OverlapPointPlane(const glm::vec3& point, const Plane& plane)
 {
 	return (glm::dot(point, plane.normal) - plane.distance) >= 0;
+}
+
+bool OverlapPointFrustum(const glm::vec3& point, const Frustum& frustum)
+{
+	return OverlapPointPlane(point, frustum.bottom) && OverlapPointPlane(point, frustum.top) &&
+		OverlapPointPlane(point, frustum.near) && OverlapPointPlane(point, frustum.far) &&
+		OverlapPointPlane(point, frustum.right) && OverlapPointPlane(point, frustum.left);
 }
 
 //Well this is a mess.
 bool BoundingBox::OverlapPointFrustum(const glm::vec3& point, const Frustum& frustum)
 {
 	return OverlapPointPlane(point, frustum.bottom) && OverlapPointPlane(point, frustum.top) &&
-		OverlapPointPlane(point, frustum.near) && OverlapPointPlane(point, frustum.far) && 
+		OverlapPointPlane(point, frustum.near) && OverlapPointPlane(point, frustum.far) &&
 		OverlapPointPlane(point, frustum.right) && OverlapPointPlane(point, frustum.left);
 
 }

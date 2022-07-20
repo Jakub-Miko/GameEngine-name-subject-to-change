@@ -117,6 +117,7 @@ void Application::InitInstance()
     m_GameLayer = new GameLayer();
 
     world = new World();
+    world->Init();
 
     //Claim MainThread
     m_MainThread = ThreadManager::Get()->GetThread();
@@ -249,8 +250,8 @@ void Application::Update()
    
 
     PROFILE("Layer Update");
-    GameStateMachine::Get()->UpdateState(delta_time);
     m_GameLayer->OnUpdate(delta_time);
+    GameStateMachine::Get()->UpdateState(delta_time);
 
 #ifdef EDITOR
     Editor::Get()->ViewportEnd();

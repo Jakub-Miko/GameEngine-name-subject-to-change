@@ -1,14 +1,21 @@
 #pragma once 
-#include "World.h"
 #include "Entity.h"
 #include <vector>
 #include <array>
 #include <Core/Geometry.h>
 #include <Core/BoundingVolumes.h>
 
+class World;
+
+struct SpatialIndexProperties {
+	BoundingBox world_box = BoundingBox(glm::vec3(100, 100, 100), glm::vec3(0, 0, 0));
+	int max_entities_pre_node = 1;
+	int max_depth = 20;
+};
+
 class Octree {
 public:
-	Octree(Octree* parent,const BoundingBox& node_box, const std::vector<Entity>& entities, World& world, int max_node_count = 1);
+	Octree(Octree* parent,const BoundingBox& node_box, const std::vector<Entity>& entities, World& world);
 	Octree() = default;
 
 	enum class PlaneAxis : unsigned char{
@@ -17,7 +24,14 @@ public:
 	
 	
 	Plane GetPlane(PlaneAxis axis) {
-		return planes[(char)axis];
+		switch (axis) {
+		case PlaneAxis::X:
+			return Plane(glm::vec3(1.0f, 0.0f, 0.0f), node_box.GetBoxOffset().x);
+		case PlaneAxis::Y:
+			return Plane(glm::vec3(0.0f, 1.0f, 0.0f), node_box.GetBoxOffset().y);
+		case PlaneAxis::Z:
+			return Plane(glm::vec3(0.0f, 0.0f, 1.0f), node_box.GetBoxOffset().z);
+		}
 	}
 
 	static constexpr char GetIndexByPos(bool x, bool y, bool z) {
@@ -30,24 +44,26 @@ public:
 
 public:
 
+	void Init(Octree* parent, const BoundingBox& node_box, const std::vector<Entity>& entities, World& world, int depth = 0);
+
 	void VisualizeBoxes();  
 
 	Octree* parent = nullptr;
 	BoundingBox node_box;
-	Plane planes[3];
 	std::vector<Entity> entity_list;
 	std::vector<Octree> child_nodes; 
-	int max_node_count = 100;
+	int depth = 0;
 	char active = 0;
 
 	void FrustumCulling(World& world, const Frustum& frustum, std::vector<Entity>& entities);
 	
 	void AddEntity(Entity ent);
 
+	void RemoveEntity(Entity ent);
+
 private:
-	void Compute_Planes();
 	friend class SpatialIndex;
-	Octree(Octree* parent,const BoundingBox& node_box, World& world,int max_node_count = 1);
+	Octree(Octree* parent,const BoundingBox& node_box, World& world);
 
 	void ProcessEntity(World& world, std::array<std::vector<Entity>, 8>& list, Entity entity);
 	bool ProcessEntity(World& world, char& index, Entity entity);
@@ -57,7 +73,9 @@ private:
 
 class SpatialIndex {
 public:
-	SpatialIndex(World& world, const BoundingBox& world_box = BoundingBox({ 100,100,100 }));
+	SpatialIndex();
+
+	void Init(const SpatialIndexProperties& props);
 
 	void Visualize() {
 		octree_base.VisualizeBoxes();
@@ -71,12 +89,17 @@ public:
 		octree_base.AddEntity(ent);
 	}
 
-	void Rebuild() {
-		octree_base = Octree(nullptr,world_box, world);
+	void RemoveEntity(Entity ent) {
+		octree_base.RemoveEntity(ent);
+	}
+
+	void Rebuild();
+
+	const SpatialIndexProperties& GetSpatialIndexProperties() const {
+		return props;
 	}
 
 private:
 	Octree octree_base;
-	World& world;
-	BoundingBox world_box;
+	SpatialIndexProperties props;
 };

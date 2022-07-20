@@ -1,4 +1,5 @@
 #pragma once
+#include <glm/glm.hpp>
 
 struct Plane {
 	Plane(glm::vec3 normal, float distance) : normal(normal), distance(distance) {}

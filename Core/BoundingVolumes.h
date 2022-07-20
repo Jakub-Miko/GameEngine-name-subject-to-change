@@ -1,8 +1,9 @@
 #pragma once 
 #include <glm/glm.hpp>
-#include <World/Components/CameraComponent.h>
 #include <Core/Geometry.h>
 #include <Core/RuntimeTag.h>
+
+struct Frustum;
 
 enum class BoundingVolumeType : unsigned char {
 	NONE = 0, BOUNDING_BOX = 1, BOUNDING_SPHERE = 2
@@ -19,6 +20,9 @@ public:
 	virtual OverlapResult OverlapsPlane(const Plane& plane, const glm::mat4& model_matrix) = 0;
 
 };
+
+bool OverlapPointPlane(const glm::vec3& point, const Plane& plane);
+bool OverlapPointFrustum(const glm::vec3& point, const Frustum& frustum);
 
 class BoundingBox : public BoundingVolume {
 	//For Serialization purposes
@@ -39,7 +43,6 @@ public:
 
 private:
 
-	bool OverlapPointPlane(const glm::vec3& point, const Plane& plane);
 	bool OverlapPointFrustum(const glm::vec3& point, const Frustum& frustum);
 	bool OverlapBoxPlane(const glm::mat4& transform, const Plane& plane);
 

@@ -14,9 +14,9 @@ void EntityType::CreateEntity(World& world, Entity entity, Entity parent)
 		parent_node = world.GetSceneGraph()->GetSceneGraphNode(parent);
 	}
 	
-	SceneNode* new_node = world.GetSceneGraph()->AddEntity(entity, parent_node);
-
 	world.SetComponent<TransformComponent>(entity);
+
+	SceneNode* new_node = world.GetSceneGraph()->AddEntity(entity, parent_node);
 }
 
 void EntityType::CreateEntity(World& world, Entity entity, Entity parent, const glm::vec3& translation, const glm::vec3& scale, const glm::vec3& rotation_axis, float rotation_angle)
@@ -29,9 +29,9 @@ void EntityType::CreateEntity(World& world, Entity entity, Entity parent, const 
 		parent_node = world.GetSceneGraph()->GetSceneGraphNode(parent);
 	}
 
-	SceneNode* new_node = world.GetSceneGraph()->AddEntity(entity, parent_node);
-	
 	world.SetComponent<TransformComponent>(entity, TransformComponent(translation,scale,rotation_axis,rotation_angle));
+	
+	SceneNode* new_node = world.GetSceneGraph()->AddEntity(entity, parent_node);
 }
 
 
@@ -55,6 +55,9 @@ void CameraEntityType::CreateEntity(World& world, Entity entity, Entity parent, 
 
 void PrefabChildEntityType::CreateEntity(World& world, Entity entity, Entity parent, bool include_transform)
 {
+	if (include_transform) {
+		world.SetComponent<TransformComponent>(entity);
+	}
 	auto scene_graph = Application::GetWorld().GetSceneGraph();
 	if (world.HasComponentSynced<PrefabComponent>(parent)) {
 		Application::GetWorld().GetSceneGraph()->AddEntityToPrefabRoot(entity, scene_graph->GetSceneGraphNode(parent));
@@ -63,9 +66,6 @@ void PrefabChildEntityType::CreateEntity(World& world, Entity entity, Entity par
 		Application::GetWorld().GetSceneGraph()->AddEntity(entity, scene_graph->GetSceneGraphNode(parent));
 	}
 	
-	if (include_transform) {
-		world.SetComponent<TransformComponent>(entity);
-	}
 }
 
 void PrefabChildEntityType::CreateEntity(World& world, Entity entity, Entity parent, const glm::vec3& translation, const glm::vec3& scale, const glm::vec3& rotation_axis, float rotation_angle)

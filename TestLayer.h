@@ -66,7 +66,6 @@ public:
     std::shared_ptr<RenderTexture2DResource> color_texture;
     std::shared_ptr<RenderTexture2DResource> depth_texture;
     std::shared_ptr<RenderFrameBufferResource> frame_buffer;
-    SpatialIndex* index = nullptr;
     BoundingBox box;
     RenderDescriptorTable table1;
     RenderDescriptorTable table2;
@@ -90,8 +89,7 @@ public:
     //Here we go a memory leak yay
     ~TestLayer() {
         //delete pipeline;
-        //delete pipeline_2;
-        delete index;
+        //delete pipeline_2; 
         //Delete_Render_Box_data();
     }
 
@@ -370,31 +368,31 @@ public:
 
             texture = TextureManager::Get()->LoadTextureFromFileAsync("asset:image_texture.tex"_path, false);
             
+            auto& index = Application::GetWorld().GetSpatialIndex();
             Entity entity_1 = Application::GetWorld().CreateEntity();
-            Application::GetWorld().SetComponent<BoundingVolumeComponent>(entity_1, BoundingBox());
+          /*  Application::GetWorld().SetComponent<BoundingVolumeComponent>(entity_1, BoundingBox());*/
             Application::GetWorld().SetEntityTranslation(entity_1, { -1.9,-1.7,-1.9 });
             Entity entity_2 = Application::GetWorld().CreateEntity();
-            Application::GetWorld().SetComponent<BoundingVolumeComponent>(entity_2, BoundingBox());
-            Application::GetWorld().SetEntityTranslation(entity_2, { -1.8,-1.9,-1.9 });
+            /*Application::GetWorld().SetComponent<BoundingVolumeComponent>(entity_2, BoundingBox()); */
+            Application::GetWorld().SetEntityTranslation(entity_2, { -1.9,-1.7,-1.9 });
             Application::GetWorld().GetSceneGraph()->CalculateMatricies();
-            index = new SpatialIndex(Application::GetWorld(), BoundingBox({ 10,10,10 }));
 
             auto ent_1 = Application::GetWorld().CreateEntity();
             Application::GetWorld().SetComponent<BoundingVolumeComponent>(ent_1, BoundingBox({ 1,10,1 }, { 0,0,0 }));
             Application::GetWorld().GetSceneGraph()->CalculateMatricies();
-            index->AddEntity(entity_1);
-            index->AddEntity(entity_2);
-            index->AddEntity(ent_1);
-
+            //index.AddEntity(ent_1);
+            //index.AddEntity(entity_1);
+            //index.AddEntity(entity_2);
+            //index->RemoveEntity(entity_2);
 
             stop = false;
 
-
         }
+        auto& index = Application::GetWorld().GetSpatialIndex();
         std::vector<Entity> entities;
         Application::GetWorld().GetComponent<CameraComponent>(Application::GetWorld().GetPrimaryEntity()).UpdateViewFrustum(Application::GetWorld().GetComponent<TransformComponent>(Application::GetWorld().GetPrimaryEntity()).TransformMatrix);
-        index->FrustumCulling(Application::GetWorld(), Application::GetWorld().GetComponent<CameraComponent>(Application::GetWorld().GetPrimaryEntity()).GetViewFrustum(), entities);
-        index->Visualize();
+        index.FrustumCulling(Application::GetWorld(), Application::GetWorld().GetComponent<CameraComponent>(Application::GetWorld().GetPrimaryEntity()).GetViewFrustum(), entities);
+        index.Visualize();
         for (auto ent : entities) {
             std::cout << ent.id << ", ";
         }

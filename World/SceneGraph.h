@@ -5,7 +5,9 @@
 #include <unordered_map>
 #include <mutex>
 
+
 class World;
+class Octree;
 
 enum class SceneNodeState : char {
 	DIRTY = 1, PREFAB = 2
@@ -30,6 +32,8 @@ struct SceneNode {
 	SceneNode* first_child = nullptr;
 	SceneNode* next = nullptr;
 	SceneNode* previous = nullptr;
+	Octree* spatial_index_node = nullptr;
+	uint32_t octree_index = -1;
 	SceneNodeState state; 
 	bool IsDirty() const {
 		return (char)state & (char)SceneNodeState::DIRTY;
