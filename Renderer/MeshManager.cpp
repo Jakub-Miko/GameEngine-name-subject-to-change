@@ -312,11 +312,11 @@ MeshManager::mesh_native_input_data MeshManager::Fetch_Native_Data(const std::st
     input_file.read((char*)index_buffer, sizeof(unsigned int) * num_of_indicies);
     input_file >> check;
     if (check == "bounding_box") {
-        glm::vec3 siŸe_aabb;
+        glm::vec3 size_aabb;
         glm::vec3 pos_aabb;
-        input_file >> siŸe_aabb.x >> siŸe_aabb.y >> siŸe_aabb.z;
+        input_file >> size_aabb.x >> size_aabb.y >> size_aabb.z;
         input_file >> pos_aabb.x >> pos_aabb.y >> pos_aabb.z;
-        data.bounding_box = BoundingBox (siŸe_aabb, pos_aabb);
+        data.bounding_box = BoundingBox (size_aabb, pos_aabb);
         input_file >> check;
     }
     

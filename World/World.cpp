@@ -315,8 +315,8 @@ void World::DeletionSystem()
 				}
 			
 				for (auto stor : m_ECS.storage()) {
-					if (stor.second.type().name() == "struct TransformComponent" || stor.second.type().name() == "class LabelComponent" || stor.second.type().name() == "struct PrefabComponent" 
-						| stor.second.type().name() == "class SerializableComponent") {
+					if (stor.second.type() == entt::type_id<TransformComponent>() || stor.second.type() == entt::type_id<LabelComponent>() || stor.second.type() == entt::type_id<PrefabComponent>() 
+						|| stor.second.type() == entt::type_id<SerializableComponent>()) {
 						continue;
 					}
 					stor.second.remove((entt::entity)ent.id);
@@ -331,8 +331,8 @@ void World::DeletionSystem()
 					comp.status = PrefabStatus::ERROR;
 					comp.file_path = "Unknown";
 					for (auto stor : m_ECS.storage()) {
-						if (stor.second.type().name() == "struct TransformComponent" || stor.second.type().name() == "class LabelComponent" || stor.second.type().name() == "struct PrefabComponent" 
-							|| stor.second.type().name() == "class SerializableComponent") {
+						if (stor.second.type() == entt::type_id<TransformComponent>() || stor.second.type() == entt::type_id<LabelComponent>() || stor.second.type() == entt::type_id<PrefabComponent>() 
+							|| stor.second.type() == entt::type_id<SerializableComponent>()) {
 							continue;
 						}
 						stor.second.remove((entt::entity)ent.id);

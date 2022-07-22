@@ -5,7 +5,7 @@
 #include <World/Components/MeshComponent.h>
 #include <World/Systems/BoxRenderer.h>
 
-static struct mesh_data {
+struct mesh_data {
     std::shared_ptr<Pipeline> pipeline;
     FrameMultiBufferResource<std::shared_ptr<RenderBufferResource>> constant_buffer;
 };
