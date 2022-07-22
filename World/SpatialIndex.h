@@ -74,23 +74,28 @@ private:
 class SpatialIndex {
 public:
 	SpatialIndex();
+	~SpatialIndex() {
+		if (octree_base) {
+			delete octree_base;
+		}
+	}
 
 	void Init(const SpatialIndexProperties& props);
 
 	void Visualize() {
-		octree_base.VisualizeBoxes();
+		octree_base->VisualizeBoxes();
 	}
 
 	void FrustumCulling(World& world, const Frustum& frustum, std::vector<Entity>& entities) {
-		octree_base.FrustumCulling(world, frustum, entities);
+		octree_base->FrustumCulling(world, frustum, entities);
 	}
 
 	void AddEntity(Entity ent) {
-		octree_base.AddEntity(ent);
+		octree_base->AddEntity(ent);
 	}
 
 	void RemoveEntity(Entity ent) {
-		octree_base.RemoveEntity(ent);
+		octree_base->RemoveEntity(ent);
 	}
 
 	void Rebuild();
@@ -100,6 +105,6 @@ public:
 	}
 
 private:
-	Octree octree_base;
+	Octree* octree_base = nullptr;
 	SpatialIndexProperties props;
 };

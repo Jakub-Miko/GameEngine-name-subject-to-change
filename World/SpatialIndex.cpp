@@ -1,4 +1,5 @@
 #include "SpatialIndex.h"
+#include <World/Components/MeshComponent.h>
 #include <World/Components/TransformComponent.h>
 #include <World/Components/BoundingVolumeComponent.h>
 #include <World/Systems/BoxRenderer.h>
@@ -10,7 +11,7 @@
 #endif
 
 
-SpatialIndex::SpatialIndex() : octree_base(), props(SpatialIndexProperties())
+SpatialIndex::SpatialIndex() : octree_base(new Octree), props(SpatialIndexProperties())
 {
 
 }
@@ -24,9 +25,16 @@ Octree::Octree(Octree* parent,const BoundingBox& node_box, const std::vector<Ent
 void Octree::FrustumCulling(World& world, const Frustum& frustum, std::vector<Entity>& entities)
 {
 	for (auto entity : entity_list) {
-		if (world.HasComponent<BoundingVolumeComponent>(entity)) {
-			auto& bounding_volume = world.GetComponent<BoundingVolumeComponent>(entity);
-			auto& transform = world.GetComponent<TransformComponent>(entity);
+		bool has_bounding_box = world.HasComponent<BoundingVolumeComponent>(entity);
+		if (has_bounding_box || world.HasComponent<MeshComponent>(entity)) {
+			TransformComponent& transform = world.GetComponent<TransformComponent>(entity);
+			BoundingVolumeComponent bounding_volume = BoundingBox();
+			if (!has_bounding_box) {
+				bounding_volume = world.GetComponent<MeshComponent>(entity).mesh->GetBoundingBox();
+			}
+			else {
+				bounding_volume = world.GetComponent<BoundingVolumeComponent>(entity);
+			}
 			std::visit([&](auto& bounding_vol) {
 				if (bounding_vol.OverlapsFrustum(frustum, transform.TransformMatrix)) {
 					entities.push_back(entity);
@@ -241,9 +249,16 @@ bool Octree::ProcessEntity(World& world, char& index_out, Entity entity)
 {
 	//Entity needs to have a Transform and a bounding volume component to be assigned into the spatial index.
 	if (world.HasComponent<TransformComponent>(entity)) {
-		if (world.HasComponent<BoundingVolumeComponent>(entity)) {
+		bool has_bounding_box = world.HasComponent<BoundingVolumeComponent>(entity);
+		if (has_bounding_box || world.HasComponent<MeshComponent>(entity)) {
 			TransformComponent& transform = world.GetComponent<TransformComponent>(entity);
-			BoundingVolumeComponent& bounding_volume = world.GetComponent<BoundingVolumeComponent>(entity);
+			BoundingVolumeComponent bounding_volume = BoundingBox();
+			if (!has_bounding_box) {
+				bounding_volume = world.GetComponent<MeshComponent>(entity).mesh->GetBoundingBox();
+			}
+			else {
+				bounding_volume = world.GetComponent<BoundingVolumeComponent>(entity);
+			}
 			char index = 0;
 			bool bordering = false;
 
@@ -314,10 +329,16 @@ bool Octree::ProcessEntity(World& world, char& index_out, Entity entity)
 void SpatialIndex::Init(const SpatialIndexProperties& props)
 {
 	this->props = props;
-	octree_base = Octree(nullptr, props.world_box, Application::GetWorld());
+	if (octree_base) {
+		delete octree_base;
+	}
+	octree_base = new Octree(nullptr, props.world_box, Application::GetWorld());
 }
 
 void SpatialIndex::Rebuild()
 {
-	octree_base = Octree(nullptr, props.world_box, Application::GetWorld());
+	if (octree_base) {
+		delete octree_base;
+	}
+	octree_base = new Octree(nullptr, props.world_box, Application::GetWorld());
 }

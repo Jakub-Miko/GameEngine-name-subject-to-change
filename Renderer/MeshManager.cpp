@@ -91,6 +91,7 @@ void MeshManager::UpdateLoadedMeshes()
             loaded_mesh.mesh->vertex_buffer = mesh_l.vertex_buffer;
             loaded_mesh.mesh->num_of_indicies = mesh_l.num_of_indicies;
             loaded_mesh.mesh->status = Mesh_status::READY;
+            loaded_mesh.mesh->bounding_box = mesh_l.bounding_box;
             loaded_mesh.destroyed = true;
         }
         catch (...) {
