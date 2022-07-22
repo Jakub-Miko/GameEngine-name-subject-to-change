@@ -47,6 +47,7 @@ void GameLayer::LoadSystem()
 void GameLayer::PreUpdate(float delta_time)
 {
     World& world = Application::GetWorld();
+    world.CheckCamera();
     EntityConstructionSystem(world);
     ScriptSystemDefferedSet(world);
 }

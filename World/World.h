@@ -183,6 +183,8 @@ public:
 		return m_SpatialIndex;
 	}
 
+	void CheckCamera();
+
 private:
 	friend class GameLayer;
 
@@ -205,6 +207,7 @@ private:
 
 	Entity set_primary_entity = Entity();
 	Entity primary_entity = Entity();
+	Entity default_camera = Entity();
 
 	std::shared_ptr<SceneProxy> current_scene = nullptr;
 	std::shared_ptr<SceneProxy> load_scene = nullptr;

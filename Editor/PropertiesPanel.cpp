@@ -310,7 +310,7 @@ void PropertiesPanel::AddComponent(Entity entity,const PropertiesPanel_persisten
 				ImGui::BeginDisabled();
 			}
 			if (ImGui::Button("Remove Prefab Component")) {
-				world.GetSceneGraph()->GetSceneGraphNode(entity)->state = world.GetSceneGraph()->GetSceneGraphNode(entity)->state | SceneNodeState::PREFAB;
+				world.GetSceneGraph()->GetSceneGraphNode(entity)->state = world.GetSceneGraph()->GetSceneGraphNode(entity)->state & ~SceneNodeState::PREFAB;
 				world.GetComponent<PrefabComponent>(entity).file_path = "Unknown";
 				world.RemoveEntity(entity, RemoveEntityAction::REMOVE_PREFABS);
 				data.prefab_path[0] = '\0';

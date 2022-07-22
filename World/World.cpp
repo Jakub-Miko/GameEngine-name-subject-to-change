@@ -163,6 +163,23 @@ void World::SerializePrefab(Entity entity, const std::string& path)
 	file_stream.close();
 }
 
+void World::CheckCamera()
+{
+	if (!m_ECS.valid((entt::entity)primary_entity.id)) {
+		if (default_camera != Entity()) {
+			set_primary_entity = default_camera;
+		}
+		else {
+			auto ent = CreateEntity();
+			SetComponent<CameraComponent>(ent);
+			SetComponent<LabelComponent>(ent, "Default Camera");
+			default_camera = ent;
+			primary_entity = default_camera;
+			set_primary_entity = Entity();
+		}
+	}
+}
+
 void World::SerializePrefabChild(Entity child, std::vector<std::pair<std::string, std::string>>& file_structure)
 {
 	EntityParseResult result;
@@ -227,6 +244,7 @@ void World::LoadSceneSystem()
 		m_ECS.clear();
 		m_ECS = entt::registry();
 		m_SceneGraph.clear();
+		default_camera = Entity();
 
 		std::ifstream file(load_scene->scene_path);
 		if (!file.is_open()) {
@@ -245,15 +263,20 @@ void World::LoadSceneSystem()
 		m_SceneGraph.Deserialize(json);
 
 		SetPrimaryEntity(load_scene->primary_entity);
-
-		primary_entity = load_scene->primary_entity;
-		current_scene = load_scene;
-		if (load_scene->primary_entity == Entity()) {
-			auto ent = CreateEntity();
-			SetComponent<CameraComponent>(ent);
-			SetComponent<LabelComponent>(ent,"Default Camera");
-			primary_entity = ent;
+		if (load_scene->primary_entity != Entity()) {
+			if (!HasComponent<CameraComponent>(set_primary_entity)) {
+				CheckCamera();
+			}
+			else {
+				primary_entity = set_primary_entity;
+				set_primary_entity = Entity();
+			}
 		}
+		else {
+			CheckCamera();
+		}
+
+		current_scene = load_scene;
 		load_scene = nullptr;
 
 		if (GameStateMachine::Get()->current_state) {
@@ -276,6 +299,7 @@ void World::DeletionSystem()
 		ent = deletion_queue.front().entity;
 		action = deletion_queue.front().action;
 		deletion_queue.pop();
+		
 		if (action == RemoveEntityAction::REMOVE) {
 			SceneNode* first_node = m_SceneGraph.GetSceneGraphNode(ent)->first_child;
 			while (first_node)
@@ -359,6 +383,7 @@ void World::DeletionSystem()
 			Application::GetWorld().RemoveComponent<PrefabComponent>(ent);
 
 		}
+		CheckCamera();
 	}
 
 
@@ -387,10 +412,12 @@ void World::DeleteNode(SceneNode* node)
 	auto entity = node->entity;
 	m_SceneGraph.RemoveEntity(node->entity);
 	m_ECS.destroy((entt::entity)entity.id);
+
 }
 
 void World::SetPrimaryEntitySystem()
 {
+	
 	if (set_primary_entity != Entity()) {
 		if (!HasComponent<CameraComponent>(set_primary_entity)) {
 			throw std::runtime_error("Primary entity doesn't have a camera component");
