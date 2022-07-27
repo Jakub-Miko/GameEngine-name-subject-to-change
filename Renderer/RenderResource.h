@@ -6,6 +6,10 @@
 #include <unordered_map>
 #include <Renderer/RendererDefines.h>
 
+enum class RenderResourceType : char  {
+	INVALID = 0, RenderBufferResource = 1, RenderTexture2DResource = 2, RenderFrameBufferResource = 3
+};
+
 class RenderResourceDescriptor {
 public:
 	~RenderResourceDescriptor() {}
@@ -34,6 +38,7 @@ public:
 		render_state.store(state);
 	}
 
+	virtual RenderResourceType GetResourceType() = 0;
 	virtual void* Map() = 0;
 	virtual void UnMap() = 0;
 
@@ -51,6 +56,10 @@ public:
 
 	RenderBufferDescriptor GetBufferDescriptor() const {
 		return descriptor;
+	}
+
+	virtual RenderResourceType GetResourceType() override {
+		return RenderResourceType::RenderBufferResource;
 	}
 
 	virtual ~RenderBufferResource() {};
@@ -154,6 +163,10 @@ public:
 		return descriptor;
 	}
 
+	virtual RenderResourceType GetResourceType() override {
+		return RenderResourceType::RenderTexture2DResource;
+	}
+
 	virtual ~RenderTexture2DResource() {};
 
 protected:
@@ -174,6 +187,10 @@ public:
 
 	RenderFrameBufferDescriptor GetBufferDescriptor() const {
 		return descriptor;
+	}
+
+	virtual RenderResourceType GetResourceType() override {
+		return RenderResourceType::RenderFrameBufferResource;
 	}
 
 	virtual ~RenderFrameBufferResource() {};

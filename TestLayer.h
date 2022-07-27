@@ -34,6 +34,7 @@
 #include <Core/RuntimeTag.h>
 #include <Window.h>
 #include <FileManager.h>
+#include <Renderer/Renderer3D/RenderPassBuilder.h>
 #ifdef EDITOR
 #include <Editor/Editor.h>
 #include <imgui.h>
@@ -45,6 +46,121 @@ class test1 {
 };
 
 class test2 {
+
+};
+
+class TestPass1 : public RenderPass {
+public:
+
+    virtual void Setup(RenderPassResourceDefinnition& setup_builder) override {
+        RenderPassResourceDescriptor desc0;
+        desc0.desc_access = RenderPassResourceDescriptor_Access::READ;
+        desc0.resource_name = "TestPass4_Resource";
+        desc0.type_id = 0;
+        setup_builder.push_back(desc0);
+
+        RenderPassResourceDescriptor desc1;
+        desc1.desc_access = RenderPassResourceDescriptor_Access::WRITE;
+        desc1.resource_name = "TestPass1_Resource";
+        desc1.type_id = 0;
+        setup_builder.push_back(desc1);
+
+
+    }
+    virtual void Render() override {
+        std::cout << "TestPass1 Render..." << "\n";
+    }
+
+};
+
+class TestPass2 : public RenderPass {
+public:
+
+    virtual void Setup(RenderPassResourceDefinnition& setup_builder) override {
+        RenderPassResourceDescriptor desc0;
+        desc0.desc_access = RenderPassResourceDescriptor_Access::READ;
+        desc0.resource_name = "TestPass4_Resource";
+        desc0.type_id = 0;
+        setup_builder.push_back(desc0);
+        
+        
+        RenderPassResourceDescriptor desc1;
+        desc1.desc_access = RenderPassResourceDescriptor_Access::READ;
+        desc1.resource_name = "TestPass1_Resource";
+        desc1.type_id = 0;
+        setup_builder.push_back(desc1);
+
+        RenderPassResourceDescriptor desc2;
+        desc2.desc_access = RenderPassResourceDescriptor_Access::WRITE;
+        desc2.resource_name = "TestPass2_Resource";
+        desc2.type_id = 0;
+        setup_builder.push_back(desc2);
+
+        //RenderPassResourceDescriptor desc3;
+        //desc3.desc_access = RenderPassResourceDescriptor_Access::READ;
+        //desc3.resource_name = "TestPass3_Resource";
+        //desc3.type_id = 0;
+        //setup_builder.push_back(desc3);
+
+
+    }
+    virtual void Render() override {
+        std::cout << "TestPass2 Render..." << "\n";
+    }
+
+};
+
+class TestPass3 : public RenderPass {
+public:
+
+    virtual void Setup(RenderPassResourceDefinnition& setup_builder) override {
+        RenderPassResourceDescriptor desc1;
+        desc1.desc_access = RenderPassResourceDescriptor_Access::READ;
+        desc1.resource_name = "TestPass1_Resource";
+        desc1.type_id = 0;
+        setup_builder.push_back(desc1);
+
+        RenderPassResourceDescriptor desc2;
+        desc2.desc_access = RenderPassResourceDescriptor_Access::READ;
+        desc2.resource_name = "TestPass2_Resource";
+        desc2.type_id = 0;
+        setup_builder.push_back(desc2);
+
+
+
+        RenderPassResourceDescriptor desc3;
+        desc3.desc_access = RenderPassResourceDescriptor_Access::WRITE;
+        desc3.resource_name = "TestPass3_Resource";
+        desc3.type_id = 0;
+        setup_builder.push_back(desc3);
+
+    }
+    virtual void Render() override {
+        std::cout << "TestPass3 Render..." << "\n";
+    }
+
+};
+
+class TestPass4 : public RenderPass {
+public:
+
+    virtual void Setup(RenderPassResourceDefinnition& setup_builder) override {
+        RenderPassResourceDescriptor desc1;
+        desc1.desc_access = RenderPassResourceDescriptor_Access::WRITE;
+        desc1.resource_name = "TestPass4_Resource";
+        desc1.type_id = 0;
+        setup_builder.push_back(desc1);
+
+        //RenderPassResourceDescriptor desc3;
+        //desc3.desc_access = RenderPassResourceDescriptor_Access::READ;
+        //desc3.resource_name = "TestPass3_Resource";
+        //desc3.type_id = 0;
+        //setup_builder.push_back(desc3);
+
+    }
+    virtual void Render() override {
+        std::cout << "TestPass4 Render..." << "\n";
+    }
 
 };
 
@@ -384,6 +500,28 @@ public:
             //index.AddEntity(entity_1);
             //index.AddEntity(entity_2);
             //index->RemoveEntity(entity_2);
+
+#pragma region RenderPassBuilder
+
+            RenderPassBuilder builder;
+            builder.AddPass(new TestPass2);
+            builder.AddPass(new TestPass1);
+            builder.AddPass(new TestPass4);
+            builder.AddPass(new TestPass3);
+            auto pipeline = builder.Build();
+            pipeline.Render();
+
+
+
+
+
+
+
+
+
+
+
+#pragma endregion
 
             stop = false;
 

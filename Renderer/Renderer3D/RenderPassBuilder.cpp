@@ -1,0 +1,118 @@
+#include "RenderPassBuilder.h"
+
+
+RenderPassBuilder::RenderPassBuilder() : resource_data(), render_passes()
+{
+}
+
+void RenderPassBuilder::AddPass(RenderPass* render_pass)
+{
+
+	RenderPassBuilder_RenderPass_data render_pass_data;
+	render_pass_data.render_pass = std::shared_ptr<RenderPass>(render_pass);
+	RenderPassResourceDefinnition def;
+	render_pass->Setup(def);
+	render_pass_data.resources = def;
+	render_passes.push_back(render_pass_data);
+
+	for (auto& resource : def) {
+		RenderPassBuilder_Resource_data* data;
+		auto fnd = resource_data.find(resource.resource_name);
+		if (fnd != resource_data.end()) {
+			data = &fnd->second;
+		}
+		else {
+			auto new_res = resource_data.insert(std::make_pair(resource.resource_name, RenderPassBuilder_Resource_data{ resource }));
+			data = &new_res.first->second;
+		}
+		
+		switch (resource.desc_access)
+		{
+		case RenderPassResourceDescriptor_Access::READ:
+			data->consumer_index_list.push_front(render_passes.size() - 1);
+			break;
+		case RenderPassResourceDescriptor_Access::WRITE:
+			if (data->creator_index != -1) {
+				throw std::runtime_error("RenderPass resource can currently only have one writer");
+			}
+			data->creator_index = render_passes.size() - 1;
+			break;
+		default:
+			throw std::runtime_error("Invalid Resource Access");
+		}
+	}
+}
+
+RenderPipeline RenderPassBuilder::Build()
+{
+	CompileDependencies();
+	std::vector<std::shared_ptr<RenderPass>> render_pass_order;
+	render_pass_order.reserve(render_passes.size());
+	std::stack<size_t> render_pass_dft_stack;
+	std::vector<bool> visited = std::vector<bool>(render_passes.size(), false);
+	std::vector<bool> visited_cycle = std::vector<bool>(render_passes.size(), false);
+	
+	if (root_passes.empty()) {
+		for (int i = 0; i < render_passes.size(); i++) {
+			TopologicalSortDFT(render_pass_dft_stack, i, visited, visited_cycle);
+		}
+	}
+	else {
+		for (auto root_pass : root_passes) {
+			TopologicalSortDFT(render_pass_dft_stack, root_pass, visited, visited_cycle);
+		}
+	}
+	while(!render_pass_dft_stack.empty()) {
+		auto pass = render_pass_dft_stack.top();
+		render_pass_dft_stack.pop();
+		render_pass_order.push_back(render_passes[pass].render_pass);
+	}
+	
+	return RenderPipeline(std::move(render_pass_order));
+}
+
+void RenderPassBuilder::CompileDependencies()
+{
+	root_passes.clear();
+	for (int i = 0; i < render_passes.size();i++) {
+		auto& pass = render_passes[i];
+		pass.dependencies.clear();
+		bool has_dependencies = false;
+		for (auto& resource : pass.resources) {
+			if (resource.desc_access == RenderPassResourceDescriptor_Access::READ) {
+				auto fnd = resource_data.find(resource.resource_name);
+				if (fnd == resource_data.end()) {
+					throw std::runtime_error("Resource " + resource.resource_name + " could not be found");
+				}
+				auto& resource_entry = fnd->second;
+				if (resource_entry.creator_index == -1) {
+					throw std::runtime_error("Resource " + resource.resource_name + " is consumed but never created.");
+				}
+				has_dependencies = true;
+				pass.dependencies.push_front(resource_entry.creator_index);
+				render_passes[resource_entry.creator_index].depending_passes.push_front(i);
+			}
+		}
+		if (!has_dependencies) {
+			root_passes.push_back(i);
+		}
+	}
+}
+
+void RenderPassBuilder::TopologicalSortDFT(std::stack<size_t>& render_pass_dft_stack, size_t pass, std::vector<bool>& visited, std::vector<bool>& visited_cycle)
+{
+	if (visited[pass]) {
+		if (visited_cycle[pass]) {
+			throw std::runtime_error("RenderPipeline Cycle detected!");
+		}
+		return;
+	}
+	visited_cycle[pass] = true;
+	visited[pass] = true;
+
+	for (auto render_pass : render_passes[pass].depending_passes) {
+		TopologicalSortDFT(render_pass_dft_stack, render_pass, visited, visited_cycle);
+	}
+	visited_cycle[pass] = false;
+	render_pass_dft_stack.push(pass);
+}

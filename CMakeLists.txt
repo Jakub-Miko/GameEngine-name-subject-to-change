@@ -17,6 +17,7 @@ file(GLOB SRCS
 "./World/*.cpp"
 "./World/*/*.cpp"
 "./Renderer/*.cpp" "./Renderer/*.h"
+"./Renderer/Renderer3D/*.cpp" "./Renderer/Renderer3D/*.h"
 "./Core/*.cpp"
 "./Core/Extensions/*.cpp")
 

@@ -1,4 +1,5 @@
 #include "Renderer.h"
+#include <Renderer/Renderer3D/Renderer3D.h>
 #include <platform/OpenGL/OpenGLRenderCommandList.h>
 #include <Renderer/RenderContext.h>
 #include <Renderer/RenderResourceManager.h>
@@ -57,6 +58,7 @@ void Renderer::Init(int max_allocators) {
     if (RenderContext::Get()) {
         RenderContext::Get()->Init();
     }
+    Renderer3D::Init();
 }
 
 
@@ -72,6 +74,7 @@ RenderFence* Renderer::GetFence()
 
 void Renderer::Shutdown()
 {
+    Renderer3D::Shutdown();
     std::unique_lock<std::mutex> lock(instance->default_frame_buffer_mutex);
     if (instance->default_frame_buffer) {
         instance->default_frame_buffer.reset();
