@@ -53,23 +53,21 @@ class TestPass1 : public RenderPass {
 public:
 
     virtual void Setup(RenderPassResourceDefinnition& setup_builder) override {
-        RenderPassResourceDescriptor desc0;
-        desc0.desc_access = RenderPassResourceDescriptor_Access::READ;
-        desc0.resource_name = "TestPass4_Resource";
-        desc0.type_id = 0;
-        setup_builder.push_back(desc0);
+        setup_builder.AddResource<glm::vec2>("TestPass4_Resource", RenderPassResourceDescriptor_Access::READ);
 
-        RenderPassResourceDescriptor desc1;
-        desc1.desc_access = RenderPassResourceDescriptor_Access::WRITE;
-        desc1.resource_name = "TestPass1_Resource";
-        desc1.type_id = 0;
-        setup_builder.push_back(desc1);
+        setup_builder.AddResource<glm::vec2>("TestPass1_Resource", RenderPassResourceDescriptor_Access::WRITE);
+
 
 
     }
-    virtual void Render() override {
+    virtual void Render(RenderPipelineResourceManager& resource_manager) override {
+        resource_manager.SetResource("TestPass1_Resource", &vec);
+
         std::cout << "TestPass1 Render..." << "\n";
     }
+
+private:
+    glm::vec2 vec = { 5.0f,1.0f };
 
 };
 
@@ -77,24 +75,15 @@ class TestPass2 : public RenderPass {
 public:
 
     virtual void Setup(RenderPassResourceDefinnition& setup_builder) override {
-        RenderPassResourceDescriptor desc0;
-        desc0.desc_access = RenderPassResourceDescriptor_Access::READ;
-        desc0.resource_name = "TestPass4_Resource";
-        desc0.type_id = 0;
-        setup_builder.push_back(desc0);
-        
-        
-        RenderPassResourceDescriptor desc1;
-        desc1.desc_access = RenderPassResourceDescriptor_Access::READ;
-        desc1.resource_name = "TestPass1_Resource";
-        desc1.type_id = 0;
-        setup_builder.push_back(desc1);
+        setup_builder.AddResource<glm::vec2>("TestPass4_Resource", RenderPassResourceDescriptor_Access::READ);
 
-        RenderPassResourceDescriptor desc2;
-        desc2.desc_access = RenderPassResourceDescriptor_Access::WRITE;
-        desc2.resource_name = "TestPass2_Resource";
-        desc2.type_id = 0;
-        setup_builder.push_back(desc2);
+        
+       
+        setup_builder.AddResource<glm::vec2>("TestPass1_Resource", RenderPassResourceDescriptor_Access::READ);
+
+
+        setup_builder.AddResource<glm::vec2>("TestPass2_Resource", RenderPassResourceDescriptor_Access::WRITE);
+
 
         //RenderPassResourceDescriptor desc3;
         //desc3.desc_access = RenderPassResourceDescriptor_Access::READ;
@@ -104,9 +93,14 @@ public:
 
 
     }
-    virtual void Render() override {
-        std::cout << "TestPass2 Render..." << "\n";
+    virtual void Render(RenderPipelineResourceManager& resource_manager) override {
+        auto resource = resource_manager.GetResource<glm::vec2>("TestPass1_Resource");
+        
+        std::cout << "TestPass2 Render... Output: " << resource.x << ", " << resource.y << "\n";
     }
+
+private:
+    glm::vec2 vec = { 5.0f,1.0f };
 
 };
 
@@ -114,29 +108,22 @@ class TestPass3 : public RenderPass {
 public:
 
     virtual void Setup(RenderPassResourceDefinnition& setup_builder) override {
-        RenderPassResourceDescriptor desc1;
-        desc1.desc_access = RenderPassResourceDescriptor_Access::READ;
-        desc1.resource_name = "TestPass1_Resource";
-        desc1.type_id = 0;
-        setup_builder.push_back(desc1);
-
-        RenderPassResourceDescriptor desc2;
-        desc2.desc_access = RenderPassResourceDescriptor_Access::READ;
-        desc2.resource_name = "TestPass2_Resource";
-        desc2.type_id = 0;
-        setup_builder.push_back(desc2);
+        setup_builder.AddResource<glm::vec2>("TestPass1_Resource", RenderPassResourceDescriptor_Access::READ);
 
 
+        setup_builder.AddResource<glm::vec2>("TestPass2_Resource", RenderPassResourceDescriptor_Access::READ);
 
-        RenderPassResourceDescriptor desc3;
-        desc3.desc_access = RenderPassResourceDescriptor_Access::WRITE;
-        desc3.resource_name = "TestPass3_Resource";
-        desc3.type_id = 0;
-        setup_builder.push_back(desc3);
+        setup_builder.AddResource<glm::vec2>("TestPass4_Resource", RenderPassResourceDescriptor_Access::READ);
+
+
+        setup_builder.AddResource<glm::vec2>("TestPass3_Resource", RenderPassResourceDescriptor_Access::WRITE);
+
 
     }
-    virtual void Render() override {
-        std::cout << "TestPass3 Render..." << "\n";
+    virtual void Render(RenderPipelineResourceManager& resource_manager) override {
+        auto resource = resource_manager.GetResource<glm::vec2>("TestPass4_Resource");
+
+        std::cout << "TestPass3 Render... Output: " << resource.x << ", " << resource.y << "\n";
     }
 
 };
@@ -145,22 +132,19 @@ class TestPass4 : public RenderPass {
 public:
 
     virtual void Setup(RenderPassResourceDefinnition& setup_builder) override {
-        RenderPassResourceDescriptor desc1;
-        desc1.desc_access = RenderPassResourceDescriptor_Access::WRITE;
-        desc1.resource_name = "TestPass4_Resource";
-        desc1.type_id = 0;
-        setup_builder.push_back(desc1);
+        setup_builder.AddResource<glm::vec2>("TestPass4_Resource", RenderPassResourceDescriptor_Access::WRITE);
 
-        //RenderPassResourceDescriptor desc3;
-        //desc3.desc_access = RenderPassResourceDescriptor_Access::READ;
-        //desc3.resource_name = "TestPass3_Resource";
-        //desc3.type_id = 0;
-        //setup_builder.push_back(desc3);
+        //setup_builder.AddResource<glm::vec2>("TestPass3_Resource", RenderPassResourceDescriptor_Access::READ);
 
     }
-    virtual void Render() override {
+    virtual void Render(RenderPipelineResourceManager& resource_manager) override {
+        resource_manager.SetResource("TestPass4_Resource", &vec);
         std::cout << "TestPass4 Render..." << "\n";
     }
+
+private:
+    glm::vec2 vec = { 5.0f,8.0f };
+
 
 };
 

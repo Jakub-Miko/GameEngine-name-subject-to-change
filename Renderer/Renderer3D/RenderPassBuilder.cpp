@@ -1,5 +1,5 @@
 #include "RenderPassBuilder.h"
-
+#include <unordered_set>
 
 RenderPassBuilder::RenderPassBuilder() : resource_data(), render_passes()
 {
@@ -15,11 +15,23 @@ void RenderPassBuilder::AddPass(RenderPass* render_pass)
 	render_pass_data.resources = def;
 	render_passes.push_back(render_pass_data);
 
-	for (auto& resource : def) {
+	std::unordered_set<std::string> names;
+
+	for (auto resource : def.descriptors) {
 		RenderPassBuilder_Resource_data* data;
+		auto check = names.find(resource.resource_name);
+		if (check == names.end()) {
+			names.insert(resource.resource_name);
+		}
+		else {
+			throw std::runtime_error("Duplicate resource name " + resource.resource_name);
+		}
 		auto fnd = resource_data.find(resource.resource_name);
 		if (fnd != resource_data.end()) {
 			data = &fnd->second;
+			if (data->desc.type_id != resource.type_id) {
+				throw std::runtime_error("Type mismatch in resource " + resource.resource_name);
+			}
 		}
 		else {
 			auto new_res = resource_data.insert(std::make_pair(resource.resource_name, RenderPassBuilder_Resource_data{ resource }));
@@ -46,7 +58,7 @@ void RenderPassBuilder::AddPass(RenderPass* render_pass)
 RenderPipeline RenderPassBuilder::Build()
 {
 	CompileDependencies();
-	std::vector<std::shared_ptr<RenderPass>> render_pass_order;
+	std::vector<RenderPassData> render_pass_order;
 	render_pass_order.reserve(render_passes.size());
 	std::stack<size_t> render_pass_dft_stack;
 	std::vector<bool> visited = std::vector<bool>(render_passes.size(), false);
@@ -65,10 +77,15 @@ RenderPipeline RenderPassBuilder::Build()
 	while(!render_pass_dft_stack.empty()) {
 		auto pass = render_pass_dft_stack.top();
 		render_pass_dft_stack.pop();
-		render_pass_order.push_back(render_passes[pass].render_pass);
+		render_pass_order.push_back(RenderPassData{ render_passes[pass].render_pass, render_passes[pass].resources });
 	}
 	
-	return RenderPipeline(std::move(render_pass_order));
+	std::unordered_map<std::string, RenderPipeline::RenderPipelineResourceData_internal> resources;
+	for (auto& resource_entry : resource_data) {
+		resources.insert(std::make_pair(resource_entry.first, RenderPipeline::RenderPipelineResourceData_internal{nullptr,  resource_entry.second.desc }));
+	}
+
+	return RenderPipeline(std::move(render_pass_order), std::move(resources));
 }
 
 void RenderPassBuilder::CompileDependencies()
@@ -78,7 +95,7 @@ void RenderPassBuilder::CompileDependencies()
 		auto& pass = render_passes[i];
 		pass.dependencies.clear();
 		bool has_dependencies = false;
-		for (auto& resource : pass.resources) {
+		for (auto& resource : pass.resources.descriptors) {
 			if (resource.desc_access == RenderPassResourceDescriptor_Access::READ) {
 				auto fnd = resource_data.find(resource.resource_name);
 				if (fnd == resource_data.end()) {
