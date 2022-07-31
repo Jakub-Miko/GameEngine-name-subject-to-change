@@ -13,8 +13,11 @@
 
 int main() {
     {
+#ifdef WIN32
+    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+    _CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_DEBUG);
+#endif
         BEGIN_PROFILING("Profile", "C:/Users/mainm/Desktop/GameEngine/PseudoCode/Profile_Result1.json");
-
         try {
             Application::Init();
             Application::Get()->SetInitialGameState(std::make_shared<SandboxState>());
@@ -28,7 +31,4 @@ int main() {
         END_PROFILING();
 
     }
-#ifdef WIN32
-    _CrtDumpMemoryLeaks();
-#endif
 }

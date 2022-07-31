@@ -16,3 +16,17 @@ NonIntrusiveRuntimeTag(std::shared_ptr<RenderBufferResource>, "RenderBufferResou
 NonIntrusiveRuntimeTag(std::shared_ptr<RenderTexture2DResource>, "RenderTexture2DResource")
 NonIntrusiveRuntimeTag(std::shared_ptr<RenderFrameBufferResource>, "RenderFrameBufferResource")
 
+template<typename T>
+struct RuntimeTag<T, std::enable_if_t<std::is_pointer_v<T> && (RuntimeTag<std::remove_pointer_t<T>>::GetName() != "Unidentified"), void>> {
+
+	static constexpr std::string_view GetName() {
+		static std::string name = (std::string)RuntimeTag<std::remove_pointer_t<T>>::GetName() + "_pointer";
+		return name;
+	}
+
+	inline static const RuntimeTagIdType GetId() {
+		static const RuntimeTagIdType id = SequentialIdGenerator::Id();
+		return id;
+	}
+
+};

@@ -2,6 +2,7 @@
 #include "RenderPass.h"
 #include <algorithm>
 #include <unordered_map>
+#include <any>
 
 struct RenderPassData {
 	std::shared_ptr<RenderPass> render_pass;
@@ -25,9 +26,12 @@ public:
 			if (fnd->desc_access == RenderPassResourceDescriptor_Access::WRITE) {
 				throw std::runtime_error("Resource " + fnd->resource_name + " is write only in this context");
 			}
-
-			return *static_cast<T*>(pipeline->resources[name].ptr);
-
+			try {
+				return std::any_cast<T>(pipeline->resources[name].data);
+			}
+			catch (const std::bad_any_cast& e) {
+				throw std::runtime_error("Type mismatch when getting resource " + fnd->resource_name);
+			}
 		}
 		else {
 			throw std::runtime_error("Resource " + name + " isn't valid in this context");
@@ -37,7 +41,7 @@ public:
 	}
 
 	template<typename T>
-	void SetResource(const std::string& name, T* resource) {
+	void SetResource(const std::string& name, const T& resource) {
 		auto& desc_list = current_pass->def.descriptors;
 		decltype(current_pass->def.descriptors)::iterator fnd = std::find_if(desc_list.begin(), desc_list.end(), [&name](const RenderPassResourceDescriptor& descriptor) {
 			return descriptor.resource_name == name;
@@ -51,7 +55,7 @@ public:
 				throw std::runtime_error("Resource " + fnd->resource_name + " is read only in this context");
 			}
 
-			pipeline->resources[name].ptr = resource;
+			pipeline->resources[name].data = resource;
 
 		}
 		else {
@@ -76,7 +80,7 @@ private:
 	friend class RenderPipelineResourceManager;
 	friend class RenderPassBuilder;
 	struct RenderPipelineResourceData_internal {
-		void* ptr;
+		std::any data;
 		RenderPassResourceDescriptor desc;
 	};
 	RenderPipeline(std::vector<RenderPassData>&& render_passes, std::unordered_map<std::string, RenderPipelineResourceData_internal>&& resources);

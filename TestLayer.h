@@ -1,6 +1,7 @@
 
 #pragma once
 #include "Layer.h"
+#include <Renderer/Renderer3D/RenderResourceCollection.h>
 #include "Application.h"
 #include <iostream>
 #include <World/SpatialIndex.h>
@@ -53,7 +54,7 @@ class TestPass1 : public RenderPass {
 public:
 
     virtual void Setup(RenderPassResourceDefinnition& setup_builder) override {
-        setup_builder.AddResource<glm::vec2>("TestPass4_Resource", RenderPassResourceDescriptor_Access::READ);
+        setup_builder.AddResource<glm::vec2*>("TestPass4_Resource", RenderPassResourceDescriptor_Access::READ);
 
         setup_builder.AddResource<glm::vec2>("TestPass1_Resource", RenderPassResourceDescriptor_Access::WRITE);
 
@@ -61,7 +62,7 @@ public:
 
     }
     virtual void Render(RenderPipelineResourceManager& resource_manager) override {
-        resource_manager.SetResource("TestPass1_Resource", &vec);
+        resource_manager.SetResource("TestPass1_Resource", vec);
 
         std::cout << "TestPass1 Render..." << "\n";
     }
@@ -75,14 +76,14 @@ class TestPass2 : public RenderPass {
 public:
 
     virtual void Setup(RenderPassResourceDefinnition& setup_builder) override {
-        setup_builder.AddResource<glm::vec2>("TestPass4_Resource", RenderPassResourceDescriptor_Access::READ);
+        setup_builder.AddResource<glm::vec2*>("TestPass4_Resource", RenderPassResourceDescriptor_Access::READ);
 
         
        
         setup_builder.AddResource<glm::vec2>("TestPass1_Resource", RenderPassResourceDescriptor_Access::READ);
 
 
-        setup_builder.AddResource<glm::vec2>("TestPass2_Resource", RenderPassResourceDescriptor_Access::WRITE);
+        setup_builder.AddResource<std::shared_ptr<RenderBufferResource>>("TestPass2_Resource", RenderPassResourceDescriptor_Access::WRITE);
 
 
         //RenderPassResourceDescriptor desc3;
@@ -111,9 +112,9 @@ public:
         setup_builder.AddResource<glm::vec2>("TestPass1_Resource", RenderPassResourceDescriptor_Access::READ);
 
 
-        setup_builder.AddResource<glm::vec2>("TestPass2_Resource", RenderPassResourceDescriptor_Access::READ);
+        setup_builder.AddResource<std::shared_ptr<RenderBufferResource>>("TestPass2_Resource", RenderPassResourceDescriptor_Access::READ);
 
-        setup_builder.AddResource<glm::vec2>("TestPass4_Resource", RenderPassResourceDescriptor_Access::READ);
+        setup_builder.AddResource<glm::vec2*>("TestPass4_Resource", RenderPassResourceDescriptor_Access::READ);
 
 
         setup_builder.AddResource<glm::vec2>("TestPass3_Resource", RenderPassResourceDescriptor_Access::WRITE);
@@ -121,9 +122,9 @@ public:
 
     }
     virtual void Render(RenderPipelineResourceManager& resource_manager) override {
-        auto resource = resource_manager.GetResource<glm::vec2>("TestPass4_Resource");
+        auto resource = resource_manager.GetResource<glm::vec2*>("TestPass4_Resource");
 
-        std::cout << "TestPass3 Render... Output: " << resource.x << ", " << resource.y << "\n";
+        std::cout << "TestPass3 Render... Output: " << resource->x << ", " << resource->y << "\n";
     }
 
 };
@@ -132,7 +133,7 @@ class TestPass4 : public RenderPass {
 public:
 
     virtual void Setup(RenderPassResourceDefinnition& setup_builder) override {
-        setup_builder.AddResource<glm::vec2>("TestPass4_Resource", RenderPassResourceDescriptor_Access::WRITE);
+        setup_builder.AddResource<glm::vec2*>("TestPass4_Resource", RenderPassResourceDescriptor_Access::WRITE);
 
         //setup_builder.AddResource<glm::vec2>("TestPass3_Resource", RenderPassResourceDescriptor_Access::READ);
 
@@ -497,10 +498,10 @@ public:
 
 
 
-
-
-
-
+            std::cout << "Id: " << RuntimeTag<RenderResourceCollection<bool>>::GetId() << " Name: " << RuntimeTag<RenderResourceCollection<bool>>::GetName() << "\n";
+            std::cout << "Id: " << RuntimeTag<RenderResourceCollection<glm::vec2>>::GetId() << " Name: " << RuntimeTag<RenderResourceCollection<glm::vec2>>::GetName() << "\n";
+            std::cout << "Name:" << RuntimeTag<glm::vec2*>::GetName() << " Id: " << RuntimeTag<glm::vec2*>::GetId() << "\n";
+            std::cout << "Name: " << RuntimeTag<bool*>::GetName() << " Id: " << RuntimeTag<bool*>::GetId() << "\n";
 
 
 
