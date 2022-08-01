@@ -36,6 +36,7 @@
 #include <Window.h>
 #include <FileManager.h>
 #include <Renderer/Renderer3D/RenderPassBuilder.h>
+#include <Renderer/Renderer3D/RenderPasses/RenderSubmissionPass.h>
 #ifdef EDITOR
 #include <Editor/Editor.h>
 #include <imgui.h>
@@ -53,7 +54,7 @@ class test2 {
 class TestPass1 : public RenderPass {
 public:
 
-    virtual void Setup(RenderPassResourceDefinnition& setup_builder) override {
+   virtual void Setup(RenderPassResourceDefinnition& setup_builder) override {
         setup_builder.AddResource<glm::vec2*>("TestPass4_Resource", RenderPassResourceDescriptor_Access::READ);
 
         setup_builder.AddResource<glm::vec2>("TestPass1_Resource", RenderPassResourceDescriptor_Access::WRITE);
@@ -107,7 +108,6 @@ private:
 
 class TestPass3 : public RenderPass {
 public:
-
     virtual void Setup(RenderPassResourceDefinnition& setup_builder) override {
         setup_builder.AddResource<glm::vec2>("TestPass1_Resource", RenderPassResourceDescriptor_Access::READ);
 
@@ -119,10 +119,16 @@ public:
 
         setup_builder.AddResource<glm::vec2>("TestPass3_Resource", RenderPassResourceDescriptor_Access::WRITE);
 
+        setup_builder.AddResource<RenderResourceCollection<std::shared_ptr<Mesh>>>("RenderObjects", RenderPassResourceDescriptor_Access::READ);
 
     }
     virtual void Render(RenderPipelineResourceManager& resource_manager) override {
         auto resource = resource_manager.GetResource<glm::vec2*>("TestPass4_Resource");
+        auto& resources_collection = resource_manager.GetResource<RenderResourceCollection<std::shared_ptr<Mesh>>>("RenderObjects");
+
+        for (auto mesh : resources_collection.resources) {
+            std::cout << "Index count: " << mesh->GetIndexCount() << "\n";
+        }
 
         std::cout << "TestPass3 Render... Output: " << resource->x << ", " << resource->y << "\n";
     }
@@ -145,10 +151,7 @@ public:
 
 private:
     glm::vec2 vec = { 5.0f,8.0f };
-
-
 };
-
 
 class TestLayer : public Layer
 {
@@ -488,14 +491,6 @@ public:
 
 #pragma region RenderPassBuilder
 
-            RenderPassBuilder builder;
-            builder.AddPass(new TestPass2);
-            builder.AddPass(new TestPass1);
-            builder.AddPass(new TestPass4);
-            builder.AddPass(new TestPass3);
-            auto pipeline = builder.Build();
-            pipeline.Render();
-
 
 
             std::cout << "Id: " << RuntimeTag<RenderResourceCollection<bool>>::GetId() << " Name: " << RuntimeTag<RenderResourceCollection<bool>>::GetName() << "\n";
@@ -511,6 +506,18 @@ public:
             stop = false;
 
         }
+
+        RenderPassBuilder builder;
+        builder.AddPass(new TestPass2);
+        builder.AddPass(new TestPass1);
+        builder.AddPass(new TestPass4);
+        builder.AddPass(new TestPass3);
+        builder.AddPass(new RenderSubmissionPass);
+        auto pipeline = builder.Build();
+        pipeline.Render();
+
+
+
         auto& index = Application::GetWorld().GetSpatialIndex();
         std::vector<Entity> entities;
         Application::GetWorld().GetComponent<CameraComponent>(Application::GetWorld().GetPrimaryEntity()).UpdateViewFrustum(Application::GetWorld().GetComponent<TransformComponent>(Application::GetWorld().GetPrimaryEntity()).TransformMatrix);

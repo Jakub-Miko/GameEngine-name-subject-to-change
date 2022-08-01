@@ -9,6 +9,7 @@
 #include <mutex>
 #include <memory>
 
+
 enum class Mesh_status : char {
 	UNINITIALIZED = 0, LOADING = 1, READY = 2, ERROR = 3
 };
@@ -227,3 +228,5 @@ private:
 	
 	static MeshManager* instance;
 };
+
+NonIntrusiveRuntimeTag(std::shared_ptr<Mesh>, "Mesh")

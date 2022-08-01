@@ -42,7 +42,7 @@ private:
 
 class RenderPass {
 public:
-
+	virtual ~RenderPass() {};
 	virtual void Setup(RenderPassResourceDefinnition& setup_builder) = 0;
 	virtual void Render(RenderPipelineResourceManager& resource_manager) = 0;
 
