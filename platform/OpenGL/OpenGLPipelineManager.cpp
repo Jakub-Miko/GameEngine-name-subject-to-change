@@ -130,7 +130,7 @@ void OpenGLPipeline::SetDescriptorTable(const std::string& semantic_name, Render
 				if (static_cast<OpenGLRenderDescriptorAllocation*>(table.get())->descriptor_pointer[current].type == RootParameterType::CONSTANT_BUFFER) {
 					SetConstantBuffer(buf_start,
 						std::static_pointer_cast<RenderBufferResource>(static_cast<OpenGLRenderDescriptorAllocation*>(table.get())->descriptor_pointer[current].m_resource));
-					i++;
+					//i++; // I dont think this should be here !!!!!!!!!!!!!!!
 					buf_start++;
 				}
 				else {
@@ -143,7 +143,7 @@ void OpenGLPipeline::SetDescriptorTable(const std::string& semantic_name, Render
 				if (static_cast<OpenGLRenderDescriptorAllocation*>(table.get())->descriptor_pointer[current].type == RootParameterType::TEXTURE_2D) {
 					SetTexture2D(tex_start,
 						std::static_pointer_cast<RenderTexture2DResource>(static_cast<OpenGLRenderDescriptorAllocation*>(table.get())->descriptor_pointer[current].m_resource));
-					i++;
+					//i++; // I dont think this should be here !!!!!!!!!!!!!!!
 					tex_start++;
 				}
 				else {

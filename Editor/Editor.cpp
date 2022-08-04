@@ -86,6 +86,7 @@ void Editor::Run()
 		auto save_id = ImGui::GetID("Save Dialog");
 		auto load_id = ImGui::GetID("Load Dialog");
 		auto import_id = ImGui::GetID("Import Mesh Dialog");
+		auto import_text_id = ImGui::GetID("Import Texture Dialog");
 		if (are_files_dropped) {
 			are_files_dropped = false;
 			if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceExtern)) {
@@ -124,6 +125,10 @@ void Editor::Run()
 		if (ImGui::BeginMenu("Import")) {
 			if (ImGui::MenuItem("Import Mesh")) {
 				ImGui::OpenPopup(import_id);
+			};
+
+			if (ImGui::MenuItem("Import Texture")) {
+				ImGui::OpenPopup(import_text_id);
 			};
 
 			ImGui::EndMenu();

@@ -204,7 +204,7 @@ std::shared_ptr<RenderFrameBufferResource> OpenGLRenderResourceManager::CreateFr
 	return ptr;
 }
 
-//References to Resources never get destoryed !!!!!!!!!!!!!!!!!!!!!!!!!!!!! -> partially fixed (recommend revision)
+//References to Resources never get destroyed !!!!!!!!!!!!!!!!!!!!!!!!!!!!! -> partially fixed (recommend revision)
 void OpenGLRenderResourceManager::CreateConstantBufferDescriptor(const RenderDescriptorTable& table, int index, std::shared_ptr<RenderBufferResource> resource)
 {
 	OpenGLRenderDescriptorAllocation* gl_table = static_cast<OpenGLRenderDescriptorAllocation*>(table.get());

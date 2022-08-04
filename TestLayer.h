@@ -546,7 +546,7 @@ public:
                     glm::vec4(0.6f,0.6f,0.6f,1.0f),
                     glm::vec4(0,0,0,0)
             };
-
+             
             RenderResourceManager::Get()->UploadDataToBuffer(command_list, constant_buffer.GetResource(), &buffer, sizeof(buffer), 0);
 
             command_list->SetDefaultRenderTarget();

@@ -42,7 +42,7 @@ void OpenGLRenderDescriptorHeapBlock::FlushDescriptorDeallocations(uint32_t fram
 {
 	std::lock_guard<std::mutex> lock(stale_mutex);
 	while (!stale_descriptors.empty() && stale_descriptors.front().frame_number <= frame_number) {
-		auto current_desc = stale_descriptors.front();
+		const auto& current_desc = stale_descriptors.front();
 		stale_descriptors.pop_front();
 		FreeInternal(current_desc);
 	}

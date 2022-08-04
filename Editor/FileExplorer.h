@@ -14,11 +14,12 @@ public:
 	}
 
 	void OpenImportDialog(const std::string source_relative_path_template, const std::string destination_relative_path_template);
-
+	void OpenTextureImportDialog(const std::string source_relative_path_template, const std::string destination_relative_path_template);
 
 private:
 	std::string current_path;
 	int import_id = 0;
+	int import_tex_id = 0;
 	char* import_source_buffer = nullptr;
 	char* import_dest_buffer = nullptr;
 	int text_buffer_size = 200;

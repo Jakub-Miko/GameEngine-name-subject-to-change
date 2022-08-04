@@ -17,7 +17,7 @@ RenderDescriptorAllocationHandle RenderDescriptorHeap::Allocate(size_t num_of_de
 {
 	RenderDescriptorAllocation* allocation = descriptor_block->Allocate(num_of_descriptors);
 	if (allocation) {
-		return std::unique_ptr<RenderDescriptorAllocation>(allocation);
+		return std::shared_ptr<RenderDescriptorAllocation>(allocation);
 	}
 	else {
 		throw std::runtime_error("Allocation failed");
