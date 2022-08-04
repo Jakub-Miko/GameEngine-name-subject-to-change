@@ -28,7 +28,6 @@ struct RootSignatureFactory<ImGUI_Shader> {
                 }
             ));
 
-            PipelineManager::Get()->AddSignature(sig);
             signature = sig;
         }
 
@@ -41,7 +40,7 @@ template<>
 struct VertexLayoutFactory<ImGUI_Shader> {
 
     static VertexLayout* GetLayout() {
-        static VertexLayout* layout = nullptr;
+        static std::unique_ptr<VertexLayout> layout = nullptr;
         if (!layout) {
             VertexLayout* layout_new = new VertexLayout({
                 VertexLayoutElement(RenderPrimitiveType::FLOAT,2,"Position"),
@@ -49,11 +48,10 @@ struct VertexLayoutFactory<ImGUI_Shader> {
                 VertexLayoutElement(RenderPrimitiveType::UNSIGNED_CHAR,4,"Color",true)
                 });
 
-            PipelineManager::Get()->AddLayout(layout_new);
 
-            layout = layout_new;
+            layout = std::unique_ptr<VertexLayout>(layout_new);
         }
-        return layout;
+        return layout.get();
     }
 
 };
@@ -92,6 +90,23 @@ static void ResetState(ImDrawData* data, int width, int height) {
 
 static void CreateShaders() {
     const char* shader_glsl_410_core =
+        R"(
+        #RootSignature
+        {
+        	"RootSignature": [
+        		{
+        			"name" : "conf",
+        			"type" : "constant_buffer"
+        		},
+                {
+        			"name" : "Texture",
+        			"type" : "texture_2D"
+        		}
+        
+        	]
+        }
+        #end
+        )"        
         "#Vertex //--------------------------------------------------\n"
         "#version 410\n"
         "\n"
@@ -136,7 +151,6 @@ static void CreatePipeline() {
     desc.polygon_render_mode = PrimitivePolygonRenderMode::DEFAULT;
     desc.scissor_rect = RenderScissorRect();
     desc.shader = impl_custom_imgui_backend::GetBackendData()->shader;
-    desc.signature = RootSignatureFactory<ImGUI_Shader>::GetRootSignature();
     desc.viewport = RenderViewport();
     desc.blend_functions = PipelineBlendFunctions{ BlendFunction::SRC_ALPHA, BlendFunction::ONE_MINUS_SRC_ALPHA ,BlendFunction::ONE, BlendFunction::ONE_MINUS_SRC_ALPHA };
 
@@ -237,7 +251,7 @@ void impl_custom_imgui_backend::Init()
 
 void impl_custom_imgui_backend::Shutdown()
 {
-    
+
 }
 
 void impl_custom_imgui_backend::NewFrame()
@@ -251,7 +265,6 @@ void impl_custom_imgui_backend::NewFrame()
 void impl_custom_imgui_backend::PreShutdown()
 {
     ImGui_custom_ShutdownPlatformInterface();
-    delete current_backend_data->shader;
     delete current_backend_data;
 }
 

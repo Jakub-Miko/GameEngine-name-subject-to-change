@@ -51,7 +51,7 @@ void OpenGLPipeline::SetConstantBuffer(const std::string& semantic_name, std::sh
 		throw std::runtime_error("This buffer isn't a constant buffer");
 	}
 	
-	OpenGLRootSignature* sig = static_cast<OpenGLRootSignature*>(signature);
+	const OpenGLRootSignature* sig = static_cast<const OpenGLRootSignature*>(&GetSignature());
 	int index = sig->GetUniformBlockBindingId(semantic_name);
 	glBindBufferBase(GL_UNIFORM_BUFFER, index, static_cast<OpenGLRenderBufferResource*>(buffer.get())->GetRenderId());
 }
@@ -64,7 +64,7 @@ void OpenGLPipeline::SetTexture2D(RootBinding binding_id, std::shared_ptr<Render
 
 void OpenGLPipeline::SetTexture2D(const std::string& semantic_name, std::shared_ptr<RenderTexture2DResource> texture)
 {
-	OpenGLRootSignature* sig = static_cast<OpenGLRootSignature*>(signature);
+	const OpenGLRootSignature* sig = static_cast<const OpenGLRootSignature*>(&GetSignature());
 	int index = sig->GetTextureSlot(semantic_name);
 	glActiveTexture(GL_TEXTURE0 + index);
 	glBindTexture(GL_TEXTURE_2D, static_cast<OpenGLRenderTexture2DResource*>(texture.get())->GetRenderId());
@@ -117,7 +117,7 @@ void OpenGLPipeline::EndVertexContext()
 //TODO: FIX THIS, IT MIGHT WORK, BUT I DONT LIKE IT !!!!!!!!!!!!!!!!!!!!!!
 void OpenGLPipeline::SetDescriptorTable(const std::string& semantic_name, RenderDescriptorTable table)
 {
-	OpenGLRootSignature* sig = static_cast<OpenGLRootSignature*>(signature);
+	const OpenGLRootSignature* sig = static_cast<const OpenGLRootSignature*>(&GetSignature());
 	int current = 0;
 	auto table_desc = sig->GetTableBinding(semantic_name);
 	int buf_start = table_desc.starting_binding_id;

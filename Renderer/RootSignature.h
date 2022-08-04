@@ -4,13 +4,13 @@
 #include <stdint.h>
 #include <stdexcept>
 #include <unordered_map>
-#include <Renderer/PipelineManager.h>
 #include <Renderer/PipelinePresets.h>
 #include <Renderer/RenderResource.h>
 #include <string>
 
 
 struct RootDescriptorTableRange {
+	RootDescriptorTableRange() : type(RootDescriptorType::CONSTANT_BUFFER), size(0), name("Unknown") {}
 	RootDescriptorTableRange(RootDescriptorType type,uint32_t size, std::string name) : type(type), size(size),name(name) {}
 	RootDescriptorType type;
 	uint32_t size;
@@ -29,6 +29,7 @@ struct RootSignatureDescriptorElement {
 };
 
 struct RootSignatureDescriptor {
+	RootSignatureDescriptor() = default;
 	RootSignatureDescriptor(const std::vector<RootSignatureDescriptorElement>& parameters) : parameters(parameters) {}
 	RootSignatureDescriptor(std::vector<RootSignatureDescriptorElement>&& parameters) : parameters(std::move(parameters)) {}
 	std::vector<RootSignatureDescriptorElement> parameters;
@@ -94,7 +95,6 @@ struct RootSignatureFactory<TestPreset> {
 				}
 			));
 
-			PipelineManager::Get()->AddSignature(sig);
 			signature = sig;
 		}
 
@@ -108,18 +108,17 @@ template<>
 struct VertexLayoutFactory<TestPreset> {
 
 	static VertexLayout* GetLayout() {
-		static VertexLayout* layout = nullptr;
+		static std::unique_ptr<VertexLayout> layout = nullptr;
 		if (!layout) {
 			VertexLayout* layout_new = new VertexLayout({
 				VertexLayoutElement(RenderPrimitiveType::FLOAT,2, "position"),
 				VertexLayoutElement(RenderPrimitiveType::FLOAT,2, "normal")
 				});
 
-			PipelineManager::Get()->AddLayout(layout_new);
 
-			layout = layout_new;
+			layout = std::unique_ptr<VertexLayout>(layout_new);
 		}
-		return layout;
+		return layout.get();
 	}
 
 };
@@ -140,8 +139,6 @@ struct RootSignatureFactory<BoxPreset> {
 					RootSignatureDescriptorElement("conf",RootParameterType::CONSTANT_BUFFER)
 				}
 			));
-
-			PipelineManager::Get()->AddSignature(sig);
 			signature = sig;
 		}
 
@@ -155,18 +152,16 @@ template<>
 struct VertexLayoutFactory<BoxPreset> {
 
 	static VertexLayout* GetLayout() {
-		static VertexLayout* layout = nullptr;
+		static std::unique_ptr<VertexLayout> layout = nullptr;
 		if (!layout) {
 			VertexLayout* layout_new = new VertexLayout({
 				VertexLayoutElement(RenderPrimitiveType::FLOAT,4,"position"),
 				VertexLayoutElement(RenderPrimitiveType::FLOAT,4,"normal")
 				});
 
-			PipelineManager::Get()->AddLayout(layout_new);
-
-			layout = layout_new;
+			layout = std::unique_ptr<VertexLayout>(layout_new);
 		}
-		return layout;
+		return layout.get();
 	}
 
 };
@@ -177,7 +172,7 @@ template<>
 struct VertexLayoutFactory<MeshPreset> {
 
 	static VertexLayout* GetLayout() {
-		static VertexLayout* layout = nullptr;
+		static std::unique_ptr<VertexLayout> layout = nullptr;
 		if (!layout) {
 			VertexLayout* layout_new = new VertexLayout({
 				VertexLayoutElement(RenderPrimitiveType::FLOAT,3,"position"),
@@ -186,11 +181,9 @@ struct VertexLayoutFactory<MeshPreset> {
 				VertexLayoutElement(RenderPrimitiveType::FLOAT,2,"uv0")
 				});
 
-			PipelineManager::Get()->AddLayout(layout_new);
-
-			layout = layout_new;
+			layout = std::unique_ptr<VertexLayout>(layout_new);
 		}
-		return layout;
+		return layout.get();
 	}
 
 };

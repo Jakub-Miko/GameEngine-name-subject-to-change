@@ -24,7 +24,7 @@ private:
 
 	static bool objects_init;
 	struct backend_data {
-		Shader* shader = nullptr;
+		std::shared_ptr<Shader> shader = nullptr;
 		std::shared_ptr<Pipeline> pipeline = nullptr;
 		FrameMultiBufferResource<std::shared_ptr<RenderBufferResource>> vertex_buffer;
 		FrameMultiBufferResource<std::shared_ptr<RenderBufferResource>> index_buffer;

@@ -22,10 +22,10 @@ public:
 		unsigned int starting_texture_id;
 	};
 	friend RootSignature;
-	int GetUniformBlockBindingId(const std::string& name);
-	int GetTextureSlot(const std::string& name);
+	int GetUniformBlockBindingId(const std::string& name) const ;
+	int GetTextureSlot(const std::string& name) const;
 
-	const RootDescriptorTableBinding& GetTableBinding(const std::string& name);
+	const RootDescriptorTableBinding& GetTableBinding(const std::string& name) const;
 
 private:
 	virtual ~OpenGLRootSignature() {}

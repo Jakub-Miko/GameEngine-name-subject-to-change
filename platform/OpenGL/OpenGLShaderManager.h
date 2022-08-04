@@ -43,12 +43,12 @@ private:
 class OpenGLShaderManager : public ShaderManager {
 public:
 	friend ShaderManager;
-
-	virtual Shader* GetShader(const std::string& name) override;
-	virtual Shader* CreateShader(const std::string& path) override;
-	virtual Shader* CreateShaderFromString(const std::string& source) override;
-
 private:
+
+	virtual Shader* GetShader_impl(const std::string& name) override;
+	virtual Shader* CreateShader_impl(const std::string& path) override;
+	virtual Shader* CreateShaderFromString_impl(const std::string& source) override;
+
 	OpenGLShaderManager();
 	virtual ~OpenGLShaderManager() override;
 

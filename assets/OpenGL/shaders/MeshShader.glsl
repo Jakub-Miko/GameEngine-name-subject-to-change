@@ -1,3 +1,15 @@
+#RootSignature
+{
+	"RootSignature": [
+		{
+			"name" : "conf",
+			"type" : "constant_buffer"
+		}
+
+	]
+}
+#end
+
 #Vertex //--------------------------------------------------
 #version 410
 

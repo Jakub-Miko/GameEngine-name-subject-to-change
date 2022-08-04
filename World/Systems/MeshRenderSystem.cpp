@@ -90,7 +90,6 @@ void InitMeshRenderSystem()
     pipeline_desc.layout = VertexLayoutFactory<MeshPreset>::GetLayout();
     pipeline_desc.scissor_rect = RenderScissorRect();
     pipeline_desc.viewport = RenderViewport();
-    pipeline_desc.signature = RootSignatureFactory<BoxPreset>::GetRootSignature();
     pipeline_desc.shader = ShaderManager::Get()->GetShader("MeshShader.glsl");
 
     pipeline = PipelineManager::Get()->CreatePipeline(pipeline_desc);

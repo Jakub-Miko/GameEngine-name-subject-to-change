@@ -113,20 +113,20 @@ OpenGLShaderManager::~OpenGLShaderManager() {
 	}
 }
 
-Shader* OpenGLShaderManager::GetShader(const std::string& name) {
+Shader* OpenGLShaderManager::GetShader_impl(const std::string& name) {
 	std::unique_lock<std::mutex> lock(sync_mutex);
 	auto fnd = m_Shaders.find(name);
 	if (fnd != m_Shaders.end()) {
 		return static_cast<Shader*>(fnd->second);
 	}
 	else {
-		OpenGLShader* new_shader = (m_Shaders.insert(std::make_pair(name, static_cast<OpenGLShader*>(CreateShader(name)))).first->second);
+		OpenGLShader* new_shader = (m_Shaders.insert(std::make_pair(name, static_cast<OpenGLShader*>(CreateShader_impl(name)))).first->second);
 		lock.unlock();
 		return static_cast<Shader*>(new_shader);
 	}
 }
 
-Shader* OpenGLShaderManager::CreateShader(const std::string& path)
+Shader* OpenGLShaderManager::CreateShader_impl(const std::string& path)
 {
 	OpenGLShader* new_shader = new OpenGLShader;
 	OpenGLRenderCommandQueue* queue = static_cast<OpenGLRenderCommandQueue*>(Renderer::Get()->GetCommandQueue());
@@ -140,7 +140,7 @@ Shader* OpenGLShaderManager::CreateShader(const std::string& path)
 	return static_cast<Shader*>(new_shader);
 }
 
-Shader* OpenGLShaderManager::CreateShaderFromString(const std::string& source)
+Shader* OpenGLShaderManager::CreateShaderFromString_impl(const std::string& source)
 {
 	OpenGLShader* new_shader = new OpenGLShader;
 	OpenGLRenderCommandQueue* queue = static_cast<OpenGLRenderCommandQueue*>(Renderer::Get()->GetCommandQueue());

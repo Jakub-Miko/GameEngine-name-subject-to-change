@@ -127,7 +127,6 @@ struct Render_Box_data {
         pipeline_desc.layout = VertexLayoutFactory<BoxPreset>::GetLayout();
         pipeline_desc.scissor_rect = RenderScissorRect();
         pipeline_desc.viewport = RenderViewport();
-        pipeline_desc.signature = RootSignatureFactory<BoxPreset>::GetRootSignature();
         pipeline_desc.shader = ShaderManager::Get()->GetShader("BoxShader.glsl");
 
         pipeline = PipelineManager::Get()->CreatePipeline(pipeline_desc);
@@ -137,7 +136,6 @@ struct Render_Box_data {
         pipeline_desc_wireframe.layout = VertexLayoutFactory<BoxPreset>::GetLayout();
         pipeline_desc_wireframe.scissor_rect = RenderScissorRect();
         pipeline_desc_wireframe.viewport = RenderViewport();
-        pipeline_desc_wireframe.signature = RootSignatureFactory<BoxPreset>::GetRootSignature();
         pipeline_desc_wireframe.shader = ShaderManager::Get()->GetShader("BoxShader.glsl");
         pipeline_desc_wireframe.polygon_render_mode = PrimitivePolygonRenderMode::WIREFRAME;
 

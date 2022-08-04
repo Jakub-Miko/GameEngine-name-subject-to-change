@@ -50,7 +50,7 @@ void OpenGLRootSignature::CreateDescriptorTableParams(const RootSignatureDescrip
 
 }
 
-int OpenGLRootSignature::GetUniformBlockBindingId(const std::string& name)
+int OpenGLRootSignature::GetUniformBlockBindingId(const std::string& name) const
 {
 	auto fnd = parameters.find(name);
 	if (fnd != parameters.end()) {
@@ -66,7 +66,7 @@ int OpenGLRootSignature::GetUniformBlockBindingId(const std::string& name)
 	}
 }
 
-int OpenGLRootSignature::GetTextureSlot(const std::string& name)
+int OpenGLRootSignature::GetTextureSlot(const std::string& name) const
 {
 	auto fnd = parameters.find(name);
 	if (fnd != parameters.end()) {
@@ -82,7 +82,7 @@ int OpenGLRootSignature::GetTextureSlot(const std::string& name)
 	}
 }
 
-const OpenGLRootSignature::RootDescriptorTableBinding& OpenGLRootSignature::GetTableBinding(const std::string& name)
+const OpenGLRootSignature::RootDescriptorTableBinding& OpenGLRootSignature::GetTableBinding(const std::string& name) const
 {
 	auto fnd = parameters.find(name);
 	if (fnd != parameters.end()) {

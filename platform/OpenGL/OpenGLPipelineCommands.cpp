@@ -17,7 +17,7 @@ void OpenGLSetPipelineCommand::Execute()
 
 	OpenGLRenderCommandQueue* queue = static_cast<OpenGLRenderCommandQueue*>(Renderer::Get()->GetCommandQueue());
 	const PipelineState& current_state = queue->GetPipelineState();
-	const OpenGLShader* current_shader = static_cast<const OpenGLShader*>(current_state.GetShader());
+	const OpenGLShader* current_shader = static_cast<const OpenGLShader*>(current_state.GetShader().get());
 	auto blend_func = pipeline->GetPipelineBlendFunctions();
 	
 	RenderViewport viewport = pipeline->GetViewport();
@@ -25,7 +25,7 @@ void OpenGLSetPipelineCommand::Execute()
 	PrimitivePolygonRenderMode rendermode = pipeline->GetPrimitivePolygonRenderMode();
 	const WindowProperties& props = Application::Get()->GetWindow()->GetProperties();
 	const PipelineFlags& flags = pipeline->GetPipelineFlags();
-	unsigned int shader = static_cast<const OpenGLShader*>(pipeline->GetShader())->GetShaderProgram();
+	unsigned int shader = static_cast<const OpenGLShader*>(pipeline->GetShader().get())->GetShaderProgram();
 
 	if (current_state.flags != flags || (bool)(pipeline->GetPipelineFlags() & PipelineFlags::IS_MULTI_WINDOW)) {
 		if (uint32_t(flags & PipelineFlags::ENABLE_DEPTH_TEST)) glEnable(GL_DEPTH_TEST);

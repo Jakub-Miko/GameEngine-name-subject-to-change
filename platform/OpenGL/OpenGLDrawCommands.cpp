@@ -1,5 +1,6 @@
 #include "OpenGLDrawCommands.h"
 #include <GL/glew.h>
+#include <Renderer/RootSignature.h>
 #include <platform/OpenGL/OpenGLPipelineManager.h>
 #include <platform/OpenGL/OpenGLRenderResource.h>
 #include "OpenGLUnitConverter.h"

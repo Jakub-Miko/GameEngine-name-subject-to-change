@@ -53,7 +53,7 @@ public:
 		current_state.flags = ref;
 	}
 
-	void SetShader(const Shader* shader) {
+	void SetShader(std::shared_ptr<Shader> shader) {
 		current_state.shader = shader;
 	}
 
