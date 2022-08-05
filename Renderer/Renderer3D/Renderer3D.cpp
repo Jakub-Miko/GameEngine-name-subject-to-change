@@ -21,7 +21,7 @@ Renderer3D* Renderer3D::Get()
 	return instance;
 }
 
-Renderer3D::Renderer3D()
+Renderer3D::Renderer3D() : default_descriptor_heap(500)
 {
 
 }

@@ -13,6 +13,11 @@ public:
 		case RenderPrimitiveType::INT:				return GL_INT;
 		case RenderPrimitiveType::UNSIGNED_CHAR:	return GL_UNSIGNED_BYTE;
 		case RenderPrimitiveType::UNSIGNED_INT:		return GL_UNSIGNED_INT;
+		case RenderPrimitiveType::VEC2:				return GL_FLOAT;
+		case RenderPrimitiveType::VEC3:				return GL_FLOAT;
+		case RenderPrimitiveType::VEC4:				return GL_FLOAT;
+		case RenderPrimitiveType::MAT3:				return GL_FLOAT;
+		case RenderPrimitiveType::MAT4:				return GL_FLOAT;
 		default: 
 			throw std::runtime_error("Conversion failed");
 		}
@@ -25,6 +30,11 @@ public:
 		case RenderPrimitiveType::INT:				return sizeof(int);
 		case RenderPrimitiveType::UNSIGNED_CHAR:	return sizeof(unsigned char);
 		case RenderPrimitiveType::UNSIGNED_INT:		return sizeof(unsigned int);
+		case RenderPrimitiveType::VEC2:				return sizeof(float) * 2;
+		case RenderPrimitiveType::VEC3:				return sizeof(float) * 3;
+		case RenderPrimitiveType::VEC4:				return sizeof(float) * 4;
+		case RenderPrimitiveType::MAT3:				return sizeof(float) * 9;
+		case RenderPrimitiveType::MAT4:				return sizeof(float) * 16;
 		default:
 			throw std::runtime_error("Conversion failed");
 		}

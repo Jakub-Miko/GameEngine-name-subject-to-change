@@ -166,7 +166,7 @@ public:
     std::shared_ptr<RenderBufferResource> resource_vertex;
     std::shared_ptr<RenderBufferResource> resource_index;
     Future<std::shared_ptr<RenderTexture2DResource>> texture;
-
+    
     std::shared_ptr<RenderTexture2DResource> color_texture;
     std::shared_ptr<RenderTexture2DResource> depth_texture;
     std::shared_ptr<RenderFrameBufferResource> frame_buffer;
@@ -489,9 +489,7 @@ public:
             //index->RemoveEntity(entity_2);
 
 #pragma region RenderPassBuilder
-
-
-
+                
             std::cout << "Id: " << RuntimeTag<RenderResourceCollection<bool>>::GetId() << " Name: " << RuntimeTag<RenderResourceCollection<bool>>::GetName() << "\n";
             std::cout << "Id: " << RuntimeTag<RenderResourceCollection<glm::vec2>>::GetId() << " Name: " << RuntimeTag<RenderResourceCollection<glm::vec2>>::GetName() << "\n";
             std::cout << "Name:" << RuntimeTag<glm::vec2*>::GetName() << " Id: " << RuntimeTag<glm::vec2*>::GetId() << "\n";

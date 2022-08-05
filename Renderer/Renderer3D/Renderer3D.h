@@ -1,4 +1,5 @@
 #pragma once
+#include <Renderer/RenderDescriptorHeap.h>
 
 class Renderer3D {
 public:
@@ -12,8 +13,14 @@ public:
     static void Shutdown();
     static Renderer3D* Get();
 
+    RenderDescriptorHeap& GetDescriptorHeap() {
+        return default_descriptor_heap;
+    }
+
 private:
     Renderer3D();
     static Renderer3D* instance;
 
+private:
+    RenderDescriptorHeap default_descriptor_heap;
 };

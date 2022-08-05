@@ -82,7 +82,7 @@ struct RenderScissorRect {
 
 enum class RenderPrimitiveType : unsigned char
 {
-    FLOAT = 0, INT = 1, UNSIGNED_INT = 2, CHAR = 3, UNSIGNED_CHAR = 4, UNKNOWN = 5
+    FLOAT = 0, INT = 1, UNSIGNED_INT = 2, CHAR = 3, UNSIGNED_CHAR = 4, VEC2 = 5, VEC3 = 6, VEC4 = 7, MAT3 = 8, MAT4 = 9, UNKNOWN = 10
 };
 
 enum class TextureFormat : unsigned char {
@@ -113,9 +113,10 @@ enum class RootDescriptorType : unsigned char {
 };
 
 struct RootMappingEntry {
-	RootMappingEntry() : binding_id(0), type(RootParameterType::UNDEFINED) {}
-	RootMappingEntry(RootBinding binding_id, RootParameterType type) : binding_id(binding_id), type(type) {}
+	RootMappingEntry() : binding_id(0), type(RootParameterType::UNDEFINED), table_binding_id(-1) {}
+	RootMappingEntry(RootBinding binding_id, RootParameterType type, RootBinding table_binding_id = -1) : binding_id(binding_id), type(type), table_binding_id(table_binding_id){}
 	RootBinding binding_id;
+	RootBinding table_binding_id = -1;
 	RootParameterType type;
 };
 

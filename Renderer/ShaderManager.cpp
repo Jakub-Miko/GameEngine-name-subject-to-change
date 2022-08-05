@@ -5,6 +5,7 @@
 #include <fstream>
 #include <sstream>
 #include <Renderer/RootSignature.h>
+#include <Core/UnitConverter.h>
 
 ShaderManager* ShaderManager::instance = nullptr;
 
@@ -77,19 +78,24 @@ std::shared_ptr<Shader> ShaderManager::CreateShaderFromString(const std::string&
 	return shader_out;
 }
 
+
+
 RootSignature* ShaderManager::ParseRootSignature(const std::string& signature_string)
 {
 	using namespace nlohmann;
 	RootSignatureDescriptor desc;
+	RootSignature::RootMappingTable mapping_table;
 	json json_sig;
 	try {
 		json_sig = json::parse(signature_string)["RootSignature"];
 		if (!json_sig.is_array()) throw std::runtime_error("RootSignature json object isn't a list");
+		int sig_entry_num = 0;
 		for (auto& json_sig_element : json_sig) {
 			std::string type = json_sig_element["type"].get<std::string>();
 			std::string name = json_sig_element["name"].get<std::string>();
 			if (type == "descriptor_table") {
 				RootDescriptorTable table;
+				int table_item_num = 0;
 				for (auto& range : json_sig_element["ranges"]) {
 					RootDescriptorTableRange range_object;
 					uint32_t range_size = range["size"].get<uint32_t>();
@@ -103,17 +109,42 @@ RootSignature* ShaderManager::ParseRootSignature(const std::string& signature_st
 					if (range_type == "texture_2D") {
 						range_object.type = RootDescriptorType::TEXTURE_2D;
 					}
+					if (range.contains("individual_names")) {
+						if (!range["individual_names"].is_array()) throw std::runtime_error("individual_names must be a list of strings");
+						if (range["individual_names"].size() != range_size) throw std::runtime_error("individual_names must be the same length as range size");
+						range_object.individual_names = range["individual_names"].get<std::vector<std::string>>();
+						for (auto& table_item_name : range_object.individual_names) {
+							RootParameterType type;
+							if (range_object.type == RootDescriptorType::CONSTANT_BUFFER) {
+								type = RootParameterType::CONSTANT_BUFFER;
+							}
+							else if (range_object.type == RootDescriptorType::TEXTURE_2D) {
+								type = RootParameterType::TEXTURE_2D;
+							}
+							else {
+								type = RootParameterType::UNDEFINED;
+							}
+							mapping_table.insert(std::make_pair(table_item_name, RootMappingEntry(table_item_num, type, sig_entry_num)));
+							table_item_num++;
+						}
+					}
+					else {
+						table_item_num += range_size;
+					}
 					table.push_back(range_object);
+					mapping_table.insert(std::make_pair(name, RootMappingEntry(sig_entry_num, RootParameterType::DESCRIPTOR_TABLE)));
 				}
 				desc.parameters.push_back(RootSignatureDescriptorElement(name, table));
 			}
 			if (type == "constant_buffer") {
 				desc.parameters.push_back(RootSignatureDescriptorElement(name, RootParameterType::CONSTANT_BUFFER));
+				mapping_table.insert(std::make_pair(name, RootMappingEntry(sig_entry_num, RootParameterType::CONSTANT_BUFFER)));
 			}
 			if (type == "texture_2D") {
 				desc.parameters.push_back(RootSignatureDescriptorElement(name, RootParameterType::TEXTURE_2D));
+				mapping_table.insert(std::make_pair(name, RootMappingEntry(sig_entry_num, RootParameterType::TEXTURE_2D)));
 			}
-
+			sig_entry_num++;
 		}
 
 	}
@@ -121,7 +152,7 @@ RootSignature* ShaderManager::ParseRootSignature(const std::string& signature_st
 		throw std::runtime_error("Could not parse the Root Signature");
 	}
 
-	return RootSignature::CreateSignature(desc);
+	return RootSignature::CreateSignature(desc, std::move(mapping_table));
 
 
 }

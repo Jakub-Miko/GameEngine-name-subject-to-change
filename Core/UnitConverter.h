@@ -2,6 +2,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <json.hpp>
+#include <Renderer/RendererDefines.h>
 #include <variant>
 #define JSON_SERIALIZABLE(Type, ...) NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Type, __VA_ARGS__) 
 
@@ -85,3 +86,17 @@ public:
 	static glm::vec2 ScreenSpaceToNDC(glm::vec2 screen_space);
 
 };
+
+NLOHMANN_JSON_SERIALIZE_ENUM(RenderPrimitiveType, {
+	{RenderPrimitiveType::CHAR, "CHAR"},
+	{RenderPrimitiveType::FLOAT, "FLOAT"},
+	{RenderPrimitiveType::INT, "INT"},
+	{RenderPrimitiveType::MAT3, "MAT3"},
+	{RenderPrimitiveType::MAT4, "MAT4"},
+	{RenderPrimitiveType::UNKNOWN, nullptr},
+	{RenderPrimitiveType::UNSIGNED_CHAR, "UNSIGNED_CHAR"},
+	{RenderPrimitiveType::UNSIGNED_INT, "UNSIGNED_INT"},
+	{RenderPrimitiveType::VEC2, "VEC2"},
+	{RenderPrimitiveType::VEC3, "VEC3"},
+	{RenderPrimitiveType::VEC4, "VEC4"}
+	})

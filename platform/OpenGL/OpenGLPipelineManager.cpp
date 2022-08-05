@@ -121,7 +121,7 @@ void OpenGLPipeline::SetDescriptorTable(const std::string& semantic_name, Render
 	int current = 0;
 	auto table_desc = sig->GetTableBinding(semantic_name);
 	int buf_start = table_desc.starting_binding_id;
-	int tex_start = table_desc.starting_binding_id;
+	int tex_start = table_desc.starting_texture_id;
 
 	for (auto entry : table_desc.table) {
 		switch (entry.type) {

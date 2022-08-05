@@ -4,6 +4,21 @@
 		{
 			"name" : "conf",
 			"type" : "constant_buffer"
+		},
+		{
+			"name" : "table",
+			"type" : "descriptor_table",
+			"ranges" : [
+				{
+					"size" : 2,
+					"name" : "textures",
+					"type" : "texture_2D",
+					"individual_names" : [
+						"Texture_First", "Texture_Second"
+					]
+				}
+
+			]
 		}
 
 	]
@@ -53,11 +68,14 @@ in vec4 out_normal;
 
 out vec4 out_color;
 
+uniform sampler2D Texture_First;
+uniform sampler2D Texture_Second;
+
 void main() {
 	//out_color = abs(out_normal);
 	vec3 Normal = normalize(mat3(transpose(inverse(model))) * out_normal.xyz);
 
-	out_color = color * (0.45 + max(0, dot(vec4(Normal, 0.0f), sun_direction)));
+	out_color = color * (0.45 + max(0, dot(vec4(Normal, 0.0f), sun_direction))) * texture(Texture_First,vec2(0.5,0.5)) * texture(Texture_Second, vec2(0.5, 0.5));
 	if (options.x == 1.0) {
 		out_color = color;
 	}

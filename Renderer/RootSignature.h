@@ -10,26 +10,45 @@
 
 
 struct RootDescriptorTableRange {
-	RootDescriptorTableRange() : type(RootDescriptorType::CONSTANT_BUFFER), size(0), name("Unknown") {}
-	RootDescriptorTableRange(RootDescriptorType type,uint32_t size, std::string name) : type(type), size(size),name(name) {}
+	RootDescriptorTableRange() : type(RootDescriptorType::CONSTANT_BUFFER), size(0), name("Unknown"), individual_names() {}
+	RootDescriptorTableRange(RootDescriptorType type,uint32_t size, std::string name) : type(type), size(size),name(name), individual_names() {}
 	RootDescriptorType type;
 	uint32_t size;
 	std::string name;
+	std::vector<std::string> individual_names;
 };
 
+struct ConstantBufferLayoutElement {
+	RenderPrimitiveType type;
+	std::string name;
+};
+
+using ConstantBufferLayout = std::vector<ConstantBufferLayoutElement>;
 using RootDescriptorTable = std::vector<RootDescriptorTableRange>;
 
 struct RootSignatureDescriptorElement {
 	RootSignatureDescriptorElement(const std::string& name, const RootDescriptorTable& table) : type(RootParameterType::DESCRIPTOR_TABLE), table(table), name(name) {}
 	RootSignatureDescriptorElement(const std::string& name, RootDescriptorTable&& table) : type(RootParameterType::DESCRIPTOR_TABLE), table(std::move(table)), name(name) {}
 	RootSignatureDescriptorElement(const std::string& name, RootParameterType type) : type(type), name(name),table() {}
-	const RootParameterType type;
+	RootSignatureDescriptorElement(const RootSignatureDescriptorElement& other) : type(other.type), name(other.name), table(other.table) {}
+	RootSignatureDescriptorElement& operator=(const RootSignatureDescriptorElement& other) {
+		type = other.type;
+		name = other.name;
+		table = other.table;
+		return *this;
+	}
+	RootParameterType type;
 	std::string name;
 	RootDescriptorTable table;
 };
 
 struct RootSignatureDescriptor {
 	RootSignatureDescriptor() = default;
+	RootSignatureDescriptor(const RootSignatureDescriptor& other) : parameters(other.parameters) {}
+	RootSignatureDescriptor& operator=(const RootSignatureDescriptor& other) {
+		parameters = other.parameters;
+		return *this;
+	}
 	RootSignatureDescriptor(const std::vector<RootSignatureDescriptorElement>& parameters) : parameters(parameters) {}
 	RootSignatureDescriptor(std::vector<RootSignatureDescriptorElement>&& parameters) : parameters(std::move(parameters)) {}
 	std::vector<RootSignatureDescriptorElement> parameters;
@@ -39,15 +58,21 @@ class RootSignature {
 public:
 	using RootMappingTable = std::unordered_map<std::string, RootMappingEntry>;
 
-	RootMappingEntry GetRootMapping(const std::string& semantic_name);
+	RootMappingEntry GetRootMapping(const std::string& semantic_name) const;
+
+	const RootSignatureDescriptor& GetDescriptor() const {
+		return descriptor;
+	}
 
 	static RootSignature* CreateSignature(const RootSignatureDescriptor& descriptor);
+	static RootSignature* CreateSignature(const RootSignatureDescriptor& descriptor, RootMappingTable&& mapping_table);
 	virtual ~RootSignature() {}
 
 protected:
 	RootSignature() : RootMappings() {}
 	RootSignature(const RootMappingTable& mapping) : RootMappings(mapping) {}
 	RootMappingTable RootMappings;
+	RootSignatureDescriptor descriptor;
 };
 
 //tends to be detected as a memory leak

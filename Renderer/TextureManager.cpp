@@ -246,12 +246,17 @@ void TextureManager::Shutdown()
 
 TextureManager::TextureManager() : texture_Map(), texture_Map_mutex(), sampler_cache(), sampler_cache_mutex()
 {
-    RenderBufferDescriptor desc_v(0, RenderBufferType::DEFAULT, RenderBufferUsage::VERTEX_BUFFER);
-    auto vertex_buf = RenderResourceManager::Get()->CreateBuffer(desc_v);
+    RenderTexture2DDescriptor tex_desc;
+    tex_desc.format = TextureFormat::RGBA_UNSIGNED_CHAR;
+    tex_desc.height = 1;
+    tex_desc.width = 1;
+    tex_desc.sampler = TextureSampler::CreateSampler(TextureSamplerDescritor());
 
-
-    RenderBufferDescriptor desc_i(0, RenderBufferType::DEFAULT, RenderBufferUsage::INDEX_BUFFER);
-    auto index_buf = RenderResourceManager::Get()->CreateBuffer(desc_i);
-
-
+    auto def_tex = RenderResourceManager::Get()->CreateTexture(tex_desc);
+    auto queue = Renderer::Get()->GetCommandQueue();
+    auto command_list = Renderer::Get()->GetRenderCommandList();
+    unsigned char tex_data[4] = { 255,255,255,255 };
+    RenderResourceManager::Get()->UploadDataToTexture2D(command_list, def_tex, &tex_data, 1, 1, 0, 0);
+    queue->ExecuteRenderCommandList(command_list);
+    default_texture = def_tex;
 }
