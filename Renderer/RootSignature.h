@@ -27,19 +27,21 @@ using ConstantBufferLayout = std::vector<ConstantBufferLayoutElement>;
 using RootDescriptorTable = std::vector<RootDescriptorTableRange>;
 
 struct RootSignatureDescriptorElement {
-	RootSignatureDescriptorElement(const std::string& name, const RootDescriptorTable& table) : type(RootParameterType::DESCRIPTOR_TABLE), table(table), name(name) {}
-	RootSignatureDescriptorElement(const std::string& name, RootDescriptorTable&& table) : type(RootParameterType::DESCRIPTOR_TABLE), table(std::move(table)), name(name) {}
-	RootSignatureDescriptorElement(const std::string& name, RootParameterType type) : type(type), name(name),table() {}
-	RootSignatureDescriptorElement(const RootSignatureDescriptorElement& other) : type(other.type), name(other.name), table(other.table) {}
+	RootSignatureDescriptorElement(const std::string& name, const RootDescriptorTable& table, bool is_material_visible = false) : type(RootParameterType::DESCRIPTOR_TABLE), table(table), name(name), is_material_visible(is_material_visible) {}
+	RootSignatureDescriptorElement(const std::string& name, RootDescriptorTable&& table, bool is_material_visible = false) : type(RootParameterType::DESCRIPTOR_TABLE), table(std::move(table)), name(name), is_material_visible(is_material_visible) {}
+	RootSignatureDescriptorElement(const std::string& name, RootParameterType type, bool is_material_visible = false) : type(type), name(name),table(), is_material_visible(is_material_visible) {}
+	RootSignatureDescriptorElement(const RootSignatureDescriptorElement& other) : type(other.type), name(other.name), table(other.table), is_material_visible(other.is_material_visible) {}
 	RootSignatureDescriptorElement& operator=(const RootSignatureDescriptorElement& other) {
 		type = other.type;
 		name = other.name;
 		table = other.table;
+		is_material_visible = other.is_material_visible;
 		return *this;
 	}
 	RootParameterType type;
 	std::string name;
 	RootDescriptorTable table;
+	bool is_material_visible = false;
 };
 
 struct RootSignatureDescriptor {
@@ -57,21 +59,24 @@ struct RootSignatureDescriptor {
 class RootSignature {
 public:
 	using RootMappingTable = std::unordered_map<std::string, RootMappingEntry>;
-
+	using ConstantBufferLayoutTable = std::unordered_map<std::string, ConstantBufferLayout>;
 	RootMappingEntry GetRootMapping(const std::string& semantic_name) const;
+	const ConstantBufferLayout& GetConstantBufferLayout(const std::string& semantic_name) const;
 
 	const RootSignatureDescriptor& GetDescriptor() const {
 		return descriptor;
 	}
 
 	static RootSignature* CreateSignature(const RootSignatureDescriptor& descriptor);
-	static RootSignature* CreateSignature(const RootSignatureDescriptor& descriptor, RootMappingTable&& mapping_table);
+	static RootSignature* CreateSignature(const RootSignatureDescriptor& descriptor, RootMappingTable&& mapping_table, const ConstantBufferLayoutTable& const_buf_layouts = ConstantBufferLayoutTable());
 	virtual ~RootSignature() {}
 
 protected:
-	RootSignature() : RootMappings() {}
-	RootSignature(const RootMappingTable& mapping) : RootMappings(mapping) {}
+	RootSignature() : RootMappings(), ConstantBufferLayouts() {}
+	RootSignature(const RootMappingTable& mapping, const ConstantBufferLayoutTable& const_buf_layouts = ConstantBufferLayoutTable()) : RootMappings(mapping), ConstantBufferLayouts(const_buf_layouts){}
 	RootMappingTable RootMappings;
+	ConstantBufferLayoutTable ConstantBufferLayouts;
+
 	RootSignatureDescriptor descriptor;
 };
 

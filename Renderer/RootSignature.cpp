@@ -13,6 +13,17 @@ RootMappingEntry RootSignature::GetRootMapping(const std::string& semantic_name)
 	}
 }
 
+const ConstantBufferLayout& RootSignature::GetConstantBufferLayout(const std::string& semantic_name) const
+{
+	auto fnd = ConstantBufferLayouts.find(semantic_name);
+	if (fnd != ConstantBufferLayouts.end()) {
+		return fnd->second;
+	}
+	else {
+		throw std::runtime_error("Constant Buffer Layout " + semantic_name + " not found");
+	}
+}
+
 RootSignature* RootSignature::CreateSignature(const RootSignatureDescriptor& descriptor)
 {
 	RootSignature* signature = new OpenGLRootSignature(descriptor);
@@ -20,11 +31,12 @@ RootSignature* RootSignature::CreateSignature(const RootSignatureDescriptor& des
 	return signature;
 }
 
-RootSignature* RootSignature::CreateSignature(const RootSignatureDescriptor& descriptor, RootMappingTable&& mapping_table)
+RootSignature* RootSignature::CreateSignature(const RootSignatureDescriptor& descriptor, RootMappingTable&& mapping_table, const ConstantBufferLayoutTable& const_buf_layouts)
 {
 	RootSignature* signature = new OpenGLRootSignature(descriptor);
 	signature->descriptor = descriptor;
 	signature->RootMappings = std::move(mapping_table);
+	signature->ConstantBufferLayouts = const_buf_layouts;
 	return signature;
 }
 

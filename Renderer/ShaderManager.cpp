@@ -85,14 +85,41 @@ RootSignature* ShaderManager::ParseRootSignature(const std::string& signature_st
 	using namespace nlohmann;
 	RootSignatureDescriptor desc;
 	RootSignature::RootMappingTable mapping_table;
+	RootSignature::ConstantBufferLayoutTable layout_table;
 	json json_sig;
+	json json_layouts;
 	try {
-		json_sig = json::parse(signature_string)["RootSignature"];
+		json json_object = json::parse(signature_string);
+
+		if (json_object.contains("constant_buffer_layouts")) {
+			if (!json_object["constant_buffer_layouts"].is_array()) throw std::runtime_error("constant_buffer_layouts must be an array");
+			for (auto& const_layout : json_object["constant_buffer_layouts"]) {
+				std::string name = const_layout["name"].get<std::string>();
+				if (!const_layout.contains("layout") && !const_layout["layout"].is_array()) throw std::runtime_error("constant_buffer_layouts item must contain a list called layout");
+				ConstantBufferLayout const_layout_object;
+				for (auto& layout_item : const_layout["layout"]) {
+					ConstantBufferLayoutElement element;
+					element.name = layout_item["name"].get<std::string>();
+					element.type = layout_item["type"].get<RenderPrimitiveType>();
+					const_layout_object.push_back(element);
+				}
+				layout_table.insert(std::make_pair(name, const_layout_object));
+			}
+
+		}
+
+		json_sig = json_object["RootSignature"];
 		if (!json_sig.is_array()) throw std::runtime_error("RootSignature json object isn't a list");
 		int sig_entry_num = 0;
+
 		for (auto& json_sig_element : json_sig) {
 			std::string type = json_sig_element["type"].get<std::string>();
 			std::string name = json_sig_element["name"].get<std::string>();
+			bool is_material_visible = false;
+			if (json_sig_element.contains("material_visible") && json_sig_element["material_visible"].is_boolean() && json_sig_element["material_visible"].get<bool>()) {
+				is_material_visible = true;
+			}
+
 			if (type == "descriptor_table") {
 				RootDescriptorTable table;
 				int table_item_num = 0;
@@ -134,25 +161,34 @@ RootSignature* ShaderManager::ParseRootSignature(const std::string& signature_st
 					table.push_back(range_object);
 					mapping_table.insert(std::make_pair(name, RootMappingEntry(sig_entry_num, RootParameterType::DESCRIPTOR_TABLE)));
 				}
-				desc.parameters.push_back(RootSignatureDescriptorElement(name, table));
+				desc.parameters.push_back(RootSignatureDescriptorElement(name, table, is_material_visible));
 			}
 			if (type == "constant_buffer") {
-				desc.parameters.push_back(RootSignatureDescriptorElement(name, RootParameterType::CONSTANT_BUFFER));
+				if (json_sig_element.contains("layout")) {
+					auto fnd = layout_table.find(json_sig_element["layout"].get<std::string>());
+					if (fnd != layout_table.end()) {
+						layout_table.insert(std::make_pair(name, fnd->second));
+					}
+					else {
+						throw std::runtime_error("layout of name " + json_sig_element["layout"].get<std::string>() + " doesn't exist");
+					}
+				}
+
+				desc.parameters.push_back(RootSignatureDescriptorElement(name, RootParameterType::CONSTANT_BUFFER, is_material_visible));
 				mapping_table.insert(std::make_pair(name, RootMappingEntry(sig_entry_num, RootParameterType::CONSTANT_BUFFER)));
 			}
 			if (type == "texture_2D") {
-				desc.parameters.push_back(RootSignatureDescriptorElement(name, RootParameterType::TEXTURE_2D));
+				desc.parameters.push_back(RootSignatureDescriptorElement(name, RootParameterType::TEXTURE_2D, is_material_visible));
 				mapping_table.insert(std::make_pair(name, RootMappingEntry(sig_entry_num, RootParameterType::TEXTURE_2D)));
 			}
 			sig_entry_num++;
 		}
-
 	}
 	catch (...) {
 		throw std::runtime_error("Could not parse the Root Signature");
 	}
 
-	return RootSignature::CreateSignature(desc, std::move(mapping_table));
+	return RootSignature::CreateSignature(desc, std::move(mapping_table), layout_table);
 
 
 }

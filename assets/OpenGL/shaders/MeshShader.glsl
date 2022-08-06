@@ -8,6 +8,7 @@
 		{
 			"name" : "table",
 			"type" : "descriptor_table",
+			"material_visible" : true,
 			"ranges" : [
 				{
 					"size" : 2,
@@ -20,6 +21,36 @@
 
 			]
 		}
+
+	], 
+
+	"constant_buffer_layouts" : [
+			{
+				"name" : "conf",
+				"layout" : [
+					{
+						"name" : "mvp_matrix",
+						"type" : "MAT4"
+					},
+					{
+						"name" : "model",
+						"type" : "MAT4"
+					},
+					{
+						"name" : "sun_direction",
+						"type" : "VEC4"
+					},
+					{
+						"name" : "color",
+						"type" : "VEC4"
+					},
+					{
+						"name" : "options",
+						"type" : "VEC4"
+					}
+				]
+			}
+
 
 	]
 }
