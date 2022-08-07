@@ -1,5 +1,6 @@
 #pragma once
 #include <GL/glew.h>
+#include <Core/UnitConverter.h>
 #include <Renderer/RendererDefines.h>
 #include <stdexcept>
 
@@ -24,20 +25,7 @@ public:
 	}
 
 	static int PrimitiveSize(RenderPrimitiveType type) {
-		switch (type) {
-		case RenderPrimitiveType::CHAR:				return sizeof(char);
-		case RenderPrimitiveType::FLOAT:			return sizeof(float);
-		case RenderPrimitiveType::INT:				return sizeof(int);
-		case RenderPrimitiveType::UNSIGNED_CHAR:	return sizeof(unsigned char);
-		case RenderPrimitiveType::UNSIGNED_INT:		return sizeof(unsigned int);
-		case RenderPrimitiveType::VEC2:				return sizeof(float) * 2;
-		case RenderPrimitiveType::VEC3:				return sizeof(float) * 3;
-		case RenderPrimitiveType::VEC4:				return sizeof(float) * 4;
-		case RenderPrimitiveType::MAT3:				return sizeof(float) * 9;
-		case RenderPrimitiveType::MAT4:				return sizeof(float) * 16;
-		default:
-			throw std::runtime_error("Conversion failed");
-		}
+		return UnitConverter::PrimitiveSize(type);
 	}
 
 	static GLenum TextureFormatToGLInternalformat(TextureFormat type) {

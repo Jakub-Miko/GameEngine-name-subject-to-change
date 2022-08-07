@@ -13,6 +13,8 @@ public:
     static void Shutdown();
     static Renderer3D* Get();
 
+    void Update(float delta_time);
+
     RenderDescriptorHeap& GetDescriptorHeap() {
         return default_descriptor_heap;
     }

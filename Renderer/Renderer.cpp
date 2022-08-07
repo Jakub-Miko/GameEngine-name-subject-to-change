@@ -113,6 +113,11 @@ void Renderer::Create()
     }
 }
 
+void Renderer::Update(float delta_time)
+{
+    Renderer3D::Get()->Update(delta_time);
+}
+
 void Renderer::ReuseAllocator(RenderCommandAllocator* alloc)
 {
     alloc->clear();

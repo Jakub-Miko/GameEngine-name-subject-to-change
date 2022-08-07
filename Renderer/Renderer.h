@@ -34,6 +34,8 @@ public:
 
     static void Create();
 
+    void Update(float delta_time);
+
     std::shared_ptr<RenderFrameBufferResource> GetDefaultFrameBuffer() {
         std::lock_guard<std::mutex> lock(default_frame_buffer_mutex);
         return default_frame_buffer;

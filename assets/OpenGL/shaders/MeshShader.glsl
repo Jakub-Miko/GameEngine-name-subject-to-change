@@ -5,6 +5,11 @@
 			"name" : "conf",
 			"type" : "constant_buffer"
 		},
+			{
+			"name" : "mat",
+			"type" : "constant_buffer",
+			"material_visible" : true
+		},
 		{
 			"name" : "table",
 			"type" : "descriptor_table",
@@ -35,7 +40,12 @@
 					{
 						"name" : "model",
 						"type" : "MAT4"
-					},
+					}
+				]
+			},
+			{
+				"name" : "mat",
+				"layout" : [
 					{
 						"name" : "sun_direction",
 						"type" : "VEC4"
@@ -71,6 +81,10 @@ uniform conf
 {
 	mat4 mvp_matrix;
 	mat4 model;
+};
+
+uniform mat
+{
 	vec4 sun_direction;
 	vec4 color;
 	vec4 options;
@@ -90,6 +104,10 @@ uniform conf
 {
 	mat4 mvp_matrix;
 	mat4 model;
+};
+
+uniform mat
+{
 	vec4 sun_direction;
 	vec4 color;
 	vec4 options;

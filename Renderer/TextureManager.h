@@ -41,6 +41,8 @@ public:
 		return default_texture;
 	}
 
+	bool IsTextureAvailable(const std::string& file_path);
+
 	void ReleaseTexture(const std::string& file_path);
 
 	static void Init();

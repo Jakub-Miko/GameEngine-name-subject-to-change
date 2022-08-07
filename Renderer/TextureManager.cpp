@@ -4,6 +4,7 @@
 #include <dependencies/stb_image/stb_image.h>
 #include <Application.h>
 #include <fstream>
+#include <FileManager.h>
 
 TextureManager* TextureManager::instance = nullptr;
 
@@ -92,8 +93,10 @@ Future<void> TextureManager::MakeTextureFromImageAsync(const std::string& input_
     return task->GetFuture();
 }
 
-std::shared_ptr<RenderTexture2DResource> TextureManager::LoadTextureFromFile(const std::string& file_path, bool generate_mips)
+std::shared_ptr<RenderTexture2DResource> TextureManager::LoadTextureFromFile(const std::string& file_path_in, bool generate_mips)
 {
+    std::string file_path = FileManager::Get()->GetPath(file_path_in);
+
     PROFILE("Texture Load");
     //Check if the texture has already been loaded.
     std::unique_lock<std::mutex> lock(texture_Map_mutex);
@@ -218,8 +221,17 @@ Future<std::shared_ptr<RenderTexture2DResource>> TextureManager::LoadTextureFrom
 
 }
 
-void TextureManager::ReleaseTexture(const std::string& file_path)
+bool TextureManager::IsTextureAvailable(const std::string& file_path_in)
 {
+    std::string file_path = FileManager::Get()->GetPath(file_path_in);
+    std::lock_guard<std::mutex> lock(texture_Map_mutex);
+    auto fnd = texture_Map.find(file_path); //TODO: Make sure the file path is in an appropriate format
+    return fnd != texture_Map.end();
+}
+
+void TextureManager::ReleaseTexture(const std::string& file_path_in)
+{
+    std::string file_path = FileManager::Get()->GetPath(file_path_in);
     std::lock_guard<std::mutex> lock(texture_Map_mutex);
     texture_Map.erase(file_path);
 

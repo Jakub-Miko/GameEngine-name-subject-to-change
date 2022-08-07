@@ -53,6 +53,9 @@ void OpenGLPipeline::SetConstantBuffer(const std::string& semantic_name, std::sh
 	
 	const OpenGLRootSignature* sig = static_cast<const OpenGLRootSignature*>(&GetSignature());
 	int index = sig->GetUniformBlockBindingId(semantic_name);
+	auto program = static_cast<OpenGLShader*>(GetShader().get())->GetShaderProgram();
+	int location = glGetUniformBlockIndex(program, semantic_name.c_str());
+	glUniformBlockBinding(program, location, index);
 	glBindBufferBase(GL_UNIFORM_BUFFER, index, static_cast<OpenGLRenderBufferResource*>(buffer.get())->GetRenderId());
 }
 

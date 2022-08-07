@@ -469,7 +469,7 @@ public:
 
             TextureManager::Get()->MakeTextureFromImageAsync("asset:Heaven.png"_path, "asset:image_texture.tex"_path, desc_sample);
 
-            texture = TextureManager::Get()->LoadTextureFromFileAsync("asset:image_texture.tex"_path, false);
+            texture = TextureManager::Get()->LoadTextureFromFileAsync("asset:image_texture.tex", false);
             
             auto& index = Application::GetWorld().GetSpatialIndex();
             Entity entity_1 = Application::GetWorld().CreateEntity();

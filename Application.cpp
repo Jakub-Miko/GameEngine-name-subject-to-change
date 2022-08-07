@@ -253,6 +253,8 @@ void Application::Update()
     m_GameLayer->OnUpdate(delta_time);
     GameStateMachine::Get()->UpdateState(delta_time);
 
+    Renderer::Get()->Update(delta_time);
+
 #ifdef EDITOR
     Editor::Get()->ViewportEnd();
     Editor::Get()->Run();
@@ -271,6 +273,7 @@ void Application::InitThread()
 {
     if (ThreadManager::IsValidThreadContext()) {
         ScriptSystemManager::Get()->InitThread();
+        Application::Get()->GetAsyncDispather()->RegisterUserThread(std::this_thread::get_id());
     }
     else {
         throw std::runtime_error("Thread Initialization failed");

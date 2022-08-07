@@ -6,6 +6,12 @@
 #include <World/Systems/BoxRenderer.h>
 #include <Renderer/Renderer3D/Renderer3D.h>
 #include <Renderer/TextureManager.h>
+#include <Renderer/Renderer3D/MaterialManager.h>
+
+struct const_buf_type {
+    glm::mat4 mvp_matrix;
+    glm::mat4 model;
+};
 
 struct mesh_data {
     std::shared_ptr<Pipeline> pipeline;
@@ -28,18 +34,20 @@ static void RenderMesh(MeshComponent& component, Entity ent) {
 
     Render_Box_data& data = Get_Render_Box_data();
 
-    Render_Box_data::Constant_buffer_type buffer = {
+    const_buf_type buffer = {
          (camera.GetProjectionMatrix() * glm::inverse(trans.TransformMatrix)) * mesh_transform.TransformMatrix,
-         mesh_transform.TransformMatrix,
-            glm::normalize(glm::vec4(0.20f, 1.0f, -3.0f,0.0f)),
-            glm::vec4(0.6f,0.6f,0.6f,1.0f),
-            glm::vec4(0,0,0,0)
+         mesh_transform.TransformMatrix
     };
 
     RenderResourceManager::Get()->UploadDataToBuffer(command_list, local_data->constant_buffer.GetResource(), &buffer, sizeof(buffer), 0);
 
+    auto material = MaterialManager::Get()->GetMaterial("asset:Material1.json");
+
     command_list->SetDefaultRenderTarget();
     command_list->SetPipeline(local_data->pipeline);
+
+    material->SetMaterial(command_list, local_data->pipeline);
+
     command_list->SetVertexBuffer(mesh_m->GetVertexBuffer());
     command_list->SetIndexBuffer(mesh_m->GetIndexBuffer());
     command_list->SetDescriptorTable("table", local_data->texture_table);
