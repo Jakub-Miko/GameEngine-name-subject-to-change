@@ -46,6 +46,35 @@ void OpenGLRootSignature::CreateDescriptorTableParams(const RootSignatureDescrip
 		else if (range.type == RootDescriptorType::TEXTURE_2D) {
 			texture_id += range.size;
 		}
+		if (!range.individual_names.empty()) {
+			if (range.type == RootDescriptorType::CONSTANT_BUFFER) {
+				for (auto& name : range.individual_names) {
+					ExtraElementInfo info;
+					info.type = RootParameterType::CONSTANT_BUFFER;
+					info.constant_binding_id = binding_id;
+					binding_id++;
+					parameters.insert(std::make_pair(name, info));
+				}
+			}
+			else if (range.type == RootDescriptorType::TEXTURE_2D) {
+				for (auto& name : range.individual_names) {
+					ExtraElementInfo info;
+					info.type = RootParameterType::TEXTURE_2D;
+					info.constant_binding_id = binding_id;
+					binding_id++;
+					parameters.insert(std::make_pair(name, info));
+				}
+				texture_id += range.size;
+			}
+		}
+		else {
+			if (range.type == RootDescriptorType::CONSTANT_BUFFER) {
+				binding_id += range.size;
+			}
+			else if (range.type == RootDescriptorType::TEXTURE_2D) {
+				texture_id += range.size;
+			}
+		}
 	}
 
 }

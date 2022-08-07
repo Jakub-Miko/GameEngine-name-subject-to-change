@@ -69,6 +69,8 @@ void OpenGLPipeline::SetTexture2D(const std::string& semantic_name, std::shared_
 {
 	const OpenGLRootSignature* sig = static_cast<const OpenGLRootSignature*>(&GetSignature());
 	int index = sig->GetTextureSlot(semantic_name);
+	auto program = static_cast<OpenGLShader*>(GetShader().get())->GetShaderProgram();
+	glUniform1i(glGetUniformLocation(program, semantic_name.c_str()), index);
 	glActiveTexture(GL_TEXTURE0 + index);
 	glBindTexture(GL_TEXTURE_2D, static_cast<OpenGLRenderTexture2DResource*>(texture.get())->GetRenderId());
 }
@@ -127,11 +129,12 @@ void OpenGLPipeline::SetDescriptorTable(const std::string& semantic_name, Render
 	int tex_start = table_desc.starting_texture_id;
 
 	for (auto entry : table_desc.table) {
+		if (entry.individual_names.empty()) throw std::runtime_error("Descriptor tables must have assigned individual_names when using OpenGL");
 		switch (entry.type) {
 		case RootDescriptorType::CONSTANT_BUFFER:
 			for (uint32_t i = 0; i < entry.size; i++) {
 				if (static_cast<OpenGLRenderDescriptorAllocation*>(table.get())->descriptor_pointer[current].type == RootParameterType::CONSTANT_BUFFER) {
-					SetConstantBuffer(buf_start,
+					SetConstantBuffer(entry.individual_names[i],
 						std::static_pointer_cast<RenderBufferResource>(static_cast<OpenGLRenderDescriptorAllocation*>(table.get())->descriptor_pointer[current].m_resource));
 					//i++; // I dont think this should be here !!!!!!!!!!!!!!!
 					buf_start++;
@@ -139,12 +142,13 @@ void OpenGLPipeline::SetDescriptorTable(const std::string& semantic_name, Render
 				else {
 					throw std::runtime_error("Descriptor is not of Constant Buffer type.");
 				}
+				current++;
 			}
 			break;
 		case RootDescriptorType::TEXTURE_2D:
 			for (uint32_t i = 0; i < entry.size; i++) {
 				if (static_cast<OpenGLRenderDescriptorAllocation*>(table.get())->descriptor_pointer[current].type == RootParameterType::TEXTURE_2D) {
-					SetTexture2D(tex_start,
+					SetTexture2D(entry.individual_names[i],
 						std::static_pointer_cast<RenderTexture2DResource>(static_cast<OpenGLRenderDescriptorAllocation*>(table.get())->descriptor_pointer[current].m_resource));
 					//i++; // I dont think this should be here !!!!!!!!!!!!!!!
 					tex_start++;
@@ -152,10 +156,10 @@ void OpenGLPipeline::SetDescriptorTable(const std::string& semantic_name, Render
 				else {
 					throw std::runtime_error("Descriptor is not of Texture2D type.");
 				}
+				current++;
 			}
 			break;
 		}
-		current++;
 	}
 }
 

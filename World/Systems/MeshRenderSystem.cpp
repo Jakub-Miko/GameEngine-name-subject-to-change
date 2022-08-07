@@ -16,7 +16,6 @@ struct const_buf_type {
 struct mesh_data {
     std::shared_ptr<Pipeline> pipeline;
     FrameMultiBufferResource<std::shared_ptr<RenderBufferResource>> constant_buffer;
-    RenderDescriptorTable texture_table;
 };
 
 static mesh_data* local_data = nullptr;
@@ -50,7 +49,6 @@ static void RenderMesh(MeshComponent& component, Entity ent) {
 
     command_list->SetVertexBuffer(mesh_m->GetVertexBuffer());
     command_list->SetIndexBuffer(mesh_m->GetIndexBuffer());
-    command_list->SetDescriptorTable("table", local_data->texture_table);
     command_list->SetConstantBuffer("conf", local_data->constant_buffer.GetResource());
     command_list->Draw(mesh_m->GetIndexCount());
 
@@ -106,10 +104,9 @@ void InitMeshRenderSystem()
 
     pipeline = PipelineManager::Get()->CreatePipeline(pipeline_desc);
 
-    local_data = new mesh_data{ pipeline, std::move(constant_buf), Renderer3D::Get()->GetDescriptorHeap().Allocate(2) };
+    local_data = new mesh_data{ pipeline, std::move(constant_buf) };
     command_queue->ExecuteRenderCommandList(command_list);
-    RenderResourceManager::Get()->CreateTexture2DDescriptor(local_data->texture_table, 0, TextureManager::Get()->GetDefaultTexture());
-    RenderResourceManager::Get()->CreateTexture2DDescriptor(local_data->texture_table, 1, TextureManager::Get()->GetDefaultTexture());
+
 
 }
 
