@@ -69,13 +69,14 @@
 #Vertex //--------------------------------------------------
 #version 410
 
-in vec3 position;
-in vec3 normal;
-in vec3 tangent;
-in vec2 uv0;
+layout(location = 0) in vec3 position;
+layout(location = 1) in vec3 normal;
+layout(location = 2) in vec3 tangent;
+layout(location = 3) in vec2 uv0;
 
 
 out vec4 out_normal;
+out vec2 uvs;
 
 uniform conf
 {
@@ -93,6 +94,7 @@ uniform mat
 void main() {
 	gl_Position = mvp_matrix * vec4(position,1);
 	out_normal = vec4(normal,0);
+	uvs = uv0;
 }
 
 
@@ -114,6 +116,7 @@ uniform mat
 };
 
 in vec4 out_normal;
+in vec2 uvs;
 
 out vec4 out_color;
 
@@ -124,7 +127,7 @@ void main() {
 	//out_color = abs(out_normal);
 	vec3 Normal = normalize(mat3(transpose(inverse(model))) * out_normal.xyz);
 
-	out_color = color * (0.45 + max(0, dot(vec4(Normal, 0.0f), sun_direction))) * texture(Texture_First,vec2(0.5,0.5)) * texture(Texture_Second, vec2(0.5, 0.5));
+	out_color = vec4(texture(Texture_First,uvs).xyz,1) * 5 * (0.45 + max(0, dot(vec4(Normal, 0.0f), sun_direction))) * texture(Texture_First,vec2(0.5,0.5)) * texture(Texture_Second, vec2(0.5, 0.5));
 	if (options.x == 1.0) {
 		out_color = color;
 	}
