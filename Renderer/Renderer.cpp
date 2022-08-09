@@ -80,10 +80,10 @@ void Renderer::Shutdown()
         instance->default_frame_buffer.reset();
     }
     lock.unlock();
-    RenderContext::Get()->StartShutdown();
-    PipelineManager::Shutdown();
     ShaderManager::Shutdown();
     Renderer3D::Shutdown();
+    RenderContext::Get()->StartShutdown();
+    PipelineManager::Shutdown();
     RenderResourceManager::Shutdown();
     if (instance) {
         instance->Destroy();
