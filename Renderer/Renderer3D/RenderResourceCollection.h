@@ -26,7 +26,7 @@ struct RuntimeTag<RenderResourceCollection<U>, void> {
 
 	static constexpr std::string_view GetName() {
 		if constexpr (RuntimeTag<U>::GetName() != "Unidentified") {
-			static std::string view = (std::string)"RenderResourceCollection_" + RuntimeTag<U>::GetName().data();
+			std::string view = (std::string)"RenderResourceCollection_" + RuntimeTag<U>::GetName().data();
 			return view;
 		}
 		else {

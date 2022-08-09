@@ -41,7 +41,7 @@ void PostProcessingPass::InitPostProcessingPassData() {
 	pipeline_desc.viewport = RenderViewport();
 	pipeline_desc.scissor_rect = RenderScissorRect();
 	pipeline_desc.blend_functions = PipelineBlendFunctions();
-	pipeline_desc.flags = PipelineFlags::DEFAULT();
+	pipeline_desc.flags = PipelineFlags::DEFAULT;
 	pipeline_desc.layout = VertexLayoutFactory<PostProcessingPreset>::GetLayout();
 	pipeline_desc.polygon_render_mode = PrimitivePolygonRenderMode::DEFAULT;
 	pipeline_desc.shader = ShaderManager::Get()->GetShader("PostProcessingShader.glsl");

@@ -4,6 +4,8 @@
 #include <unordered_map>
 #include <any>
 
+class RenderPipeline;
+
 struct RenderPassData {
 	std::shared_ptr<RenderPass> render_pass;
 	RenderPassResourceDefinnition def;
@@ -15,7 +17,7 @@ public:
 	template<typename T>
 	const T& GetResource(const std::string& name) const {
 		auto& desc_list = current_pass->def.descriptors;
-		decltype(current_pass->def.descriptors)::iterator fnd = std::find_if(desc_list.begin(), desc_list.end(), [&name](const RenderPassResourceDescriptor& descriptor) {
+		typename decltype(current_pass->def.descriptors)::iterator fnd = std::find_if(desc_list.begin(), desc_list.end(), [&name](const RenderPassResourceDescriptor& descriptor) {
 			return descriptor.resource_name == name;
 			});
 
@@ -43,7 +45,7 @@ public:
 	template<typename T>
 	void SetResource(const std::string& name, const T& resource) {
 		auto& desc_list = current_pass->def.descriptors;
-		decltype(current_pass->def.descriptors)::iterator fnd = std::find_if(desc_list.begin(), desc_list.end(), [&name](const RenderPassResourceDescriptor& descriptor) {
+		typename decltype(current_pass->def.descriptors)::iterator fnd = std::find_if(desc_list.begin(), desc_list.end(), [&name](const RenderPassResourceDescriptor& descriptor) {
 			return descriptor.resource_name == name;
 			});
 
@@ -66,7 +68,7 @@ public:
 	template<typename T>
 	auto SetResource(const std::string& name, T&& resource) -> std::enable_if_t<!std::is_reference_v<T>,void> {
 		auto& desc_list = current_pass->def.descriptors;
-		decltype(current_pass->def.descriptors)::iterator fnd = std::find_if(desc_list.begin(), desc_list.end(), [&name](const RenderPassResourceDescriptor& descriptor) {
+		typename decltype(current_pass->def.descriptors)::iterator fnd = std::find_if(desc_list.begin(), desc_list.end(), [&name](const RenderPassResourceDescriptor& descriptor) {
 			return descriptor.resource_name == name;
 			});
 

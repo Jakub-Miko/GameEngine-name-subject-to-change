@@ -118,7 +118,7 @@ void DefferedGeometryPass::Render(RenderPipelineResourceManager& resource_manage
 	auto& camera_transform = world.GetComponent<CameraComponent>(world.GetPrimaryEntity());
 	camera.UpdateProjectionMatrix();
 	auto& camera_trans = world.GetComponent<TransformComponent>(world.GetPrimaryEntity());
-	auto& ViewProjection = camera.GetProjectionMatrix() * glm::inverse(camera_trans.TransformMatrix);
+	auto ViewProjection = camera.GetProjectionMatrix() * glm::inverse(camera_trans.TransformMatrix);
 	list->SetPipeline(data->pipeline);
 	list->SetRenderTarget(data->output_buffer_resource);
 	list->Clear();

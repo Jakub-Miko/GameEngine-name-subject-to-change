@@ -22,7 +22,7 @@ template<typename T>
 struct RuntimeTag<T, std::enable_if_t<std::is_pointer_v<T> && (RuntimeTag<std::remove_pointer_t<T>>::GetName() != "Unidentified"), void>> {
 
 	static constexpr std::string_view GetName() {
-		static std::string name = (std::string)RuntimeTag<std::remove_pointer_t<T>>::GetName() + "_pointer";
+		std::string name = (std::string)RuntimeTag<std::remove_pointer_t<T>>::GetName() + "_pointer";
 		return name;
 	}
 

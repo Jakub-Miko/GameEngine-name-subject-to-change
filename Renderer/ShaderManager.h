@@ -2,6 +2,7 @@
 #include <string>
 #include <mutex>
 #include <unordered_map>
+#include <memory>
 
 class RootSignature;
 class Material;
