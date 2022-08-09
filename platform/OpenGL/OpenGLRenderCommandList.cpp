@@ -251,7 +251,6 @@ void OpenGLRenderCommandList::Execute()
 {
     OpenGLRenderCommand* next = m_Commands;
     while(next) {
-        PROFILE("Command Execution");
         next->Execute();
         next->~OpenGLRenderCommand();
         next = next->next;

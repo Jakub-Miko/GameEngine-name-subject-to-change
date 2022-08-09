@@ -3,8 +3,10 @@
 #include <glm/glm.hpp>
 #include <TypeId.h>
 #include <Renderer/RenderResource.h>
+#include <World/Entity.h>
 
 NonIntrusiveRuntimeTag(int, "int")
+NonIntrusiveRuntimeTag(Entity, "entity")
 NonIntrusiveRuntimeTag(std::string, "string")
 NonIntrusiveRuntimeTag(float, "float")
 NonIntrusiveRuntimeTag(double, "double")

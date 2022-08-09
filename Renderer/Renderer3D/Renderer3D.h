@@ -1,5 +1,6 @@
 #pragma once
 #include <Renderer/RenderDescriptorHeap.h>
+#include "DefferedRenderingPipeline.h"
 
 class Renderer3D {
 public:
@@ -11,6 +12,7 @@ public:
 
     static void Init();
     static void Shutdown();
+    static void PreShutdown();
     static Renderer3D* Get();
 
     void Update(float delta_time);
@@ -25,4 +27,5 @@ private:
 
 private:
     RenderDescriptorHeap default_descriptor_heap;
+    std::shared_ptr<RenderPipeline> deffered_pipeline;
 };

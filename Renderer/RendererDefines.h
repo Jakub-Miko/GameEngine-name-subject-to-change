@@ -150,6 +150,10 @@ struct VertexLayout {
 
 	}
 
+	~VertexLayout() {
+
+	}
+
 	bool has_normal() const {
 		for (auto& element : layout) {
 			if (element.name == "normal") {

@@ -119,16 +119,10 @@ public:
 
         setup_builder.AddResource<glm::vec2>("TestPass3_Resource", RenderPassResourceDescriptor_Access::WRITE);
 
-        setup_builder.AddResource<RenderResourceCollection<std::shared_ptr<Mesh>>>("RenderObjects", RenderPassResourceDescriptor_Access::READ);
-
     }
     virtual void Render(RenderPipelineResourceManager& resource_manager) override {
         auto resource = resource_manager.GetResource<glm::vec2*>("TestPass4_Resource");
-        auto& resources_collection = resource_manager.GetResource<RenderResourceCollection<std::shared_ptr<Mesh>>>("RenderObjects");
 
-        for (auto mesh : resources_collection.resources) {
-            std::cout << "Index count: " << mesh->GetIndexCount() << "\n";
-        }
 
         std::cout << "TestPass3 Render... Output: " << resource->x << ", " << resource->y << "\n";
     }
@@ -490,13 +484,13 @@ public:
 
 #pragma region RenderPassBuilder
                 
-            std::cout << "Id: " << RuntimeTag<RenderResourceCollection<bool>>::GetId() << " Name: " << RuntimeTag<RenderResourceCollection<bool>>::GetName() << "\n";
+   /*         std::cout << "Id: " << RuntimeTag<RenderResourceCollection<bool>>::GetId() << " Name: " << RuntimeTag<RenderResourceCollection<bool>>::GetName() << "\n";
             std::cout << "Id: " << RuntimeTag<RenderResourceCollection<glm::vec2>>::GetId() << " Name: " << RuntimeTag<RenderResourceCollection<glm::vec2>>::GetName() << "\n";
             std::cout << "Name:" << RuntimeTag<glm::vec2*>::GetName() << " Id: " << RuntimeTag<glm::vec2*>::GetId() << "\n";
             std::cout << "Name: " << RuntimeTag<bool*>::GetName() << " Id: " << RuntimeTag<bool*>::GetId() << "\n";
 
 
-
+*/
 
 #pragma endregion
 
@@ -504,14 +498,13 @@ public:
 
         }
 
-        RenderPassBuilder builder;
-        builder.AddPass(new TestPass2);
-        builder.AddPass(new TestPass1);
-        builder.AddPass(new TestPass4);
-        builder.AddPass(new TestPass3);
-        builder.AddPass(new RenderSubmissionPass);
-        auto pipeline = builder.Build();
-        pipeline.Render();
+        //RenderPassBuilder builder;
+        //builder.AddPass(new TestPass2);
+        //builder.AddPass(new TestPass1);
+        //builder.AddPass(new TestPass4);
+        //builder.AddPass(new TestPass3);
+        //auto pipeline = builder.Build();
+        //pipeline.Render();
 
 
 
@@ -520,9 +513,9 @@ public:
         Application::GetWorld().GetComponent<CameraComponent>(Application::GetWorld().GetPrimaryEntity()).UpdateViewFrustum(Application::GetWorld().GetComponent<TransformComponent>(Application::GetWorld().GetPrimaryEntity()).TransformMatrix);
         index.FrustumCulling(Application::GetWorld(), Application::GetWorld().GetComponent<CameraComponent>(Application::GetWorld().GetPrimaryEntity()).GetViewFrustum(), entities);
         index.Visualize();
-        for (auto ent : entities) {
-            std::cout << ent.id << ", ";
-        }
+        //for (auto ent : entities) {
+        //    std::cout << ent.id << ", ";
+        //}
        /* if (Application::GetWorld().EntityExists(mesh_enity) && Application::GetWorld().HasComponent<MeshComponent>(mesh_enity)  && Application::GetWorld().GetPrimaryEntity() != Entity()) {
             auto& camera = Application::GetWorld().GetComponent<CameraComponent>(Application::GetWorld().GetPrimaryEntity());
             auto& trans = Application::GetWorld().GetComponent<TransformComponent>(Application::GetWorld().GetPrimaryEntity());

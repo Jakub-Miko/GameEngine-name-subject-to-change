@@ -104,6 +104,7 @@ void Application::InitInstance()
     //Initialize FileManager
     FileManager::Init();
 
+   
     //Init GameState
     GameStateMachine::Init();
 
@@ -238,27 +239,41 @@ void Application::Update()
 
     m_GameLayer->LoadSystem();
     
-    //Update current GameState
-    GameStateMachine::Get()->UpdateNextState();
-   
+    {
+        PROFILE("GamwState next Update");
+        //Update current GameState
+        GameStateMachine::Get()->UpdateNextState();
+    }
     //Update GameState and Layers
-    m_GameLayer->PreUpdate(delta_time);
-   
+    {
+        PROFILE("Game Layer Pre update");
+        m_GameLayer->PreUpdate(delta_time);
+    }
     //Poll Events and execute event and input handlers
-    m_Window->PollEvents();
-
+   
+    {
+        PROFILE("PollEvents");
+        m_Window->PollEvents();
+    }
    
 
-    PROFILE("Layer Update");
+    {
+
+    PROFILE("GameStateUpdate");
     m_GameLayer->OnUpdate(delta_time);
     GameStateMachine::Get()->UpdateState(delta_time);
-
-    Renderer::Get()->Update(delta_time);
-
+    }
+    {
+        PROFILE("RendererUpdate");
+        Renderer::Get()->Update(delta_time);
+    }
 #ifdef EDITOR
     Editor::Get()->ViewportEnd();
-    Editor::Get()->Run();
-    Editor::Get()->Render();
+    {
+        PROFILE("EditorUpdate");
+        Editor::Get()->Run();
+        Editor::Get()->Render();
+    }
 #endif
     //Present / Swap buffers
     PROFILE("SwapBuffers");

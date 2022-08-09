@@ -8,6 +8,7 @@
 #include <fstream>
 #include <sstream>
 #include <json.hpp>
+#include <Renderer/ShaderManager.h>
 
 MaterialManager* MaterialManager::instance = nullptr;
 
@@ -38,7 +39,7 @@ std::shared_ptr<Material> MaterialManager::GetMaterial(const std::string& path_i
 	if (fnd != materials.end()) {
 		return fnd->second;
 	}
-	auto material = ParseMaterial(path);
+	auto material = ParseMaterialFromFile(path);
 	materials.insert(std::make_pair(path, material));
 	return material;
 }
@@ -48,23 +49,39 @@ MaterialManager::MaterialManager() : materials(), material_templates(), material
 
 }
 
-std::shared_ptr<Material> MaterialManager::ParseMaterial(const std::string& path)
+std::shared_ptr<Material> MaterialManager::ParseMaterialFromFile(const std::string& path)
 {
 	using namespace nlohmann;
 	std::ifstream stream(path);
 	if (!stream.is_open()) throw std::runtime_error("File" + path + " could not be opened");
 	std::stringstream sstream;
 	sstream << stream.rdbuf();
-	json material_json = json::parse(sstream.str());
-	std::string shader_path = material_json["shader"].get<std::string>();
-	auto fnd_template = material_templates.find(shader_path);
+	stream.close();
+	auto mat = ParseMaterialFromString(sstream.str());
+	mat->material_path = path;
+	return mat;
+}
+
+std::shared_ptr<Material> MaterialManager::ParseMaterialFromString(const std::string& string, std::shared_ptr<Shader> shader_spec)
+{
+	using namespace nlohmann;
+	json material_json = json::parse(string);
 	std::shared_ptr<MaterialTemplate> mat_template;
-	if (fnd_template != material_templates.end()) {
-		mat_template = fnd_template->second;
+	if (shader_spec == nullptr) {
+		std::string shader_path = material_json["shader"].get<std::string>();
+		auto fnd_template = material_templates.find(shader_path);
+		if (fnd_template != material_templates.end()) {
+			mat_template = fnd_template->second;
+		}
+		else {
+			mat_template = std::make_shared<MaterialTemplate>(ShaderManager::Get()->GetShader(shader_path));
+			material_templates.insert(std::make_pair(shader_path, mat_template));
+		}
 	}
 	else {
-		mat_template = std::make_shared<MaterialTemplate>(ShaderManager::Get()->GetShader(shader_path));
-		material_templates.insert(std::make_pair(shader_path, mat_template));
+
+		//If we explicitly specify the shader the lifetime need to be manager by the function.
+		mat_template = std::make_shared<MaterialTemplate>(shader_spec);
 	}
 
 	std::shared_ptr<Material> material = std::shared_ptr<Material>(new Material(mat_template));
@@ -84,13 +101,12 @@ std::shared_ptr<Material> MaterialManager::ParseMaterial(const std::string& path
 			material->SetParameter<glm::vec4>(parameter["name"].get<std::string>(), parameter["value"].get<glm::vec4>());
 		}
 		else if (type == "TEXTURE") {
-			material->SetParameter(parameter["name"].get<std::string>(), TextureManager::Get()->GetDefaultTexture()); 
+			material->SetParameter(parameter["name"].get<std::string>(), TextureManager::Get()->GetDefaultTexture());
 			if (parameter["value"].get<std::string>().empty()) continue;
 			material->SetTexture(parameter["name"].get<std::string>(), parameter["value"].get<std::string>());
 		}
 	}
-	stream.close();
-
+	material->material_path = "";
 	return material;
 }
 
@@ -219,8 +235,9 @@ Material::Material(std::shared_ptr<MaterialTemplate> material_template) : materi
 
 }
 
-MaterialTemplate::MaterialTemplate(std::shared_ptr<Shader> shader_in) : material_parameters(), material_parameters_map(), shader(shader_in), buffer_and_descriptor_table_sizes()
+MaterialTemplate::MaterialTemplate(std::shared_ptr<Shader> shader_in) : material_parameters(), material_parameters_map(), shader_wk(shader_in), buffer_and_descriptor_table_sizes()
 {
+	auto shader = GetShader();
 	auto& desc_parametrs = shader->GetRootSignature().GetDescriptor().parameters;
 	int index = 0;
 	for (auto& parameter : desc_parametrs) {
@@ -255,6 +272,11 @@ const MaterialTemplate::MaterialTemplateParameter& MaterialTemplate::GetMaterial
 	}
 }
 
+MaterialTemplate::~MaterialTemplate()
+{
+
+}
+
 int MaterialTemplate::GetTableOrBufferSize(int index)
 {
 	auto fnd = buffer_and_descriptor_table_sizes.find(index);
@@ -271,6 +293,10 @@ void MaterialTemplate::CreateParameter(const MaterialTemplateParameter& paramete
 {
 	material_parameters.push_back(parameter);
 	material_parameters_map.insert(std::make_pair(parameter.name,material_parameters.size()-1));
+}
+
+const RootSignature& MaterialTemplate::GetRootSignature() const {
+	return GetShader()->GetRootSignature();
 }
 
 void MaterialTemplate::AddTexture2DParameter(const RootSignatureDescriptorElement& element, int index, uint32_t table )
@@ -317,6 +343,7 @@ void MaterialTemplate::AddDescriptorTableParameter(const RootSignatureDescriptor
 
 void MaterialTemplate::AddConstantBufferParameter(const RootSignatureDescriptorElement& element, int index, uint32_t table)
 {
+	auto shader = GetShader();
 	try {
 		auto layout = shader->GetRootSignature().GetConstantBufferLayout(element.name);
 		int offset = 0;
@@ -401,3 +428,4 @@ void MaterialManager::AddTextureLoad(std::shared_ptr<Material> material, std::st
 	std::lock_guard<std::mutex> lock(material_load_mutex);
 	material_load.push_back(Material_loading_item{ name, material, future, false });
 }
+

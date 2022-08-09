@@ -74,7 +74,7 @@ RenderFence* Renderer::GetFence()
 
 void Renderer::Shutdown()
 {
-    Renderer3D::Shutdown();
+    Renderer3D::PreShutdown();
     std::unique_lock<std::mutex> lock(instance->default_frame_buffer_mutex);
     if (instance->default_frame_buffer) {
         instance->default_frame_buffer.reset();
@@ -83,6 +83,7 @@ void Renderer::Shutdown()
     RenderContext::Get()->StartShutdown();
     PipelineManager::Shutdown();
     ShaderManager::Shutdown();
+    Renderer3D::Shutdown();
     RenderResourceManager::Shutdown();
     if (instance) {
         instance->Destroy();

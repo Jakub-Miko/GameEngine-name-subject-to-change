@@ -6,6 +6,8 @@
 #include <deque>
 #include <AsyncTaskDispatcher.h>
 
+class Shader;
+
 class MaterialTemplate {
 public:
     enum MaterialTemplateParameterType : char {
@@ -26,12 +28,18 @@ public:
 
     MaterialTemplate() : material_parameters(), material_parameters_map() {}
     MaterialTemplate(std::shared_ptr<Shader> shader);
-    MaterialTemplate(const MaterialTemplate& other) : material_parameters(other.material_parameters), material_parameters_map(material_parameters_map), shader(other.shader) {}
-    MaterialTemplate& operator=(const MaterialTemplate& other) {
+    MaterialTemplate(const MaterialTemplate& other) : material_parameters(other.material_parameters), material_parameters_map(material_parameters_map), shader_wk(other.GetShader()) {}
+    MaterialTemplate& operator=(const MaterialTemplate& other) {;
         material_parameters = other.material_parameters;
         material_parameters_map = other.material_parameters_map;
-        shader = other.shader;
+        shader_wk = other.GetShader();
         return *this;
+    }
+
+    ~MaterialTemplate();
+
+    std::shared_ptr<Shader> GetShader() const {
+        return shader_wk.lock();
     }
 
     const MaterialTemplateParameter& GetMaterialTemplateParameter(const std::string& name) const;
@@ -42,9 +50,7 @@ public:
         return material_parameters;
     }
 
-    const RootSignature& GetRootSignature() const {
-        return shader->GetRootSignature();
-    }
+    const RootSignature& GetRootSignature() const;
 
     int GetTableOrBufferSize(int index);
 
@@ -53,7 +59,7 @@ private:
     void AddTexture2DParameter(const RootSignatureDescriptorElement& element, int index, uint32_t table = -1);
     void AddDescriptorTableParameter(const RootSignatureDescriptorElement& element, int index);
     void AddConstantBufferParameter(const RootSignatureDescriptorElement& element, int index, uint32_t table = -1);
-    std::shared_ptr<Shader> shader = nullptr;
+    std::weak_ptr<Shader> shader_wk; // Need to use weak_ptr since default materials are owned by their own shader which causes cyclic references
     std::vector<MaterialTemplateParameter> material_parameters;
     std::unordered_map<int, int> buffer_and_descriptor_table_sizes;
     std::unordered_map<std::string, size_t> material_parameters_map;
@@ -133,6 +139,7 @@ private:
 private:
     friend class Material;
     friend class Renderer3D;
+    friend class ShaderManager;
 
     void UpdateMaterials();
     MaterialManager();
@@ -144,7 +151,8 @@ private:
     };
     void AddTextureLoad(std::shared_ptr<Material> material, std::string name, Future<std::shared_ptr<RenderTexture2DResource>> future);
 
-    std::shared_ptr<Material> ParseMaterial(const std::string& path);
+    std::shared_ptr<Material> ParseMaterialFromFile(const std::string& path);
+    std::shared_ptr<Material> ParseMaterialFromString(const std::string& string, std::shared_ptr<Shader> shader_spec = nullptr);
 
     std::mutex material_mutex;
     std::unordered_map<std::string, std::shared_ptr<MaterialTemplate>> material_templates;

@@ -4,16 +4,22 @@
 #include <unordered_map>
 
 class RootSignature;
+class Material;
 
 class Shader {
 public:
-	virtual ~Shader() {}
+	virtual ~Shader();
 	const RootSignature& GetRootSignature() const {
 		return *signature;
+	}
+
+	std::shared_ptr<Material> GetDefaultMaterial() const {
+		return default_material;
 	}
 private:
 	friend class ShaderManager;
 	std::unique_ptr<RootSignature> signature;
+	std::shared_ptr<Material> default_material = nullptr;
 };
 
 class ShaderManager {
@@ -23,7 +29,7 @@ public:
 	static ShaderManager* Get();
 	static void Shutdown();
 
-	virtual ~ShaderManager() {}
+	virtual ~ShaderManager();
 
 	std::shared_ptr<Shader> GetShader(const std::string& path);
 
@@ -31,7 +37,8 @@ public:
 
 private:
 
-	RootSignature* ParseRootSignature(const std::string& signature_string);
+	RootSignature* ParseRootSignature(const std::string& signature_string, bool* has_default_material = nullptr);
+	std::shared_ptr<Material> ParseDefaulMaterial(const std::string& signature_string,std::shared_ptr<Shader> shader);
 
 	virtual Shader* CreateShaderFromString_impl(const std::string& source) = 0;
 	virtual Shader* CreateShader_impl(const std::string& path) = 0;

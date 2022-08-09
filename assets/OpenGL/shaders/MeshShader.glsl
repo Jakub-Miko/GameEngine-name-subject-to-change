@@ -62,7 +62,52 @@
 			}
 
 
-	]
+	],
+
+	"default_material" : {
+		"parameters": [
+			{
+				"name": "sun_direction",
+				"type" : "VEC4",
+				"value" : {
+					"x": 0.2,
+					"y" : 0.5,
+					"z" : 0.5,
+					"w" : 0.0
+				}
+			},
+			{
+				"name": "color",
+				"type" : "VEC4",
+				"value" : {
+					"x": 0.5,
+					"y" : 0.7,
+					"z" : 1.0,
+					"w" : 1.0
+				}
+			},
+			{
+				"name": "options",
+				"type" : "VEC4",
+				"value" : {
+					"x": 0.0,
+					"y" : 0.0,
+					"z" : 0.0,
+					"w" : 0.0
+				}
+			},
+			{
+				"name": "Texture_First",
+				"type" : "TEXTURE",
+				"value" : "asset:image_texture.tex"
+			},
+			{
+				"name": "Texture_Second",
+				"type" : "TEXTURE",
+				"value" : ""
+			}
+		]
+	}
 }
 #end
 

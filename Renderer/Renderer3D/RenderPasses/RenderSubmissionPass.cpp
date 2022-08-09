@@ -16,12 +16,12 @@ RenderSubmissionPass::RenderSubmissionPass(const std::string& output_collection_
 
 void RenderSubmissionPass::Setup(RenderPassResourceDefinnition& setup_builder)
 {
-	setup_builder.AddResource<RenderResourceCollection<std::shared_ptr<Mesh>>>(output_collection_name, RenderPassResourceDescriptor_Access::WRITE);
+	setup_builder.AddResource<RenderResourceCollection<Entity>>(output_collection_name, RenderPassResourceDescriptor_Access::WRITE);
 }
 
 void RenderSubmissionPass::Render(RenderPipelineResourceManager& resource_manager)
 {
-	RenderResourceCollection<std::shared_ptr<Mesh>> collection;
+	RenderResourceCollection<Entity> collection;
 	World& world = Application::GetWorld();
 	Entity camera_entity = world.GetPrimaryEntity();
 	if (camera_entity == Entity()) {
@@ -37,7 +37,7 @@ void RenderSubmissionPass::Render(RenderPipelineResourceManager& resource_manage
 	world.GetSpatialIndex().FrustumCulling(world, camera_frustum, visible);
 	for (auto ent : visible) {
 		if (world.HasComponent<MeshComponent>(ent)) {
-			collection.resources.push_back(world.GetComponent<MeshComponent>(ent).mesh);
+			collection.resources.push_back(ent);
 		}
 	}
 	resource_manager.SetResource(output_collection_name, std::move(collection));

@@ -69,10 +69,8 @@ void OpenGLRenderCommandQueue::RenderLoop()
 	PROFILE("RenderLoopStart");
 	running.store(true);
 	while (running.load()) {
-		PROFILE("RenderLoopFetch");
 		ExecutableCommand* list = FetchList();
 		if (list) {
-			PROFILE("RenderLoopExec");
 			list->Execute();
 			delete list;
 		}

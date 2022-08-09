@@ -1,4 +1,5 @@
 #include "ShaderManager.h"
+#include <Renderer/Renderer3D/MaterialManager.h>
 #include <FileManager.h>
 #include <platform/OpenGL/OpenGLShaderManager.h>
 #include <json.hpp>
@@ -28,6 +29,10 @@ void ShaderManager::Shutdown()
 	}
 }
 
+ShaderManager::~ShaderManager()
+{
+}
+
 std::shared_ptr<Shader> ShaderManager::GetShader(const std::string& path_in)
 {
 	std::string path = FileManager::Get()->ResolvePath(FileManager::Get()->GetRenderApiAssetFilePath("shaders/" + path_in));
@@ -53,9 +58,13 @@ std::shared_ptr<Shader> ShaderManager::GetShader(const std::string& path_in)
 		fnd_root += strlen("#RootSignature");
 		root_sig_str = shader_str.substr(fnd_root, end_root - fnd_root);
 	}
-	shader->signature = std::unique_ptr<RootSignature>(ParseRootSignature(root_sig_str));
+	bool has_default_material;
+	shader->signature = std::unique_ptr<RootSignature>(ParseRootSignature(root_sig_str, &has_default_material));
 
 	std::shared_ptr<Shader> shader_out = std::shared_ptr<Shader>(shader);
+	if (has_default_material) {
+		shader_out->default_material = ParseDefaulMaterial(root_sig_str, shader_out);
+	}
 	shader_map.insert(std::make_pair(path, shader_out));
 	file_stream.close();
 	return shader_out;
@@ -73,14 +82,18 @@ std::shared_ptr<Shader> ShaderManager::CreateShaderFromString(const std::string&
 		fnd_root += strlen("#RootSignature");
 		root_sig_str = shader_in.substr(fnd_root, end_root - fnd_root);
 	}
-	shader->signature = std::unique_ptr<RootSignature>(ParseRootSignature(root_sig_str));
+	bool has_default_material;
+	shader->signature = std::unique_ptr<RootSignature>(ParseRootSignature(root_sig_str, &has_default_material));
 	std::shared_ptr<Shader> shader_out = std::shared_ptr<Shader>(shader);
+	if (has_default_material) {
+		shader_out->default_material = ParseDefaulMaterial(root_sig_str, shader_out);
+	}
 	return shader_out;
 }
 
 
 
-RootSignature* ShaderManager::ParseRootSignature(const std::string& signature_string)
+RootSignature* ShaderManager::ParseRootSignature(const std::string& signature_string, bool* has_default_material)
 {
 	using namespace nlohmann;
 	RootSignatureDescriptor desc;
@@ -90,6 +103,10 @@ RootSignature* ShaderManager::ParseRootSignature(const std::string& signature_st
 	json json_layouts;
 	try {
 		json json_object = json::parse(signature_string);
+
+		if (has_default_material) {
+			*has_default_material = json_object.contains("default_material");
+		}
 
 		if (json_object.contains("constant_buffer_layouts")) {
 			if (!json_object["constant_buffer_layouts"].is_array()) throw std::runtime_error("constant_buffer_layouts must be an array");
@@ -190,5 +207,21 @@ RootSignature* ShaderManager::ParseRootSignature(const std::string& signature_st
 
 	return RootSignature::CreateSignature(desc, std::move(mapping_table), layout_table);
 
+
+}
+
+std::shared_ptr<Material> ShaderManager::ParseDefaulMaterial(const std::string& signature_string, std::shared_ptr<Shader> shader)
+{
+	using namespace nlohmann;
+	json json_object = json::parse(signature_string);
+
+	if (json_object.contains("default_material")) {
+		return MaterialManager::Get()->ParseMaterialFromString(json_object["default_material"].dump(), shader);
+	}
+
+}
+
+Shader::~Shader()
+{
 
 }
