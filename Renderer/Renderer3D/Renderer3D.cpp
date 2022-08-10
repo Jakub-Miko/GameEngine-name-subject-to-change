@@ -10,6 +10,7 @@ void Renderer3D::Init()
 	if (!instance) {
 		instance = new Renderer3D;
 		MaterialManager::Init();
+		instance->deffered_pipeline = DefferedRenderingPipeline::CreatePipeline();
 	}
 }
 
@@ -37,7 +38,7 @@ void Renderer3D::Update(float delta_time)
 	default_descriptor_heap.FlushDescriptorDeallocations(FrameManager::Get()->GetCurrentFrameNumber());
 }
 
-Renderer3D::Renderer3D() : default_descriptor_heap(500), deffered_pipeline(DefferedRenderingPipeline::CreatePipeline())
+Renderer3D::Renderer3D() : default_descriptor_heap(500), deffered_pipeline()
 {
-	
+
 }

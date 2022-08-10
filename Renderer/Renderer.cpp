@@ -6,6 +6,7 @@
 #include <Renderer/ShaderManager.h>
 #include <Renderer/PipelineManager.h>
 #include <stb_image.h>
+#include <Renderer/TextureManager.h>
 
 Renderer* Renderer::instance = nullptr;
 
@@ -58,6 +59,7 @@ void Renderer::Init(int max_allocators) {
     if (RenderContext::Get()) {
         RenderContext::Get()->Init();
     }
+    TextureManager::Init();
     Renderer3D::Init();
 }
 

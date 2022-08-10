@@ -25,7 +25,29 @@ public:
 	}
 
 	void ChangeMaterial(const std::string& filepath) {
+		if (filepath.empty()) {
+			material.reset();
+			return;
+		}
 		material = MaterialManager::Get()->GetMaterial(filepath);
+	}
+
+	std::string GetMaterialPath() const {
+		if (material) {
+			return FileManager::Get()->GetRelativeFilePath(material->GetFilePath());
+		}
+		else {
+			return "";
+		}
+	}
+
+	Material::Material_status GetMaterialStatus() {
+		if (material) {
+			return material->GetStatus();
+		}
+		else {
+			return Material::Material_status::UNINITIALIZED;
+		}
 	}
 
 	std::string file_path;

@@ -15,12 +15,15 @@ PropertiesPanel::PropertiesPanel()
 	text_buffer[0] = '\0';
 	prefab_path_buffer = new char[buffer_size];
 	prefab_path_buffer[0] = '\0';
+	material_file_buffer = new char[buffer_size];
+	material_file_buffer[0] = '\0';
 }
 
 PropertiesPanel::~PropertiesPanel()
 {
 	delete[] text_buffer;
 	delete[] prefab_path_buffer;
+	delete[] material_file_buffer;
 }
 
 void PropertiesPanel::Render()
@@ -35,10 +38,12 @@ void PropertiesPanel::Render()
 	data.mesh_file_buffer = text_buffer;
 	data.show_flags = (ShowPropertyFlags)0;
 	data.prefab_path = prefab_path_buffer;
+	data.material_file_buffer = material_file_buffer;
 
 	if (selected != last_entity) {
 		text_buffer[0] = '\0';
 		prefab_path_buffer[0] = '\0';
+		material_file_buffer[0] = '\0';
 		last_entity = selected;
 	}
 
@@ -60,6 +65,7 @@ void PropertiesPanel::RenderProperties(Entity entity, const PropertiesPanel_pers
 	World& world = Application::GetWorld();
 	
 	char* text_buffer = data.mesh_file_buffer;
+	char* material_file_buffer = data.material_file_buffer;
 	int buffer_size = data.buffer_size;
 
 
@@ -84,6 +90,17 @@ void PropertiesPanel::RenderProperties(Entity entity, const PropertiesPanel_pers
 		ImGui::EndPopup();
 	}
 	int prefab_error_id = ImGui::GetID("Error##prefab");
+
+	if (ImGui::BeginPopupModal("Error##material", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+
+		ImGui::Text("Invalid or corrupted Material file");
+
+		if (ImGui::Button("Close")) {
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::EndPopup();
+	}
+	int material_error_id = ImGui::GetID("Error##material");
 
 	if (selected == Entity()) {
 		return;
@@ -192,6 +209,30 @@ void PropertiesPanel::RenderProperties(Entity entity, const PropertiesPanel_pers
 			if (ImGui::Button("Set Selected")) {
 				mesh.ChangeMesh(Editor::Get()->GetSelectedFilePath());
 				memcpy(text_buffer, mesh.file_path.c_str(), mesh.file_path.size() + 1);
+			}
+			ImGui::Separator();
+			if (strlen(material_file_buffer) == 0) {
+				material_file_buffer[0] = '\0';
+				memcpy(material_file_buffer, mesh.GetMaterialPath().c_str(), mesh.GetMaterialPath().size() + 1);
+			}
+			bool enter_material = ImGui::InputText("Material path", material_file_buffer, buffer_size, ImGuiInputTextFlags_EnterReturnsTrue);
+			if (ImGui::Button("Reload##material") || enter_material) {
+				try {
+					mesh.ChangeMaterial(material_file_buffer);
+				}
+				catch (std::runtime_error* e) {
+					ImGui::OpenPopup(material_error_id);
+					material_file_buffer[0] = '\0';
+					memcpy(material_file_buffer, mesh.GetMaterialPath().c_str(), mesh.GetMaterialPath().size() + 1);
+				}
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Set Selected##material")) {
+				mesh.ChangeMaterial(FileManager::Get()->GetRelativeFilePath(Editor::Get()->GetSelectedFilePath()));
+				memcpy(material_file_buffer, mesh.GetMaterialPath().c_str(), mesh.GetMaterialPath().size() + 1);
+			}
+			if (mesh.GetMaterialStatus() == Material::Material_status::ERROR) {
+				ImGui::OpenPopup(material_error_id);
 			}
 
 

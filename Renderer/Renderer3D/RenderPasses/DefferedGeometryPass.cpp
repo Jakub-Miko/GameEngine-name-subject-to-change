@@ -80,15 +80,17 @@ void DefferedGeometryPass::InitPostProcessingPassData() {
 	depth_desc.sampler = sampler;
 
 	auto texture_color_albedo = RenderResourceManager::Get()->CreateTexture(color_texture_desc);
+	auto texture_color_position = RenderResourceManager::Get()->CreateTexture(color_texture_desc);
+	auto texture_color_normal = RenderResourceManager::Get()->CreateTexture(color_texture_desc);
 	auto texture_depth_stencil = RenderResourceManager::Get()->CreateTexture(depth_desc);
 
 	RenderFrameBufferDescriptor framebuffer_desc;
-	framebuffer_desc.color_attachments = { texture_color_albedo };
+	framebuffer_desc.color_attachments = { texture_color_albedo, texture_color_position,texture_color_normal };
 	framebuffer_desc.depth_stencil_attachment = texture_depth_stencil;
 	
 	data->output_buffer_resource = RenderResourceManager::Get()->CreateFrameBuffer(framebuffer_desc);
 
-	RenderBufferDescriptor const_desc(sizeof(glm::mat4), RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
+	RenderBufferDescriptor const_desc(sizeof(glm::mat4)*2, RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
 	data->constant_scene_buf = RenderResourceManager::Get()->CreateBuffer(const_desc);
 
 
@@ -138,6 +140,7 @@ void DefferedGeometryPass::Render(RenderPipelineResourceManager& resource_manage
 		list->SetIndexBuffer(mesh.mesh->GetIndexBuffer());
 		glm::mat4 mvp = ViewProjection * transform.TransformMatrix;
 		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, glm::value_ptr(mvp), sizeof(glm::mat4), 0);
+		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, glm::value_ptr(transform.TransformMatrix), sizeof(glm::mat4), sizeof(glm::mat4));
 		list->Draw(mesh.mesh->GetIndexCount());
 
 

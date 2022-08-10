@@ -148,7 +148,6 @@ void Application::InitInstance()
     m_Window->Init();
     Renderer::Get()->Init();
     MeshManager::Init();
-    TextureManager::Init();
 
     FrameManager::Initialize();
 

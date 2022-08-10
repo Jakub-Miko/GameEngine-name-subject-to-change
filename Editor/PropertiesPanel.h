@@ -7,6 +7,7 @@ enum class ShowPropertyFlags {
 
 struct PropertiesPanel_persistent_data {
 	char* mesh_file_buffer;
+	char* material_file_buffer;
 	char* prefab_path;
 	int buffer_size;
 	ShowPropertyFlags show_flags = ShowPropertyFlags::NONE;
@@ -29,6 +30,7 @@ private:
 
 	char* text_buffer = nullptr;
 	char* prefab_path_buffer = nullptr;
+	char* material_file_buffer = nullptr;
 	int buffer_size = 200;
 	Entity last_entity = Entity();
 

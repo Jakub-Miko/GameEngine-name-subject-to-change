@@ -74,7 +74,7 @@ public:
     using material_resource_type = std::variant<RenderDescriptorTable,std::shared_ptr<RenderBufferResource>>;
 
     enum class Material_status : char {
-        OK = 0, ERROR = 1
+        OK = 0, ERROR = 1, UNINITIALIZED = 2
     };
 
     struct MaterialResource {
@@ -105,6 +105,10 @@ public:
 
     Material_status GetStatus() const {
         return status;
+    }
+
+    const std::string& GetFilePath() const {
+        return material_path;
     }
 
 private:
