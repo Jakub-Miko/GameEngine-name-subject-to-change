@@ -68,11 +68,18 @@ public:
 
 inline void to_json(nlohmann::json& j, const MeshComponent& p) {
 	j["path"] = p.file_path;
+	if (p.material != nullptr) {
+		j["material_path"] = p.GetMaterialPath();
+	}
 
 }
 
 inline void from_json(const nlohmann::json& j, MeshComponent& p) {
 	p.ChangeMesh(FileManager::Get()->GetPath(j["path"].get<std::string>()));
+	if (j.contains("material_path")) {
+		auto material_path = j["material_path"].get<std::string>();
+		p.ChangeMaterial(j["material_path"].get<std::string>());
+	}
 }
 
 #pragma endregion
