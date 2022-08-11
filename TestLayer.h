@@ -11,6 +11,7 @@
 #include <Renderer/Renderer.h>
 #include <World/Components/ScriptComponent.h>
 #include <World/Components/SquareComponent.h>
+#include <World/Components/LightComponent.h>
 #include <World/Components/MeshComponent.h>
 #include <Input/Input.h>
 #include <Events/KeyPressEvent.h>
@@ -396,87 +397,87 @@ public:
 
             //Application::GetWorld().GetSceneGraph()->Deserialize(FileManager::Get()->GetAssetFilePath("save_file.json"));
 
-            std::cout << RuntimeTag<TransformComponent>::GetName() << "\n";
-            std::cout << RuntimeTag<CameraComponent>::GetName() << "\n";
-            std::cout << RuntimeTag<int>::GetName() << "\n";
+          //  std::cout << RuntimeTag<TransformComponent>::GetName() << "\n";
+          //  std::cout << RuntimeTag<CameraComponent>::GetName() << "\n";
+          //  std::cout << RuntimeTag<int>::GetName() << "\n";
 
-            DynamicPropertiesComponent comp1;
-            comp1.m_Properties.insert(std::make_pair("string", "string"));
-            comp1.m_Properties.insert(std::make_pair("int", 5.0));
-            comp1.m_Properties.insert(std::make_pair("vec4", glm::vec4(1.0f)));
+          //  DynamicPropertiesComponent comp1;
+          //  comp1.m_Properties.insert(std::make_pair("string", "string"));
+          //  comp1.m_Properties.insert(std::make_pair("int", 5.0));
+          //  comp1.m_Properties.insert(std::make_pair("vec4", glm::vec4(1.0f)));
 
-            nlohmann::json json;
-            json["attrib"] = comp1;
-            std::string dump = json.dump();
-            std::cout << dump << "\n";
-            DynamicPropertiesComponent comp2 = json["attrib"];
-
-
-
-            
-
-            auto command_list = Renderer::Get()->GetRenderCommandList();
-            auto command_queue = Renderer::Get()->GetCommandQueue();
-
-            PipelineDescriptor pipeline_desc;
-            pipeline_desc.flags = PipelineFlags::ENABLE_DEPTH_TEST;
-            pipeline_desc.layout = VertexLayoutFactory<MeshPreset>::GetLayout();
-            pipeline_desc.scissor_rect = RenderScissorRect();
-            pipeline_desc.viewport = RenderViewport();
-            pipeline_desc.shader = ShaderManager::Get()->GetShader("MeshShader.glsl");
-
-            pipeline = PipelineManager::Get()->CreatePipeline(pipeline_desc);
-
-            Render_Box_data::Constant_buffer_type constant_buf_data = {
-                glm::mat4(1.0f),
-                glm::mat4(1.0f),
-                glm::normalize(glm::vec4(0.20f, 1.0f, -3.0f,0.0f)),
-                glm::vec4(0.3f,0.7f,1.0f,1.0f),
-                glm::vec4(0,0,0,0)
-            };
+          //  nlohmann::json json;
+          //  json["attrib"] = comp1;
+          //  std::string dump = json.dump();
+          //  std::cout << dump << "\n";
+          //  DynamicPropertiesComponent comp2 = json["attrib"];
 
 
 
-            constant_buffer = FrameMultiBufferResource<std::shared_ptr<RenderBufferResource>>([&]() -> std::shared_ptr<RenderBufferResource> {
-                RenderBufferDescriptor constant_buffer_desc(sizeof(constant_buf_data), RenderBufferType::DEFAULT, RenderBufferUsage::CONSTANT_BUFFER);
+          //  
 
-                std::shared_ptr<RenderBufferResource> constant_buffer_instance = RenderResourceManager::Get()->CreateBuffer(constant_buffer_desc);
-                RenderResourceManager::Get()->UploadDataToBuffer(command_list, constant_buffer_instance, &constant_buf_data, sizeof(constant_buf_data), 0);
-                return constant_buffer_instance;
-                });
+          //  auto command_list = Renderer::Get()->GetRenderCommandList();
+          //  auto command_queue = Renderer::Get()->GetCommandQueue();
 
-            command_queue->ExecuteRenderCommandList(command_list);
-            
-            mesh_enity = Application::GetWorld().CreateEntity();
-            Application::GetWorld().SetComponent<MeshComponent>(mesh_enity,"asset:Pillar_with_uvs.mesh"_path);
-            Application::GetWorld().SetEntityTranslation(mesh_enity, glm::vec3(0.0f, -5.0f, 0.0f));
-            
-            TextureSamplerDescritor desc_sample;
-            desc_sample.AddressMode_U = TextureAddressMode::BORDER;
-            desc_sample.AddressMode_V = TextureAddressMode::BORDER;
-            desc_sample.AddressMode_W = TextureAddressMode::BORDER;
-            desc_sample.border_color = glm::vec4(0.2f, 0.7f, 1.0f, 1.0f);
-            desc_sample.filter = TextureFilter::POINT_MIN_MAG_MIP;
-            desc_sample.LOD_bias = 0.0f;
-            desc_sample.max_LOD = 10;
-            desc_sample.min_LOD = 0;
+          //  PipelineDescriptor pipeline_desc;
+          //  pipeline_desc.flags = PipelineFlags::ENABLE_DEPTH_TEST;
+          //  pipeline_desc.layout = VertexLayoutFactory<MeshPreset>::GetLayout();
+          //  pipeline_desc.scissor_rect = RenderScissorRect();
+          //  pipeline_desc.viewport = RenderViewport();
+          //  pipeline_desc.shader = ShaderManager::Get()->GetShader("MeshShader.glsl");
 
-            TextureManager::Get()->MakeTextureFromImageAsync("asset:Heaven.png"_path, "asset:image_texture.tex"_path, desc_sample);
+          //  pipeline = PipelineManager::Get()->CreatePipeline(pipeline_desc);
 
-            texture = TextureManager::Get()->LoadTextureFromFileAsync("asset:image_texture.tex", false);
-            
-            auto& index = Application::GetWorld().GetSpatialIndex();
-            Entity entity_1 = Application::GetWorld().CreateEntity();
-          /*  Application::GetWorld().SetComponent<BoundingVolumeComponent>(entity_1, BoundingBox());*/
-            Application::GetWorld().SetEntityTranslation(entity_1, { -1.9,-1.7,-1.9 });
-            Entity entity_2 = Application::GetWorld().CreateEntity();
-            /*Application::GetWorld().SetComponent<BoundingVolumeComponent>(entity_2, BoundingBox()); */
-            Application::GetWorld().SetEntityTranslation(entity_2, { -1.9,-1.7,-1.9 });
-            Application::GetWorld().GetSceneGraph()->CalculateMatricies();
+          //  Render_Box_data::Constant_buffer_type constant_buf_data = {
+          //      glm::mat4(1.0f),
+          //      glm::mat4(1.0f),
+          //      glm::normalize(glm::vec4(0.20f, 1.0f, -3.0f,0.0f)),
+          //      glm::vec4(0.3f,0.7f,1.0f,1.0f),
+          //      glm::vec4(0,0,0,0)
+          //  };
 
-            auto ent_1 = Application::GetWorld().CreateEntity();
-            Application::GetWorld().SetComponent<BoundingVolumeComponent>(ent_1, BoundingBox({ 1,10,1 }, { 0,0,0 }));
-            Application::GetWorld().GetSceneGraph()->CalculateMatricies();
+
+
+          //  constant_buffer = FrameMultiBufferResource<std::shared_ptr<RenderBufferResource>>([&]() -> std::shared_ptr<RenderBufferResource> {
+          //      RenderBufferDescriptor constant_buffer_desc(sizeof(constant_buf_data), RenderBufferType::DEFAULT, RenderBufferUsage::CONSTANT_BUFFER);
+
+          //      std::shared_ptr<RenderBufferResource> constant_buffer_instance = RenderResourceManager::Get()->CreateBuffer(constant_buffer_desc);
+          //      RenderResourceManager::Get()->UploadDataToBuffer(command_list, constant_buffer_instance, &constant_buf_data, sizeof(constant_buf_data), 0);
+          //      return constant_buffer_instance;
+          //      });
+
+          //  command_queue->ExecuteRenderCommandList(command_list);
+          //  
+          //  mesh_enity = Application::GetWorld().CreateEntity();
+          //  Application::GetWorld().SetComponent<MeshComponent>(mesh_enity,"asset:Pillar_with_uvs.mesh"_path);
+          //  Application::GetWorld().SetEntityTranslation(mesh_enity, glm::vec3(0.0f, -5.0f, 0.0f));
+          //  
+          //  TextureSamplerDescritor desc_sample;
+          //  desc_sample.AddressMode_U = TextureAddressMode::BORDER;
+          //  desc_sample.AddressMode_V = TextureAddressMode::BORDER;
+          //  desc_sample.AddressMode_W = TextureAddressMode::BORDER;
+          //  desc_sample.border_color = glm::vec4(0.2f, 0.7f, 1.0f, 1.0f);
+          //  desc_sample.filter = TextureFilter::POINT_MIN_MAG_MIP;
+          //  desc_sample.LOD_bias = 0.0f;
+          //  desc_sample.max_LOD = 10;
+          //  desc_sample.min_LOD = 0;
+
+          //  TextureManager::Get()->MakeTextureFromImageAsync("asset:Heaven.png"_path, "asset:image_texture.tex"_path, desc_sample);
+
+          //  texture = TextureManager::Get()->LoadTextureFromFileAsync("asset:image_texture.tex", false);
+          //  
+          //  auto& index = Application::GetWorld().GetSpatialIndex();
+          //  Entity entity_1 = Application::GetWorld().CreateEntity();
+          ///*  Application::GetWorld().SetComponent<BoundingVolumeComponent>(entity_1, BoundingBox());*/
+          //  Application::GetWorld().SetEntityTranslation(entity_1, { -1.9,-1.7,-1.9 });
+          //  Entity entity_2 = Application::GetWorld().CreateEntity();
+          //  /*Application::GetWorld().SetComponent<BoundingVolumeComponent>(entity_2, BoundingBox()); */
+          //  Application::GetWorld().SetEntityTranslation(entity_2, { -1.9,-1.7,-1.9 });
+          //  Application::GetWorld().GetSceneGraph()->CalculateMatricies();
+
+          //  auto ent_1 = Application::GetWorld().CreateEntity();
+          //  Application::GetWorld().SetComponent<BoundingVolumeComponent>(ent_1, BoundingBox({ 1,10,1 }, { 0,0,0 }));
+          //  Application::GetWorld().GetSceneGraph()->CalculateMatricies();
             //index.AddEntity(ent_1);
             //index.AddEntity(entity_1);
             //index.AddEntity(entity_2);

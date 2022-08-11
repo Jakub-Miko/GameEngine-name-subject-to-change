@@ -17,6 +17,7 @@
 #include <World/Components/KeyPressedScriptComponent.h>
 #include <World/Components/MousePressedScriptComponent.h>
 #include <World/Components/ScriptComponent.h>
+#include <World/Components/LightComponent.h>
 #include <World/Components/SquareComponent.h>
 #include <World/EntityManager.h>
 #ifdef EDITOR
@@ -227,6 +228,7 @@ void World::RegistryWarmUp()
 	m_ECS.storage<SquareComponent>();
 	m_ECS.storage<PrefabComponent>();
 	m_ECS.storage<MeshComponent>();
+	m_ECS.storage<LightComponent>();
 	m_ECS.storage<TransformComponent>();
 }
 

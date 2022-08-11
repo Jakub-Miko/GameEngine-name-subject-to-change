@@ -429,3 +429,17 @@ void MaterialManager::AddTextureLoad(std::shared_ptr<Material> material, std::st
 	material_load.push_back(Material_loading_item{ name, material, future, false });
 }
 
+std::shared_ptr<Material> MaterialManager::CreateMaterial(const std::string& shader_path) {
+	std::shared_ptr<MaterialTemplate> mat_template;
+	auto fnd_template = material_templates.find(shader_path);
+	if (fnd_template != material_templates.end()) {
+		mat_template = fnd_template->second;
+	}
+	else {
+		mat_template = std::make_shared<MaterialTemplate>(ShaderManager::Get()->GetShader(shader_path));
+		material_templates.insert(std::make_pair(shader_path, mat_template));
+	}
+	
+	return std::shared_ptr<Material>(new Material(mat_template));
+
+}

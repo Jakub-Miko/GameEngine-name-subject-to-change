@@ -65,6 +65,14 @@ public:
 		current_state.polygon_render_mode = mode;
 	}
 
+	void SetBlendEquation(const BlendEquation& equation) {
+		current_state.blend_equation = equation;
+	}
+
+	void SetCullMode(const CullMode& mode) {
+		current_state.cull_mode = mode;
+	}
+
 private:
 	void RenderLoop();
 	ExecutableCommand* FetchList();

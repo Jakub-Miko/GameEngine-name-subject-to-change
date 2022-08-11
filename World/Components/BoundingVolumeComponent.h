@@ -8,7 +8,7 @@
 class BoundingVolumeComponent {
 	RuntimeTag("BoundingVolumeComponent")
 public:
-	using bounding_volume_variant_type = std::variant<BoundingBox>;
+	using bounding_volume_variant_type = std::variant<BoundingBox, BoundingSphere, BoundingInfinity>;
 public:
 	
 	template<typename Volume>

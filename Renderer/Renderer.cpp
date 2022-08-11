@@ -60,6 +60,10 @@ void Renderer::Init(int max_allocators) {
         RenderContext::Get()->Init();
     }
     TextureManager::Init();
+}
+
+void Renderer::PostInit()
+{
     Renderer3D::Init();
 }
 

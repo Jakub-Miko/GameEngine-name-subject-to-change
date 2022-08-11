@@ -4,6 +4,8 @@
 #include <Editor/Editor.h>
 #include <Application.h>
 #include <World/Components/TransformComponent.h>
+#include <World/Components/BoundingVolumeComponent.h>
+#include <World/Components/LightComponent.h>
 #include <World/Components/PrefabComponent.h>
 #include <World/Components/CameraComponent.h>
 #include <World/Components/MeshComponent.h>
@@ -160,6 +162,12 @@ void PropertiesPanel::RenderProperties(Entity entity, const PropertiesPanel_pers
 		ImGui::TreePop();
 	}
 
+	if (world.HasComponent<LightComponent>(selected) && ImGui::TreeNode("Light ")) {
+		ImGui::ColorPicker3("Light Color", glm::value_ptr(world.GetComponent<LightComponent>(selected).color));
+		ImGui::SliderFloat("Intensity", &glm::value_ptr(world.GetComponent<LightComponent>(selected).color)[3],0.0,2.0);
+		ImGui::TreePop();
+	}
+
 	if (is_camera && !is_prefab) {
 		if (ImGui::TreeNode("Camera")) {
 			auto& camera = world.GetComponent<CameraComponent>(selected);
@@ -289,27 +297,55 @@ void PropertiesPanel::AddComponent(Entity entity,const PropertiesPanel_persisten
 	auto& world = Application::GetWorld();
 	if (ImGui::TreeNode("Add Component")) {
 		bool has_mesh = world.HasComponent<MeshComponent>(entity);
-		if (has_mesh) {
-			ImGui::BeginDisabled();
-		}
-		if (ImGui::Button("Add Mesh Component")) {
-			world.SetComponent<MeshComponent>(entity);
-		}
-		if (has_mesh) {
-			ImGui::EndDisabled();
-		} 
-		ImGui::SameLine();
-		if (!has_mesh) {
-			ImGui::BeginDisabled();
-		}
-		if (ImGui::Button("Remove Mesh Component")) {
-			world.RemoveComponent<MeshComponent>(entity);
-			memcpy(data.mesh_file_buffer,"Unknown",strlen("Unknown")+1);
-		}
-		if (!has_mesh) {
-			ImGui::EndDisabled();
+		bool has_light = world.HasComponent<LightComponent>(entity);
+		bool has_bounds = world.HasComponent<BoundingVolumeComponent>(entity);
+		if (!has_light) {
+			if (has_mesh) {
+				ImGui::BeginDisabled();
+			}
+			if (ImGui::Button("Add Mesh Component")) {
+				world.SetComponent<MeshComponent>(entity);
+			}
+			if (has_mesh) {
+				ImGui::EndDisabled();
+			}
+			ImGui::SameLine();
+			if (!has_mesh) {
+				ImGui::BeginDisabled();
+			}
+			if (ImGui::Button("Remove Mesh Component")) {
+				world.RemoveComponent<MeshComponent>(entity);
+				memcpy(data.mesh_file_buffer, "Unknown", strlen("Unknown") + 1);
+			}
+			if (!has_mesh) {
+				ImGui::EndDisabled();
+			}
 		}
 
+		if (!has_mesh) {
+			if (has_light) {
+				ImGui::BeginDisabled();
+			}
+			if (ImGui::Button("Add Light Component")) {
+				if (has_bounds) {
+					world.RemoveComponent<BoundingVolumeComponent>(entity);
+				}
+				world.SetComponent<LightComponent>(entity);
+			}
+			if (has_light) {
+				ImGui::EndDisabled();
+			}
+			ImGui::SameLine();
+			if (!has_light) {
+				ImGui::BeginDisabled();
+			}
+			if (ImGui::Button("Remove Light Component")) {
+				world.RemoveComponent<LightComponent>(entity);
+			}
+			if (!has_light) {
+				ImGui::EndDisabled();
+			}
+		}
 
 		bool has_camera = world.HasComponent<CameraComponent>(entity);
 		if (has_camera) {

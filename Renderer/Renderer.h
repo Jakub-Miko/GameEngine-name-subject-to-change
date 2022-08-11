@@ -26,6 +26,8 @@ public:
 
     void Init(int max_allocators = 50);
 
+    void PostInit();
+
     RenderCommandQueue* GetCommandQueue(RenderQueueTypes type = RenderQueueTypes::DirectQueue);
 
     RenderFence* GetFence();

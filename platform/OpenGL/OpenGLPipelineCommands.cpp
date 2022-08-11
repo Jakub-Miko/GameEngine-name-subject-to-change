@@ -55,6 +55,22 @@ void OpenGLSetPipelineCommand::Execute()
 		queue->SetPrimitivePolygonRenderMode(rendermode);
 	}
 
+	if (current_state.GetBlendEquation() != pipeline->GetBlendEquation() || (bool)(pipeline->GetPipelineFlags() & PipelineFlags::IS_MULTI_WINDOW)) {
+		glBlendEquation(OpenGLUnitConverter::BlendEquationTOGLenum(pipeline->GetBlendEquation()));
+		queue->SetBlendEquation(pipeline->GetBlendEquation());
+	}
+
+	if (current_state.GetCullMode() != pipeline->GetCullMode() || (bool)(pipeline->GetPipelineFlags() & PipelineFlags::IS_MULTI_WINDOW)) {
+		if (pipeline->GetCullMode() != CullMode::NONE && current_state.GetCullMode() == CullMode::NONE) {
+			glEnable(GL_CULL_FACE);
+		}
+		if (pipeline->GetCullMode() == CullMode::NONE && current_state.GetCullMode() != CullMode::NONE) {
+			glDisable(GL_CULL_FACE);
+		}
+		glCullFace(OpenGLUnitConverter::CullModeTOGLenum(pipeline->GetCullMode()));
+		queue->SetCullMode(pipeline->GetCullMode());
+	}
+
 	if (!current_shader || current_shader->GetShaderProgram() != shader || (bool)(pipeline->GetPipelineFlags() & PipelineFlags::IS_MULTI_WINDOW)) {
 		glUseProgram(shader);
 		queue->SetShader(pipeline->GetShader());

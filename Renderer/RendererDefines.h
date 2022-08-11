@@ -43,7 +43,13 @@ enum class BlendFunction : uint32_t {
 	ZERO = 0, ONE = 1, SRC_COLOR = 2, ONE_MINUS_SRC_COLOR = 3, DST_COLOR= 4, ONE_MINUS_DST_COLOR = 5, SRC_ALPHA = 6, ONE_MINUS_SRC_ALPHA = 7, DST_ALPHA = 8, ONE_MINUS_DST_ALPHA = 9
 };
 
+enum class BlendEquation : char {
+	ADD = 0, SUBTRACT = 1, REVERSE_SUBTRACT = 2, MIN = 3, MAX = 4
+};
 
+enum class CullMode : char {
+	NONE = 0, FRONT = 1, BACK = 2
+};
 
 struct RenderViewport {
 	RenderViewport(glm::vec2 offset = {0,0}, glm::vec2 size = { -1,-1 }, float min_depth = 0, float max_depth = 1) 
@@ -86,7 +92,7 @@ enum class RenderPrimitiveType : unsigned char
 };
 
 enum class TextureFormat : unsigned char {
-	RGBA_UNSIGNED_CHAR = 0, RGB_UNSIGNED_CHAR = 1, DEPTH24_STENCIL8_UNSIGNED_CHAR = 2, RGB_32FLOAT = 3
+	RGBA_UNSIGNED_CHAR = 0, RGB_UNSIGNED_CHAR = 1, DEPTH24_STENCIL8_UNSIGNED_CHAR = 2, RGB_32FLOAT = 3, RGBA_32FLOAT = 4
 };
 
 enum class TextureAddressMode : unsigned char {

@@ -1,4 +1,4 @@
-#include "DefferedGeometryPass.h"
+#include "DefferedLightingPass.h"
 #include <Renderer/RootSignature.h>
 #include <Renderer/Renderer3D/Renderer3D.h>
 #include <Renderer/Renderer3D/MaterialManager.h>
@@ -10,13 +10,14 @@
 #include <Renderer/MeshManager.h>
 #include <World/Components/CameraComponent.h>
 #include <World/Components/MeshComponent.h>
+#include <World/Components/LightComponent.h>
 #include <Application.h>
 #include <Window.h>
 
-struct GeometryPassPreset;
+struct LightingPassPreset;
 
 template<>
-struct VertexLayoutFactory<GeometryPassPreset> {
+struct VertexLayoutFactory<LightingPassPreset> {
 
 	static VertexLayout* GetLayout() {
 		static std::unique_ptr<VertexLayout> layout = nullptr;
@@ -37,22 +38,26 @@ struct VertexLayoutFactory<GeometryPassPreset> {
 };
 
 
-struct DefferedGeometryPass::internal_data {
+struct DefferedLightingPass::internal_data {
 	std::shared_ptr<Pipeline> pipeline;
 	std::shared_ptr<RenderFrameBufferResource> output_buffer_resource;
+	std::shared_ptr<Mesh> sphere_mesh;
+	std::shared_ptr<Material> mat;
 	std::shared_ptr<RenderBufferResource> constant_scene_buf;
 	bool initialized = false;
 };
 
-void DefferedGeometryPass::InitPostProcessingPassData() {
+void DefferedLightingPass::InitPostProcessingPassData() {
 	PipelineDescriptor pipeline_desc;
 	pipeline_desc.viewport = RenderViewport();
 	pipeline_desc.scissor_rect = RenderScissorRect();
 	pipeline_desc.blend_functions = PipelineBlendFunctions();
-	pipeline_desc.flags = PipelineFlags::ENABLE_DEPTH_TEST;
-	pipeline_desc.layout = VertexLayoutFactory<GeometryPassPreset>::GetLayout();
+	pipeline_desc.flags = PipelineFlags::ENABLE_BLEND;
+	pipeline_desc.cull_mode = CullMode::FRONT;
+	pipeline_desc.blend_equation = BlendEquation::ADD;
+	pipeline_desc.layout = VertexLayoutFactory<LightingPassPreset>::GetLayout();
 	pipeline_desc.polygon_render_mode = PrimitivePolygonRenderMode::DEFAULT;
-	pipeline_desc.shader = ShaderManager::Get()->GetShader("GeometryPassShader.glsl");
+	pipeline_desc.shader = ShaderManager::Get()->GetShader("LightingPassShader.glsl");
 	data->pipeline = PipelineManager::Get()->CreatePipeline(pipeline_desc);
 
 	TextureSamplerDescritor sampler_desc;
@@ -64,7 +69,7 @@ void DefferedGeometryPass::InitPostProcessingPassData() {
 	sampler_desc.LOD_bias = 0;
 	sampler_desc.min_LOD = 0;
 	sampler_desc.max_LOD = 10;
-	
+
 	auto sampler = TextureSampler::CreateSampler(sampler_desc);
 
 	RenderTexture2DDescriptor color_texture_desc;
@@ -73,53 +78,50 @@ void DefferedGeometryPass::InitPostProcessingPassData() {
 	color_texture_desc.width = Application::Get()->GetWindow()->GetProperties().resolution_x;
 	color_texture_desc.sampler = sampler;
 
-	RenderTexture2DDescriptor pos_texture_desc;
-	pos_texture_desc.format = TextureFormat::RGBA_32FLOAT;
-	pos_texture_desc.height = Application::Get()->GetWindow()->GetProperties().resolution_y;
-	pos_texture_desc.width = Application::Get()->GetWindow()->GetProperties().resolution_x;
-	pos_texture_desc.sampler = sampler;
-
 	RenderTexture2DDescriptor depth_desc;
 	depth_desc.format = TextureFormat::DEPTH24_STENCIL8_UNSIGNED_CHAR;
 	depth_desc.height = Application::Get()->GetWindow()->GetProperties().resolution_y;
 	depth_desc.width = Application::Get()->GetWindow()->GetProperties().resolution_x;
 	depth_desc.sampler = sampler;
 
-	auto texture_color_albedo = RenderResourceManager::Get()->CreateTexture(color_texture_desc);
-	auto texture_color_position = RenderResourceManager::Get()->CreateTexture(pos_texture_desc);
-	auto texture_color_normal = RenderResourceManager::Get()->CreateTexture(pos_texture_desc);
+	auto texture_color = RenderResourceManager::Get()->CreateTexture(color_texture_desc);
 	auto texture_depth_stencil = RenderResourceManager::Get()->CreateTexture(depth_desc);
 
 	RenderFrameBufferDescriptor framebuffer_desc;
-	framebuffer_desc.color_attachments = { texture_color_albedo, texture_color_position,texture_color_normal };
+	framebuffer_desc.color_attachments = { texture_color };
 	framebuffer_desc.depth_stencil_attachment = texture_depth_stencil;
-	
+
 	data->output_buffer_resource = RenderResourceManager::Get()->CreateFrameBuffer(framebuffer_desc);
 
-	RenderBufferDescriptor const_desc(sizeof(glm::mat4)*2, RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
+	RenderBufferDescriptor const_desc(sizeof(glm::mat4) * 2, RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
 	data->constant_scene_buf = RenderResourceManager::Get()->CreateBuffer(const_desc);
 
+	data->sphere_mesh = MeshManager::Get()->LoadMeshFromFileAsync("asset:Sphere.mesh"_path);
+	data->mat = MaterialManager::Get()->CreateMaterial("LightingPassShader.glsl");
 
 	data->initialized = true;
 }
 
 
-DefferedGeometryPass::DefferedGeometryPass(const std::string& input_geometry, const std::string& output_buffer) : input_geometry(input_geometry), output_buffer(output_buffer)
+DefferedLightingPass::DefferedLightingPass(const std::string& input_gbuffer, const std::string& input_lights, const std::string& output_buffer)
+	: input_gbuffer(input_gbuffer), output_buffer(output_buffer), input_lights(input_lights)
 {
 	data = new internal_data;
 	InitPostProcessingPassData();
 }
 
-void DefferedGeometryPass::Setup(RenderPassResourceDefinnition& setup_builder)
+void DefferedLightingPass::Setup(RenderPassResourceDefinnition& setup_builder)
 {
-	setup_builder.AddResource<RenderResourceCollection<Entity>>(input_geometry, RenderPassResourceDescriptor_Access::READ);
+	setup_builder.AddResource<RenderResourceCollection<Entity>>(input_lights, RenderPassResourceDescriptor_Access::READ);
 	setup_builder.AddResource<std::shared_ptr<RenderFrameBufferResource>>(output_buffer, RenderPassResourceDescriptor_Access::WRITE);
+	setup_builder.AddResource<std::shared_ptr<RenderFrameBufferResource>>(input_gbuffer, RenderPassResourceDescriptor_Access::READ);
 }
 
-void DefferedGeometryPass::Render(RenderPipelineResourceManager& resource_manager)
+void DefferedLightingPass::Render(RenderPipelineResourceManager& resource_manager)
 {
-	auto& geometry = resource_manager.GetResource<RenderResourceCollection<Entity>>(input_geometry);
-	auto queue = Renderer::Get()->GetCommandQueue(); 
+	auto& geometry = resource_manager.GetResource<RenderResourceCollection<Entity>>(input_lights);
+	auto& gbuffer = resource_manager.GetResource<std::shared_ptr<RenderFrameBufferResource>>(input_gbuffer);
+	auto queue = Renderer::Get()->GetCommandQueue();
 	auto list = Renderer::Get()->GetRenderCommandList();
 	auto& world = Application::GetWorld();
 	auto& camera = world.GetComponent<CameraComponent>(world.GetPrimaryEntity());
@@ -131,23 +133,29 @@ void DefferedGeometryPass::Render(RenderPipelineResourceManager& resource_manage
 	list->SetRenderTarget(data->output_buffer_resource);
 	list->Clear();
 	list->SetConstantBuffer("mvp", data->constant_scene_buf);
-	auto default_mat = data->pipeline->GetShader()->GetDefaultMaterial();
-	for(auto& entity : geometry.resources) {
-		auto& mesh = world.GetComponent<MeshComponent>(entity);
-		auto& transform = world.GetComponent<TransformComponent>(entity);
+	for (auto& entity : geometry.resources) {
+		auto transform = world.GetComponent<TransformComponent>(entity).TransformMatrix;
+		auto& light = world.GetComponent<LightComponent>(entity);
 
-		if (mesh.material == nullptr) {
-			default_mat->SetMaterial(list, data->pipeline);
+		if (light.type == LightType::DIRECTIONAL) {
+			glm::scale(transform, glm::vec3(10000.0f));
 		}
-		else {
-			mesh.material->SetMaterial(list, data->pipeline);
-		}
-		list->SetVertexBuffer(mesh.mesh->GetVertexBuffer());
-		list->SetIndexBuffer(mesh.mesh->GetIndexBuffer());
-		glm::mat4 mvp = ViewProjection * transform.TransformMatrix;
+
+		glm::vec2 pixel_size = { 1.0f / Application::Get()->GetWindow()->GetProperties().resolution_x,
+			1.0f / Application::Get()->GetWindow()->GetProperties().resolution_y };
+
+		data->mat->SetParameter("pixel_size", pixel_size);
+		data->mat->SetParameter("Light_Color", light.color);
+		data->mat->SetParameter("Color", gbuffer->GetBufferDescriptor().color_attachments[0]);
+		data->mat->SetParameter("World_Position", gbuffer->GetBufferDescriptor().color_attachments[1]);
+		data->mat->SetParameter("Normal", gbuffer->GetBufferDescriptor().color_attachments[2]);
+		data->mat->SetMaterial(list, data->pipeline);
+		list->SetVertexBuffer(data->sphere_mesh->GetVertexBuffer());
+		list->SetIndexBuffer(data->sphere_mesh->GetIndexBuffer());
+		glm::mat4 mvp = ViewProjection * transform;
 		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, glm::value_ptr(mvp), sizeof(glm::mat4), 0);
-		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, glm::value_ptr(transform.TransformMatrix), sizeof(glm::mat4), sizeof(glm::mat4));
-		list->Draw(mesh.mesh->GetIndexCount());
+		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, glm::value_ptr(transform), sizeof(glm::mat4), sizeof(glm::mat4));
+		list->Draw(data->sphere_mesh->GetIndexCount());
 
 
 	}
@@ -158,7 +166,7 @@ void DefferedGeometryPass::Render(RenderPipelineResourceManager& resource_manage
 
 }
 
-DefferedGeometryPass::~DefferedGeometryPass()
+DefferedLightingPass::~DefferedLightingPass()
 {
 	if (data) {
 		delete data;

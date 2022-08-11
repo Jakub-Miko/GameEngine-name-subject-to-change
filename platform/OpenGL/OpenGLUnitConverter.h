@@ -34,6 +34,28 @@ public:
 		case TextureFormat::RGB_UNSIGNED_CHAR:				return GL_RGB8;
 		case TextureFormat::DEPTH24_STENCIL8_UNSIGNED_CHAR:	return GL_DEPTH24_STENCIL8;
 		case TextureFormat::RGB_32FLOAT:					return GL_RGBA32F;
+		case TextureFormat::RGBA_32FLOAT:					return GL_RGBA32F;
+		default:
+			throw std::runtime_error("Conversion failed");
+		}
+	}
+
+	static GLenum BlendEquationTOGLenum(BlendEquation type) {
+		switch (type) {
+		case BlendEquation::ADD:				return GL_FUNC_ADD;
+		case BlendEquation::MAX:				return GL_MAX;
+		case BlendEquation::MIN:				return GL_MIN;
+		case BlendEquation::REVERSE_SUBTRACT:	return GL_FUNC_REVERSE_SUBTRACT;
+		case BlendEquation::SUBTRACT:			return GL_FUNC_SUBTRACT;
+		default:
+			throw std::runtime_error("Conversion failed");
+		}
+	}
+
+	static GLenum CullModeTOGLenum(CullMode type) {
+		switch (type) {
+		case CullMode::BACK:				return GL_BACK;
+		case CullMode::FRONT:				return GL_FRONT;
 		default:
 			throw std::runtime_error("Conversion failed");
 		}
@@ -45,6 +67,7 @@ public:
 		case TextureFormat::RGB_UNSIGNED_CHAR:				return GL_RGB;
 		case TextureFormat::DEPTH24_STENCIL8_UNSIGNED_CHAR:	return GL_DEPTH_STENCIL;
 		case TextureFormat::RGB_32FLOAT:					return GL_RGB;
+		case TextureFormat::RGBA_32FLOAT:					return GL_RGBA;
 		default:
 			throw std::runtime_error("Conversion failed");
 		}
@@ -56,6 +79,7 @@ public:
 		case TextureFormat::RGB_UNSIGNED_CHAR:				return GL_UNSIGNED_BYTE;
 		case TextureFormat::DEPTH24_STENCIL8_UNSIGNED_CHAR:	return GL_UNSIGNED_INT_24_8;
 		case TextureFormat::RGB_32FLOAT:					return GL_FLOAT;
+		case TextureFormat::RGBA_32FLOAT:					return GL_FLOAT;
 		default:
 			throw std::runtime_error("Conversion failed");
 		}
@@ -67,6 +91,7 @@ public:
 		case TextureFormat::RGB_UNSIGNED_CHAR:				return 3*sizeof(unsigned char);
 		case TextureFormat::DEPTH24_STENCIL8_UNSIGNED_CHAR:	return 4*sizeof(unsigned char);
 		case TextureFormat::RGB_32FLOAT:					return 3*sizeof(float);
+		case TextureFormat::RGBA_32FLOAT:					return 4*sizeof(float);
 		default:
 			throw std::runtime_error("Conversion failed");
 		}

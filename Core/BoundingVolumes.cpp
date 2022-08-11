@@ -68,3 +68,53 @@ bool BoundingBox::OverlapBoxPlane(const glm::mat4& transform, const Plane& plane
 
 	return outside ? (inside ? true : false) : true;
 }
+
+bool BoundingSphere::OverlapsFrustum(const Frustum& frustum, const glm::mat4& model_matrix)
+{
+	glm::mat3 matrix = glm::mat3(model_matrix);
+	float len_x = glm::length(matrix[0]);
+	float len_y = glm::length(matrix[1]);
+	float len_z = glm::length(matrix[2]);
+	float max = std::max(len_x, std::max(len_y, len_z));
+
+	glm::vec3 pos = model_matrix * glm::vec4(sphere_offset,1.0);
+
+	return OverlapSpherePlane(pos, max, frustum.bottom) && OverlapSpherePlane(pos, max, frustum.top) &&
+		OverlapSpherePlane(pos, max, frustum.near) && OverlapSpherePlane(pos, max, frustum.far) &&
+		OverlapSpherePlane(pos, max, frustum.right) && OverlapSpherePlane(pos, max, frustum.left);
+}
+
+OverlapResult BoundingSphere::OverlapsPlane(const Plane& plane, const glm::mat4& model_matrix)
+{
+	glm::mat3 matrix = glm::mat3(model_matrix);
+	float len_x = glm::length(matrix[0]);
+	float len_y = glm::length(matrix[1]);
+	float len_z = glm::length(matrix[2]);
+	float max = std::max(len_x, std::max(len_y, len_z));
+
+	glm::vec3 pos = model_matrix * glm::vec4(sphere_offset, 1.0);
+
+	float distance = (glm::dot(pos, plane.normal) - plane.distance);
+
+	if (distance >= -max) {
+		if(distance >= max) {
+			return OverlapResult::FULL_OVERLAP;
+		} 
+		return OverlapResult::PARTIAL_OVERLAP;
+	}
+	return OverlapResult::NO_OVERLAP();
+}
+
+bool BoundingSphere::OverlapSpherePlane(const glm::vec3& position, float radius, const Plane& plane)
+{
+	return (glm::dot(position, plane.normal) - plane.distance) >= -radius;
+}
+
+OverlapResult BoundingInfinity::OverlapsPlane(const Plane& plane, const glm::mat4& model_matrix)
+{
+	return OverlapResult::PARTIAL_OVERLAP;
+}
+
+bool BoundingInfinity::OverlapsFrustum(const Frustum& frustum, const glm::mat4& model_matrix) {
+	return true;
+}

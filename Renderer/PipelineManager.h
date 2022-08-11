@@ -31,7 +31,7 @@ struct PipelineDescriptor {
 	PipelineDescriptor() = default;
 
 	PipelineDescriptor(const PipelineDescriptor& desc) : layout(desc.layout), shader(desc.shader), viewport(desc.viewport), scissor_rect(desc.scissor_rect),
-		flags(desc.flags), polygon_render_mode(desc.polygon_render_mode), blend_functions(blend_functions)
+		flags(desc.flags), polygon_render_mode(desc.polygon_render_mode), blend_functions(desc.blend_functions), blend_equation(desc.blend_equation), cull_mode(desc.cull_mode)
 	{
 
 	}
@@ -68,6 +68,15 @@ struct PipelineDescriptor {
 		return polygon_render_mode;
 	}
 
+	const BlendEquation& GetBlendEquation() const {
+		return blend_equation;
+	}
+
+	const CullMode& GetCullMode() const {
+		return cull_mode;
+	}
+
+
 public:
 
 	VertexLayout* layout = nullptr;
@@ -76,6 +85,8 @@ public:
 	RenderScissorRect scissor_rect = RenderScissorRect();
 	PipelineFlags flags = PipelineFlags::DEFAULT;
 	PipelineBlendFunctions blend_functions;
+	BlendEquation blend_equation = BlendEquation::ADD;
+	CullMode cull_mode = CullMode::BACK;
 	PrimitivePolygonRenderMode polygon_render_mode = PrimitivePolygonRenderMode::DEFAULT;
 };
 
@@ -118,14 +129,23 @@ public:
 		return polygon_render_mode;
 	}
 
+	const BlendEquation& GetBlendEquation() const {
+		return blend_equation;
+	}
+
+	const CullMode& GetCullMode() const {
+		return cull_mode;
+	}
+
+
 protected:
 	Pipeline(const PipelineDescriptor& desc) : layout(desc.layout), shader(desc.shader), viewport(desc.viewport), scissor_rect(desc.scissor_rect),
-		flags(desc.flags), polygon_render_mode(desc.polygon_render_mode), blend_functions(desc.blend_functions)
+		flags(desc.flags), polygon_render_mode(desc.polygon_render_mode), blend_functions(desc.blend_functions), blend_equation(desc.blend_equation),cull_mode(desc.cull_mode)
 	{
 
 	}
 	Pipeline(PipelineDescriptor&& desc) : layout(desc.layout), shader(desc.shader), viewport(desc.viewport), scissor_rect(desc.scissor_rect),
-		flags(desc.flags), polygon_render_mode(desc.polygon_render_mode)
+		flags(desc.flags), polygon_render_mode(desc.polygon_render_mode), blend_equation(desc.blend_equation), blend_functions(desc.blend_functions), cull_mode(desc.cull_mode)
 	{
 
 	}
@@ -135,6 +155,8 @@ protected:
 	RenderScissorRect scissor_rect = RenderScissorRect();
 	PipelineFlags flags = PipelineFlags::DEFAULT;
 	PipelineBlendFunctions blend_functions;
+	BlendEquation blend_equation = BlendEquation::ADD;
+	CullMode cull_mode = CullMode::BACK;
 	PrimitivePolygonRenderMode polygon_render_mode = PrimitivePolygonRenderMode::DEFAULT;
 };
 

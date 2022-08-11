@@ -4,12 +4,13 @@
 class RenderSubmissionPass : public RenderPass {
 public:
 
-	RenderSubmissionPass(const std::string& output_collection_name = "RenderObjects");
+	RenderSubmissionPass(const std::string& output_mesh_name = "RenderObjects", const std::string& output_light_name = "RenderLights");
 
 	virtual void Setup(RenderPassResourceDefinnition& setup_builder) override;
 
 	virtual void Render(RenderPipelineResourceManager& resource_manager) override;
 
 private:
-	std::string output_collection_name;
+	std::string output_mesh_name;
+	std::string output_light_name;
 };

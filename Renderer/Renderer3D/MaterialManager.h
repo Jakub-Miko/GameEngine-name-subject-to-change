@@ -137,6 +137,8 @@ public:
 
     std::shared_ptr<Material> GetMaterial(const std::string& path);
 
+    std::shared_ptr<Material> CreateMaterial(const std::string& shader_path);
+
 private:
 
 
