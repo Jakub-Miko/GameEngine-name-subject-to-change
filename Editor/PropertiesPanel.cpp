@@ -59,6 +59,7 @@ void PropertiesPanel::Refresh()
 {
 	text_buffer[0] = '\0';
 	prefab_path_buffer[0] = '\0';
+	material_file_buffer[0] = '\0';
 }
 
 void PropertiesPanel::RenderProperties(Entity entity, const PropertiesPanel_persistent_data& data)

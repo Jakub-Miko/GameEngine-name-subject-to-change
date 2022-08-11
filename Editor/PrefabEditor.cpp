@@ -39,9 +39,11 @@ void PrefabEditor::OpenPrefabEditorWindow(Entity entity)
 	window.entity = entity;
 	window.buffer_size = 200;
 	window.mesh_path = new char[window.buffer_size];
+	window.material_path = new char[window.buffer_size];
 	window.last_entity = Entity();
 	window.selected_entity = Entity();
 	window.mesh_path[0] = '\0';
+	window.material_path[0] = '\0';
 
 	open_windows.push_back(std::move(window));
 }
@@ -69,7 +71,6 @@ void PrefabEditor::PrefabSceneGraph(PrefabEditorWindow& window)
 		else {
 			ent = Application::GetWorld().CreateEntity<PrefabChildEntityType>(window.entity, true);
 		}
-		Application::GetWorld().SetComponent<SerializableComponent>(ent);
 		window.selected_entity = ent;
 	}
 
@@ -151,10 +152,12 @@ void PrefabEditor::PrefabPropertiesPanel(PrefabEditorWindow& window)
 	
 	PropertiesPanel_persistent_data data;
 	data.mesh_file_buffer = window.mesh_path;
+	data.material_file_buffer = window.material_path;
 	data.buffer_size = window.buffer_size;
 	data.show_flags = ShowPropertyFlags::HIDE_PREFABS;
 	if (window.selected_entity != window.last_entity) {
 		window.mesh_path[0] = '\0';
+		window.material_path[0] = '\0';
 		window.last_entity = window.selected_entity;
 	}
 
@@ -185,7 +188,7 @@ void PrefabEditor::RenderWindow(PrefabEditorWindow& window)
 			Application::GetWorld().SerializePrefab(window.entity, FileManager::Get()->GetPath(save_prefab_buffer));
 			auto& prefab = Application::GetWorld().GetComponent<PrefabComponent>(window.entity);
 			if (prefab.status == PrefabStatus::UNINITIALIZED) {
-				prefab.file_path = FileManager::Get()->GetPath(save_prefab_buffer);
+				prefab.file_path = save_prefab_buffer;
 				prefab.status = PrefabStatus::OK;
 				Application::GetWorld().RemoveEntity(window.entity, RemoveEntityAction::RELOAD_PREFAB);
 				Editor::Get()->Refresh();

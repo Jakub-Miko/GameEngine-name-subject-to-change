@@ -259,7 +259,7 @@ void World::LoadSceneSystem()
 		RegistryWarmUp();
 
 		ECS_Input_Archive archive(json["Entities"]);
-		entt::snapshot_loader(m_ECS).component<TransformComponent, PrefabComponent, DynamicPropertiesComponent, LabelComponent,MeshComponent, CameraComponent>(archive);
+		entt::snapshot_loader(m_ECS).component<TransformComponent, PrefabComponent, DynamicPropertiesComponent, LabelComponent,MeshComponent, CameraComponent, LightComponent>(archive);
 
 
 		m_SceneGraph.Deserialize(json);
@@ -276,6 +276,11 @@ void World::LoadSceneSystem()
 		}
 		else {
 			CheckCamera();
+		}
+
+
+		for (auto& light : m_ECS.view<LightComponent>()) {
+			ComponentInitProxy<LightComponent>::OnCreate(*this, light);
 		}
 
 		current_scene = load_scene;
@@ -444,9 +449,9 @@ void World::SaveScene(const std::string& file_path)
 	ECS_Output_Archive archive;
 	entt::snapshot snapshot(m_ECS);
 	auto view_serializable = m_ECS.view<SerializableComponent>();
-	auto view_serializable_non_prefabs = m_ECS.view<SerializableComponent>(entt::exclude<LoadedComponent>);
-	snapshot.component<TransformComponent, PrefabComponent, DynamicPropertiesComponent, LabelComponent,MeshComponent, CameraComponent>(archive, view_serializable.begin(), view_serializable.end());
-	snapshot.component<MeshComponent, CameraComponent>(archive, view_serializable_non_prefabs.begin(), view_serializable_non_prefabs.end());
+	auto view_serializable_non_prefabs = m_ECS.view<SerializableComponent>(entt::exclude<PrefabComponent>);
+	snapshot.component<TransformComponent, PrefabComponent, DynamicPropertiesComponent, LabelComponent,MeshComponent, CameraComponent, LightComponent>(archive, view_serializable.begin(), view_serializable.end());
+	snapshot.component<MeshComponent, CameraComponent, LightComponent>(archive, view_serializable_non_prefabs.begin(), view_serializable_non_prefabs.end());
 
 
 	nlohmann::json json;
@@ -463,6 +468,8 @@ void World::SaveScene(const std::string& file_path)
 		throw std::runtime_error("File could not be opened: " + file_path);
 	}
 	file << json;
+
+
 	file.close();
 
 }
