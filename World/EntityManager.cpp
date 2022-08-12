@@ -357,6 +357,13 @@ const EntityTemplate& EntityManager::GetEntitySignature(const std::string& path)
 		return (*(out.first)).second;
 	}
 }
+void EntityManager::ClearPrefabCache()
+{
+	std::lock_guard<std::mutex> lock1(auxilary_registry_mutex);
+	std::lock_guard<std::mutex> lock2(sync_mutex);
+	auxilary_registry.clear();
+	m_entity_cache.clear();
+}
 const EntityTemplate& EntityManager::GetEntitySignatureLocal(const std::string& path, const std::string& file_buffer)
 {
 	std::unique_lock<std::mutex> lock(sync_mutex);

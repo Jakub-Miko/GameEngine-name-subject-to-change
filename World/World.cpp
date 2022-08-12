@@ -5,6 +5,7 @@
 #include <World/Components/LoadedComponent.h>
 #include <World/Components/DynamicPropertiesComponent.h>
 #include <World/Components/TransformComponent.h>
+#include <Renderer/TextureManager.h>
 #include <World/Components/BoundingVolumeComponent.h>
 #include <World/Components/CameraComponent.h>
 #include <World/Components/MeshComponent.h>
@@ -247,6 +248,10 @@ void World::LoadSceneSystem()
 		m_ECS = entt::registry();
 		m_SceneGraph.clear();
 		default_camera = Entity();
+		TextureManager::Get()->ClearTextureCache();
+		MaterialManager::Get()->ClearMaterialCache();
+		MeshManager::Get()->ClearMeshCache();
+		EntityManager::Get()->ClearPrefabCache();
 
 		std::ifstream file(load_scene->scene_path);
 		if (!file.is_open()) {

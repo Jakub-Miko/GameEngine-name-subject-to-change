@@ -141,6 +141,14 @@ MeshManager::MeshManager() : mesh_Map(), mesh_Map_mutex(), mesh_Load_queue(), me
 
 }
 
+void MeshManager::ClearMeshCache()
+{
+    std::lock_guard<std::mutex> lock1(mesh_Load_queue_mutex);
+    std::lock_guard<std::mutex> lock2(mesh_Map_mutex);
+    mesh_Map.clear();
+
+}
+
 MeshManager::mesh_assimp_input_data MeshManager::Fetch_Assimp_Data(const mesh_vertex_props& props, const std::string& in_file_path, int mesh_index) {
     Assimp::Importer* importer = new Assimp::Importer;
     mesh_assimp_input_data data;

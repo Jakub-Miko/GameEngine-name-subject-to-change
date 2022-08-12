@@ -49,6 +49,14 @@ MaterialManager::MaterialManager() : materials(), material_templates(), material
 
 }
 
+void MaterialManager::ClearMaterialCache()
+{
+	std::lock_guard<std::mutex> lock1(material_load_mutex);
+	std::lock_guard<std::mutex> lock2(material_mutex);
+	material_templates.clear();
+	materials.clear();
+}
+
 std::shared_ptr<Material> MaterialManager::ParseMaterialFromFile(const std::string& path)
 {
 	using namespace nlohmann;
@@ -101,9 +109,17 @@ std::shared_ptr<Material> MaterialManager::ParseMaterialFromString(const std::st
 			material->SetParameter<glm::vec4>(parameter["name"].get<std::string>(), parameter["value"].get<glm::vec4>());
 		}
 		else if (type == "TEXTURE") {
-			material->SetParameter(parameter["name"].get<std::string>(), TextureManager::Get()->GetDefaultTexture());
-			if (parameter["value"].get<std::string>().empty()) continue;
-			material->SetTexture(parameter["name"].get<std::string>(), parameter["value"].get<std::string>());
+			if (parameter["value"].get<std::string>().empty()) {
+				if (parameter.contains("default_normal") && parameter["default_normal"].get<bool>()) {
+					material->SetParameter(parameter["name"].get<std::string>(), TextureManager::Get()->GetDefaultNormalTexture());
+				}
+				else {
+					material->SetParameter(parameter["name"].get<std::string>(), TextureManager::Get()->GetDefaultTexture());
+				}
+			}
+			else {
+				material->SetTexture(parameter["name"].get<std::string>(), parameter["value"].get<std::string>());
+			}
 		}
 	}
 	material->material_path = "";

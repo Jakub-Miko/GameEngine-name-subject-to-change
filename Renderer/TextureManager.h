@@ -41,6 +41,10 @@ public:
 		return default_texture;
 	}
 
+	std::shared_ptr<RenderTexture2DResource> GetDefaultNormalTexture() const {
+		return default_normal_texture;
+	}
+
 	bool IsTextureAvailable(const std::string& file_path);
 
 	void ReleaseTexture(const std::string& file_path);
@@ -52,8 +56,12 @@ public:
 	static void Shutdown();
 private:
 	TextureManager();
+	friend class World;
+	void ClearTextureCache();
+
 
 	std::shared_ptr<RenderTexture2DResource> default_texture;
+	std::shared_ptr<RenderTexture2DResource> default_normal_texture;
 	std::mutex texture_Map_mutex;
 	std::unordered_map<std::string, std::shared_ptr<RenderTexture2DResource>> texture_Map;
 	std::mutex sampler_cache_mutex;

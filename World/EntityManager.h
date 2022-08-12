@@ -57,6 +57,8 @@ public:
     std::string SerializeComponentsToJson(Entity entity);
 
 private:
+    friend class World;
+    void ClearPrefabCache();
 
     const EntityTemplate& GetEntitySignatureLocal(const std::string& path, const std::string& file_buffer);
 

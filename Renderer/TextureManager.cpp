@@ -264,11 +264,30 @@ TextureManager::TextureManager() : texture_Map(), texture_Map_mutex(), sampler_c
     tex_desc.width = 1;
     tex_desc.sampler = TextureSampler::CreateSampler(TextureSamplerDescritor());
 
+    RenderTexture2DDescriptor tex_normal;
+    tex_normal.format = TextureFormat::RGBA_32FLOAT;
+    tex_normal.height = 1;
+    tex_normal.width = 1;
+    tex_normal.sampler = tex_desc.sampler;
+
     auto def_tex = RenderResourceManager::Get()->CreateTexture(tex_desc);
+    auto def_normal_tex = RenderResourceManager::Get()->CreateTexture(tex_normal);
     auto queue = Renderer::Get()->GetCommandQueue();
     auto command_list = Renderer::Get()->GetRenderCommandList();
     unsigned char tex_data[4] = { 255,255,255,255 };
+    float normal_tex_data[4] = { 0.5f,0.5f,1.0f,1.0f };
     RenderResourceManager::Get()->UploadDataToTexture2D(command_list, def_tex, &tex_data, 1, 1, 0, 0);
+    RenderResourceManager::Get()->UploadDataToTexture2D(command_list, def_normal_tex, &normal_tex_data, 1, 1, 0, 0);
     queue->ExecuteRenderCommandList(command_list);
     default_texture = def_tex;
+    default_normal_texture = def_normal_tex;
+}
+
+void TextureManager::ClearTextureCache()
+{
+    std::lock_guard<std::mutex> lock1(sampler_cache_mutex);
+    std::lock_guard<std::mutex> lock2(texture_Map_mutex);
+
+    texture_Map.clear();
+    sampler_cache.clear();
 }

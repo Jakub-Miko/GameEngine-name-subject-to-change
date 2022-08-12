@@ -146,6 +146,9 @@ private:
     friend class Material;
     friend class Renderer3D;
     friend class ShaderManager;
+    friend class World;
+
+    void ClearMaterialCache();
 
     void UpdateMaterials();
     MaterialManager();

@@ -165,6 +165,9 @@ public:
 	static void Shutdown();
 private:
 	MeshManager();
+	
+	friend class World;
+	void ClearMeshCache();
 
 	struct mesh_vertex_props {
 		uint32_t num_of_uv_channels = 0;

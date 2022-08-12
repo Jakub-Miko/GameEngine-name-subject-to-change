@@ -13,7 +13,13 @@
     {
       "name": "Color",
       "type": "TEXTURE",
-      "value": "asset:image_texture.tex"
+      "value": "asset:Pillar_Albedo.tex"
+    },
+    {
+      "name": "Normal",
+      "type": "TEXTURE",
+      "value": "asset:Pillar_Normal.tex",
+      "default_normal": true
     }
   ],
   "shader": "GeometryPassShader.glsl"
