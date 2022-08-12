@@ -110,7 +110,7 @@ void main() {
 	vec4 color = vec4(texture(Color, pos.xy).xyz, 1.0);
 	vec3 normal = texture(Normal, pos.xy).xyz;
 
-	color_out =  vec4(color.xyz * Light_Color.xyz * Light_Color.w * (0.45 + max(0, dot(normal, light_direction))),1.0);
+	color_out =  vec4(color.xyz * Light_Color.xyz * Light_Color.w * (0.1 + max(0, dot(normal, light_direction))),1.0);
 
 }
 

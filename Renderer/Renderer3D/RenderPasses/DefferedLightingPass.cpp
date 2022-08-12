@@ -51,7 +51,12 @@ void DefferedLightingPass::InitPostProcessingPassData() {
 	PipelineDescriptor pipeline_desc;
 	pipeline_desc.viewport = RenderViewport();
 	pipeline_desc.scissor_rect = RenderScissorRect();
-	pipeline_desc.blend_functions = PipelineBlendFunctions();
+	PipelineBlendFunctions blend_function;
+	blend_function.dstAlpha = BlendFunction::ONE;
+	blend_function.srcAlpha = BlendFunction::ONE;
+	blend_function.srcRGB = BlendFunction::ONE;
+	blend_function.dstRGB = BlendFunction::ONE;
+	pipeline_desc.blend_functions = blend_function;
 	pipeline_desc.flags = PipelineFlags::ENABLE_BLEND;
 	pipeline_desc.cull_mode = CullMode::FRONT;
 	pipeline_desc.blend_equation = BlendEquation::ADD;
