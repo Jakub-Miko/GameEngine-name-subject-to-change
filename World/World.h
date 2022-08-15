@@ -1,6 +1,7 @@
 #pragma once 
 #include <queue>
 #include <entt/entt.hpp>
+#include <Core/TypeList.h>
 #include <World/EntityTypes.h>
 #include <World/SceneGraph.h>
 #include <World/SpatialIndex.h>
@@ -19,12 +20,23 @@ class World;
 template<typename T>
 class ComponentInitProxy {
 public:
+	using not_defined = void;
 
 	static void OnCreate(World& world, Entity entity) {
 
 	}
 
 };
+
+template<typename T, typename = void>
+struct has_ComponentInitProxy : std::true_type {};
+
+template<typename T>
+struct has_ComponentInitProxy<T, std::void_t<typename ComponentInitProxy<T>::not_defined>> : std::false_type {};
+
+template<typename T>
+constexpr bool has_ComponentInitProxy_v = has_ComponentInitProxy<T>::value;
+
 
 enum class RemoveEntityAction : char {
 	REMOVE = 0, RELOAD_PREFAB = 1, REMOVE_PREFABS = 2
@@ -61,6 +73,17 @@ public:
 	void SetEntityScale(Entity ent, const glm::vec3& scale);
 
 	void SetEntityScaleSync(Entity ent, const glm::vec3& scale);
+
+	template<typename T>
+	auto RegisterComponentType() -> std::enable_if_t<!has_ComponentInitProxy_v<T>> {
+		m_ECS.storage<T>();
+	}
+
+	template<typename T>
+	auto RegisterComponentType() -> std::enable_if_t<has_ComponentInitProxy_v<T>> {
+		m_ECS.storage<T>();
+		m_ECS.on_construct<T>().connect<&World::ConstructComponent<T, &ComponentInitProxy<T>::OnCreate>>(*this);
+	}
 
 	template<typename T = EntityType, typename ... Args>
 	auto CreateEntity(Entity parent = Entity(), Args&& ... args) -> decltype(T::CreateEntity(std::declval<World&>(),std::declval<Entity>(), std::declval<Entity>(),std::declval<Args>()...), Entity())
@@ -107,7 +130,6 @@ public:
 	void SetComponent(Entity entity, Args&& ... args) {
 		std::lock_guard<std::mutex> lock(SyncPool<T>());
 		m_ECS.emplace_or_replace<T>((entt::entity)entity.id, std::forward<Args>(args)...);
-		ComponentInitProxy<T>::OnCreate(*this,entity);
 	}
 
 	template<typename T>
@@ -188,9 +210,17 @@ public:
 private:
 	friend class GameLayer;
 
-	void SerializePrefabChild(Entity child, std::vector<std::pair<std::string, std::string>>& file_structure);
+	template<typename T, auto func>
+	void ConstructComponent(entt::registry& reg, entt::entity ent) {
+		func(*this, Entity((uint32_t)ent));
+	}
 
-	void RegistryWarmUp();
+	template<typename ... Args>
+	void RegisterComponents(TypeList<Args...> list) {
+		(RegisterComponentType<Args>(),...);
+	}
+	
+	void SerializePrefabChild(Entity child, std::vector<std::pair<std::string, std::string>>& file_structure);
 
 	void LoadSceneSystem();
 

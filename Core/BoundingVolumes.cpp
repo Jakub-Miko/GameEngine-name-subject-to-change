@@ -118,3 +118,32 @@ OverlapResult BoundingInfinity::OverlapsPlane(const Plane& plane, const glm::mat
 bool BoundingInfinity::OverlapsFrustum(const Frustum& frustum, const glm::mat4& model_matrix) {
 	return true;
 }
+
+bool BoundingPointLightSphere::OverlapsFrustum(const Frustum& frustum, const glm::mat4& model_matrix)
+{
+	glm::vec3 pos = model_matrix * glm::vec4(sphere_offset, 1.0);
+
+	return OverlapSpherePlane(pos, sphere_size, frustum.bottom) && OverlapSpherePlane(pos, sphere_size, frustum.top) &&
+		OverlapSpherePlane(pos, sphere_size, frustum.near) && OverlapSpherePlane(pos, sphere_size, frustum.far) &&
+		OverlapSpherePlane(pos, sphere_size, frustum.right) && OverlapSpherePlane(pos, sphere_size, frustum.left);
+}
+
+OverlapResult BoundingPointLightSphere::OverlapsPlane(const Plane& plane, const glm::mat4& model_matrix)
+{
+	glm::vec3 pos = model_matrix * glm::vec4(sphere_offset, 1.0);
+
+	float distance = (glm::dot(pos, plane.normal) - plane.distance);
+
+	if (distance >= -sphere_size) {
+		if (distance >= sphere_size) {
+			return OverlapResult::FULL_OVERLAP;
+		}
+		return OverlapResult::PARTIAL_OVERLAP;
+	}
+	return OverlapResult::NO_OVERLAP();
+}
+
+bool BoundingPointLightSphere::OverlapSpherePlane(const glm::vec3& position, float radius, const Plane& plane)
+{
+	return (glm::dot(position, plane.normal) - plane.distance) >= -radius;
+}

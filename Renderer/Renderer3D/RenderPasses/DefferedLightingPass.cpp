@@ -42,6 +42,7 @@ struct DefferedLightingPass::internal_data {
 	std::shared_ptr<Pipeline> pipeline;
 	std::shared_ptr<RenderFrameBufferResource> output_buffer_resource;
 	std::shared_ptr<Mesh> sphere_mesh;
+	std::shared_ptr<Mesh> card_mesh;
 	std::shared_ptr<Material> mat;
 	std::shared_ptr<RenderBufferResource> constant_scene_buf;
 	bool initialized = false;
@@ -104,6 +105,38 @@ void DefferedLightingPass::InitPostProcessingPassData() {
 	data->sphere_mesh = MeshManager::Get()->LoadMeshFromFileAsync("asset:Sphere.mesh"_path);
 	data->mat = MaterialManager::Get()->CreateMaterial("LightingPassShader.glsl");
 
+	struct Vertex {
+		Vertex(glm::vec3 pos, glm::vec3 normal = glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3 tangent = glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3 uv = glm::vec3(0.0f))
+			: pos(pos), normal(normal), tangent(tangent), uv(uv) {}
+		glm::vec3 pos;
+		glm::vec3 normal = glm::vec3(0.0f,0.0f,1.0f);
+		glm::vec3 tangent = glm::vec3(1.0f, 0.0f, 0.0f);
+		glm::vec2 uv = glm::vec3(0.0f);
+	};
+
+	Vertex card_vertecies[4] = {
+		Vertex({-1,-1,0}),
+		Vertex({-1,1,0}),
+		Vertex({1,-1,0}),
+		Vertex({1,1,0})
+	};
+	
+	unsigned int indicies[6] = { 0,1,2,1,3,2 };
+
+	RenderBufferDescriptor index_desc(sizeof(indicies), RenderBufferType::DEFAULT, RenderBufferUsage::INDEX_BUFFER);
+	RenderBufferDescriptor vertex_desc(sizeof(card_vertecies), RenderBufferType::DEFAULT, RenderBufferUsage::VERTEX_BUFFER);
+	auto card_vertex_buffer = RenderResourceManager::Get()->CreateBuffer(vertex_desc);
+	auto card_index_buffer = RenderResourceManager::Get()->CreateBuffer(index_desc);
+	auto queue = Renderer::Get()->GetCommandQueue();
+	auto list = Renderer::Get()->GetRenderCommandList();
+
+	RenderResourceManager::Get()->ReallocateAndUploadBuffer(list, card_vertex_buffer, (void*)card_vertecies, sizeof(card_vertecies));
+	RenderResourceManager::Get()->ReallocateAndUploadBuffer(list, card_index_buffer, (void*)indicies, sizeof(indicies));
+
+	queue->ExecuteRenderCommandList(list);
+
+	data->card_mesh = std::shared_ptr<Mesh>(new Mesh(card_vertex_buffer, card_index_buffer, 6));
+
 	data->initialized = true;
 }
 
@@ -130,7 +163,6 @@ void DefferedLightingPass::Render(RenderPipelineResourceManager& resource_manage
 	auto list = Renderer::Get()->GetRenderCommandList();
 	auto& world = Application::GetWorld();
 	auto& camera = world.GetComponent<CameraComponent>(world.GetPrimaryEntity());
-	auto& camera_transform = world.GetComponent<CameraComponent>(world.GetPrimaryEntity());
 	camera.UpdateProjectionMatrix();
 	auto& camera_trans = world.GetComponent<TransformComponent>(world.GetPrimaryEntity());
 	auto ViewProjection = camera.GetProjectionMatrix() * glm::inverse(camera_trans.TransformMatrix);
@@ -139,28 +171,40 @@ void DefferedLightingPass::Render(RenderPipelineResourceManager& resource_manage
 	list->Clear();
 	list->SetConstantBuffer("mvp", data->constant_scene_buf);
 	for (auto& entity : geometry.resources) {
-		auto transform = world.GetComponent<TransformComponent>(entity).TransformMatrix;
+		auto& transform_component = world.GetComponent<TransformComponent>(entity);
+		auto transform = transform_component.TransformMatrix;
 		auto& light = world.GetComponent<LightComponent>(entity);
+		size_t index_count;
+		glm::mat4 mvp;
 
 		if (light.type == LightType::DIRECTIONAL) {
-			glm::scale(transform, glm::vec3(10000.0f));
+			mvp = glm::mat4(1.0f);
+			list->SetVertexBuffer(data->card_mesh->GetVertexBuffer());
+			list->SetIndexBuffer(data->card_mesh->GetIndexBuffer());
+			index_count = data->card_mesh->GetIndexCount();
+		}
+		else if (light.type == LightType::POINT) {
+			glm::mat4 model_sphere = glm::translate(glm::mat4(1.0f), transform_component.translation) * glm::scale(glm::mat4(1.0), glm::vec3(light.CalcRadiusFromAttenuation()));
+			mvp = ViewProjection * model_sphere;
+			list->SetVertexBuffer(data->sphere_mesh->GetVertexBuffer());
+			list->SetIndexBuffer(data->sphere_mesh->GetIndexBuffer());
+			index_count = data->sphere_mesh->GetIndexCount();
 		}
 
 		glm::vec2 pixel_size = { 1.0f / Application::Get()->GetWindow()->GetProperties().resolution_x,
 			1.0f / Application::Get()->GetWindow()->GetProperties().resolution_y };
 
 		data->mat->SetParameter("pixel_size", pixel_size);
-		data->mat->SetParameter("Light_Color", light.color);
+		data->mat->SetParameter("Light_Color", light.GetLightColor());
 		data->mat->SetParameter("Color", gbuffer->GetBufferDescriptor().color_attachments[0]);
 		data->mat->SetParameter("World_Position", gbuffer->GetBufferDescriptor().color_attachments[1]);
 		data->mat->SetParameter("Normal", gbuffer->GetBufferDescriptor().color_attachments[2]);
+		data->mat->SetParameter("light_type", (int)light.type);
+		data->mat->SetParameter("attenuation", glm::vec4(light.GetAttenuation(),0.0f));
 		data->mat->SetMaterial(list, data->pipeline);
-		list->SetVertexBuffer(data->sphere_mesh->GetVertexBuffer());
-		list->SetIndexBuffer(data->sphere_mesh->GetIndexBuffer());
-		glm::mat4 mvp = ViewProjection * transform;
 		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, glm::value_ptr(mvp), sizeof(glm::mat4), 0);
 		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, glm::value_ptr(transform), sizeof(glm::mat4), sizeof(glm::mat4));
-		list->Draw(data->sphere_mesh->GetIndexCount());
+		list->Draw(index_count);
 
 
 	}

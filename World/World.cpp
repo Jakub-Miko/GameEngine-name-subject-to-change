@@ -1,26 +1,10 @@
 #include "World.h"
 #include <FileManager.h>
 #include <Core/Extensions/EntitySerializationECSAdapter.h>
-#include <World/Components/SerializableComponent.h>
-#include <World/Components/LoadedComponent.h>
-#include <World/Components/DynamicPropertiesComponent.h>
-#include <World/Components/TransformComponent.h>
 #include <Renderer/TextureManager.h>
-#include <World/Components/BoundingVolumeComponent.h>
-#include <World/Components/CameraComponent.h>
-#include <World/Components/MeshComponent.h>
-#include <World/Components/ConstructionComponent.h>
-#include <World/Components/LabelComponent.h>
-#include <World/Components/DefferedUpdateComponent.h>
-#include <World/Components/InitializationComponent.h>
-#include <World/Components/PrefabComponent.h>
 #include <GameStateMachine.h>
-#include <World/Components/KeyPressedScriptComponent.h>
-#include <World/Components/MousePressedScriptComponent.h>
-#include <World/Components/ScriptComponent.h>
-#include <World/Components/LightComponent.h>
-#include <World/Components/SquareComponent.h>
 #include <World/EntityManager.h>
+#include <World/ComponentTypes.h>
 #ifdef EDITOR
 #include <Editor/Editor.h>
 #endif
@@ -33,7 +17,7 @@ void World::Init()
 
 World::World() : m_ECS(), m_SceneGraph(this), load_scene(std::make_shared<SceneProxy>()), deletion_queue(), deletion_mutex(), m_SpatialIndex()
 {
-	RegistryWarmUp();
+	RegisterComponents(Component_Types());
 	//if((uint32_t)(m_ECS.create())!=0) throw std::runtime_error("A null Entity could not be reserved");
 }
 
@@ -214,25 +198,6 @@ void World::SerializePrefabChild(Entity child, std::vector<std::pair<std::string
 	file_structure.push_back(std::make_pair(GetPrefabSectionName(child), stream.str()));
 }
 
-void World::RegistryWarmUp()
-{
-	m_ECS.storage<BoundingVolumeComponent>();
-	m_ECS.storage<CameraComponent>();
-	m_ECS.storage<ConstructionComponent>();
-	m_ECS.storage<DefferedUpdateComponent>();
-	m_ECS.storage<DynamicPropertiesComponent>();
-	m_ECS.storage<InitializationComponent>();
-	m_ECS.storage<KeyPressedScriptComponent>();
-	m_ECS.storage<MousePressedScriptComponent>();
-	m_ECS.storage<ScriptComponent>();
-	m_ECS.storage<SerializableComponent>();
-	m_ECS.storage<SquareComponent>();
-	m_ECS.storage<PrefabComponent>();
-	m_ECS.storage<MeshComponent>();
-	m_ECS.storage<LightComponent>();
-	m_ECS.storage<TransformComponent>();
-}
-
 void World::LoadSceneSystem()
 {
 	if (load_scene) {
@@ -261,7 +226,7 @@ void World::LoadSceneSystem()
 		file >> json;
 		file.close();
 
-		RegistryWarmUp();
+		RegisterComponents(Component_Types());
 
 		ECS_Input_Archive archive(json["Entities"]);
 		entt::snapshot_loader(m_ECS).component<TransformComponent, PrefabComponent, DynamicPropertiesComponent, LabelComponent,MeshComponent, CameraComponent, LightComponent>(archive);
@@ -281,11 +246,6 @@ void World::LoadSceneSystem()
 		}
 		else {
 			CheckCamera();
-		}
-
-
-		for (auto& light : m_ECS.view<LightComponent>()) {
-			ComponentInitProxy<LightComponent>::OnCreate(*this, light);
 		}
 
 		current_scene = load_scene;
@@ -456,7 +416,7 @@ void World::SaveScene(const std::string& file_path)
 	auto view_serializable = m_ECS.view<SerializableComponent>();
 	auto view_serializable_non_prefabs = m_ECS.view<SerializableComponent>(entt::exclude<PrefabComponent>);
 	snapshot.component<TransformComponent, PrefabComponent, DynamicPropertiesComponent, LabelComponent,MeshComponent, CameraComponent, LightComponent>(archive, view_serializable.begin(), view_serializable.end());
-	snapshot.component<MeshComponent, CameraComponent, LightComponent>(archive, view_serializable_non_prefabs.begin(), view_serializable_non_prefabs.end());
+	//snapshot.component<MeshComponent, CameraComponent, LightComponent>(archive, view_serializable_non_prefabs.begin(), view_serializable_non_prefabs.end());
 
 
 	nlohmann::json json;

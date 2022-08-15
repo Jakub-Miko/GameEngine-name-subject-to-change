@@ -5,6 +5,7 @@
 #include <Renderer/RendererDefines.h>
 #include <variant>
 #define JSON_SERIALIZABLE(Type, ...) NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Type, __VA_ARGS__) 
+#define JSON_SERIALIZABLE_IN_CLASS(Type, ...) NLOHMANN_DEFINE_TYPE_INTRUSIVE(Type, __VA_ARGS__) 
 
 //Needed for serializing glm object to json
 namespace nlohmann {

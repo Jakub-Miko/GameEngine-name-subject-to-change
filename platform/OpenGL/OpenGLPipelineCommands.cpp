@@ -63,11 +63,11 @@ void OpenGLSetPipelineCommand::Execute()
 	if (current_state.GetCullMode() != pipeline->GetCullMode() || (bool)(pipeline->GetPipelineFlags() & PipelineFlags::IS_MULTI_WINDOW)) {
 		if (pipeline->GetCullMode() != CullMode::NONE && current_state.GetCullMode() == CullMode::NONE) {
 			glEnable(GL_CULL_FACE);
+			glCullFace(OpenGLUnitConverter::CullModeTOGLenum(pipeline->GetCullMode()));
 		}
 		if (pipeline->GetCullMode() == CullMode::NONE && current_state.GetCullMode() != CullMode::NONE) {
 			glDisable(GL_CULL_FACE);
 		}
-		glCullFace(OpenGLUnitConverter::CullModeTOGLenum(pipeline->GetCullMode()));
 		queue->SetCullMode(pipeline->GetCullMode());
 	}
 

@@ -1,15 +1,39 @@
-@Section:Msesh_2_7
+@Section:Camera_11
 @Entity 
 {
-"Components": {"LabelComponent":{"label":"Msesh 2"},"MeshComponent":{"material_path":"assets/Material/MaterialGeometry.json","path":"assets/Pillar_with_uvs.mesh"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":0.9434860348701477,"x":0.05647554621100426,"y":0.23523758351802826,"z":0.22651101648807526},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":-2.0,"y":0.0,"z":0.0}}},
+"Components": {"CameraComponent":{"aspect_ratio":1.7777777910232544,"fov":45.0,"zFar":1000.0,"zNear":0.10000000149011612},"LabelComponent":{"label":"Camera"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":0.0,"y":0.0,"z":0.0}}},
 "Children": []
 }
 
 @EndSection
-@Section:Mesh1_6
+@Section:Nested_Light_12
 @Entity 
 {
-"Components": {"LabelComponent":{"label":"Mesh1"},"MeshComponent":{"material_path":"assets/Material/MaterialGeometry.json","path":"assets/Pillar_with_uvs.mesh"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":0.0,"y":0.0,"z":0.0}}},
+"Components": {"LabelComponent":{"label":"Nested Light"},"LightComponent":{"attenuation":{"x":1.0,"y":0.10000000149011612,"z":1.3700000047683716},"color":{"w":39.0,"x":0.0,"y":0.170212984085083,"z":1.0},"type":1},"TransformComponent":{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":-3.549999952316284,"y":0.0,"z":0.0}}},
+"Children": []
+}
+
+@EndSection
+@Section:Light_1048586
+@Entity 
+{
+"Components": {"LabelComponent":{"label":"Light"},"LightComponent":{"attenuation":{"x":1.0,"y":0.6299999952316284,"z":0.07000000029802322},"color":{"w":7.840000152587891,"x":1.0,"y":0.0,"z":0.0},"type":1},"TransformComponent":{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":-0.9700000286102295,"y":4.059999942779541,"z":2.619999885559082}}},
+"Children": ["local#Nested_Light_12"]
+}
+
+@EndSection
+@Section:Mesh_2_9
+@Entity 
+{
+"Components": {"LabelComponent":{"label":"Mesh 2"},"MeshComponent":{"material_path":"assets/Material/MaterialGeometry.json","path":"assets/Pillar_with_uvs.mesh"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":0.9794045686721802,"x":0.001098091248422861,"y":0.1813010275363922,"z":-0.08885312080383301},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":-6.099999904632568,"y":0.0,"z":1.600000023841858}}},
+"Children": []
+}
+
+@EndSection
+@Section:Mesh_1_8
+@Entity 
+{
+"Components": {"LabelComponent":{"label":"Mesh 1"},"MeshComponent":{"material_path":"assets/Material/MaterialGeometry.json","path":"assets/Pillar_with_uvs.mesh"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":0.9574407339096069,"x":-0.04025186598300934,"y":0.2817019820213318,"z":0.04827159643173218},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":5.440000057220459,"y":0.0,"z":0.0}}},
 "Children": []
 }
 
@@ -17,8 +41,8 @@
 @Section:Root
 @Entity 
 {
-"Components": {"LabelComponent":{"label":"Prefab"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":0.0,"y":0.0,"z":0.0}}},
-"Children": ["local#Msesh_2_7","local#Mesh1_6"]
+"Components": {"LabelComponent":{"label":"Prefab"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":0.0,"y":0.0,"z":4.789999961853027}}},
+"Children": ["local#Camera_11","local#Light_1048586","local#Mesh_2_9","local#Mesh_1_8"]
 }
 
 @EndSection

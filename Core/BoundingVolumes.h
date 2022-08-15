@@ -81,6 +81,35 @@ private:
 
 };
 
+//Note: isnt affected by the scale parameter
+class BoundingPointLightSphere : public BoundingVolume {
+	//For Serialization purposes
+	RuntimeTag("BoundingPointLightSphere")
+public:
+	BoundingPointLightSphere(float sphere_size = 1.0f, glm::vec3 sphere_offset = glm::vec3(0.0f)) : sphere_size(sphere_size), sphere_offset(sphere_offset) {}
+
+	virtual bool OverlapsFrustum(const Frustum& frustum, const glm::mat4& model_matrix) override;
+	virtual OverlapResult OverlapsPlane(const Plane& plane, const glm::mat4& model_matrix) override;
+
+	float GetSphereSize() const {
+		return sphere_size;
+	}
+
+	const glm::vec3& GetSphereOffset() const {
+		return sphere_offset;
+	}
+
+private:
+
+	bool OverlapSpherePlane(const glm::vec3& position, float radius, const Plane& plane);
+
+private:
+
+	glm::vec3 sphere_offset;
+	float sphere_size;
+
+};
+
 //Used to represent an infinetely large object than get loaded no matter whan(ie directional light)
 class BoundingInfinity : public BoundingVolume {
 	//For Serialization purposes

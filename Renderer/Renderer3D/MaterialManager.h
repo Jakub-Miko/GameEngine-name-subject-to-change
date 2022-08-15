@@ -11,7 +11,7 @@ class Shader;
 class MaterialTemplate {
 public:
     enum MaterialTemplateParameterType : char {
-        SCALAR = 0, VEC2 = 1, VEC3 = 2, VEC4 = 3, TEXTURE = 4, MAT3 = 5, MAT4 = 6, INVALID_PARAMETER = -1
+        SCALAR = 0, VEC2 = 1, VEC3 = 2, VEC4 = 3, TEXTURE = 4, MAT3 = 5, MAT4 = 6, INT = 7, INVALID_PARAMETER = -1
     };
     
     
@@ -70,7 +70,7 @@ private:
 class Material : public std::enable_shared_from_this<Material>{
 public:
 
-    using material_parameter_type = std::variant<float, glm::vec2, glm::vec3, glm::vec4, std::shared_ptr<RenderTexture2DResource>>;
+    using material_parameter_type = std::variant<int, float, glm::vec2, glm::vec3, glm::vec4, std::shared_ptr<RenderTexture2DResource>>;
     using material_resource_type = std::variant<RenderDescriptorTable,std::shared_ptr<RenderBufferResource>>;
 
     enum class Material_status : char {

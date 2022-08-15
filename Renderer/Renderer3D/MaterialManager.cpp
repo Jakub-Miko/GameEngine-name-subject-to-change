@@ -108,6 +108,9 @@ std::shared_ptr<Material> MaterialManager::ParseMaterialFromString(const std::st
 		else if (type == "VEC4") {
 			material->SetParameter<glm::vec4>(parameter["name"].get<std::string>(), parameter["value"].get<glm::vec4>());
 		}
+		else if (type == "INT") {
+			material->SetParameter<int>(parameter["name"].get<std::string>(), parameter["value"].get<int>());
+		}
 		else if (type == "TEXTURE") {
 			if (parameter["value"].get<std::string>().empty()) {
 				if (parameter.contains("default_normal") && parameter["default_normal"].get<bool>()) {
@@ -212,6 +215,9 @@ Material::Material(std::shared_ptr<MaterialTemplate> material_template) : materi
 			break;
 		case MaterialTemplate::MaterialTemplateParameterType::VEC4:
 			res.resource = glm::vec4(1.0f);
+			break;
+		case MaterialTemplate::MaterialTemplateParameterType::INT:
+			res.resource = 0;
 			break;
 		case MaterialTemplate::MaterialTemplateParameterType::TEXTURE:
 			res.resource = TextureManager::Get()->GetDefaultTexture();
@@ -386,6 +392,9 @@ void MaterialTemplate::AddConstantBufferParameter(const RootSignatureDescriptorE
 				break;
 			case RenderPrimitiveType::VEC4:
 				param.type = VEC4;
+				break;
+			case RenderPrimitiveType::INT:
+				param.type = INT;
 				break;
 			default:
 				offset += UnitConverter::PrimitiveSize(entry.type);

@@ -86,7 +86,7 @@ public:
 	PipelineFlags flags = PipelineFlags::DEFAULT;
 	PipelineBlendFunctions blend_functions;
 	BlendEquation blend_equation = BlendEquation::ADD;
-	CullMode cull_mode = CullMode::BACK;
+	CullMode cull_mode = CullMode::NONE;
 	PrimitivePolygonRenderMode polygon_render_mode = PrimitivePolygonRenderMode::DEFAULT;
 };
 
@@ -156,7 +156,7 @@ protected:
 	PipelineFlags flags = PipelineFlags::DEFAULT;
 	PipelineBlendFunctions blend_functions;
 	BlendEquation blend_equation = BlendEquation::ADD;
-	CullMode cull_mode = CullMode::BACK;
+	CullMode cull_mode = CullMode::NONE;
 	PrimitivePolygonRenderMode polygon_render_mode = PrimitivePolygonRenderMode::DEFAULT;
 };
 

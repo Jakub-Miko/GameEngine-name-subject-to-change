@@ -164,8 +164,28 @@ void PropertiesPanel::RenderProperties(Entity entity, const PropertiesPanel_pers
 	}
 
 	if (world.HasComponent<LightComponent>(selected) && ImGui::TreeNode("Light ")) {
-		ImGui::ColorPicker3("Light Color", glm::value_ptr(world.GetComponent<LightComponent>(selected).color));
-		ImGui::SliderFloat("Intensity", &glm::value_ptr(world.GetComponent<LightComponent>(selected).color)[3],0.0,2.0);
+		glm::vec4 color = world.GetComponent<LightComponent>(selected).GetLightColor();
+		ImGui::ColorPicker3("Light Color", glm::value_ptr(color));
+		ImGui::DragFloat("Intensity", &glm::value_ptr(color)[3]);
+		if (color != world.GetComponent<LightComponent>(selected).GetLightColor()) {
+			LightComponent::SetLightColor(color, selected);
+		}
+		const char* light_types[] = { "DIRECTIONAL", "POINT"};
+		int original = (int)world.GetComponent<LightComponent>(selected).type;
+		int type = original;
+		ImGui::Combo("Light Type", &type, light_types, 2);
+		if (original != type) {
+			LightComponent::ChangeType((LightType)type, selected);
+		}
+		if (original == (int)LightType::POINT) {
+			glm::vec3 atten = world.GetComponent<LightComponent>(selected).GetAttenuation();
+			ImGui::DragFloat("Attenuation Constant", &atten.r);
+			ImGui::DragFloat("Attenuation Linear", &atten.g);
+			ImGui::DragFloat("Attenuation Quadratic", &atten.b);
+			if (atten != world.GetComponent<LightComponent>(selected).GetAttenuation()) {
+				LightComponent::SetAttenuation(atten, selected);
+			}
+		}
 		ImGui::TreePop();
 	}
 

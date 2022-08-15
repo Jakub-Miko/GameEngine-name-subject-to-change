@@ -36,8 +36,16 @@
 						"type" : "VEC4"
 					},
 					{
+						"name" : "attenuation",
+						"type" : "VEC4"
+					},
+					{
 						"name" : "pixel_size",
 						"type" : "VEC2"
+					},
+					{
+						"name" : "light_type",
+						"type" : "INT"
 					}
 				]
 			}
@@ -54,6 +62,21 @@
 					"z" : 1.0,
 					"w" : 1.0
 				}
+			},
+			{
+				"name": "attenuation",
+				"type" : "VEC4",
+				"value" : {
+					"x" : 1.0,
+					"y" : 0.1,
+					"z" : 0.01,
+					"w" : 0.0
+				}
+			},
+			{
+				"name": "light_type",
+				"type" : "INT",
+				"value" : 1
 			}
 		]
 	}
@@ -75,7 +98,9 @@ uniform mvp{
 
 uniform light_props{
 	vec4 Light_Color;
+	vec4 attenuation_constants;
 	vec2 pixel_size;
+	int light_type;
 };
 
 void main() {
@@ -100,18 +125,34 @@ uniform mvp{
 
 uniform light_props{
 	vec4 Light_Color;
+	vec4 attenuation_constants;
 	vec2 pixel_size;
+	int light_type;
 };
 
 void main() {
 	vec3 pos = vec3((gl_FragCoord.x * pixel_size.x), (gl_FragCoord.y * pixel_size.y), 0.0);
-	vec3 light_direction = normalize(mat3(model_matrix) * vec3(0.0, 0.0, 1.0));
+	vec3 world_space_pos = texture(World_Position, pos.xy).xyz;
+	vec3 light_direction;
+	vec3 light_pos = (model_matrix * vec4(0, 0, 0, 1)).xyz;
+	if (light_type == 0) {
+		light_direction = normalize(mat3(model_matrix) * vec3(0.0, 0.0, 1.0));
+	}
+	else {
+		light_direction = normalize(light_pos - world_space_pos);
+	}
+
 
 	vec4 color = vec4(texture(Color, pos.xy).xyz, 1.0);
 	vec3 normal = texture(Normal, pos.xy).xyz;
+	float attenuation_factor = 1;
 
-	color_out =  vec4(color.xyz * Light_Color.xyz * Light_Color.w * (0.1 + max(0, dot(normal, light_direction))),1.0);
+	if (light_type == 1) {
+		float distance = length(light_pos - world_space_pos);
+		attenuation_factor = 1.0 / (attenuation_constants.x + (attenuation_constants.y * distance) + attenuation_constants.z * (distance * distance));
+	}
 
+	color_out =  vec4(color.xyz * Light_Color.xyz * attenuation_factor * Light_Color.w * (0.1 + max(0, dot(normal, light_direction))),1.0);
 }
 
 #end
