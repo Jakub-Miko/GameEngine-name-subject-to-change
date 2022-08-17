@@ -17,8 +17,14 @@ public:
 	std::shared_ptr<Material> GetDefaultMaterial() const {
 		return default_material;
 	}
+
+	const std::string& GetPath() const {
+		return path;
+	}
+
 private:
 	friend class ShaderManager;
+	std::string path = "";
 	std::unique_ptr<RootSignature> signature;
 	std::shared_ptr<Material> default_material = nullptr;
 };

@@ -50,7 +50,7 @@ class test1 {
 
 class test2 {
 
-};
+}; 
 
 class TestPass1 : public RenderPass {
 public:

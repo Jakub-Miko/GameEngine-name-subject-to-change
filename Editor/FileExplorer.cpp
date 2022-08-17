@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <Application.h>
 #include <Editor/Editor.h>
+#include <Editor/MaterialEditor.h>
 #include <Window.h>
 #include <Renderer/MeshManager.h>
 #include <Renderer/TextureManager.h>
@@ -275,7 +276,10 @@ void FileExplorer::Render()
 		if (ImGui::Button(name.c_str(), ImVec2{ file_icon_size , file_icon_size })) {
 			if (file.path().generic_string() == selected_path) {
 				if (std::chrono::duration_cast<std::chrono::milliseconds>((std::chrono::steady_clock::now() - time_selected)).count() < 500) {
-					if (!Application::Get()->GetOsApi()->OpenFileInDefaultApp(file.path().generic_string())) {
+					if (file.path().extension().generic_string() == ".mat") {
+						Editor::Get()->OpenMaterialEditorWindow(FileManager::Get()->GetRelativeFilePath(file.path().generic_string()));
+					}
+					else if (!Application::Get()->GetOsApi()->OpenFileInDefaultApp(file.path().generic_string())) {
 						ImGui::OpenPopup("File not opened");
 					}
 				}

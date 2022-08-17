@@ -1,4 +1,5 @@
 #include "Editor.h"
+#include <Renderer/Renderer3D/MaterialManager.h>
 #include <dependencies/imgui/imgui.h>
 #include <dependencies/Additional/impl_custom_imgui_backend.h>
 #include <dependencies/Additional/impl_custom_imgui_platform.h>
@@ -33,6 +34,7 @@ void Editor::Shutdown()
 void Editor::PreShutdown()
 {
 	viewport.reset();
+	material_editor.reset();
 	delete[] file_dialog_text_buffer;
 	ImGui_ImplGlfw_Shutdown();
 	impl_custom_imgui_backend::PreShutdown();
@@ -85,6 +87,7 @@ void Editor::Run()
 
 		auto save_id = ImGui::GetID("Save Dialog");
 		auto load_id = ImGui::GetID("Load Dialog");
+		auto mat_id = ImGui::GetID("Empty Material Dialog");
 		auto import_id = ImGui::GetID("Import Mesh Dialog");
 		auto import_text_id = ImGui::GetID("Import Texture Dialog");
 		if (are_files_dropped) {
@@ -129,6 +132,14 @@ void Editor::Run()
 
 			if (ImGui::MenuItem("Import Texture")) {
 				ImGui::OpenPopup(import_text_id);
+			};
+
+			ImGui::EndMenu();
+		}
+
+		if (ImGui::BeginMenu("Create")) {
+			if (ImGui::MenuItem("Create Empty Material")) {
+				ImGui::OpenPopup(mat_id);
 			};
 
 			ImGui::EndMenu();
@@ -209,6 +220,60 @@ void Editor::Run()
 			ImGui::OpenPopup("Error##load");
 		}
 
+		bool extension_error = false;
+		try {
+			if (ImGui::BeginPopupModal("Empty Material Dialog", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+
+				bool enter_pressed = ImGui::InputText("Material path", file_dialog_text_buffer, file_dialog_text_buffer_size, ImGuiInputTextFlags_EnterReturnsTrue);
+				
+				if (enter_pressed || ImGui::Button("Create")) {
+					if(std::filesystem::path(FileManager::Get()->GetPath(file_dialog_text_buffer)).extension().generic_string() != ".mat") {
+						extension_error = true;
+						throw std::runtime_error("Extension Error");
+					}
+					auto mat = MaterialManager::Get()->CreateEmptyMaterial(file_dialog_text_buffer, ShaderManager::Get()->GetShader("shaders/GeometryPassShader.glsl"));
+					material_editor->OpenEditorWinow(mat->GetFilePath());
+					ImGui::CloseCurrentPopup();
+					file_dialog_text_buffer[0] = '\0';
+				}
+				ImGui::SameLine();
+				if (ImGui::Button("Close")) {
+					ImGui::CloseCurrentPopup();
+					file_dialog_text_buffer[0] = '\0';
+				}
+				ImGui::EndPopup();
+			}
+		}
+		catch (...) {
+			file_dialog_text_buffer[0] = '\0';
+			ImGui::EndPopup();
+			if (extension_error) {
+				ImGui::OpenPopup("Error##materialextension");
+			}
+			else {
+				ImGui::OpenPopup("Error##material");
+			}
+		}
+
+		if (ImGui::BeginPopupModal("Error##material", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+
+
+			ImGui::TextUnformatted("Could not create a material");
+			if (ImGui::Button("Close")) {
+				ImGui::CloseCurrentPopup();
+			}
+			ImGui::EndPopup();
+		}
+		if (ImGui::BeginPopupModal("Error##materialextension", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+
+
+			ImGui::TextUnformatted("Material name must end in .mat");
+			if (ImGui::Button("Close")) {
+				ImGui::CloseCurrentPopup();
+			}
+			ImGui::EndPopup();
+		}
+
 		if (ImGui::BeginPopupModal("Error##load", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
 
 
@@ -238,6 +303,7 @@ void Editor::Run()
 		properties_panel->Render();
 		explorer->Render();
 		prefab_editor->Render();
+		material_editor->Render();
 
 		viewport->Render();
 		if (!enabled) {
@@ -290,6 +356,7 @@ void Editor::Reset()
 	scene_graph.reset(new SceneGraphViewer());
 	viewport.reset(new Viewport());
 	prefab_editor.reset(new PrefabEditor());
+	material_editor.reset(new MaterialEditor());
 	selected_entity = Entity();
 }
 
@@ -309,7 +376,7 @@ void Editor::DropCallback(int count, std::vector<std::string> files)
 	Editor::Get()->are_files_dropped = true;
 }
 
-Editor::Editor() : viewport(new Viewport), scene_graph(new SceneGraphViewer), properties_panel(new PropertiesPanel), explorer(new FileExplorer), prefab_editor(new PrefabEditor)
+Editor::Editor() : viewport(new Viewport), scene_graph(new SceneGraphViewer), properties_panel(new PropertiesPanel), explorer(new FileExplorer), prefab_editor(new PrefabEditor), material_editor(new MaterialEditor)
 {
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();

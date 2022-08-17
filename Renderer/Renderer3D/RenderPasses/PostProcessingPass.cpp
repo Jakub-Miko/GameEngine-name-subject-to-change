@@ -44,7 +44,7 @@ void PostProcessingPass::InitPostProcessingPassData() {
 	pipeline_desc.flags = PipelineFlags::DEFAULT;
 	pipeline_desc.layout = VertexLayoutFactory<PostProcessingPreset>::GetLayout();
 	pipeline_desc.polygon_render_mode = PrimitivePolygonRenderMode::DEFAULT;
-	pipeline_desc.shader = ShaderManager::Get()->GetShader("PostProcessingShader.glsl");
+	pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/PostProcessingShader.glsl");
 
 	data->pipeline = PipelineManager::Get()->CreatePipeline(pipeline_desc);
 

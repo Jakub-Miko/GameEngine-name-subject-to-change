@@ -1,0 +1,1 @@
+{"parameters":[{"name":"Base_Color","type":"VEC4","value":{"w":1.0,"x":1.0,"y":1.0,"z":1.0}},{"name":"Color","type":"TEXTURE","value":"assets/Pillar_Albedo.tex"},{"name":"Normal","type":"TEXTURE","value":"assets/Pillar_Normal.tex"}],"shader":"shaders/GeometryPassShader.glsl"}

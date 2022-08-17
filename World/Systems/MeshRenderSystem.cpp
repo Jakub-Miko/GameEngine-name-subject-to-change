@@ -40,7 +40,7 @@ static void RenderMesh(MeshComponent& component, Entity ent) {
 
     RenderResourceManager::Get()->UploadDataToBuffer(command_list, local_data->constant_buffer.GetResource(), &buffer, sizeof(buffer), 0);
 
-    auto material = MaterialManager::Get()->GetMaterial("asset:Material1.json");
+    auto material = MaterialManager::Get()->GetMaterial("asset:Material1.mat");
 
     command_list->SetDefaultRenderTarget();
     command_list->SetPipeline(local_data->pipeline);
@@ -100,7 +100,7 @@ void InitMeshRenderSystem()
     pipeline_desc.layout = VertexLayoutFactory<MeshPreset>::GetLayout();
     pipeline_desc.scissor_rect = RenderScissorRect();
     pipeline_desc.viewport = RenderViewport();
-    pipeline_desc.shader = ShaderManager::Get()->GetShader("MeshShader.glsl");
+    pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/MeshShader.glsl");
 
     pipeline = PipelineManager::Get()->CreatePipeline(pipeline_desc);
 

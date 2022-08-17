@@ -50,7 +50,7 @@ public:
 
 	void ClosePrefabEditorWindow(Entity entity);
 
-	
+
 private:
 
 	void PrefabSceneGraph(PrefabEditorWindow& window);

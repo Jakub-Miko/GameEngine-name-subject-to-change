@@ -3,6 +3,7 @@
 #include <Editor/SceneGraphViewer.h>
 #include <Editor/PropertiesPanel.h>
 #include <Editor/FileExplorer.h>
+#include <Editor/MaterialEditor.h>
 #include <Events/Event.h>
 #include <World/Entity.h>
 #include <Editor/PrefabEditor.h>
@@ -67,6 +68,15 @@ public:
 		prefab_editor->ClosePrefabEditorWindow(entity);
 	}
 
+	void OpenMaterialEditorWindow(const std::string& material_path) {
+		material_editor->OpenEditorWinow(material_path);
+	}
+
+
+	void CloseMaterialEditorWindow(int index) {
+		material_editor->CloseMaterialWinow(index);
+	}
+
 	void ResetFilesDropped() {
 		are_files_dropped = false;
 	}
@@ -97,6 +107,7 @@ private:
 	bool enabled = true;
 
 	std::unique_ptr<Viewport> viewport;
+	std::unique_ptr<MaterialEditor> material_editor;
 	std::unique_ptr<PrefabEditor> prefab_editor;
 	std::unique_ptr<SceneGraphViewer> scene_graph;
 	std::unique_ptr<PropertiesPanel> properties_panel;

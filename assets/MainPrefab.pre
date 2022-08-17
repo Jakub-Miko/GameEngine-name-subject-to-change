@@ -25,7 +25,7 @@
 @Section:Mesh_2_9
 @Entity 
 {
-"Components": {"LabelComponent":{"label":"Mesh 2"},"MeshComponent":{"material_path":"assets/Material/MaterialGeometry.json","path":"assets/Pillar_with_uvs.mesh"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":0.9794045686721802,"x":0.001098091248422861,"y":0.1813010275363922,"z":-0.08885312080383301},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":-6.099999904632568,"y":0.0,"z":1.600000023841858}}},
+"Components": {"LabelComponent":{"label":"Mesh 2"},"MeshComponent":{"material_path":"assets/Material/MaterialGeometry.mat","path":"assets/Pillar_with_uvs.mesh"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":0.9794045686721802,"x":0.001098091248422861,"y":0.1813010275363922,"z":-0.08885312080383301},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":-6.099999904632568,"y":0.0,"z":1.600000023841858}}},
 "Children": []
 }
 
@@ -33,7 +33,7 @@
 @Section:Mesh_1_8
 @Entity 
 {
-"Components": {"LabelComponent":{"label":"Mesh 1"},"MeshComponent":{"material_path":"assets/Material/MaterialGeometry.json","path":"assets/Pillar_with_uvs.mesh"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":0.9574407339096069,"x":-0.04025186598300934,"y":0.2817019820213318,"z":0.04827159643173218},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":5.440000057220459,"y":0.0,"z":0.0}}},
+"Components": {"LabelComponent":{"label":"Mesh 1"},"MeshComponent":{"material_path":"assets/Material/MaterialGeometry.mat","path":"assets/Pillar_with_uvs.mesh"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":0.9574407339096069,"x":-0.04025186598300934,"y":0.2817019820213318,"z":0.04827159643173218},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":5.440000057220459,"y":0.0,"z":0.0}}},
 "Children": []
 }
 

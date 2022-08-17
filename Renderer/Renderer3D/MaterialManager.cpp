@@ -1,4 +1,6 @@
 #include "MaterialManager.h"
+#include <fstream>
+#include <json.hpp>
 #include <Core/UnitConverter.h>
 #include <Renderer/TextureManager.h>
 #include <Renderer/RenderResourceManager.h>
@@ -40,6 +42,7 @@ std::shared_ptr<Material> MaterialManager::GetMaterial(const std::string& path_i
 		return fnd->second;
 	}
 	auto material = ParseMaterialFromFile(path);
+	material->material_path = path_in;
 	materials.insert(std::make_pair(path, material));
 	return material;
 }
@@ -66,7 +69,6 @@ std::shared_ptr<Material> MaterialManager::ParseMaterialFromFile(const std::stri
 	sstream << stream.rdbuf();
 	stream.close();
 	auto mat = ParseMaterialFromString(sstream.str());
-	mat->material_path = path;
 	return mat;
 }
 
@@ -129,6 +131,72 @@ std::shared_ptr<Material> MaterialManager::ParseMaterialFromString(const std::st
 	return material;
 }
 
+void MaterialManager::SerializeMaterial(const std::string& filepath, std::shared_ptr<Material> material)
+{
+	using namespace nlohmann;
+	std::ofstream file(FileManager::Get()->GetPath(filepath));
+	if (!file.is_open()) throw std::runtime_error("File " + FileManager::Get()->GetPath(filepath) + " could not be opened");
+	
+	
+	json json_object;
+	json& parameters = json_object["parameters"];
+	for (auto& param : material->parameters) {
+		std::string texture;
+		if (bool(param.flags & Material::MaterialParameter_flags::DEFAULT)) continue;
+		json parameter_json = json::object();
+		parameter_json["name"] = param.name;
+		switch (param.type)
+		{
+		case MaterialTemplate::MaterialTemplateParameterType::INT:
+			parameter_json["type"] = "INT";
+			parameter_json["value"] = std::get<int>(param.resource);
+			break;
+		case MaterialTemplate::MaterialTemplateParameterType::SCALAR:
+			parameter_json["type"] = "SCALAR";
+			parameter_json["value"] = std::get<float>(param.resource);
+			break;
+		case MaterialTemplate::MaterialTemplateParameterType::VEC2:
+			parameter_json["type"] = "VEC2";
+			parameter_json["value"] = std::get<glm::vec2>(param.resource);
+			break;
+		case MaterialTemplate::MaterialTemplateParameterType::VEC3:
+			parameter_json["type"] = "VEC3";
+			parameter_json["value"] = std::get<glm::vec3>(param.resource);
+			break;
+		case MaterialTemplate::MaterialTemplateParameterType::VEC4:
+			parameter_json["type"] = "VEC4";
+			parameter_json["value"] = std::get<glm::vec4>(param.resource);
+			break;
+		case MaterialTemplate::MaterialTemplateParameterType::TEXTURE:
+			parameter_json["type"] = "TEXTURE";
+			texture = std::get<Material::Texture_type>(param.resource).path;
+			if (texture.empty()) throw std::runtime_error("Filepath to a texture could not be found during material serialization.");
+			parameter_json["value"] = texture;
+			break;
+		default:
+			throw std::runtime_error("Invalid type during material serialization");
+		}
+		parameters.push_back(parameter_json);
+	}
+	json_object["shader"] = material->material_template->GetShader()->GetPath();
+	std::string json_dump = json_object.dump();
+
+	file << json_dump;
+
+	file.close();
+}
+
+std::shared_ptr<Material> MaterialManager::CreateEmptyMaterial(const std::string& filepath_in, std::shared_ptr<Shader> shader)
+{
+	std::string file_path = FileManager::Get()->GetPath(filepath_in);
+	std::shared_ptr<Material> mat = CreateMaterial(shader->GetPath());
+	mat->material_path = filepath_in;
+	SerializeMaterial(filepath_in, mat);
+	std::lock_guard<std::mutex> lock(material_mutex);
+	materials.insert(std::make_pair(file_path, mat));
+	return mat;
+}
+
 void Material::SetMaterial(RenderCommandList* command_list, std::shared_ptr<Pipeline> pipeline)
 {
 	UpdateValues(command_list);
@@ -142,8 +210,8 @@ void Material::SetMaterial(RenderCommandList* command_list, std::shared_ptr<Pipe
 		}
 	}
 	for (auto& parameter : parameters) {
-		if (parameter.type == MaterialTemplate::MaterialTemplateParameterType::TEXTURE && !parameter.table) {
-			command_list->SetTexture2D(parameter.name, std::get<std::shared_ptr<RenderTexture2DResource>>(parameter.resource));
+		if (parameter.type == MaterialTemplate::MaterialTemplateParameterType::TEXTURE && !parameter.IsDirty()) {
+			command_list->SetTexture2D(parameter.name, std::get<Texture_type>(parameter.resource).texture);
 		}
 	}
 
@@ -152,15 +220,15 @@ void Material::SetMaterial(RenderCommandList* command_list, std::shared_ptr<Pipe
 void Material::UpdateValues(RenderCommandList* command_list)
 {
 	for (auto& parameter : parameters) {
-		if(parameter.dirty) {
+		if(parameter.IsDirty()) {
 			if (parameter.type == MaterialTemplate::TEXTURE) {
 				auto& texture_param_info = material_template->GetMaterialTemplateParameter(parameter.name);
 				if (texture_param_info.descriptor_table_id != -1) {
 					auto res_fnd = std::find_if(resources.begin(), resources.end(), [&texture_param_info](const MaterialResource& res) {return res.index == texture_param_info.descriptor_table_id; });
 					if (res_fnd != resources.end()) {
 						RenderResourceManager::Get()->CreateTexture2DDescriptor(std::get<RenderDescriptorTable>(res_fnd->resource),
-							texture_param_info.index, std::get<std::shared_ptr<RenderTexture2DResource>>(parameter.resource));
-						parameter.dirty = false;
+							texture_param_info.index, std::get<Texture_type>(parameter.resource).texture);
+						parameter.flags &= ~MaterialParameter_flags::DIRTY;
 					}
 					else {
 						throw std::runtime_error("Descriptor table for parameter " + parameter.name + " not found");
@@ -173,7 +241,7 @@ void Material::UpdateValues(RenderCommandList* command_list)
 				if(res_fnd != resources.end()) {
 					RenderResourceManager::Get()->UploadDataToBuffer(command_list, std::get<std::shared_ptr<RenderBufferResource>>(res_fnd->resource),
 						&parameter.resource, param_info.primitive_size, param_info.constant_buffer_offset);
-					parameter.dirty = false;
+					parameter.flags &= ~MaterialParameter_flags::DIRTY;
 				}
 				else {
 					throw std::runtime_error("Constant Buffer for parameter " + parameter.name + " not found");
@@ -186,48 +254,44 @@ void Material::UpdateValues(RenderCommandList* command_list)
 void Material::SetTexture(const std::string& name, const std::string& path)
 {
 	if (TextureManager::Get()->IsTextureAvailable(path)) {
-		SetParameter(name, TextureManager::Get()->LoadTextureFromFile(path, false));
+		SetParameter(name, TextureManager::Get()->LoadTextureFromFile(path, false), path);
 	}
 	else {
 		auto future = TextureManager::Get()->LoadTextureFromFileAsync(path, true);
-		MaterialManager::Get()->AddTextureLoad(shared_from_this(),name, future);
+		MaterialManager::Get()->AddTextureLoad(shared_from_this(),name, future, path);
 	}
 }
 
 Material::Material(std::shared_ptr<MaterialTemplate> material_template) : material_template(material_template), parameters(), resources()
 {
-	for (auto& material_param : material_template->GetMaterialTemplateParameters()) {
-		MaterialParameter res;
-		res.dirty = true;
-		res.name = material_param.name;
-		res.type = material_param.type;
-		res.table = material_param.descriptor_table_id != -1;
-		switch (res.type)
-		{
-		case MaterialTemplate::MaterialTemplateParameterType::SCALAR:
-			res.resource = 1.0f;
-			break;
-		case MaterialTemplate::MaterialTemplateParameterType::VEC2:
-			res.resource = glm::vec2(1.0f);
-			break;
-		case MaterialTemplate::MaterialTemplateParameterType::VEC3:
-			res.resource = glm::vec3(1.0f);
-			break;
-		case MaterialTemplate::MaterialTemplateParameterType::VEC4:
-			res.resource = glm::vec4(1.0f);
-			break;
-		case MaterialTemplate::MaterialTemplateParameterType::INT:
-			res.resource = 0;
-			break;
-		case MaterialTemplate::MaterialTemplateParameterType::TEXTURE:
-			res.resource = TextureManager::Get()->GetDefaultTexture();
-			break;
-		default:
-			throw std::runtime_error("Unsupported tempate parameter type " + material_param.name);
-			break;
+	bool has_defaults = material_template->GetShader()->GetDefaultMaterial() != nullptr;
+	std::shared_ptr<Material> defaults = nullptr;
+	if (has_defaults) {
+		defaults = material_template->GetShader()->GetDefaultMaterial();
+		for (auto& parameter : defaults->parameters) {
+			MaterialParameter res;
+			res.flags = parameter.flags | MaterialParameter_flags::DEFAULT;
+			res.name = parameter.name;
+			res.type = parameter.type;
+			res.resource = parameter.resource;
+			res.flags |= MaterialParameter_flags::DIRTY;
+			parameters.push_back(res);
 		}
-		parameters.push_back(res);
 	}
+	else {
+		for (auto& material_param : material_template->GetMaterialTemplateParameters()) {
+			MaterialParameter res;
+			res.flags |= MaterialParameter_flags::DIRTY | MaterialParameter_flags::DEFAULT;
+			res.name = material_param.name;
+			res.type = material_param.type;
+			res.flags |= material_param.descriptor_table_id != -1 ? MaterialParameter_flags::TABLE : (MaterialParameter_flags)0;
+			SetParameterTypeDefault(res);
+			parameters.push_back(res);
+		}
+	}
+
+
+
 	std::set<int> const_buf_index;
 	std::set<int> table_index;
 	const auto& signature = material_template->GetRootSignature();
@@ -255,6 +319,34 @@ Material::Material(std::shared_ptr<MaterialTemplate> material_template) : materi
 		}
 	}
 
+}
+
+void Material::SetParameterTypeDefault(MaterialParameter& param)
+{
+	switch (param.type)
+	{
+	case MaterialTemplate::MaterialTemplateParameterType::SCALAR:
+		param.resource = 1.0f;
+		break;
+	case MaterialTemplate::MaterialTemplateParameterType::VEC2:
+		param.resource = glm::vec2(1.0f);
+		break;
+	case MaterialTemplate::MaterialTemplateParameterType::VEC3:
+		param.resource = glm::vec3(1.0f);
+		break;
+	case MaterialTemplate::MaterialTemplateParameterType::VEC4:
+		param.resource = glm::vec4(1.0f);
+		break;
+	case MaterialTemplate::MaterialTemplateParameterType::INT:
+		param.resource = 0;
+		break;
+	case MaterialTemplate::MaterialTemplateParameterType::TEXTURE:
+		param.resource = Texture_type{ TextureManager::Get()->GetDefaultTexture() };
+		break;
+	default:
+		throw std::runtime_error("Unsupported tempate parameter type " + param.name);
+		break;
+	}
 }
 
 MaterialTemplate::MaterialTemplate(std::shared_ptr<Shader> shader_in) : material_parameters(), material_parameters_map(), shader_wk(shader_in), buffer_and_descriptor_table_sizes()
@@ -432,7 +524,11 @@ void MaterialManager::UpdateMaterials()
 		if (!loaded_texture.future.IsAvailable() || loaded_texture.destroyed) continue;
 		try {
 			auto texture_1 = loaded_texture.future.GetValue();
+#ifdef EDITOR
+			loaded_texture.material->SetParameter(loaded_texture.name, texture_1, loaded_texture.path);
+#else
 			loaded_texture.material->SetParameter(loaded_texture.name, texture_1);
+#endif
 			loaded_texture.destroyed = true;
 		}
 		catch (...) {
@@ -448,10 +544,14 @@ void MaterialManager::UpdateMaterials()
 
 }
 
-void MaterialManager::AddTextureLoad(std::shared_ptr<Material> material, std::string name, Future<std::shared_ptr<RenderTexture2DResource>> future)
+void MaterialManager::AddTextureLoad(std::shared_ptr<Material> material, std::string name, Future<std::shared_ptr<RenderTexture2DResource>> future, const std::string path)
 {
 	std::lock_guard<std::mutex> lock(material_load_mutex);
+#ifdef EDITOR
+	material_load.push_back(Material_loading_item{ name, material, future, false, path });
+#else
 	material_load.push_back(Material_loading_item{ name, material, future, false });
+#endif
 }
 
 std::shared_ptr<Material> MaterialManager::CreateMaterial(const std::string& shader_path) {
@@ -466,5 +566,29 @@ std::shared_ptr<Material> MaterialManager::CreateMaterial(const std::string& sha
 	}
 	
 	return std::shared_ptr<Material>(new Material(mat_template));
+
+}
+
+bool Material::MaterialParameter::IsDirty() const {
+	return (bool)(flags & MaterialParameter_flags::DIRTY);
+}
+
+
+void Material::ActivateParameter(const std::string& name) {
+	auto& param = parameters[material_template->GetMaterialTemplateParameterIndex(name)];
+	param.flags &= ~MaterialParameter_flags::DEFAULT;
+}
+
+void Material::DeactivateParameter(const std::string& name) {
+	auto& param = parameters[material_template->GetMaterialTemplateParameterIndex(name)];
+	param.flags |= MaterialParameter_flags::DEFAULT | MaterialParameter_flags::DIRTY;
+	auto def = material_template->GetShader()->GetDefaultMaterial();
+	if (def != nullptr) {
+		auto param_src = material_template->GetMaterialTemplateParameterIndex(name);
+		param.resource = def->parameters[param_src].resource;
+	}
+	else {
+		SetParameterTypeDefault(param);
+	}
 
 }

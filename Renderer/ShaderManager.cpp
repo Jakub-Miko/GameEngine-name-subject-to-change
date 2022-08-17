@@ -35,7 +35,7 @@ ShaderManager::~ShaderManager()
 
 std::shared_ptr<Shader> ShaderManager::GetShader(const std::string& path_in)
 {
-	std::string path = FileManager::Get()->ResolvePath(FileManager::Get()->GetRenderApiAssetFilePath("shaders/" + path_in));
+	std::string path = FileManager::Get()->ResolvePath(FileManager::Get()->GetRenderApiAssetFilePath(path_in));
 	std::lock_guard<std::mutex> lock(shader_map_mutex);
 	auto fnd = shader_map.find(path);
 	if (fnd != shader_map.end()) {
@@ -60,7 +60,7 @@ std::shared_ptr<Shader> ShaderManager::GetShader(const std::string& path_in)
 	}
 	bool has_default_material;
 	shader->signature = std::unique_ptr<RootSignature>(ParseRootSignature(root_sig_str, &has_default_material));
-
+	shader->path = path_in;
 	std::shared_ptr<Shader> shader_out = std::shared_ptr<Shader>(shader);
 	if (has_default_material) {
 		shader_out->default_material = ParseDefaulMaterial(root_sig_str, shader_out);
@@ -73,7 +73,7 @@ std::shared_ptr<Shader> ShaderManager::GetShader(const std::string& path_in)
 std::shared_ptr<Shader> ShaderManager::CreateShaderFromString(const std::string& shader_in)
 {
 	Shader* shader = CreateShaderFromString_impl(shader_in);
-
+	shader->path = "";
 	std::string root_sig_str;
 	auto fnd_root = shader_in.find("#RootSignature");
 	if (fnd_root == root_sig_str.npos) throw std::runtime_error("Shader string does not contain RootSignatureDefinition");

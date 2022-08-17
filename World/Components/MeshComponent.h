@@ -34,7 +34,7 @@ public:
 
 	std::string GetMaterialPath() const {
 		if (material) {
-			return FileManager::Get()->GetRelativeFilePath(material->GetFilePath());
+			return material->GetFilePath();
 		}
 		else {
 			return "";

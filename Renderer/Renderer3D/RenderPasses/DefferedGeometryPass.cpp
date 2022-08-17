@@ -52,7 +52,7 @@ void DefferedGeometryPass::InitPostProcessingPassData() {
 	pipeline_desc.flags = PipelineFlags::ENABLE_DEPTH_TEST;
 	pipeline_desc.layout = VertexLayoutFactory<GeometryPassPreset>::GetLayout();
 	pipeline_desc.polygon_render_mode = PrimitivePolygonRenderMode::DEFAULT;
-	pipeline_desc.shader = ShaderManager::Get()->GetShader("GeometryPassShader.glsl");
+	pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/GeometryPassShader.glsl");
 	data->pipeline = PipelineManager::Get()->CreatePipeline(pipeline_desc);
 
 	TextureSamplerDescritor sampler_desc;

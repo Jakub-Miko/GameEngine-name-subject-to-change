@@ -1,5 +1,5 @@
 {
-	"shader": "MeshShader.glsl",
+	"shader": "shaders/MeshShader.glsl",
 	"parameters": [
 		{
 			"name": "sun_direction",

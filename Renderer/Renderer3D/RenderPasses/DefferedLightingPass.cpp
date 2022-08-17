@@ -63,7 +63,7 @@ void DefferedLightingPass::InitPostProcessingPassData() {
 	pipeline_desc.blend_equation = BlendEquation::ADD;
 	pipeline_desc.layout = VertexLayoutFactory<LightingPassPreset>::GetLayout();
 	pipeline_desc.polygon_render_mode = PrimitivePolygonRenderMode::DEFAULT;
-	pipeline_desc.shader = ShaderManager::Get()->GetShader("LightingPassShader.glsl");
+	pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/LightingPassShader.glsl");
 	data->pipeline = PipelineManager::Get()->CreatePipeline(pipeline_desc);
 
 	TextureSamplerDescritor sampler_desc;
@@ -103,7 +103,7 @@ void DefferedLightingPass::InitPostProcessingPassData() {
 	data->constant_scene_buf = RenderResourceManager::Get()->CreateBuffer(const_desc);
 
 	data->sphere_mesh = MeshManager::Get()->LoadMeshFromFileAsync("asset:Sphere.mesh"_path);
-	data->mat = MaterialManager::Get()->CreateMaterial("LightingPassShader.glsl");
+	data->mat = MaterialManager::Get()->CreateMaterial("shaders/LightingPassShader.glsl");
 
 	struct Vertex {
 		Vertex(glm::vec3 pos, glm::vec3 normal = glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3 tangent = glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3 uv = glm::vec3(0.0f))
@@ -174,7 +174,7 @@ void DefferedLightingPass::Render(RenderPipelineResourceManager& resource_manage
 		auto& transform_component = world.GetComponent<TransformComponent>(entity);
 		auto transform = transform_component.TransformMatrix;
 		auto& light = world.GetComponent<LightComponent>(entity);
-		size_t index_count;
+		size_t index_count = 0;
 		glm::mat4 mvp;
 
 		if (light.type == LightType::DIRECTIONAL) {
