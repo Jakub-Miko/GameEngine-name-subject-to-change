@@ -51,6 +51,8 @@ bool Application::SendEvent(Event* event)
 
 Application::~Application()
 {
+    //Clear registry to release any references in the components;
+    world->GetRegistry().clear();
 
 #ifdef EDITOR
     Editor::Get()->PreShutdown();

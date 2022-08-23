@@ -15,8 +15,10 @@
 #include <World/Components/ScriptComponent.h>
 #include <World/Components/SerializableComponent.h>
 #include <World/Components/SquareComponent.h>
+#include <World/Components/ShadowCasterComponent.h>
 #include <World/Components/TransformComponent.h>
 #include <Core/TypeList.h>
 
 using Component_Types = typename TypeList<BoundingVolumeComponent, CameraComponent, ConstructionComponent, DefferedUpdateComponent, DynamicPropertiesComponent, InitializationComponent
-	,KeyPressedScriptComponent, LabelComponent, LightComponent, LoadedComponent, MeshComponent, MousePressedScriptComponent, PrefabComponent, ScriptComponent, SerializableComponent, SquareComponent, TransformComponent>;
+	,KeyPressedScriptComponent, LabelComponent, LightComponent, LoadedComponent, MeshComponent, MousePressedScriptComponent, PrefabComponent, ScriptComponent, SerializableComponent, SquareComponent,
+	TransformComponent, ShadowCasterComponent>;

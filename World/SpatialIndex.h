@@ -56,7 +56,9 @@ public:
 	char active = 0;
 
 	void FrustumCulling(World& world, const Frustum& frustum, std::vector<Entity>& entities);
-	
+
+	void BoxCulling(World& world, const OrientedBoundingBox& box, std::vector<Entity>& entities);
+
 	void AddEntity(Entity ent);
 
 	void RemoveEntity(Entity ent);
@@ -88,6 +90,11 @@ public:
 
 	void FrustumCulling(World& world, const Frustum& frustum, std::vector<Entity>& entities) {
 		octree_base->FrustumCulling(world, frustum, entities);
+	}
+
+
+	void BoxCulling(World& world, const OrientedBoundingBox& box, std::vector<Entity>& entities) {
+		octree_base->BoxCulling(world, box, entities);
 	}
 
 	void AddEntity(Entity ent) {

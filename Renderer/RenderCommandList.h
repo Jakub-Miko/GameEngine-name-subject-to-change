@@ -21,7 +21,7 @@ public:
     virtual void SetPipeline(std::shared_ptr<Pipeline> pipeline) = 0;
 
     virtual void SetConstantBuffer(RootBinding binding_id, std::shared_ptr<RenderBufferResource> buffer) = 0;
-    virtual void SetConstantBuffer(const std::string& semantic_name, std::shared_ptr<RenderBufferResource> texture) = 0;
+    virtual void SetConstantBuffer(const std::string& semantic_name, std::shared_ptr<RenderBufferResource> buffer) = 0;
     virtual void SetTexture2D(const std::string& semantic_name, std::shared_ptr<RenderTexture2DResource> texture) = 0;
     virtual void SetRenderTarget(std::shared_ptr<RenderFrameBufferResource> framebuffer) = 0;
     virtual void SetDefaultRenderTarget() = 0;

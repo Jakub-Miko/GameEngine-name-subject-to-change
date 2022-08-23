@@ -4,6 +4,10 @@
 #include <Core/RuntimeTag.h>
 #include <vector>
 
+struct DependencyTag {
+	RuntimeTag("DependencyTag");
+};
+
 class RenderPipelineResourceManager;
 
 enum class RenderPassResourceDescriptor_Access {

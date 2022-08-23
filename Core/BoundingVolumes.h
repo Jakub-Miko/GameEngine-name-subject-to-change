@@ -4,6 +4,7 @@
 #include <Core/RuntimeTag.h>
 
 struct Frustum;
+class BoundingBox;
 
 enum class BoundingVolumeType : unsigned char {
 	NONE = 0, BOUNDING_BOX = 1, BOUNDING_SPHERE = 2
@@ -18,39 +19,48 @@ public:
 
 	virtual bool OverlapsFrustum(const Frustum& frustum, const glm::mat4& model_matrix) = 0;
 	virtual OverlapResult OverlapsPlane(const Plane& plane, const glm::mat4& model_matrix) = 0;
+	virtual bool OverlapsBox(const BoundingBox& box, const glm::mat4& model_matrix) = 0;
+	virtual bool OverlapsOrientedBox(const OrientedBoundingBox& box, const glm::mat4& model_matrix) = 0;
 
 };
 
+class BoundingBox;
+
 bool OverlapPointPlane(const glm::vec3& point, const Plane& plane);
 bool OverlapPointFrustum(const glm::vec3& point, const Frustum& frustum);
+bool OverlapBoxBox(const BoundingBox& box_1, const BoundingBox& box_2);
+bool OverlapPointBox(const glm::vec3& point, const BoundingBox& box);
+bool OverlapPointOrientedBox(const glm::vec3& point, const OrientedBoundingBox& box);
+OverlapResult OverlapBoxPlane(const BoundingBox& box, const Plane& plane);
 
 class BoundingBox : public BoundingVolume {
 	//For Serialization purposes
 	RuntimeTag("BoundingBox")
 public:
-	BoundingBox(glm::vec3 box_size = glm::vec3(1.0f), glm::vec3 box_offset = glm::vec3(0.0f)) : box_size(box_size), box_offset(box_offset) {}
+	BoundingBox(glm::vec3 box_size = glm::vec3(1.0f), glm::vec3 box_offset = glm::vec3(0.0f)) : box_min(-glm::abs(box_size/2.0f) + box_offset), box_max(glm::abs(box_size / 2.0f) + box_offset) {}
 
 	virtual bool OverlapsFrustum(const Frustum& frustum, const glm::mat4& model_matrix) override;
 	virtual OverlapResult OverlapsPlane(const Plane& plane, const glm::mat4& model_matrix) override;
+	virtual bool OverlapsBox(const BoundingBox& box, const glm::mat4& model_matrix) override;
+	virtual bool OverlapsOrientedBox(const OrientedBoundingBox& box, const glm::mat4& model_matrix) override;
 
 	const glm::vec3& GetBoxSize() const {
-		return box_size;
+		return box_max - box_min;
 	}
 		
 	const glm::vec3& GetBoxOffset() const {
-		return box_offset;
+		return (box_max + box_min) / 2.0f;
 	}
 
-private:
+	BoundingBox GetAdjustedBox(const glm::mat4& matrix);
 
+	glm::vec3 box_min;
+	glm::vec3 box_max;
+private:
+	friend OverlapResult OverlapBoxPlane(const BoundingBox& box, const Plane& plane);
+	friend bool OverlapBoxBox(const BoundingBox& box_1, const BoundingBox& box_2);
 	bool OverlapPointFrustum(const glm::vec3& point, const Frustum& frustum);
-	bool OverlapBoxPlane(const glm::mat4& transform, const Plane& plane);
-
-private:
-
-	glm::vec3 box_size;
-	glm::vec3 box_offset;
-
+	bool OverlapBoxPlane_internal(const glm::mat4& transform, const Plane& plane);
 };
 
 class BoundingSphere : public BoundingVolume {
@@ -61,6 +71,8 @@ public:
 
 	virtual bool OverlapsFrustum(const Frustum& frustum, const glm::mat4& model_matrix) override;
 	virtual OverlapResult OverlapsPlane(const Plane& plane, const glm::mat4& model_matrix) override;
+	virtual bool OverlapsBox(const BoundingBox& box, const glm::mat4& model_matrix) override;
+	virtual bool OverlapsOrientedBox(const OrientedBoundingBox& box, const glm::mat4& model_matrix) override;
 
 	float GetSphereSize() const {
 		return sphere_size;
@@ -90,6 +102,8 @@ public:
 
 	virtual bool OverlapsFrustum(const Frustum& frustum, const glm::mat4& model_matrix) override;
 	virtual OverlapResult OverlapsPlane(const Plane& plane, const glm::mat4& model_matrix) override;
+	virtual bool OverlapsBox(const BoundingBox& box, const glm::mat4& model_matrix) override;
+	virtual bool OverlapsOrientedBox(const OrientedBoundingBox& box, const glm::mat4& model_matrix) override;
 
 	float GetSphereSize() const {
 		return sphere_size;
@@ -119,6 +133,8 @@ public:
 
 	virtual bool OverlapsFrustum(const Frustum& frustum, const glm::mat4& model_matrix) override;
 	virtual OverlapResult OverlapsPlane(const Plane& plane, const glm::mat4& model_matrix) override;
+	virtual bool OverlapsBox(const BoundingBox& box, const glm::mat4& model_matrix) override;
+	virtual bool OverlapsOrientedBox(const OrientedBoundingBox& box, const glm::mat4& model_matrix) override;
 
 
 };

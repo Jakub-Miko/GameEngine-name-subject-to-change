@@ -229,6 +229,7 @@ void SceneGraph::RecalculateDownstream(SceneNode* node, SceneNode* upstream)
 
 	transform.TransformMatrix = upstream_transform * transform.TransformMatrix;
 
+	//Update entry in spatial index
 	if (node->spatial_index_node) {
 		m_world->GetSpatialIndex().RemoveEntity(node->entity);
 	}

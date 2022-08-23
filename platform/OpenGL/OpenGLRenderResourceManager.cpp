@@ -181,8 +181,13 @@ std::shared_ptr<RenderFrameBufferResource> OpenGLRenderResourceManager::CreateFr
 					static_cast<OpenGLRenderTexture2DResource*>(ptr->GetBufferDescriptor().color_attachments[i].get())->GetRenderId(),0);
 				attachments.push_back(GL_COLOR_ATTACHMENT0 + i);
 			}
-
-			glDrawBuffers(attachments.size(), attachments.data());
+			if(attachments.empty()) {
+				glDrawBuffer(GL_NONE);
+				glReadBuffer(GL_NONE);
+			}
+			else {
+				glDrawBuffers(attachments.size(), attachments.data());
+			}
 
 			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D,
 				static_cast<OpenGLRenderTexture2DResource*>(ptr->GetBufferDescriptor().depth_stencil_attachment.get())->GetRenderId(),0);

@@ -12,6 +12,7 @@
 #include <World/Components/ScriptComponent.h>
 #include <World/Components/SquareComponent.h>
 #include <World/Components/LightComponent.h>
+#include <World/Components/ShadowCasterComponent.h>
 #include <World/Components/MeshComponent.h>
 #include <Input/Input.h>
 #include <Events/KeyPressEvent.h>
@@ -169,9 +170,9 @@ public:
     RenderDescriptorTable table1;
     RenderDescriptorTable table2;
     size_t index_count;
-
+    Entity entity_box;
     Future<std::shared_ptr<Mesh>> mesh;
-
+    OrientedBoundingBox oriented_box;
 
     FrameMultiBufferResource<std::shared_ptr<RenderBufferResource>> constant_buffer;
 
@@ -494,7 +495,23 @@ public:
 */
 
 #pragma endregion
-                          
+            
+            auto entity_sphere = Application::GetWorld().CreateEntity();
+            Application::GetWorld().SetComponent<BoundingVolumeComponent>(entity_sphere, BoundingBox(glm::vec3(2.0f)));
+            Application::GetWorld().SetComponent<MeshComponent>(entity_sphere, "asset:Sphere.mesh"_path);
+            //Application::GetWorld().SetEntityScale(entity_sphere, glm::vec3(100.0f));
+
+            entity_box = Application::GetWorld().CreateEntity();
+            Application::GetWorld().SetComponent<MeshComponent>(entity_box, "asset:Box.mesh"_path);
+            //Application::GetWorld().SetEntityScale(entity_box, glm::vec3(100.0f));
+            oriented_box = OrientedBoundingBox();
+
+            auto entity_light = Application::GetWorld().CreateEntity();
+            Application::GetWorld().SetComponent<LightComponent>(entity_light, LightComponent());
+            Application::GetWorld().SetComponent<ShadowCasterComponent>(entity_light);
+            Application::GetWorld().SetEntityScale(entity_light, glm::vec3(1.0,1.0,16.0));
+            Application::GetWorld().SetEntityTranslation(entity_light, glm::vec3(0.0, 0.0, 8.0));
+
             stop = false;
 
         }
@@ -507,7 +524,19 @@ public:
         //auto pipeline = builder.Build();
         //pipeline.Render();
 
+        auto& transform_box = Application::GetWorld().GetComponent<TransformComponent>(entity_box);
+        oriented_box.center = transform_box.translation;
+        oriented_box.rotation_matrix = glm::toMat3(transform_box.rotation);
+        oriented_box.size = transform_box.size*2.0f;
+        Application::GetWorld().SetEntityRotation(entity_box, glm::toMat3(transform_box.rotation));
 
+
+        std::vector<Entity> entities_vector;
+        Application::GetWorld().GetSpatialIndex().BoxCulling(Application::GetWorld(), oriented_box, entities_vector);
+
+        for (auto ent : entities_vector) {
+            std::cout << ent.id << "\n";
+        }
 
         auto& index = Application::GetWorld().GetSpatialIndex();
         std::vector<Entity> entities;
