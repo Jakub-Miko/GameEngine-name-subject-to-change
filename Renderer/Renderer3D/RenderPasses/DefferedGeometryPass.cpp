@@ -73,11 +73,11 @@ void DefferedGeometryPass::InitPostProcessingPassData() {
 	color_texture_desc.width = Application::Get()->GetWindow()->GetProperties().resolution_x;
 	color_texture_desc.sampler = sampler;
 
-	RenderTexture2DDescriptor pos_texture_desc;
-	pos_texture_desc.format = TextureFormat::RGBA_32FLOAT;
-	pos_texture_desc.height = Application::Get()->GetWindow()->GetProperties().resolution_y;
-	pos_texture_desc.width = Application::Get()->GetWindow()->GetProperties().resolution_x;
-	pos_texture_desc.sampler = sampler;
+	RenderTexture2DDescriptor color_normal_desc;
+	color_normal_desc.format = TextureFormat::RGBA_32FLOAT;
+	color_normal_desc.height = Application::Get()->GetWindow()->GetProperties().resolution_y;
+	color_normal_desc.width = Application::Get()->GetWindow()->GetProperties().resolution_x;
+	color_normal_desc.sampler = sampler;
 
 	RenderTexture2DDescriptor depth_desc;
 	depth_desc.format = TextureFormat::DEPTH24_STENCIL8_UNSIGNED_CHAR;
@@ -86,12 +86,11 @@ void DefferedGeometryPass::InitPostProcessingPassData() {
 	depth_desc.sampler = sampler;
 
 	auto texture_color_albedo = RenderResourceManager::Get()->CreateTexture(color_texture_desc);
-	auto texture_color_position = RenderResourceManager::Get()->CreateTexture(pos_texture_desc);
-	auto texture_color_normal = RenderResourceManager::Get()->CreateTexture(pos_texture_desc);
+	auto texture_color_normal = RenderResourceManager::Get()->CreateTexture(color_normal_desc);
 	auto texture_depth_stencil = RenderResourceManager::Get()->CreateTexture(depth_desc);
 
 	RenderFrameBufferDescriptor framebuffer_desc;
-	framebuffer_desc.color_attachments = { texture_color_albedo, texture_color_position,texture_color_normal };
+	framebuffer_desc.color_attachments = { texture_color_albedo,texture_color_normal };
 	framebuffer_desc.depth_stencil_attachment = texture_depth_stencil;
 	
 	data->output_buffer_resource = RenderResourceManager::Get()->CreateFrameBuffer(framebuffer_desc);
@@ -127,6 +126,7 @@ void DefferedGeometryPass::Render(RenderPipelineResourceManager& resource_manage
 	camera.UpdateProjectionMatrix();
 	auto& camera_trans = world.GetComponent<TransformComponent>(world.GetPrimaryEntity());
 	auto ViewProjection = camera.GetProjectionMatrix() * glm::inverse(camera_trans.TransformMatrix);
+	auto view_matrix = glm::inverse(camera_trans.TransformMatrix);
 	list->SetPipeline(data->pipeline);
 	list->SetRenderTarget(data->output_buffer_resource);
 	list->Clear();
@@ -145,8 +145,9 @@ void DefferedGeometryPass::Render(RenderPipelineResourceManager& resource_manage
 		list->SetVertexBuffer(mesh.mesh->GetVertexBuffer());
 		list->SetIndexBuffer(mesh.mesh->GetIndexBuffer());
 		glm::mat4 mvp = ViewProjection * transform.TransformMatrix;
+		glm::mat4 mv_matrix = view_matrix * transform.TransformMatrix;
 		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, glm::value_ptr(mvp), sizeof(glm::mat4), 0);
-		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, glm::value_ptr(transform.TransformMatrix), sizeof(glm::mat4), sizeof(glm::mat4));
+		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, glm::value_ptr(mv_matrix), sizeof(glm::mat4), sizeof(glm::mat4));
 		list->Draw(mesh.mesh->GetIndexCount());
 
 

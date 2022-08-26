@@ -99,7 +99,7 @@ void DefferedLightingPass::InitPostProcessingPassData() {
 
 	data->output_buffer_resource = RenderResourceManager::Get()->CreateFrameBuffer(framebuffer_desc);
 
-	RenderBufferDescriptor const_desc(sizeof(glm::mat4) * 2, RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
+	RenderBufferDescriptor const_desc(sizeof(glm::mat4) * 2 + sizeof(float) * 2, RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
 	data->constant_scene_buf = RenderResourceManager::Get()->CreateBuffer(const_desc);
 
 	data->sphere_mesh = MeshManager::Get()->LoadMeshFromFileAsync("asset:Sphere.mesh"_path);
@@ -166,25 +166,33 @@ void DefferedLightingPass::Render(RenderPipelineResourceManager& resource_manage
 	camera.UpdateProjectionMatrix();
 	auto& camera_trans = world.GetComponent<TransformComponent>(world.GetPrimaryEntity());
 	auto ViewProjection = camera.GetProjectionMatrix() * glm::inverse(camera_trans.TransformMatrix);
+	auto view_matrix = glm::inverse(camera_trans.TransformMatrix);
 	list->SetPipeline(data->pipeline);
 	list->SetRenderTarget(data->output_buffer_resource);
 	list->Clear();
-	list->SetConstantBuffer("mvp", data->constant_scene_buf);
+	list->SetConstantBuffer("conf", data->constant_scene_buf);
+	float depth_constant_a = camera.zFar / (camera.zFar - camera.zNear);
+	float depth_constant_b = (-camera.zFar * camera.zNear) / (camera.zFar - camera.zNear);
+	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, &depth_constant_a, sizeof(float), sizeof(glm::mat4) * 2);
+	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, &depth_constant_b, sizeof(float), sizeof(glm::mat4) * 2 + sizeof(float));
 	for (auto& entity : geometry.resources) {
 		auto& transform_component = world.GetComponent<TransformComponent>(entity);
 		auto transform = transform_component.TransformMatrix;
 		auto& light = world.GetComponent<LightComponent>(entity);
 		size_t index_count = 0;
 		glm::mat4 mvp;
+		glm::mat4 mv_matrix;
 
 		if (light.type == LightType::DIRECTIONAL) {
 			mvp = glm::mat4(1.0f);
+			mv_matrix = ViewProjection * transform;
 			list->SetVertexBuffer(data->card_mesh->GetVertexBuffer());
 			list->SetIndexBuffer(data->card_mesh->GetIndexBuffer());
 			index_count = data->card_mesh->GetIndexCount();
 		}
 		else if (light.type == LightType::POINT) {
-			glm::mat4 model_sphere = glm::translate(glm::mat4(1.0f), transform_component.translation) * glm::scale(glm::mat4(1.0), glm::vec3(light.CalcRadiusFromAttenuation()));
+			glm::mat4 model_sphere = glm::translate(glm::mat4(1.0f), (glm::vec3)transform_component.TransformMatrix[3]) * glm::scale(glm::mat4(1.0), glm::vec3(light.CalcRadiusFromAttenuation()));
+			mv_matrix = view_matrix * model_sphere;
 			mvp = ViewProjection * model_sphere;
 			list->SetVertexBuffer(data->sphere_mesh->GetVertexBuffer());
 			list->SetIndexBuffer(data->sphere_mesh->GetIndexBuffer());
@@ -197,13 +205,13 @@ void DefferedLightingPass::Render(RenderPipelineResourceManager& resource_manage
 		data->mat->SetParameter("pixel_size", pixel_size);
 		data->mat->SetParameter("Light_Color", light.GetLightColor());
 		data->mat->SetParameter("Color", gbuffer->GetBufferDescriptor().color_attachments[0]);
-		data->mat->SetParameter("World_Position", gbuffer->GetBufferDescriptor().color_attachments[1]);
-		data->mat->SetParameter("Normal", gbuffer->GetBufferDescriptor().color_attachments[2]);
+		data->mat->SetParameter("Normal", gbuffer->GetBufferDescriptor().color_attachments[1]);
+		data->mat->SetParameter("DepthBuffer", gbuffer->GetBufferDescriptor().depth_stencil_attachment);
 		data->mat->SetParameter("light_type", (int)light.type);
 		data->mat->SetParameter("attenuation", glm::vec4(light.GetAttenuation(),0.0f));
 		data->mat->SetMaterial(list, data->pipeline);
 		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, glm::value_ptr(mvp), sizeof(glm::mat4), 0);
-		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, glm::value_ptr(transform), sizeof(glm::mat4), sizeof(glm::mat4));
+		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, glm::value_ptr(mv_matrix), sizeof(glm::mat4), sizeof(glm::mat4));
 		list->Draw(index_count);
 
 

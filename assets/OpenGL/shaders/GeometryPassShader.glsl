@@ -82,7 +82,7 @@ out mat3 TBN;
 
 uniform mvp{
 	mat4 mvp_matrix;
-	mat4 model_matrix;
+	mat4 view_model_matrix;
 };
 
 uniform material{
@@ -90,16 +90,16 @@ uniform material{
 };
 
 void main() {
-	vec3 normal_transformed = normalize(mat3(transpose(inverse(model_matrix))) * normal.xyz).xyz;
-	vec3 tangent_transformed = normalize(mat3(transpose(inverse(model_matrix))) * tangent.xyz).xyz;
+	vec3 normal_transformed = normalize(mat3(transpose(inverse(view_model_matrix))) * normal.xyz).xyz;
+	vec3 tangent_transformed = normalize(mat3(transpose(inverse(view_model_matrix))) * tangent.xyz).xyz;
 	vec3 bitangent_transformed = cross(normal_transformed, tangent_transformed);
 
 	TBN = mat3(tangent_transformed, bitangent_transformed, normal_transformed);
 	
-	pos_fragment = (model_matrix * vec4(position, 1.0)).xyz;
+	pos_fragment = (view_model_matrix * vec4(position, 1.0)).xyz;
 	gl_Position = mvp_matrix * vec4(position, 1.0);
 	uv_fragment = uv;
-	normal_fragment = normalize(mat3(transpose(inverse(model_matrix))) * normal.xyz).xyz;
+	normal_fragment = normalize(mat3(transpose(inverse(view_model_matrix))) * normal.xyz).xyz;
 }
 
 
@@ -113,8 +113,7 @@ in vec3 normal_fragment;
 in mat3 TBN;
 
 layout(location = 0) out vec4 color_out;
-layout(location = 1) out vec4 position_out;
-layout(location = 2) out vec4 normal_out;
+layout(location = 1) out vec4 normal_out;
 
 uniform sampler2D Color;
 uniform sampler2D Normal;
@@ -125,7 +124,6 @@ uniform material{
 
 void main() {
 	color_out = vec4(texture(Color,uv_fragment).xyz,1) * Base_Color;
-	position_out = vec4(pos_fragment.xyz, 1.0);
 	normal_out = normalize(vec4(TBN * (texture(Normal, uv_fragment).rgb * 2.0 - 1.0),0.0));
 }
 

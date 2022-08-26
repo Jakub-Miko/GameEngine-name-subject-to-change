@@ -2,7 +2,7 @@
 {
 	"RootSignature": [
 		{
-			"name" : "mvp",
+			"name" : "conf",
 			"type" : "constant_buffer"
 		},
 		{
@@ -20,7 +20,7 @@
 					"name" : "Textures",
 					"type" : "texture_2D",
 					"individual_names" : [
-						"Color", "World_Position", "Normal"
+						"Color", "Normal", "DepthBuffer"
 					]
 				}
 			]
@@ -91,9 +91,11 @@ layout(location = 1) in vec3 normal;
 layout(location = 2) in vec3 tangent;
 layout(location = 3) in vec2 uv;
 
-uniform mvp{
+uniform conf{
 	mat4 mvp_matrix;
-	mat4 model_matrix;
+	mat4 view_model_matrix;
+	float depth_constant_a;
+	float depth_constant_b;
 };
 
 uniform light_props{
@@ -103,8 +105,24 @@ uniform light_props{
 	int light_type;
 };
 
+out vec3 light_volume_pos;
+out vec3 light_pos;
+out vec3 light_direction_in;
+
 void main() {
-	gl_Position = mvp_matrix * vec4(position, 1.0);
+	if (light_type == 0) {
+		gl_Position = vec4(position, 1.0);
+		light_volume_pos = vec3(mat4(1.0) * vec4(position, 1.0));
+		light_pos = vec3(view_model_matrix[3]);
+		light_direction_in = normalize(mat3(view_model_matrix) * vec3(0.0, 0.0, 1.0));
+	}
+	else {
+		gl_Position = mvp_matrix * vec4(position, 1.0);
+		light_volume_pos = vec3(view_model_matrix * vec4(position, 1.0));
+		light_pos = vec3(view_model_matrix[3]);
+		light_direction_in = normalize(mat3(view_model_matrix) * vec3(0.0, 0.0, 1.0));
+	}
+	
 }
 
 
@@ -115,12 +133,14 @@ void main() {
 layout(location = 0) out vec4 color_out;
 
 uniform sampler2D Color;
-uniform sampler2D World_Position;
 uniform sampler2D Normal;
+uniform sampler2D DepthBuffer;
 
-uniform mvp{
+uniform conf {
 	mat4 mvp_matrix;
-	mat4 model_matrix;
+	mat4 view_model_matrix;
+	float depth_constant_a;
+	float depth_constant_b;
 };
 
 uniform light_props{
@@ -130,25 +150,38 @@ uniform light_props{
 	int light_type;
 };
 
+in vec3 light_volume_pos;
+in vec3 light_pos;
+in vec3 light_direction_in;
+
+vec3 GetFragmentPosition(vec3 coordinates) {
+	vec3 dir = vec3(light_volume_pos.xy / abs(light_volume_pos.z),-1.0);
+	float depth = texture(DepthBuffer, coordinates.xy).x;
+
+	float linearized_depth = depth_constant_b / (depth - depth_constant_a);
+
+	return dir * linearized_depth;
+}
+
+
 void main() {
-	vec3 pos = vec3((gl_FragCoord.x * pixel_size.x), (gl_FragCoord.y * pixel_size.y), 0.0);
-	vec3 world_space_pos = texture(World_Position, pos.xy).xyz;
+	vec3 coords = vec3((gl_FragCoord.x * pixel_size.x), (gl_FragCoord.y * pixel_size.y), 0.0);
+	vec3 view_space_pos = GetFragmentPosition(coords);
 	vec3 light_direction;
-	vec3 light_pos = (model_matrix * vec4(0, 0, 0, 1)).xyz;
 	if (light_type == 0) {
-		light_direction = normalize(mat3(model_matrix) * vec3(0.0, 0.0, 1.0));
+		light_direction = light_direction_in;
 	}
 	else {
-		light_direction = normalize(light_pos - world_space_pos);
+		light_direction = normalize(light_pos - view_space_pos);
 	}
 
 
-	vec4 color = vec4(texture(Color, pos.xy).xyz, 1.0);
-	vec3 normal = texture(Normal, pos.xy).xyz;
+	vec4 color = vec4(texture(Color, coords.xy).xyz, 1.0);
+	vec3 normal = texture(Normal, coords.xy).xyz;
 	float attenuation_factor = 1;
 
 	if (light_type == 1) {
-		float distance = length(light_pos - world_space_pos);
+		float distance = length(light_pos - view_space_pos);
 		attenuation_factor = 1.0 / (attenuation_constants.x + (attenuation_constants.y * distance) + attenuation_constants.z * (distance * distance));
 	}
 
