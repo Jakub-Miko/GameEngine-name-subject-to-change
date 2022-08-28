@@ -90,8 +90,8 @@ std::shared_ptr<RenderTexture2DResource> OpenGLRenderResourceManager::CreateText
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, OpenGLUnitConverter::TextureAddressModeToGLWrappingMode(sampler.AddressMode_V));
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, OpenGLUnitConverter::TextureAddressModeToGLWrappingMode(sampler.AddressMode_W));
 			glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(sampler.border_color));
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, OpenGLUnitConverter::TextureFilterToGLFilter(sampler.filter));
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, OpenGLUnitConverter::TextureFilterToGLFilter(sampler.filter));
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, OpenGLUnitConverter::TextureFilterToGLMinFilter(sampler.filter));
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, OpenGLUnitConverter::TextureFilterToGLMagFilter(sampler.filter));
 
 
 			glBindTexture(GL_TEXTURE_2D, 0);

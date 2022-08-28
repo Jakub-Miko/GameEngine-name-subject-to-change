@@ -7,9 +7,13 @@
 class ShadowCasterComponent {
 	RuntimeTag("ShadowCasterComponent")
 public:
-	ShadowCasterComponent(int width = 800, int height = 600);
+	ShadowCasterComponent(int width = 800, int height = 800);
+	~ShadowCasterComponent() {
+
+	}
 	std::shared_ptr<RenderFrameBufferResource> shadow_map = nullptr;
 	int res_x = 800, res_y = 600;
+	glm::mat4 light_view_matrix = glm::mat4(1.0);
 };
 
 template<>

@@ -8,6 +8,7 @@
 #include <World/Components/LightComponent.h>
 #include <World/Components/PrefabComponent.h>
 #include <World/Components/CameraComponent.h>
+#include <World/Components/ShadowCasterComponent.h>
 #include <World/Components/MeshComponent.h>
 #include <FileManager.h>
 
@@ -164,6 +165,7 @@ void PropertiesPanel::RenderProperties(Entity entity, const PropertiesPanel_pers
 	}
 
 	if (world.HasComponent<LightComponent>(selected) && ImGui::TreeNode("Light ")) {
+		bool has_shadow = world.HasComponent<ShadowCasterComponent>(selected);
 		glm::vec4 color = world.GetComponent<LightComponent>(selected).GetLightColor();
 		ImGui::ColorPicker3("Light Color", glm::value_ptr(color));
 		ImGui::DragFloat("Intensity", &glm::value_ptr(color)[3]);
@@ -186,6 +188,34 @@ void PropertiesPanel::RenderProperties(Entity entity, const PropertiesPanel_pers
 				LightComponent::SetAttenuation(atten, selected);
 			}
 		}
+
+		if (type == (int)LightType::DIRECTIONAL) {
+			bool shadows_enabled = has_shadow;
+			ImGui::Checkbox("Enable Shadows", &shadows_enabled);
+			if (has_shadow != shadows_enabled) {
+				if (shadows_enabled) {
+					//Enable Shadows
+					world.SetComponent<ShadowCasterComponent>(selected, ShadowCasterComponent());
+				}
+				else {
+					//Disable Shadows
+					world.RemoveComponent<ShadowCasterComponent>(selected);
+				}
+			}
+		}
+
+		ImGui::TreePop();
+	}
+
+	if(world.HasComponent<ShadowCasterComponent>(selected) && ImGui::TreeNode("Shadow Casting")) {
+		auto& shadow = world.GetComponent<ShadowCasterComponent>(selected);
+		int res[2] = { shadow.res_x, shadow.res_y };
+		if(ImGui::DragInt2("ShadowMapResolution", res) && (res[0] != shadow.res_x || res[1] != shadow.res_y)) {
+			shadow.res_x = res[0];
+			shadow.res_y = res[1];
+			shadow.shadow_map.reset();
+		}
+		
 		ImGui::TreePop();
 	}
 
@@ -320,7 +350,9 @@ void PropertiesPanel::AddComponent(Entity entity,const PropertiesPanel_persisten
 		bool has_mesh = world.HasComponent<MeshComponent>(entity);
 		bool has_light = world.HasComponent<LightComponent>(entity);
 		bool has_bounds = world.HasComponent<BoundingVolumeComponent>(entity);
+		bool has_shadow = world.HasComponent<ShadowCasterComponent>(entity);
 		if (!has_light) {
+		
 			if (has_mesh) {
 				ImGui::BeginDisabled();
 			}
@@ -362,6 +394,9 @@ void PropertiesPanel::AddComponent(Entity entity,const PropertiesPanel_persisten
 			}
 			if (ImGui::Button("Remove Light Component")) {
 				world.RemoveComponent<LightComponent>(entity);
+				if (has_shadow) {
+					world.RemoveComponent<ShadowCasterComponent>(entity);
+				}
 			}
 			if (!has_light) {
 				ImGui::EndDisabled();

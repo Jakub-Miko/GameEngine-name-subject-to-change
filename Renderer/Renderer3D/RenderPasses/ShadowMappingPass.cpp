@@ -64,11 +64,10 @@ void ShadowMappingPass::Render(RenderPipelineResourceManager& resource_manager)
 		Application::GetWorld().GetSpatialIndex().BoxCulling(Application::GetWorld(), culling_box, entities);
 
 		list->Clear();
-		glm::mat4 remove_rotation = caster_trans_comp.TransformMatrix;
-		remove_rotation[0] = glm::normalize((glm::vec4)remove_rotation[0]);
-		remove_rotation[1] = glm::normalize((glm::vec4)remove_rotation[1]);
-		remove_rotation[2] = glm::normalize((glm::vec4)remove_rotation[2]);
-		glm::mat4 view_projection = projection * glm::inverse(remove_rotation);
+		glm::mat4 light_view = glm::translate(glm::mat4(1.0), (glm::vec3)caster_trans_comp.TransformMatrix[3]) * (glm::mat4)rotation_matrix;
+		glm::mat4 view_projection = projection * glm::inverse(light_view);
+
+		shadow_comp.light_view_matrix = view_projection;
 
 		list->SetViewport(RenderViewport(glm::vec2(0.0f), glm::vec2(shadow_comp.res_x, shadow_comp.res_y)));
 
@@ -138,7 +137,7 @@ void ShadowMappingPass::InitShadowMappingPassData()
 	sample_desc.AddressMode_V = TextureAddressMode::CLAMP;
 	sample_desc.AddressMode_W = TextureAddressMode::CLAMP;
 	sample_desc.border_color = glm::vec4(1.0);
-	sample_desc.filter = TextureFilter::LINEAR_MIN_MAG_MIP;
+	sample_desc.filter = TextureFilter::LINEAR_MIN_MAG;
 
 	data->depth_sampler = TextureSampler::CreateSampler(sample_desc);
 		

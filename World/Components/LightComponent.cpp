@@ -1,5 +1,6 @@
 #include "LightComponent.h"
 #include <Application.h>
+#include <World/Components/ShadowCasterComponent.h>
 #include <World/Components/MeshComponent.h>
 #include <World/Components/BoundingVolumeComponent.h>
 #include <stdexcept>
@@ -37,6 +38,12 @@ void LightComponent::ChangeType(LightType type, Entity ent)
 				break;
 			}
 			Application::GetWorld().MarkEntityDirty(ent);
+
+			if (Application::GetWorld().HasComponentSynced<ShadowCasterComponent>(ent)) {
+				if (type != LightType::DIRECTIONAL) {
+					throw std::runtime_error("Shadows are currently only supported for Directional Lights");
+				}
+			}
 		}
 	}
 	else {

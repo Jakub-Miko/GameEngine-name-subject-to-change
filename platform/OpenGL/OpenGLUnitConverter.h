@@ -108,11 +108,26 @@ public:
 		}
 	}
 
-	static GLenum TextureFilterToGLFilter(TextureFilter filter) {
+	static GLenum TextureFilterToGLMinFilter(TextureFilter filter) {
 		switch (filter) {
-		case TextureFilter::LINEAR_MIN_MAG_MIP:				return GL_LINEAR;
+		case TextureFilter::LINEAR_MIN_MAG:					return GL_LINEAR;
+		case TextureFilter::POINT_MIN_MAG:					return GL_NEAREST;
+		case TextureFilter::LINEAR_MIN_MAG_MIP:				return GL_LINEAR_MIPMAP_LINEAR;
 		case TextureFilter::LINEAR_MIN_MAG_POINT_MIP:		return GL_LINEAR_MIPMAP_NEAREST;
 		case TextureFilter::POINT_MIN_MAG_LINEAR_MIP:		return GL_NEAREST_MIPMAP_LINEAR;
+		case TextureFilter::POINT_MIN_MAG_MIP:				return GL_NEAREST_MIPMAP_NEAREST;
+		default:
+			throw std::runtime_error("Conversion failed");
+		}
+	}
+
+	static GLenum TextureFilterToGLMagFilter(TextureFilter filter) {
+		switch (filter) {
+		case TextureFilter::LINEAR_MIN_MAG:					return GL_LINEAR;
+		case TextureFilter::POINT_MIN_MAG:					return GL_NEAREST;
+		case TextureFilter::LINEAR_MIN_MAG_MIP:				return GL_LINEAR;
+		case TextureFilter::LINEAR_MIN_MAG_POINT_MIP:		return GL_LINEAR;
+		case TextureFilter::POINT_MIN_MAG_LINEAR_MIP:		return GL_NEAREST;
 		case TextureFilter::POINT_MIN_MAG_MIP:				return GL_NEAREST;
 		default:
 			throw std::runtime_error("Conversion failed");

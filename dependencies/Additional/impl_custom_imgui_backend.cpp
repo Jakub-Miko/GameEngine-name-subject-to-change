@@ -203,7 +203,7 @@ static void CreateTextures() {
     sampler_desc.AddressMode_V = TextureAddressMode::CLAMP;
     sampler_desc.AddressMode_W = TextureAddressMode::CLAMP;
     sampler_desc.border_color = glm::vec4(1.0f);
-    sampler_desc.filter = TextureFilter::LINEAR_MIN_MAG_MIP;
+    sampler_desc.filter = TextureFilter::LINEAR_MIN_MAG;
     sampler_desc.LOD_bias = 0;
     sampler_desc.max_LOD = 5;
     sampler_desc.min_LOD = 0;

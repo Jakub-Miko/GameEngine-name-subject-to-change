@@ -60,7 +60,7 @@ void DefferedGeometryPass::InitPostProcessingPassData() {
 	sampler_desc.AddressMode_V = TextureAddressMode::BORDER;
 	sampler_desc.AddressMode_W = TextureAddressMode::BORDER;
 	sampler_desc.border_color = glm::vec4(1.0, 0.4, 1.0, 1.0);
-	sampler_desc.filter = TextureFilter::POINT_MIN_MAG_MIP;
+	sampler_desc.filter = TextureFilter::POINT_MIN_MAG;
 	sampler_desc.LOD_bias = 0;
 	sampler_desc.min_LOD = 0;
 	sampler_desc.max_LOD = 10;

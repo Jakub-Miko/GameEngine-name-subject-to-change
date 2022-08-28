@@ -9,6 +9,7 @@
 #include <Renderer/Renderer3D/RenderResourceCollection.h>
 #include <Renderer/MeshManager.h>
 #include <World/Components/CameraComponent.h>
+#include <World/Components/ShadowCasterComponent.h>
 #include <World/Components/MeshComponent.h>
 #include <World/Components/LightComponent.h>
 #include <Application.h>
@@ -40,11 +41,14 @@ struct VertexLayoutFactory<LightingPassPreset> {
 
 struct DefferedLightingPass::internal_data {
 	std::shared_ptr<Pipeline> pipeline;
+	std::shared_ptr<Pipeline> pipeline_shadowed;
 	std::shared_ptr<RenderFrameBufferResource> output_buffer_resource;
 	std::shared_ptr<Mesh> sphere_mesh;
 	std::shared_ptr<Mesh> card_mesh;
 	std::shared_ptr<Material> mat;
+	std::shared_ptr<Material> mat_shadowed;
 	std::shared_ptr<RenderBufferResource> constant_scene_buf;
+	std::shared_ptr<RenderBufferResource> constant_scene_buf_shadowed;
 	bool initialized = false;
 };
 
@@ -66,12 +70,15 @@ void DefferedLightingPass::InitPostProcessingPassData() {
 	pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/LightingPassShader.glsl");
 	data->pipeline = PipelineManager::Get()->CreatePipeline(pipeline_desc);
 
+	pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/LightingPassShaderShadowed.glsl");
+	data->pipeline_shadowed = PipelineManager::Get()->CreatePipeline(pipeline_desc);
+
 	TextureSamplerDescritor sampler_desc;
 	sampler_desc.AddressMode_U = TextureAddressMode::BORDER;
 	sampler_desc.AddressMode_V = TextureAddressMode::BORDER;
 	sampler_desc.AddressMode_W = TextureAddressMode::BORDER;
 	sampler_desc.border_color = glm::vec4(1.0, 0.4, 1.0, 1.0);
-	sampler_desc.filter = TextureFilter::POINT_MIN_MAG_MIP;
+	sampler_desc.filter = TextureFilter::POINT_MIN_MAG;
 	sampler_desc.LOD_bias = 0;
 	sampler_desc.min_LOD = 0;
 	sampler_desc.max_LOD = 10;
@@ -99,11 +106,15 @@ void DefferedLightingPass::InitPostProcessingPassData() {
 
 	data->output_buffer_resource = RenderResourceManager::Get()->CreateFrameBuffer(framebuffer_desc);
 
-	RenderBufferDescriptor const_desc(sizeof(glm::mat4) * 2 + sizeof(float) * 2, RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
+	RenderBufferDescriptor const_desc(sizeof(glm::mat4) * 3 + sizeof(float) * 2, RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
 	data->constant_scene_buf = RenderResourceManager::Get()->CreateBuffer(const_desc);
+
+	RenderBufferDescriptor const_desc_shadowed(sizeof(glm::mat4) * 4 + sizeof(float) * 2, RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
+	data->constant_scene_buf_shadowed = RenderResourceManager::Get()->CreateBuffer(const_desc_shadowed);
 
 	data->sphere_mesh = MeshManager::Get()->LoadMeshFromFileAsync("asset:Sphere.mesh"_path);
 	data->mat = MaterialManager::Get()->CreateMaterial("shaders/LightingPassShader.glsl");
+	data->mat_shadowed = MaterialManager::Get()->CreateMaterial("shaders/LightingPassShaderShadowed.glsl");
 
 	struct Vertex {
 		Vertex(glm::vec3 pos, glm::vec3 normal = glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3 tangent = glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3 uv = glm::vec3(0.0f))
@@ -141,8 +152,8 @@ void DefferedLightingPass::InitPostProcessingPassData() {
 }
 
 
-DefferedLightingPass::DefferedLightingPass(const std::string& input_gbuffer, const std::string& input_lights, const std::string& output_buffer)
-	: input_gbuffer(input_gbuffer), output_buffer(output_buffer), input_lights(input_lights)
+DefferedLightingPass::DefferedLightingPass(const std::string& input_gbuffer, const std::string& input_lights, const std::string& input_shadowed_lights, const std::string& output_buffer, const std::string& shadow_map_dependency_tag)
+	: input_gbuffer(input_gbuffer), output_buffer(output_buffer), input_lights(input_lights), input_shadowed_lights(input_shadowed_lights), shadow_map_dependency_tag(shadow_map_dependency_tag)
 {
 	data = new internal_data;
 	InitPostProcessingPassData();
@@ -151,30 +162,63 @@ DefferedLightingPass::DefferedLightingPass(const std::string& input_gbuffer, con
 void DefferedLightingPass::Setup(RenderPassResourceDefinnition& setup_builder)
 {
 	setup_builder.AddResource<RenderResourceCollection<Entity>>(input_lights, RenderPassResourceDescriptor_Access::READ);
+	setup_builder.AddResource<RenderResourceCollection<Entity>>(input_shadowed_lights, RenderPassResourceDescriptor_Access::READ);
 	setup_builder.AddResource<std::shared_ptr<RenderFrameBufferResource>>(output_buffer, RenderPassResourceDescriptor_Access::WRITE);
 	setup_builder.AddResource<std::shared_ptr<RenderFrameBufferResource>>(input_gbuffer, RenderPassResourceDescriptor_Access::READ);
+	setup_builder.AddResource<DependencyTag>(shadow_map_dependency_tag, RenderPassResourceDescriptor_Access::READ);
 }
 
 void DefferedLightingPass::Render(RenderPipelineResourceManager& resource_manager)
 {
-	auto& geometry = resource_manager.GetResource<RenderResourceCollection<Entity>>(input_lights);
-	auto& gbuffer = resource_manager.GetResource<std::shared_ptr<RenderFrameBufferResource>>(input_gbuffer);
+	render_props props;
 	auto queue = Renderer::Get()->GetCommandQueue();
 	auto list = Renderer::Get()->GetRenderCommandList();
 	auto& world = Application::GetWorld();
 	auto& camera = world.GetComponent<CameraComponent>(world.GetPrimaryEntity());
 	camera.UpdateProjectionMatrix();
 	auto& camera_trans = world.GetComponent<TransformComponent>(world.GetPrimaryEntity());
-	auto ViewProjection = camera.GetProjectionMatrix() * glm::inverse(camera_trans.TransformMatrix);
-	auto view_matrix = glm::inverse(camera_trans.TransformMatrix);
-	list->SetPipeline(data->pipeline);
+	props.projection = camera.GetProjectionMatrix();
+	props.view = glm::inverse(camera_trans.TransformMatrix);
+
+	props.depth_constant_a = camera.zFar / (camera.zFar - camera.zNear);
+	props.depth_constant_b = (-camera.zFar * camera.zNear) / (camera.zFar - camera.zNear);
+	
 	list->SetRenderTarget(data->output_buffer_resource);
 	list->Clear();
+
+	RenderLights(resource_manager, list, camera, props);
+	RenderShadowedLights(resource_manager, list, camera, props);
+
+	queue->ExecuteRenderCommandList(list);
+	resource_manager.SetResource<std::shared_ptr<RenderFrameBufferResource>>(output_buffer, data->output_buffer_resource);
+
+
+}
+
+DefferedLightingPass::~DefferedLightingPass()
+{
+	if (data) {
+		delete data;
+	}
+}
+
+void DefferedLightingPass::RenderLights(RenderPipelineResourceManager& resource_manager,RenderCommandList* list, const CameraComponent& camera,const render_props& props)
+{
+	auto& geometry = resource_manager.GetResource<RenderResourceCollection<Entity>>(input_lights);
+	auto& gbuffer = resource_manager.GetResource<std::shared_ptr<RenderFrameBufferResource>>(input_gbuffer);
+	auto& world = Application::GetWorld();
+	auto ViewProjection = props.projection * props.view;
+	auto view_matrix = props.view;
+	list->SetPipeline(data->pipeline);
+	list->SetRenderTarget(data->output_buffer_resource);
 	list->SetConstantBuffer("conf", data->constant_scene_buf);
-	float depth_constant_a = camera.zFar / (camera.zFar - camera.zNear);
-	float depth_constant_b = (-camera.zFar * camera.zNear) / (camera.zFar - camera.zNear);
-	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, &depth_constant_a, sizeof(float), sizeof(glm::mat4) * 2);
-	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, &depth_constant_b, sizeof(float), sizeof(glm::mat4) * 2 + sizeof(float));
+	float depth_constant_a = props.depth_constant_a;
+	float depth_constant_b = props.depth_constant_b;
+	glm::mat4 inverse_projection = glm::inverse(props.projection);
+	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, &depth_constant_a, sizeof(float), sizeof(glm::mat4) * 3);
+	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, &depth_constant_b, sizeof(float), sizeof(glm::mat4) * 3 + sizeof(float));
+	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed, &inverse_projection, sizeof(glm::mat4), sizeof(glm::mat4) * 2);
+
 	for (auto& entity : geometry.resources) {
 		auto& transform_component = world.GetComponent<TransformComponent>(entity);
 		auto transform = transform_component.TransformMatrix;
@@ -185,7 +229,7 @@ void DefferedLightingPass::Render(RenderPipelineResourceManager& resource_manage
 
 		if (light.type == LightType::DIRECTIONAL) {
 			mvp = glm::mat4(1.0f);
-			mv_matrix = ViewProjection * transform;
+			mv_matrix = view_matrix * transform;
 			list->SetVertexBuffer(data->card_mesh->GetVertexBuffer());
 			list->SetIndexBuffer(data->card_mesh->GetIndexBuffer());
 			index_count = data->card_mesh->GetIndexCount();
@@ -208,7 +252,7 @@ void DefferedLightingPass::Render(RenderPipelineResourceManager& resource_manage
 		data->mat->SetParameter("Normal", gbuffer->GetBufferDescriptor().color_attachments[1]);
 		data->mat->SetParameter("DepthBuffer", gbuffer->GetBufferDescriptor().depth_stencil_attachment);
 		data->mat->SetParameter("light_type", (int)light.type);
-		data->mat->SetParameter("attenuation", glm::vec4(light.GetAttenuation(),0.0f));
+		data->mat->SetParameter("attenuation", glm::vec4(light.GetAttenuation(), 0.0f));
 		data->mat->SetMaterial(list, data->pipeline);
 		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, glm::value_ptr(mvp), sizeof(glm::mat4), 0);
 		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, glm::value_ptr(mv_matrix), sizeof(glm::mat4), sizeof(glm::mat4));
@@ -216,16 +260,69 @@ void DefferedLightingPass::Render(RenderPipelineResourceManager& resource_manage
 
 
 	}
-
-	queue->ExecuteRenderCommandList(list);
-	resource_manager.SetResource<std::shared_ptr<RenderFrameBufferResource>>(output_buffer, data->output_buffer_resource);
-
-
 }
 
-DefferedLightingPass::~DefferedLightingPass()
+void DefferedLightingPass::RenderShadowedLights(RenderPipelineResourceManager& resource_manager, RenderCommandList* list, const CameraComponent& camera, const render_props& props)
 {
-	if (data) {
-		delete data;
+	auto& geometry = resource_manager.GetResource<RenderResourceCollection<Entity>>(input_shadowed_lights);
+	auto& gbuffer = resource_manager.GetResource<std::shared_ptr<RenderFrameBufferResource>>(input_gbuffer);
+	auto& world = Application::GetWorld();
+	auto ViewProjection = props.projection * props.view;
+	auto view_matrix = props.view;
+	list->SetPipeline(data->pipeline_shadowed);
+	list->SetRenderTarget(data->output_buffer_resource);
+	list->SetConstantBuffer("conf", data->constant_scene_buf_shadowed);
+	float depth_constant_a = props.depth_constant_a;
+	float depth_constant_b = props.depth_constant_b;
+	glm::mat4 inverse_projection = glm::inverse(props.projection);
+	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed, &depth_constant_a, sizeof(float), sizeof(glm::mat4) * 4);
+	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed, &depth_constant_b, sizeof(float), sizeof(glm::mat4) * 4 + sizeof(float));
+	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed, &inverse_projection, sizeof(glm::mat4), sizeof(glm::mat4) * 3);
+	for (auto& entity : geometry.resources) {
+		auto& transform_component = world.GetComponent<TransformComponent>(entity);
+		auto transform = transform_component.TransformMatrix;
+		auto& light = world.GetComponent<LightComponent>(entity);
+		auto& shadow = world.GetComponent<ShadowCasterComponent>(entity);
+		size_t index_count = 0;
+		glm::mat4 mvp;
+		glm::mat4 mv_matrix;
+
+		if (light.type == LightType::DIRECTIONAL) {
+			mvp = glm::mat4(1.0f);
+			mv_matrix = view_matrix * transform;
+			list->SetVertexBuffer(data->card_mesh->GetVertexBuffer());
+			list->SetIndexBuffer(data->card_mesh->GetIndexBuffer());
+			index_count = data->card_mesh->GetIndexCount();
+		}
+		else if (light.type == LightType::POINT) {
+			glm::mat4 model_sphere = glm::translate(glm::mat4(1.0f), (glm::vec3)transform_component.TransformMatrix[3]) * glm::scale(glm::mat4(1.0), glm::vec3(light.CalcRadiusFromAttenuation()));
+			mv_matrix = view_matrix * model_sphere;
+			mvp = ViewProjection * model_sphere;
+			list->SetVertexBuffer(data->sphere_mesh->GetVertexBuffer());
+			list->SetIndexBuffer(data->sphere_mesh->GetIndexBuffer());
+			index_count = data->sphere_mesh->GetIndexCount();
+		}
+
+		auto inverse_view = Application::GetWorld().GetComponent<TransformComponent>(Application::GetWorld().GetPrimaryEntity()).TransformMatrix;
+
+		glm::mat4 light_matrix = shadow.light_view_matrix * inverse_view;
+		glm::vec2 pixel_size = { 1.0f / Application::Get()->GetWindow()->GetProperties().resolution_x,
+			1.0f / Application::Get()->GetWindow()->GetProperties().resolution_y };
+
+		data->mat_shadowed->SetParameter("pixel_size", pixel_size);
+		data->mat_shadowed->SetParameter("Light_Color", light.GetLightColor());
+		data->mat_shadowed->SetParameter("Color", gbuffer->GetBufferDescriptor().color_attachments[0]);
+		data->mat_shadowed->SetParameter("Normal", gbuffer->GetBufferDescriptor().color_attachments[1]);
+		data->mat_shadowed->SetParameter("DepthBuffer", gbuffer->GetBufferDescriptor().depth_stencil_attachment);
+		data->mat_shadowed->SetParameter("ShadowMap", shadow.shadow_map->GetBufferDescriptor().depth_stencil_attachment);
+		data->mat_shadowed->SetParameter("light_type", (int)light.type);
+		data->mat_shadowed->SetParameter("attenuation", glm::vec4(light.GetAttenuation(), 0.0f));
+		data->mat_shadowed->SetMaterial(list, data->pipeline_shadowed);
+		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed, glm::value_ptr(mvp), sizeof(glm::mat4), 0);
+		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed, glm::value_ptr(mv_matrix), sizeof(glm::mat4), sizeof(glm::mat4));
+		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed, glm::value_ptr(light_matrix), sizeof(glm::mat4), sizeof(glm::mat4) * 2);
+		list->Draw(index_count);
+
+
 	}
 }

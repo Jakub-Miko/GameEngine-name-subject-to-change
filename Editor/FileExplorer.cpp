@@ -98,9 +98,9 @@ void FileExplorer::Render()
 			sampler_desc.AddressMode_V = (TextureAddressMode)add_v;
 			sampler_desc.AddressMode_W = (TextureAddressMode)add_w;
 
-			const char* tex_filter[] = { "POINT_MIN_MAG_MIP", "POINT_MIN_MAG_LINEAR_MIP", "LINEAR_MIN_MAG_MIP", "LINEAR_MIN_MAG_POINT_MIP", "ANISOTROPIC" };
+			const char* tex_filter[] = { "POINT_MIN_MAG", "LINEAR_MIN_MAG", "POINT_MIN_MAG_MIP", "POINT_MIN_MAG_LINEAR_MIP", "LINEAR_MIN_MAG_MIP", "LINEAR_MIN_MAG_POINT_MIP", "ANISOTROPIC" };
 			int fil = (int)sampler_desc.filter;
-			ImGui::Combo("Filter", &fil, tex_filter, 5);
+			ImGui::Combo("Filter", &fil, tex_filter, 7);
 			sampler_desc.filter = (TextureFilter)fil;
 
 			ImGui::ColorPicker4("Border Color", glm::value_ptr(sampler_desc.border_color));

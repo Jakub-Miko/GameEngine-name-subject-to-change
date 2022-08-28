@@ -100,7 +100,7 @@ enum class TextureAddressMode : unsigned char {
 };
 
 enum class TextureFilter : unsigned char {
-	POINT_MIN_MAG_MIP = 0, POINT_MIN_MAG_LINEAR_MIP = 1, LINEAR_MIN_MAG_MIP = 2 , LINEAR_MIN_MAG_POINT_MIP = 3, ANISOTROPIC = 4
+	POINT_MIN_MAG = 0, LINEAR_MIN_MAG = 1, POINT_MIN_MAG_MIP = 2, POINT_MIN_MAG_LINEAR_MIP = 3, LINEAR_MIN_MAG_MIP = 4 , LINEAR_MIN_MAG_POINT_MIP = 5, ANISOTROPIC = 6
 };
 
 enum class RenderQueueTypes : unsigned char
