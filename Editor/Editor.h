@@ -26,6 +26,8 @@ public:
 
 	void Run();
 
+	void RenderDebugView(float delta_time);
+
 	void Render();
 
 	void ViewportBegin();
@@ -105,6 +107,7 @@ private:
 	int file_dialog_text_buffer_size = 100;
 
 	bool enabled = true;
+	bool spatial_index_visualization = false;
 
 	std::unique_ptr<Viewport> viewport;
 	std::unique_ptr<MaterialEditor> material_editor;

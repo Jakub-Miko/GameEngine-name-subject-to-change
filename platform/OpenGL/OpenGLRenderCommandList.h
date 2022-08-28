@@ -47,6 +47,7 @@ private:
     void UpdateBufferResource(std::shared_ptr<RenderBufferResource> resource, void* data, size_t size, size_t offset);
     void UpdateBufferResourceAndReallocate(std::shared_ptr<RenderBufferResource> resource, void* data, size_t size);
     void UpdateTexture2DResource(std::shared_ptr<RenderTexture2DResource> resource, int level, void* data, size_t width, size_t height, size_t offset_x, size_t offset_y);
+    void CopyFrameBufferDepthAttachment(std::shared_ptr<RenderFrameBufferResource> source_frame_buffer, std::shared_ptr<RenderFrameBufferResource> destination_frame_buffer);
     
     virtual void Execute() override;
 
@@ -54,6 +55,7 @@ private:
     OpenGLRenderCommand* m_Commands_tail = nullptr;
     std::shared_ptr<RenderBufferResource> index_buffer;
     std::shared_ptr<RenderBufferResource> vertex_buffer;
+    std::shared_ptr<RenderFrameBufferResource> current_framebuffer = nullptr;
 
     
 };

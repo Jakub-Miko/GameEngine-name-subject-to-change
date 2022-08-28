@@ -89,6 +89,7 @@ void Editor::Run()
 		auto load_id = ImGui::GetID("Load Dialog");
 		auto mat_id = ImGui::GetID("Empty Material Dialog");
 		auto import_id = ImGui::GetID("Import Mesh Dialog");
+		auto Viewport_Settings_id = ImGui::GetID("Viewport Settings");
 		auto import_text_id = ImGui::GetID("Import Texture Dialog");
 		if (are_files_dropped) {
 			are_files_dropped = false;
@@ -100,6 +101,13 @@ void Editor::Run()
 
 		ImGui::BeginMainMenuBar();
 
+		if (ImGui::BeginMenu("Settings")) {
+			if (ImGui::MenuItem("Viewport Settings")) {
+				ImGui::OpenPopup(Viewport_Settings_id);
+			};
+
+			ImGui::EndMenu();
+		}
 
 		if (ImGui::BeginMenu("Workspace")) {
 			if (ImGui::MenuItem("Save Workspace")) {
@@ -163,6 +171,17 @@ void Editor::Run()
 
 		ImVec2 center = ImGui::GetMainViewport()->GetCenter();
 		ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
+		if (ImGui::BeginPopupModal("Viewport Settings", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+
+			ImGui::Checkbox("Spatial Index Visualization", &spatial_index_visualization);
+
+			if (ImGui::Button("Close")) {
+				ImGui::CloseCurrentPopup();
+				file_dialog_text_buffer[0] = '\0';
+			}
+			ImGui::EndPopup();
+		}
 
 		try {
 			if (ImGui::BeginPopupModal("Save Dialog", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
@@ -329,6 +348,13 @@ void Editor::Run()
 	}
 #endif
 
+}
+
+void Editor::RenderDebugView(float delta_time)
+{
+	if (enabled && spatial_index_visualization) {
+		Application::GetWorld().GetSpatialIndex().Visualize();
+	}
 }
 
 void Editor::Render()

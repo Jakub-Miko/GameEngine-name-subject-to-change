@@ -31,7 +31,7 @@ struct PipelineDescriptor {
 	PipelineDescriptor() = default;
 
 	PipelineDescriptor(const PipelineDescriptor& desc) : layout(desc.layout), shader(desc.shader), viewport(desc.viewport), scissor_rect(desc.scissor_rect),
-		flags(desc.flags), polygon_render_mode(desc.polygon_render_mode), blend_functions(desc.blend_functions), blend_equation(desc.blend_equation), cull_mode(desc.cull_mode)
+		flags(desc.flags), polygon_render_mode(desc.polygon_render_mode), blend_functions(desc.blend_functions), blend_equation(desc.blend_equation), cull_mode(desc.cull_mode), depth_function(desc.depth_function)
 	{
 
 	}
@@ -76,6 +76,10 @@ struct PipelineDescriptor {
 		return cull_mode;
 	}
 
+	const DepthFunction& GetDepthFunction() const {
+		return depth_function;
+	}
+
 
 public:
 
@@ -86,6 +90,7 @@ public:
 	PipelineFlags flags = PipelineFlags::DEFAULT;
 	PipelineBlendFunctions blend_functions;
 	BlendEquation blend_equation = BlendEquation::ADD;
+	DepthFunction depth_function = DepthFunction::LESS;
 	CullMode cull_mode = CullMode::NONE;
 	PrimitivePolygonRenderMode polygon_render_mode = PrimitivePolygonRenderMode::DEFAULT;
 };
@@ -137,15 +142,18 @@ public:
 		return cull_mode;
 	}
 
+	const DepthFunction& GetDepthFunction() const {
+		return depth_function;
+	}
 
 protected:
 	Pipeline(const PipelineDescriptor& desc) : layout(desc.layout), shader(desc.shader), viewport(desc.viewport), scissor_rect(desc.scissor_rect),
-		flags(desc.flags), polygon_render_mode(desc.polygon_render_mode), blend_functions(desc.blend_functions), blend_equation(desc.blend_equation),cull_mode(desc.cull_mode)
+		flags(desc.flags), polygon_render_mode(desc.polygon_render_mode), blend_functions(desc.blend_functions), blend_equation(desc.blend_equation),cull_mode(desc.cull_mode), depth_function(desc.depth_function)
 	{
 
 	}
 	Pipeline(PipelineDescriptor&& desc) : layout(desc.layout), shader(desc.shader), viewport(desc.viewport), scissor_rect(desc.scissor_rect),
-		flags(desc.flags), polygon_render_mode(desc.polygon_render_mode), blend_equation(desc.blend_equation), blend_functions(desc.blend_functions), cull_mode(desc.cull_mode)
+		flags(desc.flags), polygon_render_mode(desc.polygon_render_mode), blend_equation(desc.blend_equation), blend_functions(desc.blend_functions), cull_mode(desc.cull_mode), depth_function(desc.depth_function)
 	{
 
 	}
@@ -156,6 +164,7 @@ protected:
 	PipelineFlags flags = PipelineFlags::DEFAULT;
 	PipelineBlendFunctions blend_functions;
 	BlendEquation blend_equation = BlendEquation::ADD;
+	DepthFunction depth_function = DepthFunction::LESS;
 	CullMode cull_mode = CullMode::NONE;
 	PrimitivePolygonRenderMode polygon_render_mode = PrimitivePolygonRenderMode::DEFAULT;
 };

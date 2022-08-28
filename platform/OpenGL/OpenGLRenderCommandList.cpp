@@ -129,11 +129,13 @@ void OpenGLRenderCommandList::SetVertexBuffer(std::shared_ptr<RenderBufferResour
 void OpenGLRenderCommandList::SetRenderTarget(std::shared_ptr<RenderFrameBufferResource> framebuffer)
 {
     PushCommand<OpenGLSetRenderTargetCommand>(framebuffer);
+    current_framebuffer = framebuffer;
 }
 
 void OpenGLRenderCommandList::SetDefaultRenderTarget()
 {
     PushCommand<OpenGLSetDefaultRenderTargetCommand>(Renderer::Get()->GetDefaultFrameBuffer());
+    current_framebuffer = Renderer::Get()->GetDefaultFrameBuffer();
 }
 
 void OpenGLRenderCommandList::SetScissorRect(const RenderScissorRect& scissor_rect)
@@ -243,6 +245,20 @@ void OpenGLRenderCommandList::UpdateTexture2DResource(std::shared_ptr<RenderText
             delete[] static_cast<char*>(data);
             throw std::runtime_error("Can't update an Uninitialized resource");
         }
+        });
+    PushCommand<decltype(command)>(command);
+}
+
+void OpenGLRenderCommandList::CopyFrameBufferDepthAttachment(std::shared_ptr<RenderFrameBufferResource> source_frame_buffer, std::shared_ptr<RenderFrameBufferResource> destination_frame_buffer)
+{
+    auto command = OpenGLRenderCommandAdapter([source_frame_buffer, destination_frame_buffer,this]() {
+        auto source_desc = source_frame_buffer->GetBufferDescriptor().depth_stencil_attachment->GetBufferDescriptor();
+        auto destination_desc = destination_frame_buffer->GetBufferDescriptor().depth_stencil_attachment->GetBufferDescriptor();
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, static_cast<OpenGLRenderFrameBufferResource*>(source_frame_buffer.get())->GetRenderId());
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, static_cast<OpenGLRenderFrameBufferResource*>(destination_frame_buffer.get())->GetRenderId());
+        glBlitFramebuffer(0, 0, source_desc.width, source_desc.height, 0, 0, destination_desc.width, destination_desc.height, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+        glBindFramebuffer(GL_FRAMEBUFFER, static_cast<OpenGLRenderFrameBufferResource*>(current_framebuffer.get())->GetRenderId());
+
         });
     PushCommand<decltype(command)>(command);
 }

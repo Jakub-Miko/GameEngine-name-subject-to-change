@@ -22,6 +22,15 @@ void ComponentInitProxy<LightComponent>::OnCreate(World& world, Entity entity) {
 
 }
 
+void ComponentInitProxy<LightComponent>::OnDestroy(World& world, Entity entity) {
+	if (world.HasComponentSynced<BoundingVolumeComponent>(entity)) {
+		world.RemoveComponent<BoundingVolumeComponent>(entity);
+	}
+	if (world.HasComponentSynced<ShadowCasterComponent>(entity)) {
+		world.RemoveComponent<ShadowCasterComponent>(entity);
+	}
+}
+
 void LightComponent::ChangeType(LightType type, Entity ent)
 {
 	if (Application::GetWorld().HasComponentSynced<LightComponent>(ent)) {

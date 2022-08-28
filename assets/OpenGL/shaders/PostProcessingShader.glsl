@@ -4,6 +4,10 @@
 		{
 			"name" : "Color",
 			"type" : "texture_2D"
+		},
+		{
+			"name" : "Depth",
+			"type" : "texture_2D"
 		}
 	]
 }
@@ -30,11 +34,13 @@ void main() {
 in vec2 uv_fragment;
 
 uniform sampler2D Color;
+uniform sampler2D Depth;
 
 out vec4 color_out;
 
 void main() {
 	color_out = vec4(texture(Color, uv_fragment).xyz,1);
+	gl_FragDepth = texture(Depth, uv_fragment).x;
 }
 
 #end

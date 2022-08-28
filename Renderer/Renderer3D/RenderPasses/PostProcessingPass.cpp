@@ -41,7 +41,8 @@ void PostProcessingPass::InitPostProcessingPassData() {
 	pipeline_desc.viewport = RenderViewport();
 	pipeline_desc.scissor_rect = RenderScissorRect();
 	pipeline_desc.blend_functions = PipelineBlendFunctions();
-	pipeline_desc.flags = PipelineFlags::DEFAULT;
+	pipeline_desc.flags = PipelineFlags::ENABLE_DEPTH_TEST;
+	pipeline_desc.depth_function = DepthFunction::ALWAYS;
 	pipeline_desc.layout = VertexLayoutFactory<PostProcessingPreset>::GetLayout();
 	pipeline_desc.polygon_render_mode = PrimitivePolygonRenderMode::DEFAULT;
 	pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/PostProcessingShader.glsl");
@@ -97,6 +98,7 @@ void PostProcessingPass::Render(RenderPipelineResourceManager& resource_manager)
 	list->SetVertexBuffer(data->vertex_buffer);
 	list->SetIndexBuffer(data->index_buffer);
 	list->SetTexture2D("Color", frame_buffer->GetBufferDescriptor().color_attachments[0]);
+	list->SetTexture2D("Depth", frame_buffer->GetBufferDescriptor().depth_stencil_attachment);
 	list->Draw(6);
 
 	queue->ExecuteRenderCommandList(list);

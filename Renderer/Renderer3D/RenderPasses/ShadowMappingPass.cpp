@@ -88,6 +88,7 @@ void ShadowMappingPass::Render(RenderPipelineResourceManager& resource_manager)
 
 	}
 	queue->ExecuteRenderCommandList(list);
+	resource_manager.SetResource<DependencyTag>(output_dependency_tag, DependencyTag());
 }
 
 ShadowMappingPass::~ShadowMappingPass()

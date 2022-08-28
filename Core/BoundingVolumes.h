@@ -44,11 +44,11 @@ public:
 	virtual bool OverlapsBox(const BoundingBox& box, const glm::mat4& model_matrix) override;
 	virtual bool OverlapsOrientedBox(const OrientedBoundingBox& box, const glm::mat4& model_matrix) override;
 
-	const glm::vec3& GetBoxSize() const {
+	glm::vec3 GetBoxSize() const {
 		return box_max - box_min;
 	}
 		
-	const glm::vec3& GetBoxOffset() const {
+	glm::vec3 GetBoxOffset() const {
 		return (box_max + box_min) / 2.0f;
 	}
 

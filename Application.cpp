@@ -271,6 +271,7 @@ void Application::Update()
         Renderer::Get()->Update(delta_time);
     }
 #ifdef EDITOR
+    Editor::Get()->RenderDebugView(delta_time);
     Editor::Get()->ViewportEnd();
     {
         PROFILE("EditorUpdate");

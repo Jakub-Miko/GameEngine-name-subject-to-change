@@ -17,7 +17,8 @@ void OpenGLSetPipelineCommand::Execute()
 
 	OpenGLRenderCommandQueue* queue = static_cast<OpenGLRenderCommandQueue*>(Renderer::Get()->GetCommandQueue());
 	const PipelineState& current_state = queue->GetPipelineState();
-	const OpenGLShader* current_shader = static_cast<const OpenGLShader*>(current_state.GetShader().get());
+	auto shader_ref = current_state.GetShader();
+	const OpenGLShader* current_shader = static_cast<const OpenGLShader*>(shader_ref.get());
 	auto blend_func = pipeline->GetPipelineBlendFunctions();
 	
 	RenderViewport viewport = pipeline->GetViewport();
@@ -58,6 +59,11 @@ void OpenGLSetPipelineCommand::Execute()
 	if (current_state.GetBlendEquation() != pipeline->GetBlendEquation() || (bool)(pipeline->GetPipelineFlags() & PipelineFlags::IS_MULTI_WINDOW)) {
 		glBlendEquation(OpenGLUnitConverter::BlendEquationTOGLenum(pipeline->GetBlendEquation()));
 		queue->SetBlendEquation(pipeline->GetBlendEquation());
+	}
+
+	if (current_state.GetDepthFunction() != pipeline->GetDepthFunction() || (bool)(pipeline->GetPipelineFlags() & PipelineFlags::IS_MULTI_WINDOW)) {
+		glDepthFunc(OpenGLUnitConverter::DepthFunctionToGLenum(pipeline->GetDepthFunction()));
+		queue->SetDepthFunction(pipeline->GetDepthFunction());
 	}
 
 	if (current_state.GetCullMode() != pipeline->GetCullMode() || (bool)(pipeline->GetPipelineFlags() & PipelineFlags::IS_MULTI_WINDOW)) {

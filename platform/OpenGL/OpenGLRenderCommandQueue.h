@@ -73,6 +73,10 @@ public:
 		current_state.cull_mode = mode;
 	}
 
+	void SetDepthFunction(const DepthFunction& depth_function) {
+		current_state.depth_function = depth_function;
+	}
+
 private:
 	void RenderLoop();
 	ExecutableCommand* FetchList();

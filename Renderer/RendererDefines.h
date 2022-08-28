@@ -39,6 +39,10 @@ inline PipelineFlags operator&(const PipelineFlags& flags_1, const PipelineFlags
 	return (PipelineFlags)((uint32_t)flags_1 & (uint32_t)flags_2);
 }
 
+enum class DepthFunction : char {
+	NEVER = 0, LESS = 1, EQUAL = 2, LESS_EQUAL = 3, GREATER = 4, NOT_EQUAL = 5, GREATER_EQUAL = 6, ALWAYS = 7
+};
+
 enum class BlendFunction : uint32_t {
 	ZERO = 0, ONE = 1, SRC_COLOR = 2, ONE_MINUS_SRC_COLOR = 3, DST_COLOR= 4, ONE_MINUS_DST_COLOR = 5, SRC_ALPHA = 6, ONE_MINUS_SRC_ALPHA = 7, DST_ALPHA = 8, ONE_MINUS_DST_ALPHA = 9
 };

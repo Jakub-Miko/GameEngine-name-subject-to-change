@@ -35,7 +35,7 @@ struct Render_Box_data {
     void clear() {
         vertex_buffer.reset();
         index_buffer.reset();
-        constant_buffer.release();
+        constant_buffer.reset();
     }
 
     Render_Box_data(const CameraComponent& camera, const glm::mat4& camera_transform) {
@@ -159,16 +159,10 @@ struct Render_Box_data {
             glm::vec4(0.3f,0.7f,1.0f,1.0f),
             glm::vec4(0,0,0,0)
         };
+        RenderBufferDescriptor constant_buffer_desc(sizeof(constant_buf_data), RenderBufferType::DEFAULT, RenderBufferUsage::CONSTANT_BUFFER);
 
-        
-
-        constant_buffer = FrameMultiBufferResource<std::shared_ptr<RenderBufferResource>>([&]() -> std::shared_ptr<RenderBufferResource>  {
-            RenderBufferDescriptor constant_buffer_desc(sizeof(constant_buf_data), RenderBufferType::DEFAULT, RenderBufferUsage::CONSTANT_BUFFER);
-
-            std::shared_ptr<RenderBufferResource> constant_buffer_instance = RenderResourceManager::Get()->CreateBuffer(constant_buffer_desc);
-            RenderResourceManager::Get()->UploadDataToBuffer(command_list, constant_buffer_instance, &constant_buf_data, sizeof(constant_buf_data), 0);
-            return constant_buffer_instance;
-            });
+        constant_buffer = RenderResourceManager::Get()->CreateBuffer(constant_buffer_desc);
+        RenderResourceManager::Get()->UploadDataToBuffer(command_list, constant_buffer, &constant_buf_data, sizeof(constant_buf_data), 0);
 
         command_queue->ExecuteRenderCommandList(command_list);
     };
@@ -181,7 +175,7 @@ struct Render_Box_data {
     std::shared_ptr<Pipeline> pipeline_wireframe;
     std::shared_ptr<RenderBufferResource> vertex_buffer;
     std::shared_ptr<RenderBufferResource> index_buffer;
-    FrameMultiBufferResource<std::shared_ptr<RenderBufferResource>> constant_buffer;
+    std::shared_ptr<RenderBufferResource> constant_buffer;
 };
 
 inline Render_Box_data& Get_Render_Box_data() {
@@ -200,7 +194,6 @@ inline void Render_Box(const BoundingBox& box, const glm::mat4& model_matrix,con
     auto command_queue = Renderer::Get()->GetCommandQueue();
 	
     Render_Box_data& data = Get_Render_Box_data();
-
     Render_Box_data::Constant_buffer_type buffer = {
          camera.GetProjectionMatrix() * glm::inverse(camera_transform) * model_matrix * glm::translate(glm::mat4(1.0f), box.GetBoxOffset()) * glm::scale(glm::mat4(1.0f),box.GetBoxSize()),
          model_matrix,
@@ -209,7 +202,7 @@ inline void Render_Box(const BoundingBox& box, const glm::mat4& model_matrix,con
             glm::vec4(render_mode == PrimitivePolygonRenderMode::WIREFRAME ? 1.0 : 0.0,0,0,0)
     };
 
-    RenderResourceManager::Get()->UploadDataToBuffer(command_list, data.constant_buffer.GetResource(), &buffer, sizeof(buffer), 0);
+    RenderResourceManager::Get()->UploadDataToBuffer(command_list, data.constant_buffer, &buffer, sizeof(buffer), 0);
 
     command_list->SetDefaultRenderTarget();
     switch (render_mode) {
@@ -222,7 +215,7 @@ inline void Render_Box(const BoundingBox& box, const glm::mat4& model_matrix,con
     }
     command_list->SetVertexBuffer(data.vertex_buffer);
     command_list->SetIndexBuffer(data.index_buffer);
-    command_list->SetConstantBuffer("conf", data.constant_buffer.GetResource());
+    command_list->SetConstantBuffer("conf", data.constant_buffer);
     command_list->Draw(36);
 
     command_queue->ExecuteRenderCommandList(command_list);

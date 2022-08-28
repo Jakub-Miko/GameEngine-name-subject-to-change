@@ -26,6 +26,10 @@ public:
 
 	}
 
+	static void OnDestroy(World& world, Entity entity) {
+
+	}
+
 };
 
 template<typename T, typename = void>
@@ -37,6 +41,23 @@ struct has_ComponentInitProxy<T, std::void_t<typename ComponentInitProxy<T>::not
 template<typename T>
 constexpr bool has_ComponentInitProxy_v = has_ComponentInitProxy<T>::value;
 
+template<typename T>
+struct HasOnCreate
+{
+	template<typename T, T> struct helper;
+	template<typename T> static std::uint8_t check(helper<void(*)(World&,Entity), &T::OnCreate>*); 
+	template<typename T> static std::uint16_t check(...);
+	static const bool value = sizeof(check<T>(0)) == sizeof(std::uint8_t);
+};
+
+template<typename T>
+struct HasOnDestroy
+{
+	template<typename T, T> struct helper;
+	template<typename T> static std::uint8_t check(helper<void(*)(World&, Entity), &T::OnDestroy>*);
+	template<typename T> static std::uint16_t check(...);
+	static const bool value = sizeof(check<T>(0)) == sizeof(std::uint8_t);
+};
 
 enum class RemoveEntityAction : char {
 	REMOVE = 0, RELOAD_PREFAB = 1, REMOVE_PREFABS = 2
@@ -82,7 +103,13 @@ public:
 	template<typename T>
 	auto RegisterComponentType() -> std::enable_if_t<has_ComponentInitProxy_v<T>> {
 		m_ECS.storage<T>();
-		m_ECS.on_construct<T>().connect<&World::ConstructComponent<T, &ComponentInitProxy<T>::OnCreate>>(*this);
+		if constexpr (HasOnCreate<ComponentInitProxy<T>>::value) {
+			m_ECS.on_construct<T>().connect<&World::ConstructComponent<T, &ComponentInitProxy<T>::OnCreate>>(*this);
+		}
+		if constexpr (HasOnDestroy<ComponentInitProxy<T>>::value) {
+			m_ECS.on_destroy<T>().connect<&World::DestroyComponent<T, &ComponentInitProxy<T>::OnDestroy>>(*this);
+		}
+
 	}
 
 	template<typename T = EntityType, typename ... Args>
@@ -212,6 +239,11 @@ private:
 
 	template<typename T, auto func>
 	void ConstructComponent(entt::registry& reg, entt::entity ent) {
+		func(*this, Entity((uint32_t)ent));
+	}
+
+	template<typename T, auto func>
+	void DestroyComponent(entt::registry& reg, entt::entity ent) {
 		func(*this, Entity((uint32_t)ent));
 	}
 

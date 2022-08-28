@@ -59,8 +59,6 @@ void GameLayer::OnUpdate(float delta_time) {
     world.UpdateTransformMatricies();
     world.SetPrimaryEntitySystem();
     MeshManager::Get()->UpdateLoadedMeshes(); // MultiThread
-    //SquareRenderSystem(world);
-    BoundingVolumeRender(world);
-    MeshRenderSystem(world);
     world.DeletionSystem();
+    //BoundingVolumeRender(world);
 }

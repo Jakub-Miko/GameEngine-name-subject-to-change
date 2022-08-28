@@ -171,9 +171,10 @@ void DefferedLightingPass::Setup(RenderPassResourceDefinnition& setup_builder)
 void DefferedLightingPass::Render(RenderPipelineResourceManager& resource_manager)
 {
 	render_props props;
+	auto& gbuffer = resource_manager.GetResource<std::shared_ptr<RenderFrameBufferResource>>(input_gbuffer);
+	auto& world = Application::GetWorld();
 	auto queue = Renderer::Get()->GetCommandQueue();
 	auto list = Renderer::Get()->GetRenderCommandList();
-	auto& world = Application::GetWorld();
 	auto& camera = world.GetComponent<CameraComponent>(world.GetPrimaryEntity());
 	camera.UpdateProjectionMatrix();
 	auto& camera_trans = world.GetComponent<TransformComponent>(world.GetPrimaryEntity());
@@ -186,10 +187,15 @@ void DefferedLightingPass::Render(RenderPipelineResourceManager& resource_manage
 	list->SetRenderTarget(data->output_buffer_resource);
 	list->Clear();
 
+	RenderResourceManager::Get()->CopyFrameBufferDepthAttachment(list, gbuffer, data->output_buffer_resource);
 	RenderLights(resource_manager, list, camera, props);
 	RenderShadowedLights(resource_manager, list, camera, props);
 
+
 	queue->ExecuteRenderCommandList(list);
+
+
+
 	resource_manager.SetResource<std::shared_ptr<RenderFrameBufferResource>>(output_buffer, data->output_buffer_resource);
 
 

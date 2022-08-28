@@ -121,6 +121,21 @@ public:
 		}
 	}
 
+	static GLenum DepthFunctionToGLenum(DepthFunction filter) {
+		switch (filter) {
+		case DepthFunction::ALWAYS:					return GL_ALWAYS;
+		case DepthFunction::EQUAL:					return GL_EQUAL;
+		case DepthFunction::GREATER:				return GL_GREATER;
+		case DepthFunction::GREATER_EQUAL:			return GL_GEQUAL;
+		case DepthFunction::LESS:					return GL_LESS;
+		case DepthFunction::LESS_EQUAL:				return GL_LEQUAL;
+		case DepthFunction::NEVER:					return GL_NEVER;
+		case DepthFunction::NOT_EQUAL:				return GL_NOTEQUAL;
+		default:
+			throw std::runtime_error("Conversion failed");
+		}
+	}
+
 	static GLenum TextureFilterToGLMagFilter(TextureFilter filter) {
 		switch (filter) {
 		case TextureFilter::LINEAR_MIN_MAG:					return GL_LINEAR;

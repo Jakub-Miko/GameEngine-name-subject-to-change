@@ -234,6 +234,11 @@ void OpenGLRenderResourceManager::CreateTexture2DDescriptor(const RenderDescript
 	desc->type = RootParameterType::TEXTURE_2D;
 }
 
+void OpenGLRenderResourceManager::CopyFrameBufferDepthAttachment(RenderCommandList* list, std::shared_ptr<RenderFrameBufferResource> source_frame_buffer, std::shared_ptr<RenderFrameBufferResource> destination_frame_buffer)
+{
+	static_cast<OpenGLRenderCommandList*>(list)->CopyFrameBufferDepthAttachment(source_frame_buffer, destination_frame_buffer);
+}
+
 OpenGLRenderResourceManager::OpenGLRenderResourceManager() : ResourcePool(std::allocator<void>(),1024), ResourceMutex()
 {
 

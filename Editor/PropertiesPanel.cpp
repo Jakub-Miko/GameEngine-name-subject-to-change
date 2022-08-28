@@ -394,9 +394,6 @@ void PropertiesPanel::AddComponent(Entity entity,const PropertiesPanel_persisten
 			}
 			if (ImGui::Button("Remove Light Component")) {
 				world.RemoveComponent<LightComponent>(entity);
-				if (has_shadow) {
-					world.RemoveComponent<ShadowCasterComponent>(entity);
-				}
 			}
 			if (!has_light) {
 				ImGui::EndDisabled();

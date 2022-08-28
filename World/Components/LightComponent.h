@@ -16,6 +16,9 @@ public:
 
 	static void OnCreate(World& world, Entity entity);
 
+	static void OnDestroy(World& world, Entity entity);
+
+
 };
 
 

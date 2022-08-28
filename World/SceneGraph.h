@@ -34,7 +34,7 @@ struct SceneNode {
 	SceneNode* previous = nullptr;
 	Octree* spatial_index_node = nullptr;
 	uint32_t octree_index = -1;
-	SceneNodeState state; 
+	SceneNodeState state = (SceneNodeState)0;
 	bool IsDirty() const {
 		return (char)state & (char)SceneNodeState::DIRTY;
 	}

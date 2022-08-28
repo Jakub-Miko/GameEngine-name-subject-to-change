@@ -31,7 +31,7 @@ public:
 			try {
 				return *std::any_cast<T>(&pipeline->resources[name].data);
 			}
-			catch (const std::bad_any_cast& e) {
+			catch (const std::bad_any_cast&) {
 				throw std::runtime_error("Type mismatch when getting resource " + fnd->resource_name);
 			}
 		}
