@@ -157,6 +157,53 @@ std::shared_ptr<RenderTexture2DResource> OpenGLRenderResourceManager::CreateText
 	}
 }
 
+std::shared_ptr<RenderTexture2DArrayResource> OpenGLRenderResourceManager::CreateTextureArray(const RenderTexture2DArrayDescriptor& buffer_desc)
+{
+	if (!buffer_desc.sampler) {
+		throw std::runtime_error("Sampler wasn't supplied to the texture");
+	}
+	auto allocator = std::pmr::polymorphic_allocator<OpenGLRenderTexture2DArrayResource>(&ResourcePool);
+	std::unique_lock<std::mutex> lock(ResourceMutex);
+	OpenGLRenderTexture2DArrayResource* resource = std::allocator_traits<decltype(allocator)>::allocate(allocator, 1);
+	lock.unlock();
+	std::allocator_traits<decltype(allocator)>::construct(allocator, resource, buffer_desc, RenderState::UNINITIALIZED);
+	auto ptr = std::shared_ptr<RenderTexture2DArrayResource>(static_cast<RenderTexture2DArrayResource*>(resource), [this](RenderTexture2DArrayResource* ptr) {
+		ReturnTexture2DArrayResource(ptr);
+		});
+
+	OpenGLRenderCommandQueue* queue = static_cast<OpenGLRenderCommandQueue*>(Renderer::Get()->GetCommandQueue());
+	queue->ExecuteCustomCommand(new ExecutableCommandAdapter([ptr] {
+		if (ptr->GetRenderState() == RenderState::UNINITIALIZED) {
+			unsigned int texture;
+			glGenTextures(1, &texture);
+			glBindTexture(GL_TEXTURE_2D_ARRAY, texture);
+			//TODO: The usage choice needs to be reworked
+			glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, OpenGLUnitConverter::TextureFormatToGLInternalformat(ptr->GetBufferDescriptor().format), ptr->GetBufferDescriptor().width,
+				ptr->GetBufferDescriptor().height, ptr->GetBufferDescriptor().num_of_textures ,0, OpenGLUnitConverter::TextureFormatToGLFormat(ptr->GetBufferDescriptor().format),
+				OpenGLUnitConverter::TextureFormatToGLDataType(ptr->GetBufferDescriptor().format), NULL);
+
+			const TextureSamplerDescritor& sampler = ptr->GetBufferDescriptor().sampler->GetDescriptor();
+
+			glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, OpenGLUnitConverter::TextureAddressModeToGLWrappingMode(sampler.AddressMode_U));
+			glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, OpenGLUnitConverter::TextureAddressModeToGLWrappingMode(sampler.AddressMode_V));
+			glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_R, OpenGLUnitConverter::TextureAddressModeToGLWrappingMode(sampler.AddressMode_W));
+			glTexParameterfv(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(sampler.border_color));
+			glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, OpenGLUnitConverter::TextureFilterToGLMinFilter(sampler.filter));
+			glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, OpenGLUnitConverter::TextureFilterToGLMagFilter(sampler.filter));
+
+
+			glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+
+			static_cast<OpenGLRenderTexture2DArrayResource*>(ptr.get())->SetRenderId(texture);
+			ptr->SetRenderState(RenderState::COMMON);
+		}
+		else {
+			throw std::runtime_error("Resource has already been Initialied");
+		}
+		}));
+	return ptr;
+}
+
 std::shared_ptr<RenderFrameBufferResource> OpenGLRenderResourceManager::CreateFrameBuffer(const RenderFrameBufferDescriptor& buffer_desc)
 {
 	auto allocator = std::pmr::polymorphic_allocator<OpenGLRenderFrameBufferResource>(&ResourcePool);
@@ -209,6 +256,14 @@ std::shared_ptr<RenderFrameBufferResource> OpenGLRenderResourceManager::CreateFr
 	return ptr;
 }
 
+void OpenGLRenderResourceManager::UploadDataToTexture2DArray(RenderCommandList* list, std::shared_ptr<RenderTexture2DArrayResource> resource, int layer, void* data, size_t width, size_t height, size_t offset_x, size_t offset_y, int level)
+{
+	size_t size = OpenGLUnitConverter::TextureFormatToTexelSize(resource->GetBufferDescriptor().format) * width * height;
+	char* allocated = new char[size];
+	memcpy(allocated, data, size);
+	static_cast<OpenGLRenderCommandList*>(list)->UpdateTexture2DArrayResource(resource, layer, level, allocated, width, height, offset_x, offset_y);
+}
+
 //References to Resources never get destroyed !!!!!!!!!!!!!!!!!!!!!!!!!!!!! -> partially fixed (recommend revision)
 void OpenGLRenderResourceManager::CreateConstantBufferDescriptor(const RenderDescriptorTable& table, int index, std::shared_ptr<RenderBufferResource> resource)
 {
@@ -232,6 +287,17 @@ void OpenGLRenderResourceManager::CreateTexture2DDescriptor(const RenderDescript
 	OpenGLResourceDescriptor* desc = &gl_table->descriptor_pointer[index];
 	desc->m_resource = resource;
 	desc->type = RootParameterType::TEXTURE_2D;
+}
+
+void OpenGLRenderResourceManager::CreateTexture2DArrayDescriptor(const RenderDescriptorTable& table, int index, std::shared_ptr<RenderTexture2DArrayResource> resource)
+{
+	OpenGLRenderDescriptorAllocation* gl_table = static_cast<OpenGLRenderDescriptorAllocation*>(table.get());
+	if (index > gl_table->num_of_descriptors) {
+		throw std::runtime_error("Descriptor out of range");
+	}
+	OpenGLResourceDescriptor* desc = &gl_table->descriptor_pointer[index];
+	desc->m_resource = resource;
+	desc->type = RootParameterType::TEXTURE_2D_ARRAY;
 }
 
 void OpenGLRenderResourceManager::CopyFrameBufferDepthAttachment(RenderCommandList* list, std::shared_ptr<RenderFrameBufferResource> source_frame_buffer, std::shared_ptr<RenderFrameBufferResource> destination_frame_buffer)
@@ -276,6 +342,20 @@ void OpenGLRenderResourceManager::ReturnTexture2DResource(RenderTexture2DResourc
 		glDeleteTextures(1, &texture);
 		}));
 	auto allocator = std::pmr::polymorphic_allocator<OpenGLRenderTexture2DResource>(&ResourcePool);
+	std::allocator_traits<decltype(allocator)>::destroy(allocator, ptr);
+	std::lock_guard<std::mutex> lock(ResourceMutex);
+	std::allocator_traits<decltype(allocator)>::deallocate(allocator, ptr, 1);
+}
+
+void OpenGLRenderResourceManager::ReturnTexture2DArrayResource(RenderTexture2DArrayResource* resource)
+{
+	OpenGLRenderTexture2DArrayResource* ptr = static_cast<OpenGLRenderTexture2DArrayResource*>(resource);
+	unsigned int texture = ptr->render_id;
+	OpenGLRenderCommandQueue* queue = static_cast<OpenGLRenderCommandQueue*>(Renderer::Get()->GetCommandQueue());
+	queue->ExecuteCustomCommand(new ExecutableCommandAdapter([texture] {
+		glDeleteTextures(1, &texture);
+		}));
+	auto allocator = std::pmr::polymorphic_allocator<OpenGLRenderTexture2DArrayResource>(&ResourcePool);
 	std::allocator_traits<decltype(allocator)>::destroy(allocator, ptr);
 	std::lock_guard<std::mutex> lock(ResourceMutex);
 	std::allocator_traits<decltype(allocator)>::deallocate(allocator, ptr, 1);

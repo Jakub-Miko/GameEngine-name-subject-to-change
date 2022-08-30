@@ -75,3 +75,23 @@ void OpenGLRenderFrameBufferResource::SetRenderId(unsigned int id)
 		throw std::runtime_error("Trying to Initialized resource that has already been initialized");
 	}
 }
+
+void* OpenGLRenderTexture2DArrayResource::Map()
+{
+	throw std::runtime_error("Not Implemented");
+}
+
+void OpenGLRenderTexture2DArrayResource::UnMap()
+{
+	throw std::runtime_error("Not Implemented");
+}
+
+void OpenGLRenderTexture2DArrayResource::SetRenderId(unsigned int id)
+{
+	if (render_state == RenderState::UNINITIALIZED) {
+		render_id = id;
+	}
+	else {
+		throw std::runtime_error("Trying to Initialized resource that has already been initialized");
+	}
+}

@@ -75,6 +75,16 @@ void OpenGLPipeline::SetTexture2D(const std::string& semantic_name, std::shared_
 	glBindTexture(GL_TEXTURE_2D, static_cast<OpenGLRenderTexture2DResource*>(texture.get())->GetRenderId());
 }
 
+void OpenGLPipeline::SetTexture2DArray(const std::string& semantic_name, std::shared_ptr<RenderTexture2DArrayResource> texture)
+{
+	const OpenGLRootSignature* sig = static_cast<const OpenGLRootSignature*>(&GetSignature());
+	int index = sig->GetTextureSlot(semantic_name);
+	auto program = static_cast<OpenGLShader*>(GetShader().get())->GetShaderProgram();
+	glUniform1i(glGetUniformLocation(program, semantic_name.c_str()), index);
+	glActiveTexture(GL_TEXTURE0 + index);
+	glBindTexture(GL_TEXTURE_2D_ARRAY, static_cast<OpenGLRenderTexture2DArrayResource*>(texture.get())->GetRenderId());
+}
+
 //NOTE: Internal and for advanced use only
 //Should Be used every time a new vertex buffer is bound in a different context then it was last time.
 void OpenGLPipeline::BeginVertexContext(std::shared_ptr<RenderBufferResource> vertex_buffer)
@@ -150,6 +160,20 @@ void OpenGLPipeline::SetDescriptorTable(const std::string& semantic_name, Render
 				if (static_cast<OpenGLRenderDescriptorAllocation*>(table.get())->descriptor_pointer[current].type == RootParameterType::TEXTURE_2D) {
 					SetTexture2D(entry.individual_names[i],
 						std::static_pointer_cast<RenderTexture2DResource>(static_cast<OpenGLRenderDescriptorAllocation*>(table.get())->descriptor_pointer[current].m_resource));
+					//i++; // I dont think this should be here !!!!!!!!!!!!!!!
+					tex_start++;
+				}
+				else {
+					throw std::runtime_error("Descriptor is not of Texture2D type.");
+				}
+				current++;
+			}
+			break;
+		case RootDescriptorType::TEXTURE_2D_ARRAY:
+			for (uint32_t i = 0; i < entry.size; i++) {
+				if (static_cast<OpenGLRenderDescriptorAllocation*>(table.get())->descriptor_pointer[current].type == RootParameterType::TEXTURE_2D_ARRAY) {
+					SetTexture2DArray(entry.individual_names[i],
+						std::static_pointer_cast<RenderTexture2DArrayResource>(static_cast<OpenGLRenderDescriptorAllocation*>(table.get())->descriptor_pointer[current].m_resource));
 					//i++; // I dont think this should be here !!!!!!!!!!!!!!!
 					tex_start++;
 				}

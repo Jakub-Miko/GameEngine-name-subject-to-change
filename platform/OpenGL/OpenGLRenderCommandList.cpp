@@ -91,10 +91,20 @@ void OpenGLRenderCommandList::SetConstantBuffer(const std::string& semantic_name
     }
 }
 
-void OpenGLRenderCommandList::SetTexture2D(const std::string& semantic_name, std::shared_ptr<RenderTexture2DResource> buffer)
+void OpenGLRenderCommandList::SetTexture2D(const std::string& semantic_name, std::shared_ptr<RenderTexture2DResource> texture)
 {
     if (current_pipeline) {
-        PushCommand<OpenGLSetTexture2DCommand>(current_pipeline, semantic_name, buffer);
+        PushCommand<OpenGLSetTexture2DCommand>(current_pipeline, semantic_name, texture);
+    }
+    else {
+        throw std::runtime_error("No pipeline is bound");
+    }
+}
+
+void OpenGLRenderCommandList::SetTexture2DArray(const std::string& semantic_name, std::shared_ptr<RenderTexture2DArrayResource> texture)
+{
+    if (current_pipeline) {
+        PushCommand<OpenGLSetTexture2DArrayCommand>(current_pipeline, semantic_name, texture);
     }
     else {
         throw std::runtime_error("No pipeline is bound");
@@ -238,6 +248,32 @@ void OpenGLRenderCommandList::UpdateTexture2DResource(std::shared_ptr<RenderText
 
 
             glBindTexture(GL_TEXTURE_2D, 0);
+            resource->SetRenderState(RenderState::COMMON);
+            delete[] static_cast<char*>(data);
+        }
+        else {
+            delete[] static_cast<char*>(data);
+            throw std::runtime_error("Can't update an Uninitialized resource");
+        }
+        });
+    PushCommand<decltype(command)>(command);
+}
+
+void OpenGLRenderCommandList::UpdateTexture2DArrayResource(std::shared_ptr<RenderTexture2DArrayResource> resource, int layer, int level, void* data, size_t width, size_t height, size_t offset_x, size_t offset_y)
+{
+    auto command = OpenGLRenderCommandAdapter([resource, layer, data, width, height, offset_x, offset_y, level]() {
+        RenderState state = RenderState::COMMON;
+        resource->GetRenderStateAtomic().compare_exchange_strong(state, RenderState::WRITE);
+        if (state == RenderState::COMMON) {
+            if ((offset_x + width) > resource->GetBufferDescriptor().width || (offset_y + height) > resource->GetBufferDescriptor().height || layer >= resource->GetBufferDescriptor().num_of_textures) {
+                throw std::runtime_error("Buffer out of range.");
+            }
+            glBindTexture(GL_TEXTURE_2D_ARRAY, static_cast<OpenGLRenderTexture2DArrayResource*>(resource.get())->GetRenderId());
+            glTexSubImage3D(GL_TEXTURE_2D_ARRAY, level, offset_x, offset_y,layer, width, height, 1 , OpenGLUnitConverter::TextureFormatToGLFormat(resource->GetBufferDescriptor().format),
+                OpenGLUnitConverter::TextureFormatToGLDataType(resource->GetBufferDescriptor().format), data);
+
+
+            glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
             resource->SetRenderState(RenderState::COMMON);
             delete[] static_cast<char*>(data);
         }

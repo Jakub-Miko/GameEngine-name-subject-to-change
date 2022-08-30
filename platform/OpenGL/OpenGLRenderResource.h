@@ -76,6 +76,32 @@ private:
 
 };
 
+class OpenGLRenderTexture2DArrayResource : public RenderTexture2DArrayResource {
+public:
+	friend OpenGLRenderResourceManager;
+
+	virtual void* Map() override;
+
+	virtual void UnMap() override;
+
+	void SetRenderId(unsigned int id);
+
+	unsigned int GetRenderId() const {
+		return render_id;
+	}
+
+	OpenGLRenderTexture2DArrayResource(const RenderTexture2DArrayDescriptor& desc, RenderState initial_state = RenderState::UNINITIALIZED, unsigned int render_id = 0)
+		: RenderTexture2DArrayResource(desc, initial_state), render_id(render_id) {
+
+	}
+
+	~OpenGLRenderTexture2DArrayResource() {}
+
+private:
+
+	unsigned int render_id = 0;
+
+};
 
 class OpenGLRenderFrameBufferResource : public RenderFrameBufferResource {
 public:

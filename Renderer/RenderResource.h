@@ -7,7 +7,7 @@
 #include <Renderer/RendererDefines.h>
 
 enum class RenderResourceType : char  {
-	INVALID = 0, RenderBufferResource = 1, RenderTexture2DResource = 2, RenderFrameBufferResource = 3
+	INVALID = 0, RenderBufferResource = 1, RenderTexture2DResource = 2, RenderFrameBufferResource = 3, RenderTexture2DArrayResource = 4
 };
 
 class RenderResourceDescriptor {
@@ -173,6 +173,30 @@ protected:
 	RenderTexture2DDescriptor descriptor;
 };
 
+struct RenderTexture2DArrayDescriptor {
+	int width, height, num_of_textures;
+	TextureFormat format;
+	std::shared_ptr<TextureSampler> sampler = nullptr;
+};
+
+class RenderTexture2DArrayResource : public RenderResource {
+public:
+
+	RenderTexture2DArrayResource(const RenderTexture2DArrayDescriptor& desc, RenderState state) : descriptor(desc), RenderResource(state) {}
+
+	RenderTexture2DArrayDescriptor  GetBufferDescriptor() const {
+		return descriptor;
+	}
+
+	virtual RenderResourceType GetResourceType() override {
+		return RenderResourceType::RenderTexture2DArrayResource;
+	}
+
+	virtual ~RenderTexture2DArrayResource() {};
+
+protected:
+	RenderTexture2DArrayDescriptor  descriptor;
+};
 
 struct RenderFrameBufferDescriptor {
 	std::vector<std::shared_ptr<RenderTexture2DResource>> color_attachments;

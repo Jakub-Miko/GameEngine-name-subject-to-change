@@ -14,3 +14,8 @@ void OpenGLGenerateMIPsCommand::Execute()
 	glGenerateMipmap(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
+
+void OpenGLSetTexture2DArrayCommand::Execute()
+{
+	static_cast<OpenGLPipeline*>(pipeline.get())->SetTexture2DArray(name, texture);
+}

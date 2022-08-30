@@ -41,6 +41,10 @@ public:
 		return default_texture;
 	}
 
+	std::shared_ptr<RenderTexture2DArrayResource> GetDefaultTextureArray() const {
+		return default_texture_array;
+	}
+
 	std::shared_ptr<RenderTexture2DResource> GetDefaultNormalTexture() const {
 		return default_normal_texture;
 	}
@@ -61,6 +65,7 @@ private:
 
 
 	std::shared_ptr<RenderTexture2DResource> default_texture;
+	std::shared_ptr<RenderTexture2DArrayResource> default_texture_array;
 	std::shared_ptr<RenderTexture2DResource> default_normal_texture;
 	std::mutex texture_Map_mutex;
 	std::unordered_map<std::string, std::shared_ptr<RenderTexture2DResource>> texture_Map;

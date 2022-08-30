@@ -115,11 +115,11 @@ enum class RenderQueueTypes : unsigned char
 using RootBinding = unsigned int;
 
 enum class RootParameterType : unsigned char {
-	UNDEFINED = 0, CONSTANT_BUFFER = 1, TEXTURE_2D = 2, DESCRIPTOR_TABLE = 3
+	UNDEFINED = 0, CONSTANT_BUFFER = 1, TEXTURE_2D = 2, DESCRIPTOR_TABLE = 3, TEXTURE_2D_ARRAY = 4
 };
 
 enum class RootDescriptorType : unsigned char {
-	CONSTANT_BUFFER = 0, TEXTURE_2D = 1
+	CONSTANT_BUFFER = 0, TEXTURE_2D = 1, TEXTURE_2D_ARRAY = 2
 };
 
 struct RootMappingEntry {

@@ -270,17 +270,27 @@ TextureManager::TextureManager() : texture_Map(), texture_Map_mutex(), sampler_c
     tex_normal.width = 1;
     tex_normal.sampler = tex_desc.sampler;
 
+    RenderTexture2DArrayDescriptor tex_array_desc;
+    tex_array_desc.format = TextureFormat::RGBA_UNSIGNED_CHAR;
+    tex_array_desc.height = 1;
+    tex_array_desc.width = 1;
+    tex_array_desc.num_of_textures = 1;
+    tex_array_desc.sampler = TextureSampler::CreateSampler(TextureSamplerDescritor());
+
     auto def_tex = RenderResourceManager::Get()->CreateTexture(tex_desc);
     auto def_normal_tex = RenderResourceManager::Get()->CreateTexture(tex_normal);
+    auto def_tex_arr = RenderResourceManager::Get()->CreateTextureArray(tex_array_desc);
     auto queue = Renderer::Get()->GetCommandQueue();
     auto command_list = Renderer::Get()->GetRenderCommandList();
     unsigned char tex_data[4] = { 255,255,255,255 };
     float normal_tex_data[4] = { 0.5f,0.5f,1.0f,1.0f };
     RenderResourceManager::Get()->UploadDataToTexture2D(command_list, def_tex, &tex_data, 1, 1, 0, 0);
     RenderResourceManager::Get()->UploadDataToTexture2D(command_list, def_normal_tex, &normal_tex_data, 1, 1, 0, 0);
+    RenderResourceManager::Get()->UploadDataToTexture2DArray(command_list, def_tex_arr,0, &tex_data, 1, 1, 0, 0);
     queue->ExecuteRenderCommandList(command_list);
     default_texture = def_tex;
     default_normal_texture = def_normal_tex;
+    default_texture_array = def_tex_arr;
 }
 
 void TextureManager::ClearTextureCache()

@@ -21,6 +21,13 @@ OpenGLRootSignature::OpenGLRootSignature(const RootSignatureDescriptor& descript
 			parameters.insert(std::make_pair(desc.name, info));
 		}
 
+		if (desc.type == RootParameterType::TEXTURE_2D_ARRAY) {
+			info.texture_slot = texture_slot;
+			texture_slot++;
+			parameters.insert(std::make_pair(desc.name, info));
+		}
+
+
 		if (desc.type == RootParameterType::DESCRIPTOR_TABLE) {
 			CreateDescriptorTableParams(desc,binding_id, texture_slot);
 		}
@@ -44,6 +51,9 @@ void OpenGLRootSignature::CreateDescriptorTableParams(const RootSignatureDescrip
 			binding_id += range.size;
 		}
 		else if (range.type == RootDescriptorType::TEXTURE_2D) {
+			texture_id += range.size;
+		}
+		else if (range.type == RootDescriptorType::TEXTURE_2D_ARRAY) {
 			texture_id += range.size;
 		}
 		if (!range.individual_names.empty()) {
@@ -74,6 +84,9 @@ void OpenGLRootSignature::CreateDescriptorTableParams(const RootSignatureDescrip
 			else if (range.type == RootDescriptorType::TEXTURE_2D) {
 				texture_id += range.size;
 			}
+			else if (range.type == RootDescriptorType::TEXTURE_2D_ARRAY) {
+				texture_id += range.size;
+			}
 		}
 	}
 
@@ -99,7 +112,7 @@ int OpenGLRootSignature::GetTextureSlot(const std::string& name) const
 {
 	auto fnd = parameters.find(name);
 	if (fnd != parameters.end()) {
-		if (fnd->second.type == RootParameterType::TEXTURE_2D) {
+		if (fnd->second.type == RootParameterType::TEXTURE_2D || fnd->second.type == RootParameterType::TEXTURE_2D_ARRAY) {
 			return fnd->second.texture_slot;
 		}
 		else {

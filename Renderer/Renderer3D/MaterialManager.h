@@ -11,7 +11,7 @@ class Shader;
 class MaterialTemplate {
 public:
     enum MaterialTemplateParameterType : char {
-        SCALAR = 0, VEC2 = 1, VEC3 = 2, VEC4 = 3, TEXTURE = 4, MAT3 = 5, MAT4 = 6, INT = 7, INVALID_PARAMETER = -1
+        SCALAR = 0, VEC2 = 1, VEC3 = 2, VEC4 = 3, TEXTURE = 4, MAT3 = 5, MAT4 = 6, INT = 7, TEXTURE_2D_ARRAY = 8, INVALID_PARAMETER = -1
     };
     
     
@@ -57,6 +57,7 @@ public:
 private:
     void CreateParameter(const MaterialTemplateParameter& parameter);
     void AddTexture2DParameter(const RootSignatureDescriptorElement& element, int index, uint32_t table = -1);
+    void AddTexture2DArrayParameter(const RootSignatureDescriptorElement& element, int index, uint32_t table = -1);
     void AddDescriptorTableParameter(const RootSignatureDescriptorElement& element, int index);
     void AddConstantBufferParameter(const RootSignatureDescriptorElement& element, int index, uint32_t table = -1);
     std::weak_ptr<Shader> shader_wk; // Need to use weak_ptr since default materials are owned by their own shader which causes cyclic references
@@ -75,7 +76,7 @@ public:
 #endif
     };
 
-    using material_parameter_type = std::variant<int, float, glm::vec2, glm::vec3, glm::vec4, Texture_type>;
+    using material_parameter_type = std::variant<int, float, glm::vec2, glm::vec3, glm::vec4, Texture_type, std::shared_ptr<RenderTexture2DArrayResource>>;
     using material_resource_type = std::variant<RenderDescriptorTable,std::shared_ptr<RenderBufferResource>>;
 
     enum class Material_status : char {
