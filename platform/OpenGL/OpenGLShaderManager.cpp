@@ -31,6 +31,7 @@ ParsedShader OpenGLShaderManager::ParseShader(const std::string& source_code)
 {
 	auto fnd_vertex = source_code.find("#Vertex");
 	auto fnd_fragment = source_code.find("#Fragment");
+	auto fnd_geometry = source_code.find("#Geometry");
 	if (fnd_vertex != source_code.npos && fnd_fragment != source_code.npos) {
 		auto end_vertex = source_code.find("#end", fnd_vertex) ;
 		auto end_fragment = source_code.find("#end", fnd_fragment);
@@ -47,6 +48,15 @@ ParsedShader OpenGLShaderManager::ParseShader(const std::string& source_code)
 		fragment.type = GL_FRAGMENT_SHADER;
 		fragment.source = source_code.substr(fnd_fragment, end_fragment - fnd_fragment);
 		parsed.push_back(fragment);
+
+		if (fnd_geometry != source_code.npos) {
+			fnd_geometry += strlen("#Geometry");
+			auto end_geometry = source_code.find("#end", fnd_geometry);
+			ShaderSource geometry;
+			geometry.type = GL_GEOMETRY_SHADER;
+			geometry.source = source_code.substr(fnd_geometry, end_geometry - fnd_geometry);
+			parsed.push_back(geometry);
+		}
 
 		return parsed;
 

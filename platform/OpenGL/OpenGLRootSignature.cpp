@@ -25,6 +25,13 @@ OpenGLRootSignature::OpenGLRootSignature(const RootSignatureDescriptor& descript
 			info.texture_slot = texture_slot;
 			texture_slot++;
 			parameters.insert(std::make_pair(desc.name, info));
+
+		}
+
+		if (desc.type == RootParameterType::TEXTURE_2D_CUBEMAP) {
+			info.texture_slot = texture_slot;
+			texture_slot++;
+			parameters.insert(std::make_pair(desc.name, info));
 		}
 
 
@@ -56,6 +63,9 @@ void OpenGLRootSignature::CreateDescriptorTableParams(const RootSignatureDescrip
 		else if (range.type == RootDescriptorType::TEXTURE_2D_ARRAY) {
 			texture_id += range.size;
 		}
+		else if (range.type == RootDescriptorType::TEXTURE_2D_CUBEMAP) {
+			texture_id += range.size;
+		}
 		if (!range.individual_names.empty()) {
 			if (range.type == RootDescriptorType::CONSTANT_BUFFER) {
 				for (auto& name : range.individual_names) {
@@ -76,6 +86,26 @@ void OpenGLRootSignature::CreateDescriptorTableParams(const RootSignatureDescrip
 				}
 				texture_id += range.size;
 			}
+			else if (range.type == RootDescriptorType::TEXTURE_2D_ARRAY) {
+				for (auto& name : range.individual_names) {
+					ExtraElementInfo info;
+					info.type = RootParameterType::TEXTURE_2D_ARRAY;
+					info.constant_binding_id = binding_id;
+					binding_id++;
+					parameters.insert(std::make_pair(name, info));
+				}
+				texture_id += range.size;
+			}
+			else if (range.type == RootDescriptorType::TEXTURE_2D_CUBEMAP) {
+				for (auto& name : range.individual_names) {
+					ExtraElementInfo info;
+					info.type = RootParameterType::TEXTURE_2D_CUBEMAP;
+					info.constant_binding_id = binding_id;
+					binding_id++;
+					parameters.insert(std::make_pair(name, info));
+				}
+				texture_id += range.size;
+			}
 		}
 		else {
 			if (range.type == RootDescriptorType::CONSTANT_BUFFER) {
@@ -85,6 +115,9 @@ void OpenGLRootSignature::CreateDescriptorTableParams(const RootSignatureDescrip
 				texture_id += range.size;
 			}
 			else if (range.type == RootDescriptorType::TEXTURE_2D_ARRAY) {
+				texture_id += range.size;
+			}
+			else if (range.type == RootDescriptorType::TEXTURE_2D_CUBEMAP) {
 				texture_id += range.size;
 			}
 		}
@@ -112,7 +145,7 @@ int OpenGLRootSignature::GetTextureSlot(const std::string& name) const
 {
 	auto fnd = parameters.find(name);
 	if (fnd != parameters.end()) {
-		if (fnd->second.type == RootParameterType::TEXTURE_2D || fnd->second.type == RootParameterType::TEXTURE_2D_ARRAY) {
+		if (fnd->second.type == RootParameterType::TEXTURE_2D || fnd->second.type == RootParameterType::TEXTURE_2D_ARRAY || fnd->second.type == RootParameterType::TEXTURE_2D_CUBEMAP) {
 			return fnd->second.texture_slot;
 		}
 		else {

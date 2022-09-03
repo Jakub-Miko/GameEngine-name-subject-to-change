@@ -264,6 +264,64 @@ void OpenGLRenderResourceManager::UploadDataToTexture2DArray(RenderCommandList* 
 	static_cast<OpenGLRenderCommandList*>(list)->UpdateTexture2DArrayResource(resource, layer, level, allocated, width, height, offset_x, offset_y);
 }
 
+std::shared_ptr<RenderTexture2DCubemapResource> OpenGLRenderResourceManager::CreateTextureCubemap(const RenderTexture2DCubemapDescriptor& buffer_desc)
+{
+	if (!buffer_desc.sampler) {
+		throw std::runtime_error("Sampler wasn't supplied to the texture");
+	}
+	auto allocator = std::pmr::polymorphic_allocator<OpenGLRenderTexture2DCubemapResource>(&ResourcePool);
+	std::unique_lock<std::mutex> lock(ResourceMutex);
+	OpenGLRenderTexture2DCubemapResource* resource = std::allocator_traits<decltype(allocator)>::allocate(allocator, 1);
+	lock.unlock();
+	std::allocator_traits<decltype(allocator)>::construct(allocator, resource, buffer_desc, RenderState::UNINITIALIZED);
+	auto ptr = std::shared_ptr<RenderTexture2DCubemapResource>(static_cast<RenderTexture2DCubemapResource*>(resource), [this](RenderTexture2DCubemapResource* ptr) {
+		ReturnTexture2DCubemapResource(ptr);
+		});
+
+	OpenGLRenderCommandQueue* queue = static_cast<OpenGLRenderCommandQueue*>(Renderer::Get()->GetCommandQueue());
+	queue->ExecuteCustomCommand(new ExecutableCommandAdapter([ptr] {
+		if (ptr->GetRenderState() == RenderState::UNINITIALIZED) {
+			unsigned int texture;
+			glGenTextures(1, &texture);
+			glBindTexture(GL_TEXTURE_CUBE_MAP, texture);
+			//TODO: The usage choice needs to be reworked
+
+			for (int i = 0; i < 6; i++) {
+				glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, OpenGLUnitConverter::TextureFormatToGLInternalformat(ptr->GetBufferDescriptor().format), ptr->GetBufferDescriptor().res,
+					ptr->GetBufferDescriptor().res, 0, OpenGLUnitConverter::TextureFormatToGLFormat(ptr->GetBufferDescriptor().format),
+					OpenGLUnitConverter::TextureFormatToGLDataType(ptr->GetBufferDescriptor().format), NULL);
+			}
+
+			const TextureSamplerDescritor& sampler = ptr->GetBufferDescriptor().sampler->GetDescriptor();
+
+			glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, OpenGLUnitConverter::TextureAddressModeToGLWrappingMode(sampler.AddressMode_U));
+			glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, OpenGLUnitConverter::TextureAddressModeToGLWrappingMode(sampler.AddressMode_V));
+			glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, OpenGLUnitConverter::TextureAddressModeToGLWrappingMode(sampler.AddressMode_W));
+			glTexParameterfv(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(sampler.border_color));
+			glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, OpenGLUnitConverter::TextureFilterToGLMinFilter(sampler.filter));
+			glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, OpenGLUnitConverter::TextureFilterToGLMagFilter(sampler.filter));
+
+
+			glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+
+			static_cast<OpenGLRenderTexture2DCubemapResource*>(ptr.get())->SetRenderId(texture);
+			ptr->SetRenderState(RenderState::COMMON);
+		}
+		else {
+			throw std::runtime_error("Resource has already been Initialied");
+		}
+		}));
+	return ptr;
+}
+
+void OpenGLRenderResourceManager::UploadDataToTexture2DCubemap(RenderCommandList* list, std::shared_ptr<RenderTexture2DCubemapResource> resource, CubemapFace face, void* data, size_t width, size_t height, size_t offset_x, size_t offset_y, int level)
+{
+	size_t size = OpenGLUnitConverter::TextureFormatToTexelSize(resource->GetBufferDescriptor().format) * width * height;
+	char* allocated = new char[size];
+	memcpy(allocated, data, size);
+	static_cast<OpenGLRenderCommandList*>(list)->UpdateTexture2DCubemapResource(resource, face, level, allocated, width, height, offset_x, offset_y);
+}
+
 //References to Resources never get destroyed !!!!!!!!!!!!!!!!!!!!!!!!!!!!! -> partially fixed (recommend revision)
 void OpenGLRenderResourceManager::CreateConstantBufferDescriptor(const RenderDescriptorTable& table, int index, std::shared_ptr<RenderBufferResource> resource)
 {
@@ -298,6 +356,17 @@ void OpenGLRenderResourceManager::CreateTexture2DArrayDescriptor(const RenderDes
 	OpenGLResourceDescriptor* desc = &gl_table->descriptor_pointer[index];
 	desc->m_resource = resource;
 	desc->type = RootParameterType::TEXTURE_2D_ARRAY;
+}
+
+void OpenGLRenderResourceManager::CreateTexture2DCubemapDescriptor(const RenderDescriptorTable& table, int index, std::shared_ptr<RenderTexture2DCubemapResource> resource)
+{
+	OpenGLRenderDescriptorAllocation* gl_table = static_cast<OpenGLRenderDescriptorAllocation*>(table.get());
+	if (index > gl_table->num_of_descriptors) {
+		throw std::runtime_error("Descriptor out of range");
+	}
+	OpenGLResourceDescriptor* desc = &gl_table->descriptor_pointer[index];
+	desc->m_resource = resource;
+	desc->type = RootParameterType::TEXTURE_2D_CUBEMAP;
 }
 
 void OpenGLRenderResourceManager::CopyFrameBufferDepthAttachment(RenderCommandList* list, std::shared_ptr<RenderFrameBufferResource> source_frame_buffer, std::shared_ptr<RenderFrameBufferResource> destination_frame_buffer)
@@ -370,6 +439,20 @@ void OpenGLRenderResourceManager::ReturnFrameBufferResource(RenderFrameBufferRes
 		glDeleteFramebuffers(1, &frame_buffer);
 		}));
 	auto allocator = std::pmr::polymorphic_allocator<OpenGLRenderFrameBufferResource>(&ResourcePool);
+	std::allocator_traits<decltype(allocator)>::destroy(allocator, ptr);
+	std::lock_guard<std::mutex> lock(ResourceMutex);
+	std::allocator_traits<decltype(allocator)>::deallocate(allocator, ptr, 1);
+}
+
+void OpenGLRenderResourceManager::ReturnTexture2DCubemapResource(RenderTexture2DCubemapResource* resource)
+{
+	OpenGLRenderTexture2DCubemapResource* ptr = static_cast<OpenGLRenderTexture2DCubemapResource*>(resource);
+	unsigned int texture = ptr->render_id;
+	OpenGLRenderCommandQueue* queue = static_cast<OpenGLRenderCommandQueue*>(Renderer::Get()->GetCommandQueue());
+	queue->ExecuteCustomCommand(new ExecutableCommandAdapter([texture] {
+		glDeleteTextures(1, &texture);
+		}));
+	auto allocator = std::pmr::polymorphic_allocator<OpenGLRenderTexture2DCubemapResource>(&ResourcePool);
 	std::allocator_traits<decltype(allocator)>::destroy(allocator, ptr);
 	std::lock_guard<std::mutex> lock(ResourceMutex);
 	std::allocator_traits<decltype(allocator)>::deallocate(allocator, ptr, 1);

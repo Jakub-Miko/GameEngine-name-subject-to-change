@@ -346,6 +346,9 @@ void Material::SetParameterTypeDefault(MaterialParameter& param)
 	case MaterialTemplate::MaterialTemplateParameterType::TEXTURE_2D_ARRAY:
 		param.resource = TextureManager::Get()->GetDefaultTextureArray();
 		break;
+	case MaterialTemplate::MaterialTemplateParameterType::TEXTURE_2D_CUBEMAP:
+		param.resource = TextureManager::Get()->GetDefaultTextureCubemap();
+		break;
 	default:
 		throw std::runtime_error("Unsupported tempate parameter type " + param.name);
 		break;
@@ -366,6 +369,9 @@ MaterialTemplate::MaterialTemplate(std::shared_ptr<Shader> shader_in) : material
 				break;
 			case RootParameterType::TEXTURE_2D_ARRAY:
 				throw std::runtime_error("Material visible texture arrays are currently not supported!");
+				break;
+			case RootParameterType::TEXTURE_2D_CUBEMAP:
+				throw std::runtime_error("Material visible texture cubemaps are currently not supported!");
 				break;
 			case RootParameterType::CONSTANT_BUFFER:
 				AddConstantBufferParameter(parameter, index);
@@ -435,6 +441,25 @@ void MaterialTemplate::AddTexture2DParameter(const RootSignatureDescriptorElemen
 	}
 	CreateParameter(parameter);
 }
+
+
+void MaterialTemplate::AddTexture2DCubemapParameter(const RootSignatureDescriptorElement& element, int index, uint32_t table)
+{
+	MaterialTemplateParameter parameter;
+	if (table != -1) {
+		parameter.descriptor_table_id = table;
+		parameter.index = index;
+		parameter.name = element.name;
+		parameter.type = TEXTURE_2D_CUBEMAP;
+	}
+	else {
+		parameter.index = index;
+		parameter.name = element.name;
+		parameter.type = TEXTURE_2D_CUBEMAP;
+	}
+	CreateParameter(parameter);
+}
+
 
 void MaterialTemplate::AddTexture2DArrayParameter(const RootSignatureDescriptorElement& element, int index, uint32_t table)
 {

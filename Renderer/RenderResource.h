@@ -7,7 +7,7 @@
 #include <Renderer/RendererDefines.h>
 
 enum class RenderResourceType : char  {
-	INVALID = 0, RenderBufferResource = 1, RenderTexture2DResource = 2, RenderFrameBufferResource = 3, RenderTexture2DArrayResource = 4
+	INVALID = 0, RenderBufferResource = 1, RenderTexture2DResource = 2, RenderFrameBufferResource = 3, RenderTexture2DArrayResource = 4, RenderTexture2DCubemapResource = 5
 };
 
 class RenderResourceDescriptor {
@@ -198,11 +198,36 @@ protected:
 	RenderTexture2DArrayDescriptor  descriptor;
 };
 
+
+struct RenderTexture2DCubemapDescriptor {
+	int res;
+	TextureFormat format;
+	std::shared_ptr<TextureSampler> sampler = nullptr;
+};
+
+class RenderTexture2DCubemapResource : public RenderResource {
+public:
+
+	RenderTexture2DCubemapResource(const RenderTexture2DCubemapDescriptor& desc, RenderState state) : descriptor(desc), RenderResource(state) {}
+
+	RenderTexture2DCubemapDescriptor  GetBufferDescriptor() const {
+		return descriptor;
+	}
+
+	virtual RenderResourceType GetResourceType() override {
+		return RenderResourceType::RenderTexture2DCubemapResource;
+	}
+
+	virtual ~RenderTexture2DCubemapResource() {};
+
+protected:
+	RenderTexture2DCubemapDescriptor  descriptor;
+};
+
 struct RenderFrameBufferDescriptor {
 	std::vector<std::shared_ptr<RenderTexture2DResource>> color_attachments;
 	std::shared_ptr<RenderTexture2DResource> depth_stencil_attachment;
 };
-
 
 class RenderFrameBufferResource : public RenderResource {
 public:

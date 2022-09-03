@@ -111,6 +111,16 @@ void OpenGLRenderCommandList::SetTexture2DArray(const std::string& semantic_name
     }
 }
 
+void OpenGLRenderCommandList::SetTexture2DCubemap(const std::string& semantic_name, std::shared_ptr<RenderTexture2DCubemapResource> texture)
+{
+    if (current_pipeline) {
+        PushCommand<OpenGLSetTexture2DCubemapCommand>(current_pipeline, semantic_name, texture);
+    }
+    else {
+        throw std::runtime_error("No pipeline is bound");
+    }
+}
+
 //Needs to be Reworked
 void OpenGLRenderCommandList::SetIndexBuffer(std::shared_ptr<RenderBufferResource> buffer)
 {
@@ -295,6 +305,32 @@ void OpenGLRenderCommandList::CopyFrameBufferDepthAttachment(std::shared_ptr<Ren
         glBlitFramebuffer(0, 0, source_desc.width, source_desc.height, 0, 0, destination_desc.width, destination_desc.height, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
         glBindFramebuffer(GL_FRAMEBUFFER, static_cast<OpenGLRenderFrameBufferResource*>(current_framebuffer.get())->GetRenderId());
 
+        });
+    PushCommand<decltype(command)>(command);
+}
+
+void OpenGLRenderCommandList::UpdateTexture2DCubemapResource(std::shared_ptr<RenderTexture2DCubemapResource> resource, CubemapFace layer, int level, void* data, size_t width, size_t height, size_t offset_x, size_t offset_y)
+{
+    auto command = OpenGLRenderCommandAdapter([resource, layer, data, width, height, offset_x, offset_y, level]() {
+        RenderState state = RenderState::COMMON;
+        resource->GetRenderStateAtomic().compare_exchange_strong(state, RenderState::WRITE);
+        if (state == RenderState::COMMON) {
+            if ((offset_x + width) > resource->GetBufferDescriptor().res || (offset_y + height) > resource->GetBufferDescriptor().res) {
+                throw std::runtime_error("Buffer out of range.");
+            }
+            glBindTexture(GL_TEXTURE_CUBE_MAP, static_cast<OpenGLRenderTexture2DCubemapResource*>(resource.get())->GetRenderId());
+            glTexSubImage2D(OpenGLUnitConverter::CubemapFacetoGLenum(layer), level, offset_x, offset_y, width, height, OpenGLUnitConverter::TextureFormatToGLFormat(resource->GetBufferDescriptor().format),
+                OpenGLUnitConverter::TextureFormatToGLDataType(resource->GetBufferDescriptor().format), data);
+
+
+            glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+            resource->SetRenderState(RenderState::COMMON);
+            delete[] static_cast<char*>(data);
+        }
+        else {
+            delete[] static_cast<char*>(data);
+            throw std::runtime_error("Can't update an Uninitialized resource");
+        }
         });
     PushCommand<decltype(command)>(command);
 }

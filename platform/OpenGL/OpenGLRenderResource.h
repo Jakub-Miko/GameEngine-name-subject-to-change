@@ -103,6 +103,34 @@ private:
 
 };
 
+class OpenGLRenderTexture2DCubemapResource : public RenderTexture2DCubemapResource {
+public:
+	friend OpenGLRenderResourceManager;
+
+	virtual void* Map() override;
+
+	virtual void UnMap() override;
+
+	void SetRenderId(unsigned int id);
+
+	unsigned int GetRenderId() const {
+		return render_id;
+	}
+
+	OpenGLRenderTexture2DCubemapResource(const RenderTexture2DCubemapDescriptor& desc, RenderState initial_state = RenderState::UNINITIALIZED, unsigned int render_id = 0)
+		: RenderTexture2DCubemapResource(desc, initial_state), render_id(render_id) {
+
+	}
+
+	~OpenGLRenderTexture2DCubemapResource() {}
+
+private:
+
+	unsigned int render_id = 0;
+
+};
+
+
 class OpenGLRenderFrameBufferResource : public RenderFrameBufferResource {
 public:
 	friend OpenGLRenderResourceManager;

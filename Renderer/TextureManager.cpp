@@ -277,9 +277,15 @@ TextureManager::TextureManager() : texture_Map(), texture_Map_mutex(), sampler_c
     tex_array_desc.num_of_textures = 1;
     tex_array_desc.sampler = TextureSampler::CreateSampler(TextureSamplerDescritor());
 
+    RenderTexture2DCubemapDescriptor tex_cubemap_desc;
+    tex_cubemap_desc.format = TextureFormat::RGBA_UNSIGNED_CHAR;
+    tex_cubemap_desc.res = 1;
+    tex_cubemap_desc.sampler = TextureSampler::CreateSampler(TextureSamplerDescritor());
+
     auto def_tex = RenderResourceManager::Get()->CreateTexture(tex_desc);
     auto def_normal_tex = RenderResourceManager::Get()->CreateTexture(tex_normal);
     auto def_tex_arr = RenderResourceManager::Get()->CreateTextureArray(tex_array_desc);
+    auto def_tex_cbm = RenderResourceManager::Get()->CreateTextureCubemap(tex_cubemap_desc);
     auto queue = Renderer::Get()->GetCommandQueue();
     auto command_list = Renderer::Get()->GetRenderCommandList();
     unsigned char tex_data[4] = { 255,255,255,255 };
@@ -287,10 +293,14 @@ TextureManager::TextureManager() : texture_Map(), texture_Map_mutex(), sampler_c
     RenderResourceManager::Get()->UploadDataToTexture2D(command_list, def_tex, &tex_data, 1, 1, 0, 0);
     RenderResourceManager::Get()->UploadDataToTexture2D(command_list, def_normal_tex, &normal_tex_data, 1, 1, 0, 0);
     RenderResourceManager::Get()->UploadDataToTexture2DArray(command_list, def_tex_arr,0, &tex_data, 1, 1, 0, 0);
+    for (int i = 0; i < 6; i++) {
+        RenderResourceManager::Get()->UploadDataToTexture2DCubemap(command_list, def_tex_cbm, (CubemapFace)((char)CubemapFace::POSITIVE_X + i), &tex_data, 1, 1, 0, 0);
+    }
     queue->ExecuteRenderCommandList(command_list);
     default_texture = def_tex;
     default_normal_texture = def_normal_tex;
     default_texture_array = def_tex_arr;
+    default_texture_cubemap = def_tex_cbm;
 }
 
 void TextureManager::ClearTextureCache()

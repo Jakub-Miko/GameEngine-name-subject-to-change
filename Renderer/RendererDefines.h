@@ -55,6 +55,10 @@ enum class CullMode : char {
 	NONE = 0, FRONT = 1, BACK = 2
 };
 
+enum class CubemapFace : char {
+	POSITIVE_X = 0 ,NEGATIVE_X = 1, POSITIVE_Y = 2, NEGATIVE_Y = 3, POSITIVE_Z = 4, NEGATIVE_Z = 5
+};
+
 struct RenderViewport {
 	RenderViewport(glm::vec2 offset = {0,0}, glm::vec2 size = { -1,-1 }, float min_depth = 0, float max_depth = 1) 
 		: offset(offset), size(size), min_depth(min_depth), max_depth(max_depth) {}
@@ -115,11 +119,11 @@ enum class RenderQueueTypes : unsigned char
 using RootBinding = unsigned int;
 
 enum class RootParameterType : unsigned char {
-	UNDEFINED = 0, CONSTANT_BUFFER = 1, TEXTURE_2D = 2, DESCRIPTOR_TABLE = 3, TEXTURE_2D_ARRAY = 4
+	UNDEFINED = 0, CONSTANT_BUFFER = 1, TEXTURE_2D = 2, DESCRIPTOR_TABLE = 3, TEXTURE_2D_ARRAY = 4, TEXTURE_2D_CUBEMAP = 5
 };
 
 enum class RootDescriptorType : unsigned char {
-	CONSTANT_BUFFER = 0, TEXTURE_2D = 1, TEXTURE_2D_ARRAY = 2
+	CONSTANT_BUFFER = 0, TEXTURE_2D = 1, TEXTURE_2D_ARRAY = 2, TEXTURE_2D_CUBEMAP = 3
 };
 
 struct RootMappingEntry {

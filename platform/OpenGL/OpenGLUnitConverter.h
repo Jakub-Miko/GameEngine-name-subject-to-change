@@ -186,5 +186,18 @@ public:
 		}
 	}
 
+	static GLenum CubemapFacetoGLenum(CubemapFace face) {
+		switch (face) {
+		case CubemapFace::NEGATIVE_X:					return GL_TEXTURE_CUBE_MAP_NEGATIVE_X;
+		case CubemapFace::NEGATIVE_Y:					return GL_TEXTURE_CUBE_MAP_NEGATIVE_Y;
+		case CubemapFace::NEGATIVE_Z:					return GL_TEXTURE_CUBE_MAP_NEGATIVE_Z;
+		case CubemapFace::POSITIVE_X:					return GL_TEXTURE_CUBE_MAP_POSITIVE_X;
+		case CubemapFace::POSITIVE_Y:					return GL_TEXTURE_CUBE_MAP_POSITIVE_Y;
+		case CubemapFace::POSITIVE_Z:					return GL_TEXTURE_CUBE_MAP_POSITIVE_Z;
+		default:
+			throw std::runtime_error("Conversion failed");
+		}
+	}
+
 };
 

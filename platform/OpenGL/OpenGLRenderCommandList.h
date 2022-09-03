@@ -19,6 +19,7 @@ public:
     virtual void SetConstantBuffer(const std::string& semantic_name, std::shared_ptr<RenderBufferResource> buffer) override;
     virtual void SetTexture2D(const std::string& semantic_name, std::shared_ptr<RenderTexture2DResource> buffer) override;
     virtual void SetTexture2DArray(const std::string& semantic_name, std::shared_ptr<RenderTexture2DArrayResource> texture) override;
+    virtual void SetTexture2DCubemap(const std::string& semantic_name, std::shared_ptr<RenderTexture2DCubemapResource> texture) override;
     virtual void SetIndexBuffer(std::shared_ptr<RenderBufferResource> buffer) override;
     virtual void SetVertexBuffer(std::shared_ptr<RenderBufferResource> vertex_buffer) override;
     virtual void SetRenderTarget(std::shared_ptr<RenderFrameBufferResource> framebuffer) override;
@@ -50,7 +51,7 @@ private:
     void UpdateTexture2DResource(std::shared_ptr<RenderTexture2DResource> resource, int level, void* data, size_t width, size_t height, size_t offset_x, size_t offset_y);
     void UpdateTexture2DArrayResource(std::shared_ptr<RenderTexture2DArrayResource> resource, int layer, int level, void* data, size_t width, size_t height, size_t offset_x, size_t offset_y);
     void CopyFrameBufferDepthAttachment(std::shared_ptr<RenderFrameBufferResource> source_frame_buffer, std::shared_ptr<RenderFrameBufferResource> destination_frame_buffer);
-    
+    void UpdateTexture2DCubemapResource(std::shared_ptr<RenderTexture2DCubemapResource> resource, CubemapFace layer, int level, void* data, size_t width, size_t height, size_t offset_x, size_t offset_y);
     virtual void Execute() override;
 
     OpenGLRenderCommand* m_Commands = nullptr;

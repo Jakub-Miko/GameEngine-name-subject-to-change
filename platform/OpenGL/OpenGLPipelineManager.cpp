@@ -85,6 +85,16 @@ void OpenGLPipeline::SetTexture2DArray(const std::string& semantic_name, std::sh
 	glBindTexture(GL_TEXTURE_2D_ARRAY, static_cast<OpenGLRenderTexture2DArrayResource*>(texture.get())->GetRenderId());
 }
 
+void OpenGLPipeline::SetTexture2DCubemap(const std::string& semantic_name, std::shared_ptr<RenderTexture2DCubemapResource> texture)
+{
+	const OpenGLRootSignature* sig = static_cast<const OpenGLRootSignature*>(&GetSignature());
+	int index = sig->GetTextureSlot(semantic_name);
+	auto program = static_cast<OpenGLShader*>(GetShader().get())->GetShaderProgram();
+	glUniform1i(glGetUniformLocation(program, semantic_name.c_str()), index);
+	glActiveTexture(GL_TEXTURE0 + index);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, static_cast<OpenGLRenderTexture2DCubemapResource*>(texture.get())->GetRenderId());
+}
+
 //NOTE: Internal and for advanced use only
 //Should Be used every time a new vertex buffer is bound in a different context then it was last time.
 void OpenGLPipeline::BeginVertexContext(std::shared_ptr<RenderBufferResource> vertex_buffer)
@@ -178,7 +188,21 @@ void OpenGLPipeline::SetDescriptorTable(const std::string& semantic_name, Render
 					tex_start++;
 				}
 				else {
-					throw std::runtime_error("Descriptor is not of Texture2D type.");
+					throw std::runtime_error("Descriptor is not of Texture2DArray type.");
+				}
+				current++;
+			}
+			break;
+		case RootDescriptorType::TEXTURE_2D_CUBEMAP:
+			for (uint32_t i = 0; i < entry.size; i++) {
+				if (static_cast<OpenGLRenderDescriptorAllocation*>(table.get())->descriptor_pointer[current].type == RootParameterType::TEXTURE_2D_CUBEMAP) {
+					SetTexture2DCubemap(entry.individual_names[i],
+						std::static_pointer_cast<RenderTexture2DCubemapResource>(static_cast<OpenGLRenderDescriptorAllocation*>(table.get())->descriptor_pointer[current].m_resource));
+					//i++; // I dont think this should be here !!!!!!!!!!!!!!!
+					tex_start++;
+				}
+				else {
+					throw std::runtime_error("Descriptor is not of Texture2DCubemap type.");
 				}
 				current++;
 			}

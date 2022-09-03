@@ -156,6 +156,9 @@ RootSignature* ShaderManager::ParseRootSignature(const std::string& signature_st
 					if (range_type == "texture_2D_array") {
 						range_object.type = RootDescriptorType::TEXTURE_2D_ARRAY;
 					}
+					if (range_type == "texture_2D_cubemap") {
+						range_object.type = RootDescriptorType::TEXTURE_2D_CUBEMAP;
+					}
 					if (range.contains("individual_names")) {
 						if (!range["individual_names"].is_array()) throw std::runtime_error("individual_names must be a list of strings");
 						if (range["individual_names"].size() != range_size) throw std::runtime_error("individual_names must be the same length as range size");
@@ -170,6 +173,9 @@ RootSignature* ShaderManager::ParseRootSignature(const std::string& signature_st
 							}
 							else if (range_object.type == RootDescriptorType::TEXTURE_2D_ARRAY) {
 								type = RootParameterType::TEXTURE_2D_ARRAY;
+							}
+							else if (range_object.type == RootDescriptorType::TEXTURE_2D_CUBEMAP) {
+								type = RootParameterType::TEXTURE_2D_CUBEMAP;
 							}
 							else {
 								type = RootParameterType::UNDEFINED;
@@ -207,6 +213,10 @@ RootSignature* ShaderManager::ParseRootSignature(const std::string& signature_st
 			else if (type == "texture_2D_array") {
 				desc.parameters.push_back(RootSignatureDescriptorElement(name, RootParameterType::TEXTURE_2D_ARRAY, is_material_visible));
 				mapping_table.insert(std::make_pair(name, RootMappingEntry(sig_entry_num, RootParameterType::TEXTURE_2D_ARRAY)));
+			}
+			else if (type == "texture_2D_cubemap") {
+				desc.parameters.push_back(RootSignatureDescriptorElement(name, RootParameterType::TEXTURE_2D_CUBEMAP, is_material_visible));
+				mapping_table.insert(std::make_pair(name, RootMappingEntry(sig_entry_num, RootParameterType::TEXTURE_2D_CUBEMAP)));
 			}
 			else {
 				throw std::runtime_error("Root Signature parameter type: " + type + " isn't supported");

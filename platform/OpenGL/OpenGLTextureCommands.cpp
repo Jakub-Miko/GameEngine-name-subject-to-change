@@ -19,3 +19,8 @@ void OpenGLSetTexture2DArrayCommand::Execute()
 {
 	static_cast<OpenGLPipeline*>(pipeline.get())->SetTexture2DArray(name, texture);
 }
+
+void OpenGLSetTexture2DCubemapCommand::Execute()
+{
+	static_cast<OpenGLPipeline*>(pipeline.get())->SetTexture2DCubemap(name, texture);
+}
