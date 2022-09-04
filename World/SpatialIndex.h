@@ -59,6 +59,8 @@ public:
 
 	void BoxCulling(World& world, const OrientedBoundingBox& box, std::vector<Entity>& entities);
 
+	void SphereCulling(World& world, const BoundingSphere& sphere, std::vector<Entity>& entities);
+
 	void AddEntity(Entity ent);
 
 	void RemoveEntity(Entity ent);
@@ -95,6 +97,10 @@ public:
 
 	void BoxCulling(World& world, const OrientedBoundingBox& box, std::vector<Entity>& entities) {
 		octree_base->BoxCulling(world, box, entities);
+	}
+
+	void SphereCulling(World& world, const BoundingSphere& sphere, std::vector<Entity>& entities) {
+		octree_base->SphereCulling(world, sphere, entities);
 	}
 
 	void AddEntity(Entity ent) {

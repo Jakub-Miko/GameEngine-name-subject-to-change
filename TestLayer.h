@@ -157,6 +157,8 @@ public:
     bool stop2 = true;
     Entity entity1;
     Entity mesh_enity;
+    Entity second_ent;
+    Entity ent_sphere;
     Entity field[10][10];
     std::shared_ptr<RenderBufferResource> resource;
     std::shared_ptr<RenderBufferResource> resource_vertex;
@@ -495,24 +497,11 @@ public:
 */
 
 #pragma endregion
-            
-            //auto entity_sphere = Application::GetWorld().CreateEntity();
-            //Application::GetWorld().SetComponent<BoundingVolumeComponent>(entity_sphere, BoundingBox(glm::vec3(2.0f)));
-            //Application::GetWorld().SetComponent<MeshComponent>(entity_sphere, "asset:Sphere.mesh"_path);
-
-            //entity_box = Application::GetWorld().CreateEntity();
-            //Application::GetWorld().SetComponent<MeshComponent>(entity_box, "asset:Box.mesh"_path);
-            //oriented_box = OrientedBoundingBox();
-
-            //auto entity_light = Application::GetWorld().CreateEntity();
-            //Application::GetWorld().SetComponent<LightComponent>(entity_light, LightComponent());
-            //Application::GetWorld().SetComponent<ShadowCasterComponent>(entity_light);
-            //Application::GetWorld().SetEntityScale(entity_light, glm::vec3(1.0,1.0,16.0));
-            //Application::GetWorld().SetEntityTranslation(entity_light, glm::vec3(0.0, 0.0, 8.0));
 
             stop = false;
 
         }
+
 
         //RenderPassBuilder builder;
         //builder.AddPass(new TestPass2);

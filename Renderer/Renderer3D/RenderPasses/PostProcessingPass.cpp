@@ -97,8 +97,8 @@ void PostProcessingPass::Render(RenderPipelineResourceManager& resource_manager)
 	list->SetDefaultRenderTarget();
 	list->SetVertexBuffer(data->vertex_buffer);
 	list->SetIndexBuffer(data->index_buffer);
-	list->SetTexture2D("Color", frame_buffer->GetBufferDescriptor().color_attachments[0]);
-	list->SetTexture2D("Depth", frame_buffer->GetBufferDescriptor().depth_stencil_attachment);
+	list->SetTexture2D("Color", frame_buffer->GetBufferDescriptor().GetColorAttachmentAsTexture(0));
+	list->SetTexture2D("Depth", frame_buffer->GetBufferDescriptor().GetDepthAttachmentAsTexture());
 	list->Draw(6);
 
 	queue->ExecuteRenderCommandList(list);

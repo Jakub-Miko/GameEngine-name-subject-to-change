@@ -95,6 +95,42 @@ void Octree::BoxCulling(World& world, const OrientedBoundingBox& box, std::vecto
 	}
 }
 
+void Octree::SphereCulling(World& world, const BoundingSphere& sphere, std::vector<Entity>& entities)
+{
+	for (auto entity : entity_list) {
+		bool has_bounding_box = world.HasComponent<BoundingVolumeComponent>(entity);
+		if (has_bounding_box || world.HasComponent<MeshComponent>(entity)) {
+			TransformComponent& transform = world.GetComponent<TransformComponent>(entity);
+			BoundingVolumeComponent bounding_volume = BoundingBox();
+			if (!has_bounding_box) {
+				bounding_volume = world.GetComponent<MeshComponent>(entity).mesh->GetBoundingBox();
+			}
+			else {
+				bounding_volume = world.GetComponent<BoundingVolumeComponent>(entity);
+			}
+			std::visit([&](auto& bounding_vol) {
+				if (bounding_vol.OverlapsSphere(sphere, transform.TransformMatrix)) {
+					entities.push_back(entity);
+				}
+				}, bounding_volume.bounding_volume_variant);
+		}
+		else {
+			auto& transform = world.GetComponent<TransformComponent>(entity);
+			if (OverlapPointSphere(transform.translation, sphere)) {
+				entities.push_back(entity);
+			}
+		}
+	}
+
+	if (!active) return;
+
+	for (int index = 0; index < 8; index++) {
+		if (!(active & (1 << index))) continue;
+		if (!child_nodes[index].node_box.OverlapsSphere(sphere, glm::mat4(1.0))) continue;
+		child_nodes[index].SphereCulling(world, sphere, entities);
+	}
+}
+
 void Octree::AddEntity(Entity ent)
 {
 	//IF there are no child nodes add entity into the current node

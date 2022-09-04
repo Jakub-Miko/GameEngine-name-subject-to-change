@@ -297,9 +297,13 @@ void OpenGLRenderCommandList::UpdateTexture2DArrayResource(std::shared_ptr<Rende
 
 void OpenGLRenderCommandList::CopyFrameBufferDepthAttachment(std::shared_ptr<RenderFrameBufferResource> source_frame_buffer, std::shared_ptr<RenderFrameBufferResource> destination_frame_buffer)
 {
+    if (source_frame_buffer->GetBufferDescriptor().depth_stencil_attachment->GetResourceType() != RenderResourceType::RenderTexture2DResource ||
+        destination_frame_buffer->GetBufferDescriptor().depth_stencil_attachment->GetResourceType() != RenderResourceType::RenderTexture2DResource) {
+        throw std::runtime_error("Currently copy operations are only supported on RenderTexture2D attachments");
+    };
     auto command = OpenGLRenderCommandAdapter([source_frame_buffer, destination_frame_buffer,this]() {
-        auto source_desc = source_frame_buffer->GetBufferDescriptor().depth_stencil_attachment->GetBufferDescriptor();
-        auto destination_desc = destination_frame_buffer->GetBufferDescriptor().depth_stencil_attachment->GetBufferDescriptor();
+        auto source_desc = source_frame_buffer->GetBufferDescriptor().GetDepthAttachmentAsTexture()->GetBufferDescriptor();
+        auto destination_desc = destination_frame_buffer->GetBufferDescriptor().GetDepthAttachmentAsTexture()->GetBufferDescriptor();
         glBindFramebuffer(GL_READ_FRAMEBUFFER, static_cast<OpenGLRenderFrameBufferResource*>(source_frame_buffer.get())->GetRenderId());
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, static_cast<OpenGLRenderFrameBufferResource*>(destination_frame_buffer.get())->GetRenderId());
         glBlitFramebuffer(0, 0, source_desc.width, source_desc.height, 0, 0, destination_desc.width, destination_desc.height, GL_DEPTH_BUFFER_BIT, GL_NEAREST);

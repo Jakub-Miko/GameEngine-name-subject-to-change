@@ -225,8 +225,15 @@ protected:
 };
 
 struct RenderFrameBufferDescriptor {
-	std::vector<std::shared_ptr<RenderTexture2DResource>> color_attachments;
-	std::shared_ptr<RenderTexture2DResource> depth_stencil_attachment;
+	std::shared_ptr<RenderTexture2DResource> GetColorAttachmentAsTexture(int index);
+	std::shared_ptr<RenderTexture2DArrayResource> GetColorAttachmentAsTextureArray(int index);
+	std::shared_ptr<RenderTexture2DCubemapResource> GetColorAttachmentAsTextureCubemap(int index);
+	std::shared_ptr<RenderTexture2DResource> GetDepthAttachmentAsTexture();
+	std::shared_ptr<RenderTexture2DArrayResource> GetDepthAttachmentAsTextureArray();
+	std::shared_ptr<RenderTexture2DCubemapResource> GetDepthAttachmentAsTextureCubemap();
+
+	std::vector<std::shared_ptr<RenderResource>> color_attachments;
+	std::shared_ptr<RenderResource> depth_stencil_attachment;
 };
 
 class RenderFrameBufferResource : public RenderResource {

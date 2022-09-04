@@ -254,9 +254,9 @@ void DefferedLightingPass::RenderLights(RenderPipelineResourceManager& resource_
 
 		data->mat->SetParameter("pixel_size", pixel_size);
 		data->mat->SetParameter("Light_Color", light.GetLightColor());
-		data->mat->SetParameter("Color", gbuffer->GetBufferDescriptor().color_attachments[0]);
-		data->mat->SetParameter("Normal", gbuffer->GetBufferDescriptor().color_attachments[1]);
-		data->mat->SetParameter("DepthBuffer", gbuffer->GetBufferDescriptor().depth_stencil_attachment);
+		data->mat->SetParameter("Color", gbuffer->GetBufferDescriptor().GetColorAttachmentAsTexture(0));
+		data->mat->SetParameter("Normal", gbuffer->GetBufferDescriptor().GetColorAttachmentAsTexture(1));
+		data->mat->SetParameter("DepthBuffer", gbuffer->GetBufferDescriptor().GetDepthAttachmentAsTexture());
 		data->mat->SetParameter("light_type", (int)light.type);
 		data->mat->SetParameter("attenuation", glm::vec4(light.GetAttenuation(), 0.0f));
 		data->mat->SetMaterial(list, data->pipeline);
@@ -317,10 +317,10 @@ void DefferedLightingPass::RenderShadowedLights(RenderPipelineResourceManager& r
 
 		data->mat_shadowed->SetParameter("pixel_size", pixel_size);
 		data->mat_shadowed->SetParameter("Light_Color", light.GetLightColor());
-		data->mat_shadowed->SetParameter("Color", gbuffer->GetBufferDescriptor().color_attachments[0]);
-		data->mat_shadowed->SetParameter("Normal", gbuffer->GetBufferDescriptor().color_attachments[1]);
-		data->mat_shadowed->SetParameter("DepthBuffer", gbuffer->GetBufferDescriptor().depth_stencil_attachment);
-		data->mat_shadowed->SetParameter("ShadowMap", shadow.shadow_map->GetBufferDescriptor().depth_stencil_attachment);
+		data->mat_shadowed->SetParameter("Color", gbuffer->GetBufferDescriptor().GetColorAttachmentAsTexture(0));
+		data->mat_shadowed->SetParameter("Normal", gbuffer->GetBufferDescriptor().GetColorAttachmentAsTexture(1));
+		data->mat_shadowed->SetParameter("DepthBuffer", gbuffer->GetBufferDescriptor().GetDepthAttachmentAsTexture());
+		data->mat_shadowed->SetParameter("ShadowMap", shadow.shadow_map->GetBufferDescriptor().GetDepthAttachmentAsTexture());
 		data->mat_shadowed->SetParameter("light_type", (int)light.type);
 		data->mat_shadowed->SetParameter("attenuation", glm::vec4(light.GetAttenuation(), 0.0f));
 		data->mat_shadowed->SetMaterial(list, data->pipeline_shadowed);

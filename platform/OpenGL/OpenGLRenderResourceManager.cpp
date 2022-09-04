@@ -223,9 +223,7 @@ std::shared_ptr<RenderFrameBufferResource> OpenGLRenderResourceManager::CreateFr
 			glBindFramebuffer(GL_FRAMEBUFFER, buffer);
 			std::vector<GLenum> attachments;
 			for (int i = 0; i < ptr->GetBufferDescriptor().color_attachments.size();i++) {
-				glBindTexture(GL_TEXTURE_2D, static_cast<OpenGLRenderTexture2DResource*>(ptr->GetBufferDescriptor().color_attachments[i].get())->GetRenderId());
-				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D,
-					static_cast<OpenGLRenderTexture2DResource*>(ptr->GetBufferDescriptor().color_attachments[i].get())->GetRenderId(),0);
+				glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, static_cast<OpenGLRenderTexture2DResource*>(ptr->GetBufferDescriptor().color_attachments[i].get())->GetRenderId(),0);
 				attachments.push_back(GL_COLOR_ATTACHMENT0 + i);
 			}
 			if(attachments.empty()) {
@@ -236,14 +234,13 @@ std::shared_ptr<RenderFrameBufferResource> OpenGLRenderResourceManager::CreateFr
 				glDrawBuffers(attachments.size(), attachments.data());
 			}
 
-			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D,
+			glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
 				static_cast<OpenGLRenderTexture2DResource*>(ptr->GetBufferDescriptor().depth_stencil_attachment.get())->GetRenderId(),0);
 
 			if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
 				throw std::runtime_error("FrameBuffer Initialization failed");
 			}
 
-			glBindTexture(GL_TEXTURE_2D, 0);
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 			static_cast<OpenGLRenderFrameBufferResource*>(ptr.get())->SetRenderId(buffer);

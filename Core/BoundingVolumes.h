@@ -5,6 +5,7 @@
 
 struct Frustum;
 class BoundingBox;
+class BoundingSphere;
 
 enum class BoundingVolumeType : unsigned char {
 	NONE = 0, BOUNDING_BOX = 1, BOUNDING_SPHERE = 2
@@ -17,10 +18,11 @@ enum class OverlapResult : unsigned char {
 class BoundingVolume {
 public:
 
-	virtual bool OverlapsFrustum(const Frustum& frustum, const glm::mat4& model_matrix) = 0;
-	virtual OverlapResult OverlapsPlane(const Plane& plane, const glm::mat4& model_matrix) = 0;
-	virtual bool OverlapsBox(const BoundingBox& box, const glm::mat4& model_matrix) = 0;
-	virtual bool OverlapsOrientedBox(const OrientedBoundingBox& box, const glm::mat4& model_matrix) = 0;
+	virtual bool OverlapsFrustum(const Frustum& frustum, const glm::mat4& model_matrix) const = 0;
+	virtual OverlapResult OverlapsPlane(const Plane& plane, const glm::mat4& model_matrix) const = 0;
+	virtual bool OverlapsBox(const BoundingBox& box, const glm::mat4& model_matrix) const = 0;
+	virtual bool OverlapsOrientedBox(const OrientedBoundingBox& box, const glm::mat4& model_matrix) const = 0;
+	virtual bool OverlapsSphere(const BoundingSphere& sphere, const glm::mat4& model_matrix) const = 0;
 
 };
 
@@ -31,6 +33,7 @@ bool OverlapPointFrustum(const glm::vec3& point, const Frustum& frustum);
 bool OverlapBoxBox(const BoundingBox& box_1, const BoundingBox& box_2);
 bool OverlapPointBox(const glm::vec3& point, const BoundingBox& box);
 bool OverlapPointOrientedBox(const glm::vec3& point, const OrientedBoundingBox& box);
+bool OverlapPointSphere(const glm::vec3& point, const BoundingSphere& sphere);
 OverlapResult OverlapBoxPlane(const BoundingBox& box, const Plane& plane);
 
 class BoundingBox : public BoundingVolume {
@@ -39,10 +42,11 @@ class BoundingBox : public BoundingVolume {
 public:
 	BoundingBox(glm::vec3 box_size = glm::vec3(1.0f), glm::vec3 box_offset = glm::vec3(0.0f)) : box_min(-glm::abs(box_size/2.0f) + box_offset), box_max(glm::abs(box_size / 2.0f) + box_offset) {}
 
-	virtual bool OverlapsFrustum(const Frustum& frustum, const glm::mat4& model_matrix) override;
-	virtual OverlapResult OverlapsPlane(const Plane& plane, const glm::mat4& model_matrix) override;
-	virtual bool OverlapsBox(const BoundingBox& box, const glm::mat4& model_matrix) override;
-	virtual bool OverlapsOrientedBox(const OrientedBoundingBox& box, const glm::mat4& model_matrix) override;
+	virtual bool OverlapsFrustum(const Frustum& frustum, const glm::mat4& model_matrix) const override;
+	virtual OverlapResult OverlapsPlane(const Plane& plane, const glm::mat4& model_matrix) const override;
+	virtual bool OverlapsBox(const BoundingBox& box, const glm::mat4& model_matrix) const override;
+	virtual bool OverlapsOrientedBox(const OrientedBoundingBox& box, const glm::mat4& model_matrix) const override;
+	virtual bool OverlapsSphere(const BoundingSphere& sphere, const glm::mat4& model_matrix) const override;
 
 	glm::vec3 GetBoxSize() const {
 		return box_max - box_min;
@@ -52,15 +56,15 @@ public:
 		return (box_max + box_min) / 2.0f;
 	}
 
-	BoundingBox GetAdjustedBox(const glm::mat4& matrix);
+	BoundingBox GetAdjustedBox(const glm::mat4& matrix) const;
 
 	glm::vec3 box_min;
 	glm::vec3 box_max;
 private:
 	friend OverlapResult OverlapBoxPlane(const BoundingBox& box, const Plane& plane);
 	friend bool OverlapBoxBox(const BoundingBox& box_1, const BoundingBox& box_2);
-	bool OverlapPointFrustum(const glm::vec3& point, const Frustum& frustum);
-	bool OverlapBoxPlane_internal(const glm::mat4& transform, const Plane& plane);
+	bool OverlapPointFrustum(const glm::vec3& point, const Frustum& frustum) const;
+	bool OverlapBoxPlane_internal(const glm::mat4& transform, const Plane& plane) const;
 };
 
 class BoundingSphere : public BoundingVolume {
@@ -69,10 +73,11 @@ class BoundingSphere : public BoundingVolume {
 public:
 	BoundingSphere(float sphere_size = 1.0f, glm::vec3 sphere_offset = glm::vec3(0.0f)) : sphere_size(sphere_size), sphere_offset(sphere_offset) {}
 
-	virtual bool OverlapsFrustum(const Frustum& frustum, const glm::mat4& model_matrix) override;
-	virtual OverlapResult OverlapsPlane(const Plane& plane, const glm::mat4& model_matrix) override;
-	virtual bool OverlapsBox(const BoundingBox& box, const glm::mat4& model_matrix) override;
-	virtual bool OverlapsOrientedBox(const OrientedBoundingBox& box, const glm::mat4& model_matrix) override;
+	virtual bool OverlapsFrustum(const Frustum& frustum, const glm::mat4& model_matrix) const override;
+	virtual OverlapResult OverlapsPlane(const Plane& plane, const glm::mat4& model_matrix) const override;
+	virtual bool OverlapsBox(const BoundingBox& box, const glm::mat4& model_matrix) const override;
+	virtual bool OverlapsOrientedBox(const OrientedBoundingBox& box, const glm::mat4& model_matrix) const override;
+	virtual bool OverlapsSphere(const BoundingSphere& sphere, const glm::mat4& model_matrix) const override;
 
 	float GetSphereSize() const {
 		return sphere_size;
@@ -84,7 +89,7 @@ public:
 
 private:
 
-	bool OverlapSpherePlane(const glm::vec3& position, float radius, const Plane& plane);
+	bool OverlapSpherePlane(const glm::vec3& position, float radius, const Plane& plane) const;
 
 private:
 
@@ -100,10 +105,11 @@ class BoundingPointLightSphere : public BoundingVolume {
 public:
 	BoundingPointLightSphere(float sphere_size = 1.0f, glm::vec3 sphere_offset = glm::vec3(0.0f)) : sphere_size(sphere_size), sphere_offset(sphere_offset) {}
 
-	virtual bool OverlapsFrustum(const Frustum& frustum, const glm::mat4& model_matrix) override;
-	virtual OverlapResult OverlapsPlane(const Plane& plane, const glm::mat4& model_matrix) override;
-	virtual bool OverlapsBox(const BoundingBox& box, const glm::mat4& model_matrix) override;
-	virtual bool OverlapsOrientedBox(const OrientedBoundingBox& box, const glm::mat4& model_matrix) override;
+	virtual bool OverlapsFrustum(const Frustum& frustum, const glm::mat4& model_matrix) const override;
+	virtual OverlapResult OverlapsPlane(const Plane& plane, const glm::mat4& model_matrix) const override;
+	virtual bool OverlapsBox(const BoundingBox& box, const glm::mat4& model_matrix) const override;
+	virtual bool OverlapsOrientedBox(const OrientedBoundingBox& box, const glm::mat4& model_matrix) const override;
+	virtual bool OverlapsSphere(const BoundingSphere& sphere, const glm::mat4& model_matrix) const override;
 
 	float GetSphereSize() const {
 		return sphere_size;
@@ -115,7 +121,7 @@ public:
 
 private:
 
-	bool OverlapSpherePlane(const glm::vec3& position, float radius, const Plane& plane);
+	bool OverlapSpherePlane(const glm::vec3& position, float radius, const Plane& plane) const;
 
 private:
 
@@ -131,10 +137,11 @@ class BoundingInfinity : public BoundingVolume {
 public:
 	BoundingInfinity() {}
 
-	virtual bool OverlapsFrustum(const Frustum& frustum, const glm::mat4& model_matrix) override;
-	virtual OverlapResult OverlapsPlane(const Plane& plane, const glm::mat4& model_matrix) override;
-	virtual bool OverlapsBox(const BoundingBox& box, const glm::mat4& model_matrix) override;
-	virtual bool OverlapsOrientedBox(const OrientedBoundingBox& box, const glm::mat4& model_matrix) override;
+	virtual bool OverlapsFrustum(const Frustum& frustum, const glm::mat4& model_matrix) const override;
+	virtual OverlapResult OverlapsPlane(const Plane& plane, const glm::mat4& model_matrix) const override;
+	virtual bool OverlapsBox(const BoundingBox& box, const glm::mat4& model_matrix) const override;
+	virtual bool OverlapsOrientedBox(const OrientedBoundingBox& box, const glm::mat4& model_matrix) const override;
+	virtual bool OverlapsSphere(const BoundingSphere& sphere, const glm::mat4& model_matrix) const override;
 
 
 };
