@@ -2,6 +2,7 @@
 #include <Renderer/Renderer3D/RenderPass.h>
 #include <glm/glm.hpp>
 #include <string>
+#include <World/Components/LightComponent.h>
 
 class RenderCommandList;
 class CameraComponent;
@@ -9,7 +10,7 @@ class CameraComponent;
 class DefferedLightingPass : public RenderPass {
 public:
 	struct internal_data;
-	DefferedLightingPass(const std::string& input_gbuffer, const std::string& input_lights, const std::string& input_shadowed_lights, const std::string& output_buffer, const std::string& shadow_map_dependency_tag);
+	DefferedLightingPass(const std::string& input_gbuffer, const std::string& input_lights, const std::string& input_directional_shadowed_lights, const std::string& input_point_shadowed_lights, const std::string& output_buffer, const std::string& shadow_map_dependency_tag);
 	virtual void Setup(RenderPassResourceDefinnition& setup_builder) override;
 	virtual void Render(RenderPipelineResourceManager& resource_manager) override;
 	virtual ~DefferedLightingPass();
@@ -23,12 +24,15 @@ private:
 	};
 
 	void RenderLights(RenderPipelineResourceManager& resource_manager, RenderCommandList* list, const CameraComponent& camera, const render_props& props);
+	
+	template<LightType light_type>
 	void RenderShadowedLights(RenderPipelineResourceManager& resource_manager, RenderCommandList* list, const CameraComponent& camera, const render_props& props);
 
 	void InitPostProcessingPassData();
 	std::string input_gbuffer;
 	std::string input_lights;
-	std::string input_shadowed_lights;
+	std::string input_directional_shadowed_lights;
+	std::string input_point_shadowed_lights;
 	std::string output_buffer;
 	std::string shadow_map_dependency_tag;
 	internal_data* data;

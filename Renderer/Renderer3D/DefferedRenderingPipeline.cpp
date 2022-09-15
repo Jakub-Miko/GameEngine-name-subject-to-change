@@ -11,9 +11,9 @@ std::shared_ptr<RenderPipeline> DefferedRenderingPipeline::CreatePipeline()
 {
 	RenderPassBuilder builder;
 	builder.AddPass(new PostProcessingPass("ColorBuffer"));
-	builder.AddPass(new RenderSubmissionPass("RenderObjects", "RenderLights", "RenderShadowedLights"));
+	builder.AddPass(new RenderSubmissionPass("RenderObjects", "RenderLights", "RenderShadowedDirectionalLights","RenderShadowedPointLights"));
 	builder.AddPass(new DefferedGeometryPass("RenderObjects", "RenderOutput"));
-	builder.AddPass(new DefferedLightingPass("RenderOutput", "RenderLights", "RenderShadowedLights", "ColorBuffer", "ShadowsGeneratedTag"));
-	builder.AddPass(new ShadowMappingPass("RenderShadowedLights", "ShadowsGeneratedTag"));
+	builder.AddPass(new DefferedLightingPass("RenderOutput", "RenderLights", "RenderShadowedDirectionalLights", "RenderShadowedPointLights", "ColorBuffer", "ShadowsGeneratedTag"));
+	builder.AddPass(new ShadowMappingPass("RenderShadowedDirectionalLights","RenderShadowedPointLights", "ShadowsGeneratedTag"));
 	return std::make_shared<RenderPipeline>(std::move(builder.Build()));
 }

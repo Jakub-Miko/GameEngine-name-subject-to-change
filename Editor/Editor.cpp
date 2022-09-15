@@ -175,6 +175,7 @@ void Editor::Run()
 		if (ImGui::BeginPopupModal("Viewport Settings", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
 
 			ImGui::Checkbox("Spatial Index Visualization", &spatial_index_visualization);
+			ImGui::Checkbox("Lighting Bounds Visualization", &light_bounds_visualization);
 
 			if (ImGui::Button("Close")) {
 				ImGui::CloseCurrentPopup();
@@ -354,6 +355,9 @@ void Editor::RenderDebugView(float delta_time)
 {
 	if (enabled && spatial_index_visualization) {
 		Application::GetWorld().GetSpatialIndex().Visualize();
+	}
+	if (enabled && light_bounds_visualization) {
+		
 	}
 }
 

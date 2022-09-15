@@ -189,7 +189,7 @@ void PropertiesPanel::RenderProperties(Entity entity, const PropertiesPanel_pers
 			}
 		}
 
-		if (type == (int)LightType::DIRECTIONAL) {
+		if (type == (int)LightType::DIRECTIONAL || type == (int)LightType::POINT) {
 			bool shadows_enabled = has_shadow;
 			ImGui::Checkbox("Enable Shadows", &shadows_enabled);
 			if (has_shadow != shadows_enabled) {
@@ -215,6 +215,9 @@ void PropertiesPanel::RenderProperties(Entity entity, const PropertiesPanel_pers
 			shadow.res_y = res[1];
 			shadow.shadow_map.reset();
 		}
+
+		ImGui::DragFloat("Shadow Map Near Plane", &shadow.near_plane);
+		ImGui::DragFloat("Shadow Map Far Plane", &shadow.far_plane);
 		
 		ImGui::TreePop();
 	}

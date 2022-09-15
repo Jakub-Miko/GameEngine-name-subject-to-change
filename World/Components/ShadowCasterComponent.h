@@ -7,12 +7,13 @@
 class ShadowCasterComponent {
 	RuntimeTag("ShadowCasterComponent")
 public:
-	ShadowCasterComponent(int width = 800, int height = 800);
+	ShadowCasterComponent(int width = 800, int height = 800, float near_plane = 0.1f, float far_plane = 500.0f);
 	~ShadowCasterComponent() {
 
 	}
 	std::shared_ptr<RenderFrameBufferResource> shadow_map = nullptr;
 	int res_x = 800, res_y = 600;
+	float near_plane = 0.1f, far_plane = 500.0f;
 	glm::mat4 light_view_matrix = glm::mat4(1.0);
 };
 
@@ -24,4 +25,4 @@ public:
 
 };
 
-JSON_SERIALIZABLE(ShadowCasterComponent, res_x, res_y);
+JSON_SERIALIZABLE(ShadowCasterComponent, res_x, res_y, near_plane, far_plane);

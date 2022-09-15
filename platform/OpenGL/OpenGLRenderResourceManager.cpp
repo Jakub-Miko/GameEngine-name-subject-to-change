@@ -223,7 +223,22 @@ std::shared_ptr<RenderFrameBufferResource> OpenGLRenderResourceManager::CreateFr
 			glBindFramebuffer(GL_FRAMEBUFFER, buffer);
 			std::vector<GLenum> attachments;
 			for (int i = 0; i < ptr->GetBufferDescriptor().color_attachments.size();i++) {
-				glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, static_cast<OpenGLRenderTexture2DResource*>(ptr->GetBufferDescriptor().color_attachments[i].get())->GetRenderId(),0);
+				unsigned int render_id = 0;
+				switch (ptr->GetBufferDescriptor().color_attachments[i].get()->GetResourceType())
+				{
+				case RenderResourceType::RenderTexture2DResource:
+					render_id = static_cast<OpenGLRenderTexture2DResource*>(ptr->GetBufferDescriptor().color_attachments[i].get())->GetRenderId();
+					break;
+				case RenderResourceType::RenderTexture2DArrayResource:
+					render_id = static_cast<OpenGLRenderTexture2DArrayResource*>(ptr->GetBufferDescriptor().color_attachments[i].get())->GetRenderId();
+					break;
+				case RenderResourceType::RenderTexture2DCubemapResource:
+					render_id = static_cast<OpenGLRenderTexture2DCubemapResource*>(ptr->GetBufferDescriptor().color_attachments[i].get())->GetRenderId();
+					break;
+				default:
+					throw std::runtime_error("Invalid Framebuffer Texture Type");
+				}
+				glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, render_id,0);
 				attachments.push_back(GL_COLOR_ATTACHMENT0 + i);
 			}
 			if(attachments.empty()) {
@@ -234,8 +249,22 @@ std::shared_ptr<RenderFrameBufferResource> OpenGLRenderResourceManager::CreateFr
 				glDrawBuffers(attachments.size(), attachments.data());
 			}
 
-			glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
-				static_cast<OpenGLRenderTexture2DResource*>(ptr->GetBufferDescriptor().depth_stencil_attachment.get())->GetRenderId(),0);
+			unsigned int render_id = 0;
+			switch (ptr->GetBufferDescriptor().depth_stencil_attachment.get()->GetResourceType())
+			{
+			case RenderResourceType::RenderTexture2DResource:
+				render_id = static_cast<OpenGLRenderTexture2DResource*>(ptr->GetBufferDescriptor().depth_stencil_attachment.get())->GetRenderId();
+				break;
+			case RenderResourceType::RenderTexture2DArrayResource:
+				render_id = static_cast<OpenGLRenderTexture2DArrayResource*>(ptr->GetBufferDescriptor().depth_stencil_attachment.get())->GetRenderId();
+				break;
+			case RenderResourceType::RenderTexture2DCubemapResource:
+				render_id = static_cast<OpenGLRenderTexture2DCubemapResource*>(ptr->GetBufferDescriptor().depth_stencil_attachment.get())->GetRenderId();
+				break;
+			default:
+				throw std::runtime_error("Invalid Framebuffer Texture Type");
+			}
+			glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, render_id,0);
 
 			if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
 				throw std::runtime_error("FrameBuffer Initialization failed");

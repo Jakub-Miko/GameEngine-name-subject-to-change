@@ -11,8 +11,8 @@
 #include <World/Components/MeshComponent.h>
 #include <Application.h>
 
-RenderSubmissionPass::RenderSubmissionPass(const std::string& output_mesh_name , const std::string& output_light_name, const std::string& output_shadowed_light_name) 
-	: output_mesh_name(output_mesh_name), output_light_name(output_light_name), output_shadowed_light_name(output_shadowed_light_name)
+RenderSubmissionPass::RenderSubmissionPass(const std::string& output_mesh_name , const std::string& output_light_name, const std::string& output_shadowed_directional_light_name, const std::string& output_shadowed_point_light_name)
+	: output_mesh_name(output_mesh_name), output_light_name(output_light_name), output_shadowed_directional_light_name(output_shadowed_directional_light_name), output_shadowed_point_light_name(output_shadowed_point_light_name)
 {
 
 }
@@ -21,14 +21,16 @@ void RenderSubmissionPass::Setup(RenderPassResourceDefinnition& setup_builder)
 {
 	setup_builder.AddResource<RenderResourceCollection<Entity>>(output_mesh_name, RenderPassResourceDescriptor_Access::WRITE);
 	setup_builder.AddResource<RenderResourceCollection<Entity>>(output_light_name, RenderPassResourceDescriptor_Access::WRITE);
-	setup_builder.AddResource<RenderResourceCollection<Entity>>(output_shadowed_light_name, RenderPassResourceDescriptor_Access::WRITE);
+	setup_builder.AddResource<RenderResourceCollection<Entity>>(output_shadowed_directional_light_name, RenderPassResourceDescriptor_Access::WRITE);
+	setup_builder.AddResource<RenderResourceCollection<Entity>>(output_shadowed_point_light_name, RenderPassResourceDescriptor_Access::WRITE);
 }
 
 void RenderSubmissionPass::Render(RenderPipelineResourceManager& resource_manager)
 {
 	RenderResourceCollection<Entity> collection_meshes;
 	RenderResourceCollection<Entity> collection_lights;
-	RenderResourceCollection<Entity> collection_shadowed_lights;
+	RenderResourceCollection<Entity> collection_directional_shadowed_lights;
+	RenderResourceCollection<Entity> collection_point_shadowed_lights;
 	World& world = Application::GetWorld();
 	Entity camera_entity = world.GetPrimaryEntity();
 	if (camera_entity == Entity()) {
@@ -49,7 +51,14 @@ void RenderSubmissionPass::Render(RenderPipelineResourceManager& resource_manage
 		}
 		if (world.HasComponent<LightComponent>(ent)) {
 			if (world.HasComponent<ShadowCasterComponent>(ent)) {
-				collection_shadowed_lights.resources.push_back(ent);
+				switch (world.GetComponent<LightComponent>(ent).type) {
+				case LightType::DIRECTIONAL:
+					collection_directional_shadowed_lights.resources.push_back(ent);
+					break;
+				case LightType::POINT:
+					collection_point_shadowed_lights.resources.push_back(ent);
+					break;
+				}
 			}
 			else {
 				collection_lights.resources.push_back(ent);
@@ -58,5 +67,6 @@ void RenderSubmissionPass::Render(RenderPipelineResourceManager& resource_manage
 	}
 	resource_manager.SetResource(output_mesh_name, std::move(collection_meshes));
 	resource_manager.SetResource(output_light_name, std::move(collection_lights));
-	resource_manager.SetResource(output_shadowed_light_name, std::move(collection_shadowed_lights));
+	resource_manager.SetResource(output_shadowed_directional_light_name, std::move(collection_directional_shadowed_lights));
+	resource_manager.SetResource(output_shadowed_point_light_name, std::move(collection_point_shadowed_lights));
 }

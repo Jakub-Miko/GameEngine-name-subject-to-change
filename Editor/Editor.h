@@ -108,6 +108,7 @@ private:
 
 	bool enabled = true;
 	bool spatial_index_visualization = false;
+	bool light_bounds_visualization = false;
 
 	std::unique_ptr<Viewport> viewport;
 	std::unique_ptr<MaterialEditor> material_editor;

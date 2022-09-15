@@ -1,0 +1,16 @@
+@Section:6
+@Entity 
+{
+"Components": {"LightComponent":{"attenuation":{"x":1.0,"y":0.10000000149011612,"z":0.05000000074505806},"color":{"w":12.0,"x":1.0,"y":0.0,"z":0.0},"type":1},"ShadowCasterComponent":{"far_plane":500.0,"near_plane":0.10000000149011612,"res_x":800,"res_y":800},"TransformComponent":{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":11.0,"y":10.0,"z":13.0}}},
+"Children": []
+}
+
+@EndSection
+@Section:Root
+@Entity 
+{
+"Components": {"TransformComponent":{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":0.0,"y":0.0,"z":0.0}}},
+"Children": ["local#6"]
+}
+
+@EndSection

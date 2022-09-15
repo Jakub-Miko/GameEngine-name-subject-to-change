@@ -212,6 +212,10 @@ void Material::SetMaterial(RenderCommandList* command_list, std::shared_ptr<Pipe
 	for (auto& parameter : parameters) {
 		if (parameter.type == MaterialTemplate::MaterialTemplateParameterType::TEXTURE && !parameter.IsDirty()) {
 			command_list->SetTexture2D(parameter.name, std::get<Texture_type>(parameter.resource).texture);
+		} else if (parameter.type == MaterialTemplate::MaterialTemplateParameterType::TEXTURE_2D_ARRAY && !parameter.IsDirty()) {
+			command_list->SetTexture2DArray(parameter.name, std::get<std::shared_ptr<RenderTexture2DArrayResource>>(parameter.resource));
+		} else if (parameter.type == MaterialTemplate::MaterialTemplateParameterType::TEXTURE_2D_CUBEMAP && !parameter.IsDirty()) {
+			command_list->SetTexture2DCubemap(parameter.name, std::get<std::shared_ptr<RenderTexture2DCubemapResource>>(parameter.resource));
 		}
 	}
 
@@ -228,6 +232,34 @@ void Material::UpdateValues(RenderCommandList* command_list)
 					if (res_fnd != resources.end()) {
 						RenderResourceManager::Get()->CreateTexture2DDescriptor(std::get<RenderDescriptorTable>(res_fnd->resource),
 							texture_param_info.index, std::get<Texture_type>(parameter.resource).texture);
+						parameter.flags &= ~MaterialParameter_flags::DIRTY;
+					}
+					else {
+						throw std::runtime_error("Descriptor table for parameter " + parameter.name + " not found");
+					}
+				}
+			}
+			else if (parameter.type == MaterialTemplate::TEXTURE_2D_ARRAY) {
+				auto& texture_param_info = material_template->GetMaterialTemplateParameter(parameter.name);
+				if (texture_param_info.descriptor_table_id != -1) {
+					auto res_fnd = std::find_if(resources.begin(), resources.end(), [&texture_param_info](const MaterialResource& res) {return res.index == texture_param_info.descriptor_table_id; });
+					if (res_fnd != resources.end()) {
+						RenderResourceManager::Get()->CreateTexture2DArrayDescriptor(std::get<RenderDescriptorTable>(res_fnd->resource),
+							texture_param_info.index, std::get<std::shared_ptr<RenderTexture2DArrayResource>>(parameter.resource));
+						parameter.flags &= ~MaterialParameter_flags::DIRTY;
+					}
+					else {
+						throw std::runtime_error("Descriptor table for parameter " + parameter.name + " not found");
+					}
+				}
+			}
+			else if (parameter.type == MaterialTemplate::TEXTURE_2D_CUBEMAP) {
+				auto& texture_param_info = material_template->GetMaterialTemplateParameter(parameter.name);
+				if (texture_param_info.descriptor_table_id != -1) {
+					auto res_fnd = std::find_if(resources.begin(), resources.end(), [&texture_param_info](const MaterialResource& res) {return res.index == texture_param_info.descriptor_table_id; });
+					if (res_fnd != resources.end()) {
+						RenderResourceManager::Get()->CreateTexture2DCubemapDescriptor(std::get<RenderDescriptorTable>(res_fnd->resource),
+							texture_param_info.index, std::get<std::shared_ptr<RenderTexture2DCubemapResource>>(parameter.resource));
 						parameter.flags &= ~MaterialParameter_flags::DIRTY;
 					}
 					else {
@@ -492,6 +524,28 @@ void MaterialTemplate::AddDescriptorTableParameter(const RootSignatureDescriptor
 			else {
 				for (int i = 0; i < range.size; i++) {
 					AddTexture2DParameter(RootSignatureDescriptorElement(range.individual_names[i], RootParameterType::TEXTURE_2D, true),current_index,index);
+					current_index++;
+				}
+			}
+			break;
+		case RootDescriptorType::TEXTURE_2D_ARRAY:
+			if (range.individual_names.empty()) {
+				throw std::runtime_error("Material Visible Textures in Descriptor tables must have assigned individual names.");
+			}
+			else {
+				for (int i = 0; i < range.size; i++) {
+					AddTexture2DArrayParameter(RootSignatureDescriptorElement(range.individual_names[i], RootParameterType::TEXTURE_2D_ARRAY, true), current_index, index);
+					current_index++;
+				}
+			}
+			break;
+		case RootDescriptorType::TEXTURE_2D_CUBEMAP:
+			if (range.individual_names.empty()) {
+				throw std::runtime_error("Material Visible Textures in Descriptor tables must have assigned individual names.");
+			}
+			else {
+				for (int i = 0; i < range.size; i++) {
+					AddTexture2DCubemapParameter(RootSignatureDescriptorElement(range.individual_names[i], RootParameterType::TEXTURE_2D_CUBEMAP, true), current_index, index);
 					current_index++;
 				}
 			}

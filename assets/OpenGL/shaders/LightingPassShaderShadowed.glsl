@@ -22,6 +22,14 @@
 					"individual_names" : [
 						"Color", "Normal", "DepthBuffer", "ShadowMap"
 					]
+				}, 
+				{
+					"size" : 1,
+					"name" : "Cubemaps",
+					"type" : "texture_2D_cubemap",
+					"individual_names" : [
+						"ShadowCubeMap"
+					]
 				}
 			]
 		}
@@ -42,6 +50,10 @@
 					{
 						"name" : "pixel_size",
 						"type" : "VEC2"
+					},
+					{
+						"name": "light_far_plane",
+						"type" : "FLOAT"
 					},
 					{
 						"name" : "light_type",
@@ -74,6 +86,11 @@
 				}
 			},
 			{
+				"name": "light_far_plane",
+				"type" : "SCALAR",
+				"value" : 1.0
+			},
+			{
 				"name": "light_type",
 				"type" : "INT",
 				"value" : 1
@@ -104,6 +121,7 @@ uniform light_props{
 	vec4 Light_Color;
 	vec4 attenuation_constants;
 	vec2 pixel_size;
+	float light_far_plane;
 	int light_type;
 };
 
@@ -138,6 +156,7 @@ uniform sampler2D Color;
 uniform sampler2D Normal;
 uniform sampler2D DepthBuffer;
 uniform sampler2D ShadowMap;
+uniform samplerCube ShadowCubeMap;
 
 uniform conf {
 	mat4 mvp_matrix;
@@ -152,6 +171,7 @@ uniform light_props{
 	vec4 Light_Color;
 	vec4 attenuation_constants;
 	vec2 pixel_size;
+	float light_far_plane;
 	int light_type;
 };
 
@@ -167,7 +187,7 @@ float calculate_shadows(vec3 view_space_pos) {
 		light_space_coords = light_space_coords * 0.5 + 0.5;
 		float shadow_map_depth = texture(ShadowMap, light_space_coords.xy).x;
 		float current_depth = light_space_coords.z;
-		if (current_depth - 0.0005 < shadow_map_depth)
+		if (current_depth - 0.0005 < shadow_map_depth || shadow_map_depth > 0.99)
 		{
 			return 1.0;
 		}
@@ -175,6 +195,20 @@ float calculate_shadows(vec3 view_space_pos) {
 			return 0.0;
 		}
 
+	}
+	else if (light_type == 1) {
+		vec4 light_space_pos = light_matrix * vec4(view_space_pos, 1.0);
+		vec3 light_space_coords = normalize(light_space_pos.xyz);
+		float shadow_map = texture(ShadowCubeMap, light_space_coords).x;
+		float shadow_map_depth = shadow_map * light_far_plane;
+		float current_depth = length(light_space_pos);
+		if (current_depth - 0.3 < shadow_map_depth || shadow_map > 0.99)
+		{
+			return 1.0;
+		}
+		else {
+			return 0.0;
+		}
 	}
 
 	return 1.0;
@@ -211,9 +245,6 @@ void main() {
 	}
 	float shadows = calculate_shadows(view_space_pos);
 	color_out = vec4(shadows * color.xyz * Light_Color.xyz * attenuation_factor * Light_Color.w * (0.1 + max(0, dot(normal, -light_direction))),1.0);
-
-
-
 }
 
 #end

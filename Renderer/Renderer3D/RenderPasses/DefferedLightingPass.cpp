@@ -1,4 +1,5 @@
 #include "DefferedLightingPass.h"
+#include <Renderer/TextureManager.h>
 #include <Renderer/RootSignature.h>
 #include <Renderer/Renderer3D/Renderer3D.h>
 #include <Renderer/Renderer3D/MaterialManager.h>
@@ -152,8 +153,9 @@ void DefferedLightingPass::InitPostProcessingPassData() {
 }
 
 
-DefferedLightingPass::DefferedLightingPass(const std::string& input_gbuffer, const std::string& input_lights, const std::string& input_shadowed_lights, const std::string& output_buffer, const std::string& shadow_map_dependency_tag)
-	: input_gbuffer(input_gbuffer), output_buffer(output_buffer), input_lights(input_lights), input_shadowed_lights(input_shadowed_lights), shadow_map_dependency_tag(shadow_map_dependency_tag)
+DefferedLightingPass::DefferedLightingPass(const std::string& input_gbuffer, const std::string& input_lights, const std::string& input_directional_shadowed_lights, const std::string& input_point_shadowed_lights, const std::string& output_buffer, const std::string& shadow_map_dependency_tag)
+	: input_gbuffer(input_gbuffer), output_buffer(output_buffer), input_lights(input_lights), input_directional_shadowed_lights(input_directional_shadowed_lights),
+	input_point_shadowed_lights(input_point_shadowed_lights), shadow_map_dependency_tag(shadow_map_dependency_tag)
 {
 	data = new internal_data;
 	InitPostProcessingPassData();
@@ -162,7 +164,8 @@ DefferedLightingPass::DefferedLightingPass(const std::string& input_gbuffer, con
 void DefferedLightingPass::Setup(RenderPassResourceDefinnition& setup_builder)
 {
 	setup_builder.AddResource<RenderResourceCollection<Entity>>(input_lights, RenderPassResourceDescriptor_Access::READ);
-	setup_builder.AddResource<RenderResourceCollection<Entity>>(input_shadowed_lights, RenderPassResourceDescriptor_Access::READ);
+	setup_builder.AddResource<RenderResourceCollection<Entity>>(input_directional_shadowed_lights, RenderPassResourceDescriptor_Access::READ);
+	setup_builder.AddResource<RenderResourceCollection<Entity>>(input_point_shadowed_lights, RenderPassResourceDescriptor_Access::READ);
 	setup_builder.AddResource<std::shared_ptr<RenderFrameBufferResource>>(output_buffer, RenderPassResourceDescriptor_Access::WRITE);
 	setup_builder.AddResource<std::shared_ptr<RenderFrameBufferResource>>(input_gbuffer, RenderPassResourceDescriptor_Access::READ);
 	setup_builder.AddResource<DependencyTag>(shadow_map_dependency_tag, RenderPassResourceDescriptor_Access::READ);
@@ -189,7 +192,8 @@ void DefferedLightingPass::Render(RenderPipelineResourceManager& resource_manage
 
 	RenderResourceManager::Get()->CopyFrameBufferDepthAttachment(list, gbuffer, data->output_buffer_resource);
 	RenderLights(resource_manager, list, camera, props);
-	RenderShadowedLights(resource_manager, list, camera, props);
+	RenderShadowedLights<LightType::DIRECTIONAL>(resource_manager, list, camera, props);
+	RenderShadowedLights<LightType::POINT>(resource_manager, list, camera, props);
 
 
 	queue->ExecuteRenderCommandList(list);
@@ -268,9 +272,17 @@ void DefferedLightingPass::RenderLights(RenderPipelineResourceManager& resource_
 	}
 }
 
+template<LightType light_type>
 void DefferedLightingPass::RenderShadowedLights(RenderPipelineResourceManager& resource_manager, RenderCommandList* list, const CameraComponent& camera, const render_props& props)
 {
-	auto& geometry = resource_manager.GetResource<RenderResourceCollection<Entity>>(input_shadowed_lights);
+	const RenderResourceCollection<Entity>* geometry;
+	if constexpr (light_type == LightType::DIRECTIONAL) {
+		geometry = &resource_manager.GetResource<RenderResourceCollection<Entity>>(input_directional_shadowed_lights);
+		data->mat_shadowed->SetParameter("ShadowMap", TextureManager::Get()->GetDefaultTexture());
+	}else if constexpr (light_type == LightType::POINT) {
+		geometry = &resource_manager.GetResource<RenderResourceCollection<Entity>>(input_point_shadowed_lights);
+		data->mat_shadowed->SetParameter("ShadowCubeMap", TextureManager::Get()->GetDefaultTextureCubemap());
+	}
 	auto& gbuffer = resource_manager.GetResource<std::shared_ptr<RenderFrameBufferResource>>(input_gbuffer);
 	auto& world = Application::GetWorld();
 	auto ViewProjection = props.projection * props.view;
@@ -284,7 +296,7 @@ void DefferedLightingPass::RenderShadowedLights(RenderPipelineResourceManager& r
 	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed, &depth_constant_a, sizeof(float), sizeof(glm::mat4) * 4);
 	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed, &depth_constant_b, sizeof(float), sizeof(glm::mat4) * 4 + sizeof(float));
 	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed, &inverse_projection, sizeof(glm::mat4), sizeof(glm::mat4) * 3);
-	for (auto& entity : geometry.resources) {
+	for (auto& entity : geometry->resources) {
 		auto& transform_component = world.GetComponent<TransformComponent>(entity);
 		auto transform = transform_component.TransformMatrix;
 		auto& light = world.GetComponent<LightComponent>(entity);
@@ -293,19 +305,22 @@ void DefferedLightingPass::RenderShadowedLights(RenderPipelineResourceManager& r
 		glm::mat4 mvp;
 		glm::mat4 mv_matrix;
 
-		if (light.type == LightType::DIRECTIONAL) {
+		if constexpr(light_type == LightType::DIRECTIONAL) {
 			mvp = glm::mat4(1.0f);
 			mv_matrix = view_matrix * transform;
 			list->SetVertexBuffer(data->card_mesh->GetVertexBuffer());
 			list->SetIndexBuffer(data->card_mesh->GetIndexBuffer());
+			data->mat_shadowed->SetParameter("ShadowMap", shadow.shadow_map->GetBufferDescriptor().GetDepthAttachmentAsTexture());
 			index_count = data->card_mesh->GetIndexCount();
 		}
-		else if (light.type == LightType::POINT) {
+		else if constexpr (light_type == LightType::POINT) {
 			glm::mat4 model_sphere = glm::translate(glm::mat4(1.0f), (glm::vec3)transform_component.TransformMatrix[3]) * glm::scale(glm::mat4(1.0), glm::vec3(light.CalcRadiusFromAttenuation()));
 			mv_matrix = view_matrix * model_sphere;
 			mvp = ViewProjection * model_sphere;
 			list->SetVertexBuffer(data->sphere_mesh->GetVertexBuffer());
 			list->SetIndexBuffer(data->sphere_mesh->GetIndexBuffer());
+			data->mat_shadowed->SetParameter("light_far_plane", shadow.far_plane);
+			data->mat_shadowed->SetParameter("ShadowCubeMap", shadow.shadow_map->GetBufferDescriptor().GetDepthAttachmentAsTextureCubemap());
 			index_count = data->sphere_mesh->GetIndexCount();
 		}
 
@@ -320,7 +335,6 @@ void DefferedLightingPass::RenderShadowedLights(RenderPipelineResourceManager& r
 		data->mat_shadowed->SetParameter("Color", gbuffer->GetBufferDescriptor().GetColorAttachmentAsTexture(0));
 		data->mat_shadowed->SetParameter("Normal", gbuffer->GetBufferDescriptor().GetColorAttachmentAsTexture(1));
 		data->mat_shadowed->SetParameter("DepthBuffer", gbuffer->GetBufferDescriptor().GetDepthAttachmentAsTexture());
-		data->mat_shadowed->SetParameter("ShadowMap", shadow.shadow_map->GetBufferDescriptor().GetDepthAttachmentAsTexture());
 		data->mat_shadowed->SetParameter("light_type", (int)light.type);
 		data->mat_shadowed->SetParameter("attenuation", glm::vec4(light.GetAttenuation(), 0.0f));
 		data->mat_shadowed->SetMaterial(list, data->pipeline_shadowed);

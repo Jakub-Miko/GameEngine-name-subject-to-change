@@ -48,11 +48,11 @@ void LightComponent::ChangeType(LightType type, Entity ent)
 			}
 			Application::GetWorld().MarkEntityDirty(ent);
 
-			if (Application::GetWorld().HasComponentSynced<ShadowCasterComponent>(ent)) {
-				if (type != LightType::DIRECTIONAL) {
-					throw std::runtime_error("Shadows are currently only supported for Directional Lights");
-				}
-			}
+			//if (Application::GetWorld().HasComponentSynced<ShadowCasterComponent>(ent)) {
+			//	if (type != LightType::DIRECTIONAL) {
+			//		throw std::runtime_error("Shadows are currently only supported for Directional Lights");
+			//	}
+			//}
 		}
 	}
 	else {
