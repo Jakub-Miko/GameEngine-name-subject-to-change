@@ -308,32 +308,32 @@ void PropertiesPanel::RenderProperties(Entity entity, const PropertiesPanel_pers
 			if (prefab.status == PrefabStatus::ERROR) {
 				ImGui::OpenPopup(prefab_error_id);
 				data.prefab_path[0] = '\0';
-				memcpy(data.prefab_path, prefab.file_path.c_str(), prefab.file_path.size() + 1);
+				memcpy(data.prefab_path, prefab.GetFilePath().c_str(), prefab.GetFilePath().size() + 1);
 				prefab.status = PrefabStatus::UNINITIALIZED;
 			}
 			
 			if (strlen(data.prefab_path) == 0) {
 				data.prefab_path[0] = '\0';
-				memcpy(data.prefab_path, prefab.file_path.c_str(), prefab.file_path.size() + 1);
+				memcpy(data.prefab_path, prefab.GetFilePath().c_str(), prefab.GetFilePath().size() + 1);
 			}
 			bool enter = ImGui::InputText("Prefab path", data.prefab_path, buffer_size, ImGuiInputTextFlags_EnterReturnsTrue);
 			if (ImGui::Button("Reload") || enter) {
 				try {
-					prefab.file_path = data.prefab_path;
+					prefab.SetFilePath(data.prefab_path);
 					Application::GetWorld().RemoveEntity(selected, RemoveEntityAction::RELOAD_PREFAB);
 				}
 				catch (std::runtime_error* e) {
 					ImGui::OpenPopup(prefab_error_id);
 					data.prefab_path[0] = '\0';
-					memcpy(data.prefab_path, prefab.file_path.c_str(), prefab.file_path.size() + 1);
+					memcpy(data.prefab_path, prefab.GetFilePath().c_str(), prefab.GetFilePath().size() + 1);
 				}
 			}
 			ImGui::SameLine();
 			
 			if (ImGui::Button("Set Selected")) {
-				prefab.file_path = FileManager::Get()->GetRelativeFilePath(Editor::Get()->GetSelectedFilePath());
+				prefab.SetFilePath(FileManager::Get()->GetRelativeFilePath(Editor::Get()->GetSelectedFilePath()));
 				Application::GetWorld().RemoveEntity(selected, RemoveEntityAction::RELOAD_PREFAB);
-				memcpy(data.prefab_path, prefab.file_path.c_str(), prefab.file_path.size() + 1);
+				memcpy(data.prefab_path, prefab.GetFilePath().c_str(), prefab.GetFilePath().size() + 1);
 			}
 			
 			if (ImGui::Button("OpenPrefabEditor")) {
@@ -444,7 +444,7 @@ void PropertiesPanel::AddComponent(Entity entity,const PropertiesPanel_persisten
 			}
 			if (ImGui::Button("Remove Prefab Component")) {
 				world.GetSceneGraph()->GetSceneGraphNode(entity)->state = world.GetSceneGraph()->GetSceneGraphNode(entity)->state & ~SceneNodeState::PREFAB;
-				world.GetComponent<PrefabComponent>(entity).file_path = "Unknown";
+				world.GetComponent<PrefabComponent>(entity).SetFilePath("Unknown");
 				world.RemoveEntity(entity, RemoveEntityAction::REMOVE_PREFABS);
 				data.prefab_path[0] = '\0';
 			}

@@ -23,7 +23,7 @@ EntityParseResult EntityParser::ParseEntity(const std::string& script)
 	if (tag != "Entity") {
 		throw std::runtime_error("Invalid entity descriptor format");
 	}
-	auto end_scr = script.find("@Entity", end + 1);
+	auto end_scr = script.find("@", end + 1);
 	if (end_scr == script.npos) {
 		json_script = script.substr(end + 1, script.npos);
 	}
@@ -57,7 +57,7 @@ EntityParseResult EntityParser::ParseEntity(const std::string& script)
 	auto construct = script.find("@Entity:Construction_Script", 0);
 	if (construct != script.npos) {
 		construct += strlen("@Entity:Construction_Script");
-		auto end = script.find("@Entity", construct);
+		auto end = script.find("@", construct);
 		std::string construction_script;
 		if (end == script.npos) {
 			construction_script = script.substr(construct, script.npos);

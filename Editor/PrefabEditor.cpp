@@ -1,5 +1,7 @@
 #include "PrefabEditor.h"
 #include <Editor/Editor.h>
+#include <sstream>
+#include <World/EntityManager.h>
 #include <World/Components/SerializableComponent.h>
 #include <FileManager.h>
 #include <imgui.h>
@@ -169,8 +171,15 @@ void PrefabEditor::PrefabPropertiesPanel(PrefabEditorWindow& window)
 void PrefabEditor::RenderWindow(PrefabEditorWindow& window)
 {
 	bool opened = true;
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0,0 });
+	auto& prefab_comp = Application::GetWorld().GetComponent<PrefabComponent>(window.entity);
+	EntityTemplate ent_template = EntityManager::Get()->GetEntitySignature(prefab_comp.GetFilePath());
+	auto file_name = std::filesystem::path(FileManager::Get()->GetPath(prefab_comp.GetFilePath())).filename().generic_string();
+	auto temp_file_name = FileManager::Get()->GetTempFilePath(file_name + ".lua");
+	bool temp_file_exists = std::filesystem::exists(std::filesystem::path(temp_file_name));
+	auto temp_file_inline_name = FileManager::Get()->GetTempFilePath("inline_" + file_name + ".lua");
+	bool temp_file_inline_exists = std::filesystem::exists(std::filesystem::path(temp_file_inline_name));
 
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0,0 });
 	auto dock_id = ImGui::GetID(("Prefab Editor##" + std::to_string(window.entity.id)).c_str());
 	ImGui::SetNextWindowSize({ 800,600 }, ImGuiCond_Once);
 	ImGui::Begin(("Prefab Editor##" + std::to_string(window.entity.id)).c_str(),&opened, ImGuiWindowFlags_MenuBar);
@@ -182,17 +191,17 @@ void PrefabEditor::RenderWindow(PrefabEditorWindow& window)
 		if (ImGui::Button("Set Selected")) {
 			memcpy(save_prefab_buffer, FileManager::Get()->GetRelativeFilePath(Editor::Get()->GetSelectedFilePath()).c_str(), Editor::Get()->GetSelectedFilePath().size() + 1);
 		}
-
+		std::string actual_path = FileManager::Get()->GetRelativeFilePath(FileManager::Get()->GetPath(save_prefab_buffer));
 		ImGui::Separator();
-		if (ImGui::Button("Save") || enter_pressed) {
-			Application::GetWorld().SerializePrefab(window.entity, FileManager::Get()->GetPath(save_prefab_buffer));
+		if (ImGui::Button("Save and Reload") || enter_pressed) {
+			Application::GetWorld().SerializePrefab(window.entity, FileManager::Get()->GetPath(actual_path));
 			auto& prefab = Application::GetWorld().GetComponent<PrefabComponent>(window.entity);
 			if (prefab.status == PrefabStatus::UNINITIALIZED) {
-				prefab.file_path = save_prefab_buffer;
+				prefab.SetFilePath(actual_path);
 				prefab.status = PrefabStatus::OK;
-				Application::GetWorld().RemoveEntity(window.entity, RemoveEntityAction::RELOAD_PREFAB);
 				Editor::Get()->Refresh();
 			}
+			Application::GetWorld().RemoveEntity(window.entity, RemoveEntityAction::RELOAD_ALL_PREFABS_OF_THIS_TYPE);
 			ImGui::CloseCurrentPopup();
 		}
 		ImGui::SameLine();
@@ -209,6 +218,62 @@ void PrefabEditor::RenderWindow(PrefabEditorWindow& window)
 			}
 			ImGui::EndMenu();
 		}
+		if (ImGui::BeginMenu("Script")) {
+			if (ImGui::MenuItem(ent_template.construction_script.empty() ? "Add Construction Script" : "Edit Construction Script")) {
+				std::ofstream temp_file(temp_file_name);
+				if (!temp_file.is_open()) throw std::runtime_error("File " + temp_file_name + " could not be created!");
+				temp_file << ent_template.construction_script;
+				temp_file.close();
+				Application::Get()->GetOsApi()->OpenFileInDefaultApp(temp_file_name);
+			}
+			if (ImGui::MenuItem(ent_template.inline_script.empty() ? "Add Inline Script" : "Edit Inline Script")) {
+				std::ofstream temp_file(temp_file_inline_name);
+				if (!temp_file.is_open()) throw std::runtime_error("File " + temp_file_inline_name + " could not be created!");
+				temp_file << ent_template.inline_script;
+				temp_file.close();
+				Application::Get()->GetOsApi()->OpenFileInDefaultApp(temp_file_inline_name);
+			}
+			if (temp_file_exists) {
+				if (ImGui::MenuItem("Apply Construction Script")) {
+					std::ifstream temp_file(temp_file_name);
+					if (!temp_file.is_open()) throw std::runtime_error("File " + temp_file_name + " could not be opened!");
+					std::stringstream sstream;
+					sstream << temp_file.rdbuf();
+					EntityManager::Get()->AddConstructionScriptToPrefab(prefab_comp.GetFilePath(), sstream.str());
+
+					temp_file.close();
+				}
+			}
+			if (temp_file_inline_exists) {
+				if (ImGui::MenuItem("Apply Inline Script")) {
+					std::ifstream temp_file(temp_file_inline_name);
+					if (!temp_file.is_open()) throw std::runtime_error("File " + temp_file_inline_name + " could not be opened!");
+					std::stringstream sstream;
+					sstream << temp_file.rdbuf();
+					EntityManager::Get()->AddInlineScriptToPrefab(prefab_comp.GetFilePath(), sstream.str());
+
+					temp_file.close();
+				}
+			}
+			if (!ent_template.construction_script.empty()) {
+				if (ImGui::MenuItem("Remove Construction Script")) {
+					EntityManager::Get()->RemoveConstructionScriptToPrefab(prefab_comp.GetFilePath());
+					if (temp_file_exists) {
+						std::filesystem::remove(temp_file_name);
+					}
+				}
+			}
+			if (!ent_template.inline_script.empty()) {
+				if (ImGui::MenuItem("Remove Inline Script")) {
+					EntityManager::Get()->RemoveInlineScriptToPrefab(prefab_comp.GetFilePath());
+					if (temp_file_inline_exists) {
+						std::filesystem::remove(temp_file_inline_name);
+					}
+				}
+			}
+
+			ImGui::EndMenu();
+		}
 		ImGui::EndMenuBar();
 	}
 	auto id = dock_id;
@@ -217,6 +282,7 @@ void PrefabEditor::RenderWindow(PrefabEditorWindow& window)
 		ImGui::DockBuilderAddNode(dock_id, ImGuiDockNodeFlags_DockSpace);
 
 		ImGui::DockBuilderSetNodeSize(dock_id, ImGui::GetContentRegionAvail());
+
 		auto left = ImGui::DockBuilderSplitNode(dock_id, ImGuiDir_Left, 0.5f, NULL, &dock_id);
 
 		ImGui::DockBuilderDockWindow(("SceneGraph##" + std::to_string(window.entity.id)).c_str(), left);
@@ -225,6 +291,7 @@ void PrefabEditor::RenderWindow(PrefabEditorWindow& window)
 	}
 	ImGui::DockSpace(id);
 	ImGui::End();
+
 
 	PrefabSceneGraph(window);
 

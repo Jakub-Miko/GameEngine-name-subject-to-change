@@ -95,35 +95,37 @@ std::shared_ptr<Material> MaterialManager::ParseMaterialFromString(const std::st
 	}
 
 	std::shared_ptr<Material> material = std::shared_ptr<Material>(new Material(mat_template));
-	if (!material_json.contains("parameters") || !material_json["parameters"].is_array()) throw std::runtime_error("Material file must contain a parameters list");
-	for (auto& parameter : material_json["parameters"]) {
-		std::string type = parameter["type"].get<std::string>();
-		if (type == "SCALAR") {
-			material->SetParameter<float>(parameter["name"].get<std::string>(), parameter["value"].get<float>());
-		}
-		else if (type == "VEC2") {
-			material->SetParameter<glm::vec2>(parameter["name"].get<std::string>(), parameter["value"].get<glm::vec2>());
-		}
-		else if (type == "VEC3") {
-			material->SetParameter<glm::vec3>(parameter["name"].get<std::string>(), parameter["value"].get<glm::vec3>());
-		}
-		else if (type == "VEC4") {
-			material->SetParameter<glm::vec4>(parameter["name"].get<std::string>(), parameter["value"].get<glm::vec4>());
-		}
-		else if (type == "INT") {
-			material->SetParameter<int>(parameter["name"].get<std::string>(), parameter["value"].get<int>());
-		}
-		else if (type == "TEXTURE") {
-			if (parameter["value"].get<std::string>().empty()) {
-				if (parameter.contains("default_normal") && parameter["default_normal"].get<bool>()) {
-					material->SetParameter(parameter["name"].get<std::string>(), TextureManager::Get()->GetDefaultNormalTexture());
+	if (!material_json.contains("parameters") || (!material_json["parameters"].is_array() && !material_json["parameters"].is_null())) throw std::runtime_error("Material file must contain a parameters list");
+	if (!material_json["parameters"].is_null()) {
+		for (auto& parameter : material_json["parameters"]) {
+			std::string type = parameter["type"].get<std::string>();
+			if (type == "SCALAR") {
+				material->SetParameter<float>(parameter["name"].get<std::string>(), parameter["value"].get<float>());
+			}
+			else if (type == "VEC2") {
+				material->SetParameter<glm::vec2>(parameter["name"].get<std::string>(), parameter["value"].get<glm::vec2>());
+			}
+			else if (type == "VEC3") {
+				material->SetParameter<glm::vec3>(parameter["name"].get<std::string>(), parameter["value"].get<glm::vec3>());
+			}
+			else if (type == "VEC4") {
+				material->SetParameter<glm::vec4>(parameter["name"].get<std::string>(), parameter["value"].get<glm::vec4>());
+			}
+			else if (type == "INT") {
+				material->SetParameter<int>(parameter["name"].get<std::string>(), parameter["value"].get<int>());
+			}
+			else if (type == "TEXTURE") {
+				if (parameter["value"].get<std::string>().empty()) {
+					if (parameter.contains("default_normal") && parameter["default_normal"].get<bool>()) {
+						material->SetParameter(parameter["name"].get<std::string>(), TextureManager::Get()->GetDefaultNormalTexture());
+					}
+					else {
+						material->SetParameter(parameter["name"].get<std::string>(), TextureManager::Get()->GetDefaultTexture());
+					}
 				}
 				else {
-					material->SetParameter(parameter["name"].get<std::string>(), TextureManager::Get()->GetDefaultTexture());
+					material->SetTexture(parameter["name"].get<std::string>(), parameter["value"].get<std::string>());
 				}
-			}
-			else {
-				material->SetTexture(parameter["name"].get<std::string>(), parameter["value"].get<std::string>());
 			}
 		}
 	}

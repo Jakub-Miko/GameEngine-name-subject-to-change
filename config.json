@@ -6,5 +6,6 @@
   "root_path": "../",
   "local_asset_path": "assets/",
   "render_api_path": "assets/OpenGL/",
-  "engine_asset_path" : "assets/"
+  "engine_asset_path": "assets/",
+  "temp_path" : "temp/"
 }

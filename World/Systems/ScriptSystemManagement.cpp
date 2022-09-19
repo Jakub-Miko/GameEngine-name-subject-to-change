@@ -101,6 +101,38 @@ void ScriptSystemManager::SetEntityAsDirty(Entity ent)
     Application::GetWorld().SetComponent<DefferedUpdateComponent>(ent);
 }
  
+void ScriptSystemManager::InvalidateInlineScript(const std::string& script_path)
+{
+    auto hash = LuaEngineUtilities::ScriptHash(script_path, false);
+    auto fnd = m_ScriptCache.find(hash);
+    if (fnd != m_ScriptCache.end()) {
+        m_ScriptCache.erase(hash);
+    }
+    auto& threads = ThreadManager::Get()->GetAllThreadObjects();
+    for (auto& thread : threads) {
+        if (thread->StateValueExists<ScriptSystemVM>()) {
+            auto vm = thread->GetStateValue<ScriptSystemVM>();
+            vm->InvalidateInlineScript(script_path);
+        }
+    }
+}
+
+void ScriptSystemManager::InvalidateConstructionScript(const std::string& script_path)
+{
+    auto hash = LuaEngineUtilities::ScriptHash(script_path, true);
+    auto fnd = m_ScriptCache.find(hash);
+    if (fnd != m_ScriptCache.end()) {
+        m_ScriptCache.erase(hash);
+    }
+    auto& threads = ThreadManager::Get()->GetAllThreadObjects();
+    for (auto& thread : threads) {
+        if (thread->StateValueExists<ScriptSystemVM>()) {
+            auto vm = thread->GetStateValue<ScriptSystemVM>();
+            vm->InvalidateConstructionScript(script_path);
+        }
+    }
+}
+
 const std::vector<Deffered_Set_Map>& ScriptSystemManager::GetEntityChanges()
 {
     std::lock_guard<std::mutex> lock(DefferedSetMaps_mutex);
@@ -188,9 +220,27 @@ void ScriptSystemVM::SetEngineEntity(Entity ent)
 
 void ScriptSystemVM::SetEngineInitializationEntity(Entity ent, const std::string& path)
 {
-    current_Initialization_handler = InitializationScriptHandler(ent, path);
+    current_Initialization_handler = InitializationScriptHandler(ent, FileManager::Get()->GetRelativeFilePath(FileManager::Get()->GetPath(path)));
     m_LuaInitializationEngine.SetClassInstance(&current_Initialization_handler);
     init_mode = true;
+}
+
+void ScriptSystemVM::InvalidateInlineScript(const std::string& script_path)
+{
+    auto hash = LuaEngineUtilities::ScriptHash(script_path, false);
+    auto fnd = m_BoundScripts.find(hash);
+    if (fnd != m_BoundScripts.end()) {
+        m_BoundScripts.erase(hash);
+    }
+}
+
+void ScriptSystemVM::InvalidateConstructionScript(const std::string& script_path)
+{
+    auto hash = LuaEngineUtilities::ScriptHash(script_path, true);
+    auto fnd = m_BoundInitializationScripts.find(hash);
+    if (fnd != m_BoundInitializationScripts.end()) {
+        m_BoundInitializationScripts.erase(hash);
+    }
 }
 
 void ScriptSystemVM::ResetScriptVM()
@@ -246,13 +296,12 @@ void InitializationScriptHandler::BindHandlerFunctions(LuaEngineClass<Initializa
         {"SetCameraComponent", LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::SetCameraComponent>},         //SetComponent Module - use adapter
         {"SetTranslation", LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::SetTranslation>},                 //Transform Module - use adapter
         {"SetScale", LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::SetScale>},                             //Transform Module - use adapter
-        {"UseInlineScript", LuaEngineClass<InitializationScriptHandler>::InvokeClass<&InitializationScriptHandler::UseInlineScript>},               //InitialConfig Module - use adapter
     });
 
     IOModule().RegisterModule(props);
     TimeModule().RegisterModule(props);
     ApplicationDataModule().RegisterModule(props);
-
+    LocalPropertySetModule().RegisterModule(props);
 
     script_engine->RegisterModule(props);
 }
@@ -285,11 +334,6 @@ void InitializationScriptHandler::SetScale(glm::vec3 scale)
 void InitializationScriptHandler::EnableKeyPressedEvents()
 {
     Application::GetWorld().SetComponent<KeyPressedScriptComponent>(current_entity);
-}
-
-void InitializationScriptHandler::UseInlineScript()
-{
-    Application::GetWorld().SetComponent<ScriptComponent>(current_entity, ScriptComponent(current_path));
 }
 
 void InitializationScriptHandler::EnableMouseButtonPressedEvents()

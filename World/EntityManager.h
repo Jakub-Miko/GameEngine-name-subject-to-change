@@ -42,9 +42,18 @@ public:
 
     Entity CreateEntity(const std::string& name, const std::string& path, Entity parent = Entity());
 
+    void AddConstructionScriptToPrefab(const std::string& prefab_name, const std::string& construction_script);
+    void RemoveConstructionScriptToPrefab(const std::string& prefab_name);
+
+    void AddInlineScriptToPrefab(const std::string& prefab_name, const std::string& inline_script);
+    void RemoveInlineScriptToPrefab(const std::string& prefab_name);
+
+
     Entity CreateEntityInplace(const std::string& name, const std::string& path, Entity parent = Entity());
 
     Entity CreateEntityInplace(const std::string& name, Entity base_entity, const std::string& path, Entity parent = Entity());
+
+    void ClearPrefabCacheEntry(const std::string& name);
 
     void InitializeFromTemplate(Entity target_entity, Entity template_entity, const std::vector<std::string>& exclude_ids = std::vector<std::string>());
 
@@ -67,7 +76,7 @@ private:
 
     void DeserializeComponentsToTemplate(Entity target_entity, const std::string& json_string);
 
-    EntityTemplate ParseEntityTemplate(const std::string& raw_string);
+    EntityTemplate ParseEntityTemplate(const std::string& raw_string, const std::string& path);
 
     EntityManager();
     static EntityManager* instance;

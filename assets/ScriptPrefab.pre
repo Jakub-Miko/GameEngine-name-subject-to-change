@@ -1,0 +1,74 @@
+@Section:Mesh_0
+@Entity 
+{
+"Components": {"LabelComponent":{"label":"Mesh"},"MeshComponent":{"material_path":"assets/Material/MaterialGeometry.mat","path":"assets/Pillar_with_uvs.mesh"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":0.0,"y":0.0,"z":0.0}}},
+"Children": []
+}
+
+@EndSection
+@Section:Root
+@Entity 
+{
+"Components": {"LabelComponent":{"label":"Script Prefab"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":0.0,"y":0.0,"z":0.0}}},
+"Children": ["local#Mesh_0"]
+}
+
+
+@Entity:Construction_Script 
+
+SetProperty_INT("distance",5);
+function OnConstruct()
+
+
+
+UseInlineScript()
+
+
+end
+
+
+@Entity:Inline_Script
+
+
+
+function OnStart() 
+
+
+end
+
+function OnUpdate(delta_time)
+
+norm_scree_pos = GetMousePosition()
+offset = vec2({ x = 1.0, y =0.0 })
+
+norm_scree_pos = offset + norm_scree_pos;
+
+norm_scree_pos = norm_scree_pos * vec2({-1,-1});
+norm_scree_pos.y = math.min(math.max(-0.8, norm_scree_pos.y),0.8)
+distance = GetProperty_INT("distance");
+
+if IsKeyPressed(KeyCode.KEY_UP) then
+		SetProperty_INT("distance", distance - 1)
+end
+
+if IsKeyPressed(KeyCode.KEY_DOWN) then
+		SetProperty_INT("distance", distance + 1)
+end
+
+pos = {
+x = math.sin(norm_scree_pos.x * 3.1415926) * math.cos(norm_scree_pos.y * 3.1415926/2) ,
+y = math.sin(norm_scree_pos.y * 3.1415926 / 2),
+z = math.cos(norm_scree_pos.x * 3.1415926) * math.cos(norm_scree_pos.y * 3.1415926/2)
+}
+
+pos_mul = {x = pos.x* distance,y = pos.y* distance,z = pos.z* distance}
+
+rot = quat_lookat(-vec3(pos), vec3({0,1,0}) )
+
+SetTranslation(pos_mul)
+SetRotation(rot)
+
+
+end
+
+@EndSection

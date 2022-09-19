@@ -4,6 +4,7 @@
 #include <World/World.h>
 #include <json.hpp>
 #include <fstream>
+#include <Application.h>
 #include <glm/gtc/type_ptr.hpp>
 #include <World/EntityManager.h>
 #include <World/Components/SerializableComponent.h>
@@ -74,6 +75,15 @@ void SceneGraph::RemoveEntity(Entity entity)
 	}
 	if (node->previous) {
 		node->previous->next = node->next;
+	}
+	PrefabComponent prefab_comp;
+	if (node->parent->IsPrefab() && (prefab_comp = Application::GetWorld().GetComponentSync<PrefabComponent>(node->parent->entity)).first_child == node->entity) {
+		if (node->next) {
+			prefab_comp.first_child = node->next->entity;
+		}
+		else {
+			prefab_comp.first_child = Entity();
+		}
 	}
 	if (node->parent->first_child == node) {
 		if (node->previous) {
@@ -279,7 +289,7 @@ static void DeserializeNode(const nlohmann::json& json, SceneNode* parent, World
 	SceneNode* node = world->GetSceneGraph()->AddEntity(entity, parent);
 	world->SetComponent<SerializableComponent>(entity);
 	if (world->HasComponent<PrefabComponent>(entity)) {
-		world->SetComponent<ConstructionComponent>(entity, world->GetComponent<PrefabComponent>(entity).file_path, parent->entity);
+		world->SetComponent<ConstructionComponent>(entity, world->GetComponent<PrefabComponent>(entity).GetFilePath(), parent->entity);
 	}
 
 	if (json.find("children") != json.end()) {

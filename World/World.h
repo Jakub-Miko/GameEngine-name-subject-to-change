@@ -60,7 +60,7 @@ struct HasOnDestroy
 };
 
 enum class RemoveEntityAction : char {
-	REMOVE = 0, RELOAD_PREFAB = 1, REMOVE_PREFABS = 2
+	REMOVE = 0, RELOAD_PREFAB = 1, REMOVE_PREFABS = 2, RELOAD_ALL_PREFABS_OF_THIS_TYPE = 3
 };
 
 class World {
@@ -152,6 +152,8 @@ public:
 	}
 
 	void RemoveEntity(Entity entity, RemoveEntityAction action = RemoveEntityAction::REMOVE);
+
+	void ReloadPrefabs(const std::string& prefab_path);
 
 	template<typename T, typename ... Args>
 	void SetComponent(Entity entity, Args&& ... args) {

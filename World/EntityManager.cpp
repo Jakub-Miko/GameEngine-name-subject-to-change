@@ -40,15 +40,17 @@ void EntityManager::Shutdown()
 	}
 }
 
-Entity EntityManager::CreateEntity(const std::string& path, Entity parent)
+Entity EntityManager::CreateEntity(const std::string& file_path, Entity parent)
 {
+	std::string path = FileManager::Get()->GetRelativeFilePath(FileManager::Get()->GetPath(file_path));
 	auto ent = Application::GetWorld().MakeEmptyEntity();
 	Application::GetWorld().SetComponent<ConstructionComponent>(ent, path, parent);
 	return ent;
 }
 
-Entity EntityManager::CreateEntityInplace(const std::string& path, Entity parent)
+Entity EntityManager::CreateEntityInplace(const std::string& file_path, Entity parent)
 {
+	std::string path = FileManager::Get()->GetRelativeFilePath(FileManager::Get()->GetPath(file_path));
 	auto script_vm = ScriptSystemManager::Get()->TryGetScriptSystemVM();
 
 	if (!script_vm) {
@@ -79,8 +81,9 @@ Entity EntityManager::CreateEntityInplace(const std::string& path, Entity parent
 	return new_ent;
 }
 
-Entity EntityManager::CreateEntityInplace(Entity base_entity, const std::string& path, Entity parent)
+Entity EntityManager::CreateEntityInplace(Entity base_entity, const std::string& file_path, Entity parent)
 {
+	std::string path = FileManager::Get()->GetRelativeFilePath(FileManager::Get()->GetPath(file_path));
 	auto script_vm = ScriptSystemManager::Get()->TryGetScriptSystemVM();
 
 	if (!script_vm) {
@@ -111,26 +114,129 @@ Entity EntityManager::CreateEntityInplace(Entity base_entity, const std::string&
 	return new_ent;
 }
 
-Entity EntityManager::CreateEntity(const std::string& name, const std::string& path, Entity parent)
+Entity EntityManager::CreateEntity(const std::string& name, const std::string& file_path, Entity parent)
 {
+	std::string path = FileManager::Get()->GetRelativeFilePath(FileManager::Get()->GetPath(file_path));
 	auto ent = Application::GetWorld().MakeEmptyEntity();
 	Application::GetWorld().SetComponent<ConstructionComponent>(ent, path, parent);
 	Application::GetWorld().SetComponent<LabelComponent>(ent, name);
 	return ent;
 }
 
-Entity EntityManager::CreateEntityInplace(const std::string& name, const std::string& path, Entity parent)
+void EntityManager::AddConstructionScriptToPrefab(const std::string& prefab_name, const std::string& construction_script)
 {
+	auto entity_file = FileManager::Get()->OpenFileRaw(prefab_name);
+	auto root_section = FileManager::Get()->GetFileSectionFromString(entity_file, "Root");
+	auto construct_start = root_section.find("@Entity:Construction_Script");
+	if (construct_start != root_section.npos) {
+		construct_start += strlen("@Entity:Construction_Script");
+		auto construct_end = root_section.find("@Entity",construct_start);
+		root_section = root_section.replace(construct_start, construct_end - construct_start, "\n" + construction_script);
+	}
+	else {
+		root_section.append("@Entity:Construction_Script\n" + construction_script);
+	}
+	FileManager::Get()->InsertOrReplaceSection(entity_file, root_section, "Root");
+	std::ofstream out_stream(FileManager::Get()->GetPath(prefab_name));
+	if (!out_stream.is_open()) throw std::runtime_error("File " + prefab_name + " could not be opened");
+	out_stream << entity_file;
+	out_stream.close();
+
+	ScriptSystemManager::Get()->InvalidateConstructionScript(prefab_name);
+
+	Application::GetWorld().ReloadPrefabs(prefab_name);
+}
+
+void EntityManager::RemoveConstructionScriptToPrefab(const std::string& prefab_name)
+{
+	auto entity_file = FileManager::Get()->OpenFileRaw(prefab_name);
+	auto root_section = FileManager::Get()->GetFileSectionFromString(entity_file, "Root");
+	auto construct_start = root_section.find("@Entity:Construction_Script");
+	if (construct_start != root_section.npos) {
+		construct_start += strlen("@Entity:Construction_Script");
+		auto construct_end = root_section.find("@Entity", construct_start);
+		construct_start -= strlen("@Entity:Construction_Script");
+		root_section = root_section.erase(construct_start, construct_end);
+	
+		FileManager::Get()->InsertOrReplaceSection(entity_file, root_section, "Root");
+		std::ofstream out_stream(FileManager::Get()->GetPath(prefab_name));
+		if (!out_stream.is_open()) throw std::runtime_error("File " + prefab_name + " could not be opened");
+		out_stream << entity_file;
+		out_stream.close();
+
+		Application::GetWorld().ReloadPrefabs(prefab_name);
+	}
+}
+
+void EntityManager::AddInlineScriptToPrefab(const std::string& prefab_name, const std::string& inline_script)
+{
+	auto entity_file = FileManager::Get()->OpenFileRaw(prefab_name);
+	auto root_section = FileManager::Get()->GetFileSectionFromString(entity_file, "Root");
+	auto inline_start = root_section.find("@Entity:Inline_Script");
+	if (inline_start != root_section.npos) {
+		inline_start += strlen("@Entity:Inline_Script");
+		auto inline_end = root_section.find("@Entity", inline_start);
+		root_section = root_section.replace(inline_start, inline_end - inline_start, "\n" + inline_script);
+	}
+	else {
+		root_section.append("@Entity:Inline_Script\n" + inline_script);
+	}
+	FileManager::Get()->InsertOrReplaceSection(entity_file, root_section, "Root");
+	std::ofstream out_stream(FileManager::Get()->GetPath(prefab_name));
+	if (!out_stream.is_open()) throw std::runtime_error("File " + prefab_name + " could not be opened");
+	out_stream << entity_file;
+	out_stream.flush();
+	out_stream.close();
+
+	ScriptSystemManager::Get()->InvalidateInlineScript(prefab_name);
+
+	Application::GetWorld().ReloadPrefabs(prefab_name);
+}
+
+void EntityManager::RemoveInlineScriptToPrefab(const std::string& prefab_name)
+{
+	auto entity_file = FileManager::Get()->OpenFileRaw(prefab_name);
+	auto root_section = FileManager::Get()->GetFileSectionFromString(entity_file, "Root");
+	auto inline_start = root_section.find("@Entity:Inline_Script");
+	if (inline_start != root_section.npos) {
+		inline_start += strlen("@Entity:Inline_Script");
+		auto inline_end = root_section.find("@Entity", inline_start);
+		inline_start -= strlen("@Entity:Inline_Script");
+		root_section = root_section.erase(inline_start, inline_end);
+		FileManager::Get()->InsertOrReplaceSection(entity_file, root_section, "Root");
+		std::ofstream out_stream(FileManager::Get()->GetPath(prefab_name));
+		if (!out_stream.is_open()) throw std::runtime_error("File " + prefab_name + " could not be opened");
+		out_stream << entity_file;
+		out_stream.close();
+
+		Application::GetWorld().ReloadPrefabs(prefab_name);
+	}
+}
+
+Entity EntityManager::CreateEntityInplace(const std::string& name, const std::string& file_path, Entity parent)
+{
+	std::string path = FileManager::Get()->GetRelativeFilePath(FileManager::Get()->GetPath(file_path));
 	auto ent = CreateEntityInplace(path, parent);
 	Application::GetWorld().SetComponent<LabelComponent>(ent, name);
 	return ent;
 }
 
-Entity EntityManager::CreateEntityInplace(const std::string& name, Entity base_entity, const std::string& path, Entity parent)
+Entity EntityManager::CreateEntityInplace(const std::string& name, Entity base_entity, const std::string& file_path, Entity parent)
 {
+	std::string path = FileManager::Get()->GetRelativeFilePath(FileManager::Get()->GetPath(file_path));
 	auto ent = CreateEntityInplace(base_entity, path,parent);
 	Application::GetWorld().SetComponent<LabelComponent>(ent, name);
 	return ent;
+}
+
+void EntityManager::ClearPrefabCacheEntry(const std::string& name)
+{
+	std::unique_lock<std::mutex> lock(auxilary_registry_mutex);
+	std::unique_lock<std::mutex> lock2(sync_mutex);
+	auto fnd = m_entity_cache.find(name);
+	if (fnd == m_entity_cache.end()) return;
+	auxilary_registry.destroy((entt::entity)fnd->second.template_entity.id);
+	m_entity_cache.erase(name);
 }
 
 void EntityManager::InitializeFromTemplate(Entity target_entity, Entity template_entity, const std::vector<std::string>& exclude_ids)
@@ -152,8 +258,9 @@ void EntityManager::InitializeFromTemplate(Entity target_entity, Entity template
 
 }
 
-void EntityManager::DeserializeEntityPrefab(Entity target_entity, const std::string& path, Entity parent)
+void EntityManager::DeserializeEntityPrefab(Entity target_entity, const std::string& file_path, Entity parent)
 {
+	std::string path = FileManager::Get()->GetRelativeFilePath(FileManager::Get()->GetPath(file_path));
 	auto script_vm = ScriptSystemManager::Get()->TryGetScriptSystemVM();
 
 	if (!script_vm) {
@@ -313,7 +420,7 @@ void EntityManager::DeserializeComponents(Entity target_entity, const std::strin
 	std::lock_guard<std::mutex> lock(auxilary_registry_mutex);
 	nlohmann::json json_object = nlohmann::json::parse(json_string);
 		
-	DeserializeComponent<TransformComponent, PrefabComponent, DynamicPropertiesComponent, LabelComponent, MeshComponent, CameraComponent, LightComponent, ShadowCasterComponent>(target_entity, json_object);
+	DeserializeComponent<TransformComponent, PrefabComponent, DynamicPropertiesComponent, LabelComponent, MeshComponent, CameraComponent, LightComponent, ShadowCasterComponent, ScriptComponent>(target_entity, json_object);
 }
 
 
@@ -322,7 +429,7 @@ EntityManager::EntityManager() : auxilary_registry(), auxilary_registry_mutex()
 
 }
 
-EntityTemplate EntityManager::ParseEntityTemplate(const std::string& raw_string)
+EntityTemplate EntityManager::ParseEntityTemplate(const std::string& raw_string, const std::string& path)
 {
 	EntityParseResult result = EntityParser::ParseEntity(raw_string);
 	EntityTemplate temp;
@@ -332,11 +439,14 @@ EntityTemplate EntityManager::ParseEntityTemplate(const std::string& raw_string)
 	temp.inline_script = result.inline_script;
 	temp.properties = result.properties;
 	temp.template_entity = Entity();
-
+	entt::entity ent;
 	if (!result.component_json.empty()) {
-		entt::entity ent = auxilary_registry.create();
+		ent = auxilary_registry.create();
 		DeserializeComponentsToTemplate(ent, result.component_json);
 		temp.template_entity = Entity((uint32_t)ent);
+	}
+	if (temp.has_inline) {
+		auxilary_registry.emplace<ScriptComponent>(ent, ScriptComponent(path));
 	}
 	return temp;
 }
@@ -352,7 +462,7 @@ const EntityTemplate& EntityManager::GetEntitySignature(const std::string& path)
 		lock.unlock();
 		std::string script_raw = FileManager::Get()->OpenFile(path);
 
-		EntityTemplate result = ParseEntityTemplate(script_raw);
+		EntityTemplate result = ParseEntityTemplate(script_raw, path);
 
 		lock.lock();
 		auto out = m_entity_cache.insert_or_assign(path, result);
@@ -383,7 +493,7 @@ const EntityTemplate& EntityManager::GetEntitySignatureLocal(const std::string& 
 			script_raw = FileManager::Get()->GetFileSectionFromString(file_buffer, "Root");
 		}
 
-		EntityTemplate result = ParseEntityTemplate(script_raw);
+		EntityTemplate result = ParseEntityTemplate(script_raw, path);
 
 		lock.lock();
 		auto out = m_entity_cache.insert_or_assign(path, result);

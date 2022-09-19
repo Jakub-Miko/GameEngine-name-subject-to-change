@@ -73,6 +73,19 @@ void World::RemoveEntity(Entity entity, RemoveEntityAction action)
 	deletion_queue.push(RemoveEntityRequest{entity, action});
 }
 
+void World::ReloadPrefabs(const std::string& prefab_path)
+{
+	EntityManager::Get()->ClearPrefabCacheEntry(prefab_path);
+	for (auto ent : m_ECS.view<PrefabComponent>()) {
+		Entity entity = Entity((uint32_t)ent);
+		auto& prefab_comp = GetComponent<PrefabComponent>(entity);
+		if (prefab_comp.GetFilePath() != prefab_path) {
+			continue;
+		}
+		RemoveEntity(ent, RemoveEntityAction::RELOAD_PREFAB);
+	}
+}
+
 void World::MarkEntityDirty(Entity entity)
 {
 	SceneNode* node = m_SceneGraph.GetSceneGraphNode(entity);
@@ -106,8 +119,12 @@ void World::SerializePrefab(Entity entity, const std::string& path)
 	std::vector<std::pair<std::string, std::string>> file_structure;
 
 	EntityParseResult result;
-
 	PrefabComponent& prefab = GetComponent<PrefabComponent>(entity);
+
+	EntityTemplate ent_template = EntityManager::Get()->GetEntitySignature(prefab.GetFilePath());
+	result.construction_script = ent_template.construction_script;
+	result.inline_script = ent_template.inline_script;
+
 
 	result.component_json = EntityManager::Get()->SerializeComponentsToJson(entity);
 	if (HasComponent<DynamicPropertiesComponent>(entity)) {
@@ -130,6 +147,9 @@ void World::SerializePrefab(Entity entity, const std::string& path)
 	}
 	stream << "\"Children\": " << children_array.dump() << "\n";
 	stream << "}\n";
+
+	stream << "@Entity:Construction_Script\n" << result.construction_script << "\n";
+	stream << "@Entity:Inline_Script\n" << result.inline_script << "\n";
 
 	file_structure.push_back(std::make_pair("Root", stream.str()));
 
@@ -261,7 +281,7 @@ void World::LoadSceneSystem()
 
 void World::DeletionSystem()
 {
-	std::lock_guard<std::mutex> lock(deletion_mutex);
+	std::unique_lock<std::mutex> lock(deletion_mutex);
 	if (deletion_queue.empty()) {
 		return;
 	}
@@ -319,13 +339,13 @@ void World::DeletionSystem()
 				}
 				auto& prefab = GetComponent<PrefabComponent>(ent);
 				prefab.first_child = Entity();
-				EntityManager::Get()->DeserializeEntityPrefab(ent, GetComponent<PrefabComponent>(ent).file_path);
+				EntityManager::Get()->DeserializeEntityPrefab(ent, GetComponent<PrefabComponent>(ent).GetFilePath());
 			}
 			catch (...) {
 				if (HasComponent<PrefabComponent>(ent)) {
 					auto& comp = GetComponent<PrefabComponent>(ent);
 					comp.status = PrefabStatus::ERROR;
-					comp.file_path = "Unknown";
+					comp.SetFilePath("Unknown");
 					for (auto stor : m_ECS.storage()) {
 						if (stor.second.type() == entt::type_id<TransformComponent>() || stor.second.type() == entt::type_id<LabelComponent>() || stor.second.type() == entt::type_id<PrefabComponent>() 
 							|| stor.second.type() == entt::type_id<SerializableComponent>()) {
@@ -338,6 +358,12 @@ void World::DeletionSystem()
 				}
 			}
 
+		}
+		else if (action == RemoveEntityAction::RELOAD_ALL_PREFABS_OF_THIS_TYPE) {
+			if (!HasComponent<PrefabComponent>(ent)) throw std::runtime_error("This entity doesn't have a prefab component");
+			lock.unlock();
+			ReloadPrefabs(GetComponent<PrefabComponent>(ent).GetFilePath());
+			lock.lock();
 		}
 		else if (action == RemoveEntityAction::REMOVE_PREFABS) {
 			if (!HasComponent<PrefabComponent>(ent)) {
