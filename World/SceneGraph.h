@@ -10,7 +10,7 @@ class World;
 class Octree;
 
 enum class SceneNodeState : char {
-	DIRTY = 1, PREFAB = 2
+	DIRTY = 1, PREFAB = 2, DIRTY_TRANSFORM = 4
 };
 
 inline SceneNodeState operator|(const SceneNodeState& first, const SceneNodeState& second) {
@@ -75,6 +75,8 @@ public:
 	SceneNode* AddEntityToPrefabRoot(Entity ent, SceneNode* parent = nullptr);
 
 	void MarkEntityDirty(SceneNode* ent);
+
+	void MarkEntityDirtyTransform(SceneNode* ent);
 
 	const SceneNode* GetRootNode() const {
 		return &root_node;

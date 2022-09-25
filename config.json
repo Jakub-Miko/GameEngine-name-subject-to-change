@@ -2,10 +2,10 @@
   "Vsync": 0,
   "Latency_Frames": 2,
   "EnableMouseMoveEvent": 1,
-  "default_scene": "asset:Entity_snapshot.json",
+  "default_scene": "asset:Demo.scene",
   "root_path": "../",
   "local_asset_path": "assets/",
   "render_api_path": "assets/OpenGL/",
   "engine_asset_path": "assets/",
-  "temp_path" : "temp/"
+  "temp_path": "temp/"
 }

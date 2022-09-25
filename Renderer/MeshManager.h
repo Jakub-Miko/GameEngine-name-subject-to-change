@@ -187,7 +187,7 @@ private:
 		uint32_t num_of_verticies = 0;
 		uint32_t num_of_uv_channels = 0;
 		void* importer = nullptr;
-
+		 
 		void clear();
 
 	};
@@ -197,7 +197,7 @@ private:
 		BoundingBox bounding_box = BoundingBox();
 		void* vertex_buffer = nullptr;
 		uint32_t vertex_count = 0;
-		unsigned int* index_buffer = nullptr;
+		unsigned int* index_buffer = nullptr; 
 		uint32_t index_count = 0;
 		int vertex_size = 0;
 		VertexLayout layout;

@@ -15,7 +15,7 @@ void World::Init()
 	m_SpatialIndex.Init(SpatialIndexProperties());
 }
 
-World::World() : m_ECS(), m_SceneGraph(this), load_scene(std::make_shared<SceneProxy>()), deletion_queue(), deletion_mutex(), m_SpatialIndex()
+World::World() : m_ECS(), m_SceneGraph(this), load_scene(std::make_shared<SceneProxy>()), deletion_queue(), deletion_mutex(), m_SpatialIndex(), m_PhysicsEngine(PhysicsEngineProps())
 {
 	RegisterComponents(Component_Types());
 	//if((uint32_t)(m_ECS.create())!=0) throw std::runtime_error("A null Entity could not be reserved");
@@ -61,6 +61,18 @@ void World::SetEntityScale(Entity ent, const glm::vec3& scale)
 	MarkEntityDirty(ent); 
 }
 
+void World::SetEntityTransform(Entity ent, const glm::mat4& transform)
+{
+	m_ECS.get<TransformComponent>((entt::entity)ent.id).TransformMatrix = transform;
+	MarkEntityDirty(ent,true);
+}
+
+void World::SetEntityTransformSync(Entity ent, const glm::mat4& transform)
+{
+	std::lock_guard<std::mutex> lock(SyncPool<TransformComponent>());
+	SetEntityTransform(ent, transform);
+}
+
 void World::SetEntityScaleSync(Entity ent, const glm::vec3& scale)
 {
 	std::lock_guard<std::mutex> lock(SyncPool<TransformComponent>());
@@ -86,11 +98,15 @@ void World::ReloadPrefabs(const std::string& prefab_path)
 	}
 }
 
-void World::MarkEntityDirty(Entity entity)
+void World::MarkEntityDirty(Entity entity,bool dirty_transform)
 {
 	SceneNode* node = m_SceneGraph.GetSceneGraphNode(entity);
-	m_SceneGraph.MarkEntityDirty(node);
-
+	if (dirty_transform) {
+		m_SceneGraph.MarkEntityDirtyTransform(node);
+	}
+	else {
+		m_SceneGraph.MarkEntityDirty(node);
+	}
 }
 
 static std::string GetPrefabSectionName(Entity ent) {
@@ -232,6 +248,7 @@ void World::LoadSceneSystem()
 		m_ECS.clear();
 		m_ECS = entt::registry();
 		m_SceneGraph.clear();
+		m_PhysicsEngine.clear();
 		default_camera = Entity();
 		TextureManager::Get()->ClearTextureCache();
 		MaterialManager::Get()->ClearMaterialCache();

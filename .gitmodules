@@ -20,3 +20,6 @@
 	path = dependencies/imgui
 	url = https://github.com/ocornut/imgui.git
 	branch = docking
+[submodule ".\\dependencies\\bullet"]
+	path = .\\dependencies\\bullet
+	url = https://github.com/bulletphysics/bullet3.git

@@ -5,6 +5,7 @@
 #include <World/EntityTypes.h>
 #include <World/SceneGraph.h>
 #include <World/SpatialIndex.h>
+#include <World/PhysicsEngine.h>
 #include <World/Components/InitializationComponent.h>
 #include <World/Components/LabelComponent.h>
 #include <World/Entity.h>
@@ -94,6 +95,10 @@ public:
 	void SetEntityScale(Entity ent, const glm::vec3& scale);
 
 	void SetEntityScaleSync(Entity ent, const glm::vec3& scale);
+
+	void SetEntityTransform(Entity ent, const glm::mat4& transform);
+
+	void SetEntityTransformSync(Entity ent, const glm::mat4& transform);
 
 	template<typename T>
 	auto RegisterComponentType() -> std::enable_if_t<!has_ComponentInitProxy_v<T>> {
@@ -226,12 +231,16 @@ public:
 		return m_ECS.valid((entt::entity)entity.id);
 	}
 
-	void MarkEntityDirty(Entity entity);
+	void MarkEntityDirty(Entity entity, bool dirty_transform = false);
 
 	void SerializePrefab(Entity entity, const std::string& path);
 
 	SpatialIndex& GetSpatialIndex() {
 		return m_SpatialIndex;
+	}
+
+	PhysicsEngine& GetPhysicsEngine() {
+		return m_PhysicsEngine;
 	}
 
 	void CheckCamera();
@@ -279,6 +288,7 @@ private:
 	std::queue<RemoveEntityRequest> deletion_queue;
 	std::mutex entity_mutex;
 	SceneGraph m_SceneGraph;
+	PhysicsEngine m_PhysicsEngine;
 	SpatialIndex m_SpatialIndex;
 	entt::registry m_ECS;
 };

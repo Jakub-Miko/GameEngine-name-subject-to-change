@@ -172,6 +172,23 @@ void SceneGraph::MarkEntityDirty(SceneNode* ent)
 	}
 }
 
+void SceneGraph::MarkEntityDirtyTransform(SceneNode* ent)
+{
+	if (ent) {
+		if (ent->IsDirty()) {
+			return;
+		}
+		else {
+			std::lock_guard<std::mutex> lock(dirty_mutex);
+			ent->state = ent->state | SceneNodeState::DIRTY | SceneNodeState::DIRTY_TRANSFORM;
+			m_dirty_nodes.push_back(ent);
+		}
+	}
+	else {
+		throw std::runtime_error("Invalid SceneNode.");
+	}
+}
+
 void SceneGraph::Serialize(nlohmann::json& output_json)
 {
 	using namespace nlohmann;
@@ -235,7 +252,10 @@ void SceneGraph::RecalculateDownstream(SceneNode* node, SceneNode* upstream)
 		upstream_transform = m_world->GetRegistry().get<TransformComponent>((entt::entity)upstream->entity.id).TransformMatrix;
 	}
 
-	transform.TransformMatrix = glm::translate(glm::mat4(1.0f), transform.translation) * glm::toMat4(transform.rotation) * glm::scale(glm::mat4(1.0f), transform.size);
+	if (!(bool)(node->state & SceneNodeState::DIRTY_TRANSFORM)) {
+		transform.TransformMatrix = glm::translate(glm::mat4(1.0f), transform.translation) * glm::toMat4(transform.rotation) * glm::scale(glm::mat4(1.0f), transform.size);
+	}
+	
 
 	transform.TransformMatrix = upstream_transform * transform.TransformMatrix;
 
