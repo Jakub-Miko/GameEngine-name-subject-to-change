@@ -217,7 +217,10 @@ public:
         EventDispacher dispatch(e);
         dispatch.Dispatch<KeyPressedEvent>([this](KeyPressedEvent* e) {
             if (e->key_code == KeyCode::KEY_R && e->press_type == KeyPressType::KEY_PRESS) {
-                resource2 = FrameMultiBufferResource<std::shared_ptr<RenderBufferResource>>();
+                Application::GetWorld().GetPhysicsEngine().PassiveMode();
+            }
+            else if (e->key_code == KeyCode::KEY_T && e->press_type == KeyPressType::KEY_PRESS) {
+                Application::GetWorld().GetPhysicsEngine().ActiveMode();
             }
             else if (e->key_code == KeyCode::KEY_S && e->press_type == KeyPressType::KEY_PRESS) {
                 Application::GetWorld().SaveScene("Entity_snapshot.json");

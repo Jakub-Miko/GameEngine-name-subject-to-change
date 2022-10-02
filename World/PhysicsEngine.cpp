@@ -114,6 +114,7 @@ void PhysicsEngine::UpdatePhysics(float delta_time)
 {
 	DeletionPhase();
 	CreationPhase();
+	if (!running) return;
 	bullet_data->world->stepSimulation(delta_time);
 }
 
@@ -205,6 +206,7 @@ bool PhysicsEngine::CreatePhysicsObject(Entity entity)
 		physics_comp.physics_shape = box_collision_shape;
 		btRigidBody::btRigidBodyConstructionInfo info(physics_comp.mass, motion_state, box_collision_shape, inertia);
 		btRigidBody* body = new btRigidBody(info);
+		body->setUserPointer((void*)entity.id);
 		if (physics_comp.is_kinematic && physics_comp.mass == 0.0f) {
 			body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
 			body->setActivationState(DISABLE_DEACTIVATION);
@@ -239,4 +241,56 @@ void PhysicsEngine::DestroyPhysicsObject(const PhysicsComponent& physics_comp)
 	default:
 		throw std::runtime_error("This Collision type is not supported");
 	}
+}
+
+void PhysicsEngine::StopSim()
+{
+	running = false;
+}
+
+void PhysicsEngine::StartSim()
+{
+	running = true;
+}
+
+void PhysicsEngine::ResetSim()
+{
+	for (int i = 0; i < bullet_data->world->getCollisionObjectArray().size(); i++)
+	{
+		btCollisionObject* colObj = bullet_data->world->getCollisionObjectArray()[i];
+		Entity ent = Entity((uint32_t)colObj->getUserPointer());
+		Application::GetWorld().MarkEntityDirty(ent);
+	}
+	Application::GetWorld().GetSceneGraph()->CalculateMatricies();
+	for (int i = 0; i < bullet_data->world->getCollisionObjectArray().size(); i++)
+	{
+		btCollisionObject* colObj = bullet_data->world->getCollisionObjectArray()[i];
+		btRigidBody* body = btRigidBody::upcast(colObj);
+		if (body && body->getMotionState())
+		{
+			btTransform trans;
+			body->clearForces();
+			btVector3 vec(0.0f, 0.0f, 0.0f);
+			body->setAngularVelocity(vec);
+			body->setLinearVelocity(vec);
+			body->getMotionState()->getWorldTransform(trans);
+			body->setCenterOfMassTransform(trans);
+			body->setWorldTransform(trans);
+			Entity ent = Entity((uint32_t)colObj->getUserPointer());
+			Application::GetWorld().MarkEntityDirty(ent);
+		}
+	}
+	Application::GetWorld().GetSceneGraph()->CalculateMatricies();
+}
+
+void PhysicsEngine::PassiveMode()
+{
+	StopSim();
+	ResetSim();
+}
+
+void PhysicsEngine::ActiveMode()
+{
+	ResetSim();
+	StartSim();
 }

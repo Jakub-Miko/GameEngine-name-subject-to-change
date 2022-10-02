@@ -20,6 +20,18 @@ public:
 
 	void UpdatePhysics(float delta_time);
 
+	void StopSim();
+
+	void StartSim();
+
+	void ResetSim();
+
+	void PassiveMode();
+
+	void ActiveMode();
+
+	bool IsPhysicsActive() const { return running; }
+
 	void RegisterPhysicsComponent(Entity ent);
 
 	void UnRegisterPhysicsComponent(Entity ent);
@@ -45,6 +57,8 @@ private:
 
 	bool CreatePhysicsObject(Entity entity);
 	void DestroyPhysicsObject(const PhysicsComponent& physics_comp);
+
+	bool running = true;
 
 	PhysicsEngine_BulletData* bullet_data;
 	std::mutex creation_mutex;

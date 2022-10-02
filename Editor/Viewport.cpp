@@ -6,6 +6,8 @@
 #include <Renderer/RenderResourceManager.h>
 #include <Application.h>
 #include <Editor/Editor.h>
+#include <Application.h>
+#include <World/World.h>
 #include <Window.h>
 
 Viewport::Viewport()
@@ -59,6 +61,19 @@ void Viewport::Render()
     ImGui::SetWindowSize(ImVec2{ viewport_size.x,viewport_size.y + ImGui::GetCurrentWindow()->TitleBarHeight() });
 
     Editor::Get()->is_viewport_focused = ImGui::IsWindowFocused();
+
+    bool phys_active = Application::GetWorld().GetPhysicsEngine().IsPhysicsActive();
+    if (phys_active) ImGui::BeginDisabled();
+    if (ImGui::Button("Enable Simulation")) {
+        Application::GetWorld().GetPhysicsEngine().ActiveMode();
+    }
+    if (phys_active) ImGui::EndDisabled();
+    ImGui::SameLine();
+    if (!phys_active) ImGui::BeginDisabled();
+    if (ImGui::Button("Disable Simulation")) {
+        Application::GetWorld().GetPhysicsEngine().PassiveMode();
+    }
+    if (!phys_active) ImGui::EndDisabled();
 
     ImGui::SetCursorPos((ImGui::GetWindowSize() + ImVec2{ 0,ImGui::GetCurrentWindow()->TitleBarHeight() } - ImVec2{ viewport_size.x,viewport_size.y }) * 0.5f); +ImGui::GetCurrentWindow()->TitleBarHeight();
 

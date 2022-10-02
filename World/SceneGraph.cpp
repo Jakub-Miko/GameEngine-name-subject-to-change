@@ -255,6 +255,9 @@ void SceneGraph::RecalculateDownstream(SceneNode* node, SceneNode* upstream)
 	if (!(bool)(node->state & SceneNodeState::DIRTY_TRANSFORM)) {
 		transform.TransformMatrix = glm::translate(glm::mat4(1.0f), transform.translation) * glm::toMat4(transform.rotation) * glm::scale(glm::mat4(1.0f), transform.size);
 	}
+	else {
+		node->state = node->state & ~(SceneNodeState::DIRTY_TRANSFORM);
+	}
 	
 
 	transform.TransformMatrix = upstream_transform * transform.TransformMatrix;
