@@ -226,6 +226,23 @@ void PropertiesPanel::RenderProperties(Entity entity, const PropertiesPanel_pers
 	if (world.HasComponent<PhysicsComponent>(selected) && ImGui::TreeNode("Physics")) {
 		auto& phys_comp = world.GetComponent<PhysicsComponent>(selected);
 		
+		bool kinematic_checked = phys_comp.is_kinematic;
+		ImGui::Checkbox("Kinematic", &kinematic_checked);
+		if (kinematic_checked != phys_comp.is_kinematic) {
+			phys_comp.is_kinematic = kinematic_checked;
+			if (phys_comp.is_kinematic) {
+				phys_comp.mass = 0.0f;
+			}
+			Application::GetWorld().GetPhysicsEngine().RefreshObject(selected);
+		}
+		float mass_input = phys_comp.mass;
+		if (ImGui::DragFloat("Mass", &mass_input)) {
+			if (mass_input != 0.0f) {
+				phys_comp.is_kinematic = false;
+			}
+			phys_comp.mass = mass_input;
+			Application::GetWorld().GetPhysicsEngine().RefreshObject(selected);
+		};
 
 		ImGui::TreePop();
 	}

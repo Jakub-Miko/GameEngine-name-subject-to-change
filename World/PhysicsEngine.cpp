@@ -128,8 +128,10 @@ void PhysicsEngine::UnRegisterPhysicsComponent(Entity ent)
 {
 	std::lock_guard<std::mutex> lock(deletion_mutex);
 	if (!Application::GetWorld().HasComponent<PhysicsComponent>(ent)) throw std::runtime_error("Entity doesn't have a Physics Component");
-	PhysicsComponent component = Application::GetWorld().GetComponent<PhysicsComponent>(ent);
+	PhysicsComponent& component = Application::GetWorld().GetComponent<PhysicsComponent>(ent);
 	deletion_queue.push_front(deletion_queue_entry{ component });
+	component.physics_object = nullptr; 
+	component.physics_shape = nullptr;
 }
 
 PhysicsEngine::~PhysicsEngine()
@@ -294,3 +296,15 @@ void PhysicsEngine::ActiveMode()
 	ResetSim();
 	StartSim();
 }
+
+void PhysicsEngine::RefreshObject(Entity ent)
+{
+	UnRegisterPhysicsComponent(ent);
+	RegisterPhysicsComponent(ent);
+}
+
+
+
+
+
+

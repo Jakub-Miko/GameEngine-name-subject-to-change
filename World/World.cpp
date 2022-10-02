@@ -266,7 +266,7 @@ void World::LoadSceneSystem()
 		RegisterComponents(Component_Types());
 
 		ECS_Input_Archive archive(json["Entities"]);
-		entt::snapshot_loader(m_ECS).component<TransformComponent, PrefabComponent, DynamicPropertiesComponent, LabelComponent,MeshComponent, CameraComponent, LightComponent, ShadowCasterComponent>(archive);
+		entt::snapshot_loader(m_ECS).component<TransformComponent, PrefabComponent, DynamicPropertiesComponent, LabelComponent,MeshComponent, CameraComponent, LightComponent, ShadowCasterComponent, PhysicsComponent>(archive);
 
 
 		m_SceneGraph.Deserialize(json);
@@ -458,7 +458,7 @@ void World::SaveScene(const std::string& file_path)
 	entt::snapshot snapshot(m_ECS);
 	auto view_serializable = m_ECS.view<SerializableComponent>();
 	auto view_serializable_non_prefabs = m_ECS.view<SerializableComponent>(entt::exclude<PrefabComponent>);
-	snapshot.component<TransformComponent, PrefabComponent, DynamicPropertiesComponent, LabelComponent,MeshComponent, CameraComponent, LightComponent, ShadowCasterComponent>(archive, view_serializable.begin(), view_serializable.end());
+	snapshot.component<TransformComponent, PrefabComponent, DynamicPropertiesComponent, LabelComponent,MeshComponent, CameraComponent, LightComponent, ShadowCasterComponent, PhysicsComponent>(archive, view_serializable.begin(), view_serializable.end());
 	//snapshot.component<MeshComponent, CameraComponent, LightComponent>(archive, view_serializable_non_prefabs.begin(), view_serializable_non_prefabs.end());
 
 

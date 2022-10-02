@@ -1,6 +1,7 @@
 #pragma once 
 #include <Core/RuntimeTag.h>
 #include <World/Entity.h>
+#include <Core/UnitConverter.h>
 #include <memory>
 
 class btCollisionObject;
@@ -34,11 +35,11 @@ enum class PhysicsObjectState : char {
 
 struct PhysicsComponent {
 	RuntimeTag("PhysicsComponent");
-	PhysicsComponent()  {}
+	PhysicsComponent() {}
 
 	float mass = 0.0f;
-	PhysicsObjectType object_type;
-	PhysicsShapeType shape_type;
+	PhysicsObjectType object_type = PhysicsObjectType::RIGID_BODY;
+	PhysicsShapeType shape_type = PhysicsShapeType::BOUNDING_BOX;
 	bool is_kinematic = false;
 	PhysicsObjectState state = PhysicsObjectState::UNINITIALIZED;
 private:
@@ -48,3 +49,4 @@ private:
 	btCollisionShape* physics_shape;
 };
 
+JSON_SERIALIZABLE(PhysicsComponent, mass, object_type, shape_type, is_kinematic);

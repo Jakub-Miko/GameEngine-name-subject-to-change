@@ -504,24 +504,6 @@ public:
 
 #pragma endregion
 
-            World& world = Application::GetWorld();
-            Entity physics_cube = world.CreateEntity();
-            world.SetEntityTranslation(physics_cube, glm::vec3(0.0f, 5.0f, 0.0f));
-            world.SetComponent<MeshComponent>(physics_cube, MeshComponent("asset:Box.mesh"_path));
-            PhysicsComponent physics_comp;
-            physics_comp.mass = 1.0f;
-            physics_comp.object_type = PhysicsObjectType::RIGID_BODY;
-            physics_comp.shape_type = PhysicsShapeType::BOUNDING_BOX;
-            world.SetComponent<PhysicsComponent>(physics_cube, physics_comp);
-
-            Entity physics_cube2 = world.CreateEntity();
-            world.SetEntityTranslation(physics_cube2, glm::vec3(0.0f, 0.0f, 0.0f));
-            world.SetComponent<MeshComponent>(physics_cube2, MeshComponent("asset:Box.mesh"_path));
-            physics_comp.mass = 0.0f;
-            physics_comp.is_kinematic = true;
-            physics_comp.object_type = PhysicsObjectType::RIGID_BODY;
-            physics_comp.shape_type = PhysicsShapeType::BOUNDING_BOX;
-            world.SetComponent<PhysicsComponent>(physics_cube2, physics_comp);
             stop = false;
 
         }
