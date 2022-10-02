@@ -4,6 +4,7 @@
 #include <memory>
 
 class btCollisionObject;
+class btCollisionShape;
 class PhysicsComponent;
 
 template<typename T>
@@ -42,6 +43,8 @@ struct PhysicsComponent {
 	PhysicsObjectState state = PhysicsObjectState::UNINITIALIZED;
 private:
 	friend class PhysicsEngine;
+	friend class TransformMotionState;
 	std::shared_ptr<btCollisionObject> physics_object;
+	btCollisionShape* physics_shape;
 };
 

@@ -30,7 +30,7 @@ private:
 	void clear();
 	void destroy();
 	friend class World;
-
+	friend class TransformMotionState;
 	struct creation_queue_entry {
 		Entity entity;
 		bool processed = false;

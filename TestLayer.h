@@ -1,6 +1,7 @@
 
 #pragma once
 #include "Layer.h"
+#include <Core/Debug.h>
 #include <Renderer/Renderer3D/RenderResourceCollection.h>
 #include <btBulletDynamicsCommon.h>
 #include "Application.h"
@@ -518,7 +519,6 @@ public:
             physics_comp.object_type = PhysicsObjectType::RIGID_BODY;
             physics_comp.shape_type = PhysicsShapeType::BOUNDING_BOX;
             world.SetComponent<PhysicsComponent>(physics_cube2, physics_comp);
-
             stop = false;
 
         }

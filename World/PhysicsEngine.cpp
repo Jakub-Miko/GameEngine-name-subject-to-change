@@ -7,25 +7,7 @@
 #include <World/Components/TransformComponent.h>
 #include <World/Components/MeshComponent.h>
 #include <Renderer/MeshManager.h>
-
-class TransformMotionState : public btMotionState {
-public:
-
-	TransformMotionState(Entity owning_entity) : owning_entity(owning_entity) {}
-
-	virtual void getWorldTransform(btTransform& worldTrans) const override {
-		worldTrans.setFromOpenGLMatrix(glm::value_ptr(Application::GetWorld().GetComponentSync<TransformComponent>(owning_entity).TransformMatrix));
-	}
-
-	virtual void setWorldTransform(const btTransform& worldTrans) override {
-		glm::mat4 transform;
-		worldTrans.getOpenGLMatrix(glm::value_ptr(transform));
-		Application::GetWorld().SetEntityTransformSync(owning_entity, transform);
-	}
-private:
-	Entity owning_entity;
-
-};
+#include <Core/Debug.h>
 
 struct PhysicsEngine_BulletData {
 	std::unique_ptr<btCollisionConfiguration> collision_config;
@@ -42,6 +24,78 @@ struct PhysicsEngine_BulletData {
 
 	std::mutex convex_hull_shape_mutex;
 	std::unordered_map<std::string, std::shared_ptr<btConvexHullShape>> convex_hull_shapes;
+
+};
+
+class TransformMotionState : public btMotionState {
+public:
+
+	TransformMotionState(Entity owning_entity) : owning_entity(owning_entity), stored_size(1.0f) {}
+
+	virtual void getWorldTransform(btTransform& worldTrans) const override {
+		glm::mat4 transform = Application::GetWorld().GetComponentSync<TransformComponent>(owning_entity).TransformMatrix;
+		glm::vec3 old_size = stored_size;
+		stored_size[0] = glm::length(glm::vec3(transform[0]));
+		stored_size[1] = glm::length(glm::vec3(transform[1]));
+		stored_size[2] = glm::length(glm::vec3(transform[2]));
+		if (old_size != stored_size) {
+			PhysicsComponent& phys_comp = Application::GetWorld().GetComponentSync<PhysicsComponent>(owning_entity);
+			switch (phys_comp.shape_type)
+			{
+			case PhysicsShapeType::BOUNDING_BOX:
+				SetBoundingBoxShapeSize(stored_size, phys_comp.physics_shape , phys_comp.physics_object ? btRigidBody::upcast(phys_comp.physics_object.get()) : nullptr);
+				break;
+			default:
+				throw std::runtime_error("Scaling of this shape_type isn't supported");
+			}
+		}
+		if ((stored_size.x * stored_size.y * stored_size.z) != 0.0f) {
+			transform[0] /= glm::vec4(glm::vec3(stored_size[0]),1.0f);
+			transform[1] /= glm::vec4(glm::vec3(stored_size[1]), 1.0f);
+			transform[2] /= glm::vec4(glm::vec3(stored_size[2]), 1.0f);
+#ifdef EDITOR
+			error = false;
+#endif
+		}
+		else {
+			transform = glm::translate(glm::mat4(1.0f), glm::vec3(transform[3]));
+			stored_size = glm::vec3(1.0f);
+#ifdef EDITOR
+			if (!error) {
+				EDITOR_ERROR("Scaling of a physics object can't be 0 \nPlease set a valid scale");
+				error = true;
+			}
+#endif
+		}
+		worldTrans.setFromOpenGLMatrix(glm::value_ptr(transform));
+	}
+
+	virtual void setWorldTransform(const btTransform& worldTrans) override {
+		glm::mat4 transform;
+		worldTrans.getOpenGLMatrix(glm::value_ptr(transform));
+		transform = glm::scale(transform, stored_size);
+		Application::GetWorld().SetEntityTransformSync(owning_entity, transform);
+	}
+private:
+
+	void SetBoundingBoxShapeSize(glm::vec3 size, btCollisionShape* shape, btRigidBody* body) const {
+		btVector3 btsize = *(btVector3*)(&size);
+		shape->setLocalScaling(btsize);
+		btVector3 inertia;
+		if (body) {
+			shape->calculateLocalInertia(body->getMass(), inertia);
+			Application::GetWorld().GetPhysicsEngine().bullet_data->world->removeRigidBody(body);
+			Application::GetWorld().GetPhysicsEngine().bullet_data->world->addRigidBody(body);
+		}
+		//TODO: Update inertia;
+	}
+
+
+	Entity owning_entity;
+	mutable glm::vec3 stored_size;
+#ifdef EDITOR
+	mutable bool error = false;
+#endif
 
 };
 
@@ -72,7 +126,7 @@ void PhysicsEngine::RegisterPhysicsComponent(Entity ent)
 void PhysicsEngine::UnRegisterPhysicsComponent(Entity ent)
 {
 	std::lock_guard<std::mutex> lock(deletion_mutex);
-	if (!Application::GetWorld().HasComponentSynced<PhysicsComponent>(ent)) throw std::runtime_error("Entity doesn't have a Physics Component");
+	if (!Application::GetWorld().HasComponent<PhysicsComponent>(ent)) throw std::runtime_error("Entity doesn't have a Physics Component");
 	PhysicsComponent component = Application::GetWorld().GetComponent<PhysicsComponent>(ent);
 	deletion_queue.push_front(deletion_queue_entry{ component });
 }
@@ -148,6 +202,7 @@ bool PhysicsEngine::CreatePhysicsObject(Entity entity)
 		btVector3 inertia;
 		box_collision_shape->calculateLocalInertia(physics_comp.mass, inertia);
 		btMotionState* motion_state = new TransformMotionState(entity);
+		physics_comp.physics_shape = box_collision_shape;
 		btRigidBody::btRigidBodyConstructionInfo info(physics_comp.mass, motion_state, box_collision_shape, inertia);
 		btRigidBody* body = new btRigidBody(info);
 		if (physics_comp.is_kinematic && physics_comp.mass == 0.0f) {

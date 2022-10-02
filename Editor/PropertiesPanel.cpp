@@ -4,6 +4,7 @@
 #include <Editor/Editor.h>
 #include <Application.h>
 #include <World/Components/TransformComponent.h>
+#include <World/Components/PhysicsComponent.h>
 #include <World/Components/BoundingVolumeComponent.h>
 #include <World/Components/LightComponent.h>
 #include <World/Components/PrefabComponent.h>
@@ -222,6 +223,13 @@ void PropertiesPanel::RenderProperties(Entity entity, const PropertiesPanel_pers
 		ImGui::TreePop();
 	}
 
+	if (world.HasComponent<PhysicsComponent>(selected) && ImGui::TreeNode("Physics")) {
+		auto& phys_comp = world.GetComponent<PhysicsComponent>(selected);
+		
+
+		ImGui::TreePop();
+	}
+
 	if (is_camera && !is_prefab) {
 		if (ImGui::TreeNode("Camera")) {
 			auto& camera = world.GetComponent<CameraComponent>(selected);
@@ -354,6 +362,7 @@ void PropertiesPanel::AddComponent(Entity entity,const PropertiesPanel_persisten
 		bool has_light = world.HasComponent<LightComponent>(entity);
 		bool has_bounds = world.HasComponent<BoundingVolumeComponent>(entity);
 		bool has_shadow = world.HasComponent<ShadowCasterComponent>(entity);
+		bool has_physics = world.HasComponent<PhysicsComponent>(entity);
 		if (!has_light) {
 		
 			if (has_mesh) {
@@ -371,6 +380,9 @@ void PropertiesPanel::AddComponent(Entity entity,const PropertiesPanel_persisten
 			}
 			if (ImGui::Button("Remove Mesh Component")) {
 				world.RemoveComponent<MeshComponent>(entity);
+				if (has_physics) {
+					world.RemoveComponent<PhysicsComponent>(entity);
+				}
 				memcpy(data.mesh_file_buffer, "Unknown", strlen("Unknown") + 1);
 			}
 			if (!has_mesh) {
@@ -449,6 +461,33 @@ void PropertiesPanel::AddComponent(Entity entity,const PropertiesPanel_persisten
 				data.prefab_path[0] = '\0';
 			}
 			if (!has_prefab) {
+				ImGui::EndDisabled();
+			}
+		}
+
+		if (has_mesh) {
+			if (has_physics) {
+				ImGui::BeginDisabled();
+			}
+			if (ImGui::Button("Add Physics Component")) {
+				PhysicsComponent comp;
+				comp.mass = 0.0f;
+				comp.is_kinematic = true;
+				comp.object_type = PhysicsObjectType::RIGID_BODY;
+				comp.shape_type = PhysicsShapeType::BOUNDING_BOX;
+				world.SetComponent<PhysicsComponent>(entity, comp);
+			}
+			if (has_physics) {
+				ImGui::EndDisabled();
+			}
+			ImGui::SameLine();
+			if (!has_physics) {
+				ImGui::BeginDisabled();
+			}
+			if (ImGui::Button("Remove Physics Component")) {
+				world.RemoveComponent<PhysicsComponent>(entity);
+			}
+			if (!has_physics) {
 				ImGui::EndDisabled();
 			}
 		}

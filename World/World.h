@@ -179,7 +179,6 @@ public:
 
 	template<typename T>
 	bool HasComponent(Entity ent) {
-		std::lock_guard<std::mutex> lock(SyncPool<T>());
 		return m_ECS.any_of<T>((entt::entity)ent.id);
 	}
 

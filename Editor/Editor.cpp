@@ -98,6 +98,24 @@ void Editor::Run()
 				ImGui::EndDragDropSource();
 			}
 		}
+		
+		if (ImGui::BeginPopupModal("Error")) {
+
+			for (auto& error : error_messages) {
+				ImGui::TextUnformatted(error.c_str());
+			}
+
+			ImGui::Separator();
+			if (ImGui::Button("Close")) {
+				ImGui::CloseCurrentPopup();
+				error_messages.clear();
+			}
+			ImGui::EndPopup();
+		}
+
+		if (!error_messages.empty()) {
+			ImGui::OpenPopup("Error");
+		}
 
 		ImGui::BeginMainMenuBar();
 
@@ -361,6 +379,11 @@ void Editor::RenderDebugView(float delta_time)
 	}
 }
 
+void Editor::EditorError(const std::string& message)
+{
+	error_messages.push_back(message);
+}
+
 void Editor::Render()
 {
 }
@@ -406,7 +429,7 @@ void Editor::DropCallback(int count, std::vector<std::string> files)
 	Editor::Get()->are_files_dropped = true;
 }
 
-Editor::Editor() : viewport(new Viewport), scene_graph(new SceneGraphViewer), properties_panel(new PropertiesPanel), explorer(new FileExplorer), prefab_editor(new PrefabEditor), material_editor(new MaterialEditor)
+Editor::Editor() : viewport(new Viewport), scene_graph(new SceneGraphViewer), properties_panel(new PropertiesPanel), explorer(new FileExplorer), prefab_editor(new PrefabEditor), material_editor(new MaterialEditor), error_messages()
 {
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();

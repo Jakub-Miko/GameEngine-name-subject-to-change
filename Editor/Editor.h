@@ -28,6 +28,8 @@ public:
 
 	void RenderDebugView(float delta_time);
 
+	void EditorError(const std::string& message);
+
 	void Render();
 
 	void ViewportBegin();
@@ -116,6 +118,8 @@ private:
 	std::unique_ptr<SceneGraphViewer> scene_graph;
 	std::unique_ptr<PropertiesPanel> properties_panel;
 	std::unique_ptr<FileExplorer> explorer;
+
+	std::list<std::string> error_messages;
 
 	ImGuiIO* io = nullptr;
 	Editor();
