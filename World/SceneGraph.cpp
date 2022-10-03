@@ -157,13 +157,14 @@ SceneNode* SceneGraph::AddEntityToPrefabRoot(Entity ent, SceneNode* parent_node)
 
 void SceneGraph::MarkEntityDirty(SceneNode* ent)
 {
+	std::lock_guard<std::mutex> lock(dirty_mutex);
 	if (ent) {
 		if (ent->IsDirty()) {
+			ent->state = ent->state & ~(SceneNodeState::DIRTY_TRANSFORM);
 			return;
 		}
 		else {
-			std::lock_guard<std::mutex> lock(dirty_mutex);
-			ent->state = ent->state | SceneNodeState::DIRTY;
+			ent->state = (ent->state | SceneNodeState::DIRTY) & ~(SceneNodeState::DIRTY_TRANSFORM);
 			m_dirty_nodes.push_back(ent);
 		}
 	}
@@ -174,12 +175,13 @@ void SceneGraph::MarkEntityDirty(SceneNode* ent)
 
 void SceneGraph::MarkEntityDirtyTransform(SceneNode* ent)
 {
+	std::lock_guard<std::mutex> lock(dirty_mutex);
 	if (ent) {
 		if (ent->IsDirty()) {
+			ent->state = ent->state | SceneNodeState::DIRTY_TRANSFORM;
 			return;
 		}
 		else {
-			std::lock_guard<std::mutex> lock(dirty_mutex);
 			ent->state = ent->state | SceneNodeState::DIRTY | SceneNodeState::DIRTY_TRANSFORM;
 			m_dirty_nodes.push_back(ent);
 		}

@@ -30,10 +30,11 @@ struct PhysicsEngine_BulletData {
 class TransformMotionState : public btMotionState {
 public:
 
-	TransformMotionState(Entity owning_entity) : owning_entity(owning_entity), stored_size(1.0f) {}
+	TransformMotionState(Entity owning_entity, const glm::vec3& offset = glm::vec3(0.0f)) : owning_entity(owning_entity), stored_size(1.0f) , shape_offset(offset) {}
 
 	virtual void getWorldTransform(btTransform& worldTrans) const override {
 		glm::mat4 transform = Application::GetWorld().GetComponentSync<TransformComponent>(owning_entity).TransformMatrix;
+		transform = glm::translate(transform, shape_offset);
 		glm::vec3 old_size = stored_size;
 		stored_size[0] = glm::length(glm::vec3(transform[0]));
 		stored_size[1] = glm::length(glm::vec3(transform[1]));
@@ -73,7 +74,7 @@ public:
 	virtual void setWorldTransform(const btTransform& worldTrans) override {
 		glm::mat4 transform;
 		worldTrans.getOpenGLMatrix(glm::value_ptr(transform));
-		transform = glm::scale(transform, stored_size);
+		transform = glm::translate(glm::scale(transform, stored_size),-shape_offset);
 		Application::GetWorld().SetEntityTransformSync(owning_entity, transform);
 	}
 private:
@@ -90,7 +91,7 @@ private:
 		//TODO: Update inertia;
 	}
 
-
+	glm::vec3 shape_offset;
 	Entity owning_entity;
 	mutable glm::vec3 stored_size;
 #ifdef EDITOR
@@ -204,7 +205,7 @@ bool PhysicsEngine::CreatePhysicsObject(Entity entity)
 		btBoxShape* box_collision_shape = new btBoxShape(half_extents);
 		btVector3 inertia;
 		box_collision_shape->calculateLocalInertia(physics_comp.mass, inertia);
-		btMotionState* motion_state = new TransformMotionState(entity);
+		btMotionState* motion_state = new TransformMotionState(entity,mesh_comp.mesh->GetBoundingBox().GetBoxOffset());
 		physics_comp.physics_shape = box_collision_shape;
 		btRigidBody::btRigidBodyConstructionInfo info(physics_comp.mass, motion_state, box_collision_shape, inertia);
 		btRigidBody* body = new btRigidBody(info);
@@ -278,11 +279,8 @@ void PhysicsEngine::ResetSim()
 			body->getMotionState()->getWorldTransform(trans);
 			body->setCenterOfMassTransform(trans);
 			body->setWorldTransform(trans);
-			Entity ent = Entity((uint32_t)colObj->getUserPointer());
-			Application::GetWorld().MarkEntityDirty(ent);
 		}
 	}
-	Application::GetWorld().GetSceneGraph()->CalculateMatricies();
 }
 
 void PhysicsEngine::PassiveMode()
