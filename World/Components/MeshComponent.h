@@ -32,6 +32,19 @@ public:
 		material = MaterialManager::Get()->GetMaterial(filepath);
 	}
 
+	void ResetMesh() {
+		mesh = MeshManager::Get()->GetDefaultMesh();
+		file_path = "Unknown";
+	}
+
+	std::shared_ptr<Mesh> GetMesh() const {
+		return mesh;
+	}
+
+	const std::string& GetMeshPath() const {
+		return file_path;
+	}
+
 	std::string GetMaterialPath() const {
 		if (material) {
 			return material->GetFilePath();
@@ -50,9 +63,13 @@ public:
 		}
 	}
 
+	std::shared_ptr<Material> material = nullptr;
+private:
+	friend class MeshManager;
+	friend class World;
+	friend inline void to_json(nlohmann::json& j, const MeshComponent& p);
 	std::string file_path;
 	std::shared_ptr<Mesh> mesh;
-	std::shared_ptr<Material> material = nullptr;
 };
 
 class LoadingMeshComponent {

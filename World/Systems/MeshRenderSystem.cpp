@@ -26,7 +26,7 @@ static void RenderMesh(MeshComponent& component, Entity ent) {
     auto& mesh_mesh = component;
     auto& mesh_transform = Application::GetWorld().GetComponent<TransformComponent>(ent);
 
-    auto mesh_m = mesh_mesh.mesh;
+    auto mesh_m = mesh_mesh.GetMesh();
 
     auto command_list = Renderer::Get()->GetRenderCommandList();
     auto command_queue = Renderer::Get()->GetCommandQueue();

@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <Events/SubjectObserver.h>
 #include <cstring>
 #include <unordered_map>
 #include <Core/BoundingVolumes.h>
@@ -56,6 +57,19 @@ private:
 
 class MeshManager {
 public:
+
+	struct mesh_native_input_data {
+		BoundingBox bounding_box = BoundingBox();
+		void* vertex_buffer = nullptr;
+		uint32_t vertex_count = 0;
+		unsigned int* index_buffer = nullptr;
+		uint32_t index_count = 0;
+		int vertex_size = 0;
+		VertexLayout layout;
+
+		void clear();
+	};
+
 
 	MeshManager(const MeshManager& ref) = delete;
 	MeshManager(MeshManager&& ref) = delete;
@@ -155,6 +169,8 @@ public:
 		return default_mesh;
 	}
 
+	mesh_native_input_data Fetch_Native_Data(const std::string& in_file_path);
+
 	//Only call when meshes are actively being used
 	void UpdateLoadedMeshes();
 
@@ -164,9 +180,12 @@ public:
 
 	static void Shutdown();
 private:
+	friend class MeshComponent;
+
 	MeshManager();
 	
 	friend class World;
+
 	void ClearMeshCache();
 
 	struct mesh_vertex_props {
@@ -192,19 +211,6 @@ private:
 
 	};
 
-	
-	struct mesh_native_input_data {
-		BoundingBox bounding_box = BoundingBox();
-		void* vertex_buffer = nullptr;
-		uint32_t vertex_count = 0;
-		unsigned int* index_buffer = nullptr; 
-		uint32_t index_count = 0;
-		int vertex_size = 0;
-		VertexLayout layout;
-
-		void clear();
-	};
-
 	struct mesh_load_future {
 		std::shared_ptr<Mesh> mesh;
 		Future<Mesh> future;
@@ -217,12 +223,10 @@ private:
 
 	std::shared_ptr<Mesh> RegisterMesh(std::shared_ptr<Mesh> file_path, const std::string& name);
 
-	mesh_native_input_data Fetch_Native_Data(const std::string& in_file_path);
 
 	mesh_assimp_input_data Fetch_Assimp_Data(const mesh_vertex_props& props, const std::string& in_file_path, int mesh_index = 0);
 
 	void Write_assimp_processed_data(void* vertex_data, size_t vertex_size, const mesh_assimp_input_data& import_data,const std::string& out_data, const VertexLayout& layout);
-
 	std::shared_ptr<Mesh> default_mesh;
 	std::mutex mesh_Map_mutex;
 	std::unordered_map<std::string, std::shared_ptr<Mesh>> mesh_Map;

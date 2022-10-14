@@ -1,1 +1,218 @@
-{"Entities":[[5,5,{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":0.0,"y":0.0,"z":0.0}},4,{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":479.0,"y":1.0,"z":516.0},"translation":{"x":0.0,"y":-1.1200000047683716,"z":0.0}},3,{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":-6.0,"y":0.0,"z":-6.0}},2,{"props":{"mode":0},"rotation":{"w":0.8660246133804321,"x":-0.4999994933605194,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":0.0,"y":0.0,"z":0.0}},1,{"props":{"mode":0},"rotation":{"w":0.9799244999885559,"x":-0.19936788082122803,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":0.0,"y":11.0,"z":13.0}}],[1,5,{"file_path":"asset:ScriptPrefab.pre"}],[1,5,[]],[5,5,{"label":"Script Prefab"},4,{"label":"Ground"},3,{"label":"Pillar"},2,{"label":"Directional Light"},1,{"label":"Camera"}],[2,4,{"material_path":"asset:GroundMat.mat","path":"assets/Box.mesh"},3,{"material_path":"assets/Material/MaterialGeometry.mat","path":"assets/Pillar_with_uvs.mesh"}],[1,1,{"aspect_ratio":1.7777777910232544,"fov":45.0,"zFar":1000.0,"zNear":0.10000000149011612}],[1,2,{"attenuation":{"x":1.0,"y":0.10000000149011612,"z":0.05000000074505806},"color":{"w":1.0,"x":1.0,"y":1.0,"z":1.0},"type":0}],[0]],"SceneGraph":[{"id":5},{"id":4},{"id":3},{"id":2},{"id":1}],"primary_entity":{"id":1}}
+{
+  "Entities": [
+    [
+      5,
+      5,
+      {
+        "props": {
+          "mode": 0
+        },
+        "rotation": {
+          "w": 1.0,
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0
+        },
+        "size": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "translation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0
+        }
+      },
+      4,
+      {
+        "props": {
+          "mode": 0
+        },
+        "rotation": {
+          "w": 1.0,
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0
+        },
+        "size": {
+          "x": 479.0,
+          "y": 1.0,
+          "z": 516.0
+        },
+        "translation": {
+          "x": 0.0,
+          "y": -1.1200000047683716,
+          "z": 0.0
+        }
+      },
+      3,
+      {
+        "props": {
+          "mode": 0
+        },
+        "rotation": {
+          "w": 1.0,
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0
+        },
+        "size": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "translation": {
+          "x": -6.0,
+          "y": 0.0,
+          "z": -6.0
+        }
+      },
+      2,
+      {
+        "props": {
+          "mode": 0
+        },
+        "rotation": {
+          "w": 0.8660246133804321,
+          "x": -0.4999994933605194,
+          "y": 0.0,
+          "z": 0.0
+        },
+        "size": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "translation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0
+        }
+      },
+      1,
+      {
+        "props": {
+          "mode": 0
+        },
+        "rotation": {
+          "w": 0.9799244999885559,
+          "x": -0.19936788082122803,
+          "y": 0.0,
+          "z": 0.0
+        },
+        "size": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "translation": {
+          "x": 0.0,
+          "y": 11.0,
+          "z": 13.0
+        }
+      }
+    ],
+    [
+      1,
+      5,
+      {
+        "file_path": "asset:ScriptPrefab.pre"
+      }
+    ],
+    [
+      1,
+      5,
+      [
+      ]
+    ],
+    [
+      5,
+      5,
+      {
+        "label": "Script Prefab"
+      },
+      4,
+      {
+        "label": "Ground"
+      },
+      3,
+      {
+        "label": "Pillar"
+      },
+      2,
+      {
+        "label": "Directional Light"
+      },
+      1,
+      {
+        "label": "Camera"
+      }
+    ],
+    [
+      2,
+      4,
+      {
+        "material_path": "asset:GroundMat.mat",
+        "path": "assets/Box.mesh"
+      },
+      3,
+      {
+        "material_path": "assets/Material/MaterialGeometry.mat",
+        "path": "assets/Pillar_with_uvs.mesh"
+      }
+    ],
+    [
+      1,
+      1,
+      {
+        "aspect_ratio": 1.7777777910232544,
+        "fov": 45.0,
+        "zFar": 1000.0,
+        "zNear": 0.10000000149011612
+      }
+    ],
+    [
+      1,
+      2,
+      {
+        "attenuation": {
+          "x": 1.0,
+          "y": 0.10000000149011612,
+          "z": 0.05000000074505806
+        },
+        "color": {
+          "w": 1.0,
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "type": 0
+      }
+    ],
+    [
+      0
+    ],
+    [ 0 ]
+  ],
+  "SceneGraph": [
+    {
+      "id": 5
+    },
+    {
+      "id": 4
+    },
+    {
+      "id": 3
+    },
+    {
+      "id": 2
+    },
+    {
+      "id": 1
+    }
+  ],
+  "primary_entity": {
+    "id": 1
+  }
+}

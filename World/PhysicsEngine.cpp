@@ -1,6 +1,7 @@
 #include "PhysicsEngine.h"
 #include <World/Components/PhysicsComponent.h>
 #include <btBulletDynamicsCommon.h>
+#include <BulletCollision/CollisionShapes/btShapeHull.h>
 #include <memory>
 #include <World/World.h>
 #include <Application.h>
@@ -25,6 +26,12 @@ struct PhysicsEngine_BulletData {
 	std::mutex convex_hull_shape_mutex;
 	std::unordered_map<std::string, std::shared_ptr<btConvexHullShape>> convex_hull_shapes;
 
+
+
+	std::shared_ptr<btConvexHullShape> GetHullShape(const std::string& mesh_path);
+	void SaveHullShape(const std::string& save_absolute_path, btConvexHullShape* hull);
+	btConvexHullShape* LoadHullShape(const std::string& save_absolute_path);
+
 };
 
 class TransformMotionState : public btMotionState {
@@ -45,6 +52,9 @@ public:
 			{
 			case PhysicsShapeType::BOUNDING_BOX:
 				SetBoundingBoxShapeSize(stored_size, phys_comp.physics_shape , phys_comp.physics_object ? btRigidBody::upcast(phys_comp.physics_object.get()) : nullptr);
+				break;
+			case PhysicsShapeType::CONVEX_HULL:
+				SetConvexHullShapeSize(stored_size, phys_comp.physics_shape, phys_comp.physics_object ? btRigidBody::upcast(phys_comp.physics_object.get()) : nullptr);
 				break;
 			default:
 				throw std::runtime_error("Scaling of this shape_type isn't supported");
@@ -80,6 +90,18 @@ public:
 private:
 
 	void SetBoundingBoxShapeSize(glm::vec3 size, btCollisionShape* shape, btRigidBody* body) const {
+		btVector3 btsize = *(btVector3*)(&size);
+		shape->setLocalScaling(btsize);
+		btVector3 inertia;
+		if (body) {
+			shape->calculateLocalInertia(body->getMass(), inertia);
+			Application::GetWorld().GetPhysicsEngine().bullet_data->world->removeRigidBody(body);
+			Application::GetWorld().GetPhysicsEngine().bullet_data->world->addRigidBody(body);
+		}
+		//TODO: Update inertia;
+	}
+
+	void SetConvexHullShapeSize(glm::vec3 size, btCollisionShape* shape, btRigidBody* body) const {
 		btVector3 btsize = *(btVector3*)(&size);
 		shape->setLocalScaling(btsize);
 		btVector3 inertia;
@@ -199,15 +221,37 @@ bool PhysicsEngine::CreatePhysicsObject(Entity entity)
 	switch (physics_comp.shape_type) {
 	case PhysicsShapeType::BOUNDING_BOX:
 	{
-		if (mesh_comp.mesh->GetMeshStatus() != Mesh_status::READY) return false;
-		glm::vec3 box_size = mesh_comp.mesh->GetBoundingBox().GetBoxSize() / 2.0f;
+		if (mesh_comp.GetMesh()->GetMeshStatus() != Mesh_status::READY) return false;
+		glm::vec3 box_size = mesh_comp.GetMesh()->GetBoundingBox().GetBoxSize() / 2.0f;
 		btVector3 half_extents = btVector3{ box_size.x,box_size.y,box_size.z };
 		btBoxShape* box_collision_shape = new btBoxShape(half_extents);
 		btVector3 inertia;
 		box_collision_shape->calculateLocalInertia(physics_comp.mass, inertia);
-		btMotionState* motion_state = new TransformMotionState(entity,mesh_comp.mesh->GetBoundingBox().GetBoxOffset());
+		btMotionState* motion_state = new TransformMotionState(entity,mesh_comp.GetMesh()->GetBoundingBox().GetBoxOffset());
 		physics_comp.physics_shape = box_collision_shape;
 		btRigidBody::btRigidBodyConstructionInfo info(physics_comp.mass, motion_state, box_collision_shape, inertia);
+		btRigidBody* body = new btRigidBody(info);
+		body->setUserPointer((void*)entity.id);
+		if (physics_comp.is_kinematic && physics_comp.mass == 0.0f) {
+			body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
+			body->setActivationState(DISABLE_DEACTIVATION);
+		}
+
+		bullet_data->world->addRigidBody(body);
+
+		physics_comp.physics_object.reset((btCollisionObject*)body);
+		break;
+	}
+	case PhysicsShapeType::CONVEX_HULL:
+	{
+		if (mesh_comp.GetMesh()->GetMeshStatus() != Mesh_status::READY) return false;
+		auto template_shape = bullet_data->GetHullShape(mesh_comp.GetMeshPath());
+		btConvexHullShape* hull_collision_shape = new btConvexHullShape((btScalar*)template_shape->getPoints(),template_shape->getNumPoints(), sizeof(btVector3));
+		btVector3 inertia;
+		hull_collision_shape->calculateLocalInertia(physics_comp.mass, inertia);
+		btMotionState* motion_state = new TransformMotionState(entity);
+		physics_comp.physics_shape = hull_collision_shape;
+		btRigidBody::btRigidBodyConstructionInfo info(physics_comp.mass, motion_state, hull_collision_shape, inertia);
 		btRigidBody* body = new btRigidBody(info);
 		body->setUserPointer((void*)entity.id);
 		if (physics_comp.is_kinematic && physics_comp.mass == 0.0f) {
@@ -230,20 +274,13 @@ bool PhysicsEngine::CreatePhysicsObject(Entity entity)
 
 void PhysicsEngine::DestroyPhysicsObject(const PhysicsComponent& physics_comp)
 {
-	switch (physics_comp.shape_type) {
-	case PhysicsShapeType::BOUNDING_BOX:
-	{
-		btRigidBody* body = btRigidBody::upcast(physics_comp.physics_object.get());
-		btCollisionShape* shape = body->getCollisionShape();
-		btMotionState* state = body->getMotionState();
-		bullet_data->world->removeRigidBody(body);
-		delete shape;
-		delete state;
-		break;
-	}
-	default:
-		throw std::runtime_error("This Collision type is not supported");
-	}
+
+	btRigidBody* body = btRigidBody::upcast(physics_comp.physics_object.get());
+	btCollisionShape* shape = body->getCollisionShape();
+	btMotionState* state = body->getMotionState();
+	bullet_data->world->removeRigidBody(body);
+	delete shape;
+	delete state;
 }
 
 void PhysicsEngine::StopSim()
@@ -301,8 +338,84 @@ void PhysicsEngine::RefreshObject(Entity ent)
 	RegisterPhysicsComponent(ent);
 }
 
+std::shared_ptr<btConvexHullShape> PhysicsEngine_BulletData::GetHullShape(const std::string& mesh_path)
+{
+	std::lock_guard<std::mutex> lock(convex_hull_shape_mutex);
+	auto path = FileManager::Get()->GetRelativeFilePath(FileManager::Get()->GetPath(mesh_path));
+	auto absolute_path = FileManager::Get()->GetPathHash(path);
+	auto fnd = convex_hull_shapes.find(path);
+	if (fnd != convex_hull_shapes.end()) {
+		return fnd->second;
+	}
 
+	std::string convex_hull_cache_path = FileManager::Get()->GetTempFilePath(absolute_path + ".hull");
+	bool is_cached = std::filesystem::exists(convex_hull_cache_path);
 
+	if (is_cached) {
+		auto loaded_shape = LoadHullShape(convex_hull_cache_path);
+		auto shape = std::shared_ptr<btConvexHullShape>(loaded_shape);
+		convex_hull_shapes.insert(std::make_pair(path, shape));
+		return shape;
+	}
+	else {
+		MeshManager::mesh_native_input_data mesh_data = MeshManager::Get()->Fetch_Native_Data(FileManager::Get()->GetPath(mesh_path));
+		btConvexHullShape convexHullShape;
+		int pos_offset = mesh_data.layout.GetElement("position").offset;
+		int stride = mesh_data.layout.stride;
+		for (int i = 0; i < mesh_data.index_count; i++) {
+			unsigned int current_index = mesh_data.index_buffer[i];
+			btVector3* current_vertex = (btVector3*)((char*)mesh_data.vertex_buffer + ((long)stride * current_index) + pos_offset);
+			convexHullShape.addPoint(*current_vertex,false);
+		}
+		convexHullShape.recalcLocalAabb();
 
+		convexHullShape.setMargin(0);
+		btShapeHull* hull = new btShapeHull(&convexHullShape); 
+		hull->buildHull(0); 
+		btConvexHullShape* pConvexHullShape = new btConvexHullShape((const btScalar*)hull->getVertexPointer(), hull->numVertices(), sizeof(btVector3));
+		SaveHullShape(convex_hull_cache_path, pConvexHullShape);
+		auto shape = std::shared_ptr<btConvexHullShape>(pConvexHullShape);
+		convex_hull_shapes.insert(std::make_pair(path, shape));
+		delete hull;
+		return shape;
+
+	}
+
+}
+
+void PhysicsEngine_BulletData::SaveHullShape(const std::string& save_absolute_path, btConvexHullShape* hull)
+{
+	std::ofstream file(save_absolute_path, std::ios_base::binary | std::ios_base::out);
+	if (!file.is_open()) throw std::runtime_error("File " + save_absolute_path + " could not be opened");
+	file << "Convex_Hull_Cache\n";
+	file << hull->getNumPoints() << "\n";
+	file.write((char*)hull->getUnscaledPoints(), hull->getNumPoints() * sizeof(btVector3));
+	file << "\nend\n";
+	file.flush();
+
+	file.close();
+}
+
+btConvexHullShape* PhysicsEngine_BulletData::LoadHullShape(const std::string& save_absolute_path)
+{
+	std::ifstream file(save_absolute_path, std::ios_base::binary | std::ios_base::in);
+	if (!file.is_open()) throw std::runtime_error("File " + save_absolute_path + " could not be opened");
+	std::string check = "";
+
+	file >> check;
+	if (check != "Convex_Hull_Cache") throw std::runtime_error("Convex Hull cache at path " + save_absolute_path + " was corrupted");
+	int num_of_points;
+	file >> num_of_points;
+	file.get();
+	btVector3* vertex_data = (btVector3*)new char[num_of_points * sizeof(btVector3)];
+	file.read((char*)vertex_data, num_of_points * sizeof(btVector3));
+	file.get();
+	file >> check;
+	if (check != "end") throw std::runtime_error("Convex Hull cache at path " + save_absolute_path + " was corrupted");
+	file.close();
+	btConvexHullShape* shape = new btConvexHullShape((btScalar*)vertex_data, num_of_points, sizeof(btVector3));
+	delete[] (char*)vertex_data;
+	return shape;
+}
 
 

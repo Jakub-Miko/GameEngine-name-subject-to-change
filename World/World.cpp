@@ -291,6 +291,7 @@ void World::LoadSceneSystem()
 		if (GameStateMachine::Get()->current_state) {
 			GameStateMachine::Get()->ScriptOnAttach();
 		}
+		m_SceneGraph.CalculateMatricies();
 		m_SpatialIndex.Rebuild();
 
 	}

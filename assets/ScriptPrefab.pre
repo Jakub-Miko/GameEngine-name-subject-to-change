@@ -21,9 +21,6 @@ function OnConstruct()
 
 
 
-UseInlineScript()
-
-
 end
 
 

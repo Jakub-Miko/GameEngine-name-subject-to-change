@@ -30,7 +30,7 @@ void Octree::FrustumCulling(World& world, const Frustum& frustum, std::vector<En
 			TransformComponent& transform = world.GetComponent<TransformComponent>(entity);
 			BoundingVolumeComponent bounding_volume = BoundingBox();
 			if (!has_bounding_box) {
-				bounding_volume = world.GetComponent<MeshComponent>(entity).mesh->GetBoundingBox();
+				bounding_volume = world.GetComponent<MeshComponent>(entity).GetMesh()->GetBoundingBox();
 			}
 			else {
 				bounding_volume = world.GetComponent<BoundingVolumeComponent>(entity);
@@ -67,7 +67,7 @@ void Octree::BoxCulling(World& world, const OrientedBoundingBox& box, std::vecto
 			TransformComponent& transform = world.GetComponent<TransformComponent>(entity);
 			BoundingVolumeComponent bounding_volume = BoundingBox();
 			if (!has_bounding_box) {
-				bounding_volume = world.GetComponent<MeshComponent>(entity).mesh->GetBoundingBox();
+				bounding_volume = world.GetComponent<MeshComponent>(entity).GetMesh()->GetBoundingBox();
 			}
 			else {
 				bounding_volume = world.GetComponent<BoundingVolumeComponent>(entity);
@@ -103,7 +103,7 @@ void Octree::SphereCulling(World& world, const BoundingSphere& sphere, std::vect
 			TransformComponent& transform = world.GetComponent<TransformComponent>(entity);
 			BoundingVolumeComponent bounding_volume = BoundingBox();
 			if (!has_bounding_box) {
-				bounding_volume = world.GetComponent<MeshComponent>(entity).mesh->GetBoundingBox();
+				bounding_volume = world.GetComponent<MeshComponent>(entity).GetMesh()->GetBoundingBox();
 			}
 			else {
 				bounding_volume = world.GetComponent<BoundingVolumeComponent>(entity);
@@ -326,7 +326,7 @@ bool Octree::ProcessEntity(World& world, char& index_out, Entity entity)
 			TransformComponent& transform = world.GetComponent<TransformComponent>(entity);
 			BoundingVolumeComponent bounding_volume = BoundingBox();
 			if (!has_bounding_box) {
-				bounding_volume = world.GetComponent<MeshComponent>(entity).mesh->GetBoundingBox();
+				bounding_volume = world.GetComponent<MeshComponent>(entity).GetMesh()->GetBoundingBox();
 			}
 			else {
 				bounding_volume = world.GetComponent<BoundingVolumeComponent>(entity);

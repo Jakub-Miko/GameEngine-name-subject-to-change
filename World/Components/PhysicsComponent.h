@@ -26,7 +26,7 @@ enum class PhysicsObjectType : char {
 	RIGID_BODY = 0
 };
 enum class PhysicsShapeType : char {
-	TRIANGLE_MESH = 0, CONVEX_HULL = 1, BOUNDING_BOX = 2
+	BOUNDING_BOX = 0, CONVEX_HULL = 1, TRIANGLE_MESH = 2
 };
 
 enum class PhysicsObjectState : char {

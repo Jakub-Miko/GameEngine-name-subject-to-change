@@ -269,9 +269,9 @@ void ShadowMappingPass::Render_impl(RenderPipelineResourceManager& resource_mana
 					glm::mat4 model = trans.TransformMatrix;
 					RenderResourceManager::Get()->UploadDataToBuffer(list, data->const_buffer_point, glm::value_ptr(model), sizeof(glm::mat4), 0);
 				}
-				list->SetVertexBuffer(mesh.mesh->GetVertexBuffer());
-				list->SetIndexBuffer(mesh.mesh->GetIndexBuffer());
-				list->Draw(mesh.mesh->GetIndexCount());
+				list->SetVertexBuffer(mesh.GetMesh()->GetVertexBuffer());
+				list->SetIndexBuffer(mesh.GetMesh()->GetIndexBuffer());
+				list->Draw(mesh.GetMesh()->GetIndexCount());
 
 			}
 		}

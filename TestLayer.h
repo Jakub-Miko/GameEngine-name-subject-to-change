@@ -1,4 +1,4 @@
-
+       
 #pragma once
 #include "Layer.h"
 #include <Core/Debug.h>
@@ -515,7 +515,7 @@ public:
         //builder.AddPass(new TestPass4);
         //builder.AddPass(new TestPass3);
         //auto pipeline = builder.Build();
-        //pipeline.Render();
+        //pipeline.Render(); 
 
         //auto& transform_box = Application::GetWorld().GetComponent<TransformComponent>(entity_box);
         //oriented_box.center = transform_box.translation;

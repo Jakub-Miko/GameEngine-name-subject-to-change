@@ -30,6 +30,7 @@ public:
 
 	void ActiveMode();
 
+
 	void RefreshObject(Entity ent);
 
 	bool IsPhysicsActive() const { return running; }

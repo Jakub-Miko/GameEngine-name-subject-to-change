@@ -142,13 +142,13 @@ void DefferedGeometryPass::Render(RenderPipelineResourceManager& resource_manage
 		else {
 			mesh.material->SetMaterial(list, data->pipeline);
 		}
-		list->SetVertexBuffer(mesh.mesh->GetVertexBuffer());
-		list->SetIndexBuffer(mesh.mesh->GetIndexBuffer());
+		list->SetVertexBuffer(mesh.GetMesh()->GetVertexBuffer());
+		list->SetIndexBuffer(mesh.GetMesh()->GetIndexBuffer());
 		glm::mat4 mvp = ViewProjection * transform.TransformMatrix;
 		glm::mat4 mv_matrix = view_matrix * transform.TransformMatrix;
 		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, glm::value_ptr(mvp), sizeof(glm::mat4), 0);
 		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, glm::value_ptr(mv_matrix), sizeof(glm::mat4), sizeof(glm::mat4));
-		list->Draw(mesh.mesh->GetIndexCount());
+		list->Draw(mesh.GetMesh()->GetIndexCount());
 
 
 	}

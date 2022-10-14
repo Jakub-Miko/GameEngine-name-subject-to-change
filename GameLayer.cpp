@@ -56,10 +56,10 @@ void GameLayer::OnUpdate(float delta_time) {
     World& world = Application::GetWorld();
     InitializationSystem(world);
     ScriptSystemUpdate(world, delta_time);
-    world.UpdateTransformMatricies();
     world.SetPrimaryEntitySystem();
     MeshManager::Get()->UpdateLoadedMeshes(); // MultiThread
     world.DeletionSystem();
     world.GetPhysicsEngine().UpdatePhysics(delta_time);
+    world.UpdateTransformMatricies();
     //BoundingVolumeRender(world);
 } 

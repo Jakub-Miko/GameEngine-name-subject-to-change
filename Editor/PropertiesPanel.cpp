@@ -225,7 +225,14 @@ void PropertiesPanel::RenderProperties(Entity entity, const PropertiesPanel_pers
 
 	if (world.HasComponent<PhysicsComponent>(selected) && ImGui::TreeNode("Physics")) {
 		auto& phys_comp = world.GetComponent<PhysicsComponent>(selected);
-		
+
+		const char* shapes[2] = { "BOUNDING BOX","CONVEX HULL" };
+		int current_shape = (int)phys_comp.shape_type;
+		if (ImGui::Combo("Collision Shape", &current_shape, shapes, 2) && current_shape != (int)phys_comp.shape_type) {
+			phys_comp.shape_type = (PhysicsShapeType)current_shape;
+			Application::GetWorld().GetPhysicsEngine().RefreshObject(selected);
+		}
+
 		bool kinematic_checked = phys_comp.is_kinematic;
 		ImGui::Checkbox("Kinematic", &kinematic_checked);
 		if (kinematic_checked != phys_comp.is_kinematic) {
@@ -272,7 +279,7 @@ void PropertiesPanel::RenderProperties(Entity entity, const PropertiesPanel_pers
 			MeshComponent& mesh = world.GetComponent<MeshComponent>(selected);
 			if (strlen(text_buffer) == 0) {
 				text_buffer[0] = '\0';
-				memcpy(text_buffer, mesh.file_path.c_str(), mesh.file_path.size() + 1);
+				memcpy(text_buffer, mesh.GetMeshPath().c_str(), mesh.GetMeshPath().size() + 1);
 			}
 			bool enter = ImGui::InputText("Mesh path", text_buffer, buffer_size, ImGuiInputTextFlags_EnterReturnsTrue);
 			if (ImGui::Button("Reload") || enter) {
@@ -282,20 +289,19 @@ void PropertiesPanel::RenderProperties(Entity entity, const PropertiesPanel_pers
 				catch (std::runtime_error* e) {
 					ImGui::OpenPopup(mesh_error_id);
 					text_buffer[0] = '\0';
-					memcpy(text_buffer, mesh.file_path.c_str(), mesh.file_path.size() + 1);
+					memcpy(text_buffer, mesh.GetMeshPath().c_str(), mesh.GetMeshPath().size() + 1);
 				}
 			}
 			ImGui::SameLine();
-			if (mesh.mesh->GetMeshStatus() == Mesh_status::ERROR) {
-				mesh.mesh = MeshManager::Get()->GetDefaultMesh();
-				mesh.file_path = "Unknown";
+			if (mesh.GetMesh()->GetMeshStatus() == Mesh_status::ERROR) {
+				mesh.ResetMesh();
 				ImGui::OpenPopup(mesh_error_id);
 				text_buffer[0] = '\0';
-				memcpy(text_buffer, mesh.file_path.c_str(), mesh.file_path.size() + 1);
+				memcpy(text_buffer, mesh.GetMeshPath().c_str(), mesh.GetMeshPath().size() + 1);
 			}
 			if (ImGui::Button("Set Selected")) {
 				mesh.ChangeMesh(Editor::Get()->GetSelectedFilePath());
-				memcpy(text_buffer, mesh.file_path.c_str(), mesh.file_path.size() + 1);
+				memcpy(text_buffer, mesh.GetMeshPath().c_str(), mesh.GetMeshPath().size() + 1);
 			}
 			ImGui::Separator();
 			if (strlen(material_file_buffer) == 0) {
