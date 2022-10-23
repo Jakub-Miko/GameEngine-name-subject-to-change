@@ -16,7 +16,7 @@ struct Frustum {
 
 
 class CameraComponent {
-	RuntimeTag("CameraComponent")
+	RUNTIME_TAG("CameraComponent")
 public:
 	CameraComponent() : fov(45.0f), zNear(0.1), zFar(1000), view_frustum()
 	{

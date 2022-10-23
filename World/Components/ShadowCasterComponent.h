@@ -5,7 +5,7 @@
 #include <Core/UnitConverter.h>
 
 class ShadowCasterComponent {
-	RuntimeTag("ShadowCasterComponent")
+	RUNTIME_TAG("ShadowCasterComponent")
 public:
 	ShadowCasterComponent(int width = 800, int height = 800, float near_plane = 0.1f, float far_plane = 500.0f);
 	~ShadowCasterComponent() {

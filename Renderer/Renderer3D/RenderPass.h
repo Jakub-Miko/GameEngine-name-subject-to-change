@@ -5,7 +5,7 @@
 #include <vector>
 
 struct DependencyTag {
-	RuntimeTag("DependencyTag");
+	RUNTIME_TAG("DependencyTag");
 };
 
 class RenderPipelineResourceManager;

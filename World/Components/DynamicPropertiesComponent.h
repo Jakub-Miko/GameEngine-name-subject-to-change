@@ -8,7 +8,7 @@
 using Script_Variant_type = std::variant<int, float, double, glm::vec2, glm::vec3, glm::vec4, std::string>;
 
 class DynamicPropertiesComponent {
-	RuntimeTag("DynamicPropertiesComponent")
+	RUNTIME_TAG("DynamicPropertiesComponent")
 public:
 
 	DynamicPropertiesComponent() : m_Properties() {}

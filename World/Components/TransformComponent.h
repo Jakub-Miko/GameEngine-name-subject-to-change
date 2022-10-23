@@ -7,7 +7,7 @@
 #include <Core/RuntimeTag.h>
 
 struct TransformComponent {
-	RuntimeTag("TransformComponent")
+	RUNTIME_TAG("TransformComponent")
 	TransformComponent(EntityProperties props = EntityProperties()) : TransformMatrix(1.0f), translation(0.0f), size(1.0f), rotation(glm::angleAxis(glm::degrees(0.0f), glm::vec3(0.0f, 1.0f, 0.0f))), props(props) {}
 
 	TransformComponent(const TransformComponent& ref) 

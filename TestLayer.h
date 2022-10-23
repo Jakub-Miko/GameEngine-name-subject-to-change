@@ -2,154 +2,29 @@
 #pragma once
 #include "Layer.h"
 #include <Core/Debug.h>
-#include <Renderer/Renderer3D/RenderResourceCollection.h>
-#include <btBulletDynamicsCommon.h>
+
 #include "Application.h"
 #include <iostream>
-#include <World/SpatialIndex.h>
-#include <TaskSystem.h>
-#include <cmath>
-#include <Promise.h>
-#include <Renderer/Renderer.h>
-#include <World/Components/ScriptComponent.h>
-#include <World/Components/SquareComponent.h>
-#include <World/Components/PhysicsComponent.h>
-#include <World/Components/LightComponent.h>
-#include <World/Components/ShadowCasterComponent.h>
-#include <World/Components/MeshComponent.h>
+
+
 #include <Input/Input.h>
-#include <Events/KeyPressEvent.h>
-#include <Events/MouseButtonPressEvent.h>
-#include <Events/MouseMoveEvent.h>
+
+#include <Events/SubjectObserver.h>
 #include <glm/glm.hpp>
-#include <Renderer/RenderResourceManager.h>
-#include <stb_image.h>
-#include <Renderer/ShaderManager.h>
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
-#include <Core/FrameMultiBufferResource.h>
-#include <Renderer/RootSignature.h>
-#include <Renderer/MeshManager.h>
-#include <Renderer/TextureManager.h>
-#include <World/Systems/BoxRenderer.h>
-#include <Renderer/RenderDescriptorHeapBlock.h>
-#include <Renderer/PipelineManager.h>
-#include <Core/UnitConverter.h>
-#include <World/Components/BoundingVolumeComponent.h>
+#include <Events/Event.h>
 #include <Core/RuntimeTag.h>
 #include <Window.h>
 #include <FileManager.h>
-#include <Renderer/Renderer3D/RenderPassBuilder.h>
-#include <Renderer/Renderer3D/RenderPasses/RenderSubmissionPass.h>
 #ifdef EDITOR
 #include <Editor/Editor.h>
 #include <imgui.h>
 #endif
 
+class TestEventType : public Event {
+    EVENT_ID(TestEventType);
 
-class test1 {
-    RuntimeTag("Test1")
-};
-
-class test2 {
-
-}; 
-
-class TestPass1 : public RenderPass {
 public:
-
-   virtual void Setup(RenderPassResourceDefinnition& setup_builder) override {
-        setup_builder.AddResource<glm::vec2*>("TestPass4_Resource", RenderPassResourceDescriptor_Access::READ);
-
-        setup_builder.AddResource<glm::vec2>("TestPass1_Resource", RenderPassResourceDescriptor_Access::WRITE);
-
-
-
-    }
-    virtual void Render(RenderPipelineResourceManager& resource_manager) override {
-        resource_manager.SetResource("TestPass1_Resource", vec);
-
-        std::cout << "TestPass1 Render..." << "\n";
-    }
-
-private:
-    glm::vec2 vec = { 5.0f,1.0f };
-
-};
-
-class TestPass2 : public RenderPass {
-public:
-
-    virtual void Setup(RenderPassResourceDefinnition& setup_builder) override {
-        setup_builder.AddResource<glm::vec2*>("TestPass4_Resource", RenderPassResourceDescriptor_Access::READ);
-
-        
-       
-        setup_builder.AddResource<glm::vec2>("TestPass1_Resource", RenderPassResourceDescriptor_Access::READ);
-
-
-        setup_builder.AddResource<std::shared_ptr<RenderBufferResource>>("TestPass2_Resource", RenderPassResourceDescriptor_Access::WRITE);
-
-
-        //RenderPassResourceDescriptor desc3;
-        //desc3.desc_access = RenderPassResourceDescriptor_Access::READ;
-        //desc3.resource_name = "TestPass3_Resource";
-        //desc3.type_id = 0;
-        //setup_builder.push_back(desc3);
-
-
-    }
-    virtual void Render(RenderPipelineResourceManager& resource_manager) override {
-        auto resource = resource_manager.GetResource<glm::vec2>("TestPass1_Resource");
-        
-        std::cout << "TestPass2 Render... Output: " << resource.x << ", " << resource.y << "\n";
-    }
-
-private:
-    glm::vec2 vec = { 5.0f,1.0f };
-
-};
-
-class TestPass3 : public RenderPass {
-public:
-    virtual void Setup(RenderPassResourceDefinnition& setup_builder) override {
-        setup_builder.AddResource<glm::vec2>("TestPass1_Resource", RenderPassResourceDescriptor_Access::READ);
-
-
-        setup_builder.AddResource<std::shared_ptr<RenderBufferResource>>("TestPass2_Resource", RenderPassResourceDescriptor_Access::READ);
-
-        setup_builder.AddResource<glm::vec2*>("TestPass4_Resource", RenderPassResourceDescriptor_Access::READ);
-
-
-        setup_builder.AddResource<glm::vec2>("TestPass3_Resource", RenderPassResourceDescriptor_Access::WRITE);
-
-    }
-    virtual void Render(RenderPipelineResourceManager& resource_manager) override {
-        auto resource = resource_manager.GetResource<glm::vec2*>("TestPass4_Resource");
-
-
-        std::cout << "TestPass3 Render... Output: " << resource->x << ", " << resource->y << "\n";
-    }
-
-};
-
-class TestPass4 : public RenderPass {
-public:
-
-    virtual void Setup(RenderPassResourceDefinnition& setup_builder) override {
-        setup_builder.AddResource<glm::vec2*>("TestPass4_Resource", RenderPassResourceDescriptor_Access::WRITE);
-
-        //setup_builder.AddResource<glm::vec2>("TestPass3_Resource", RenderPassResourceDescriptor_Access::READ);
-
-    }
-    virtual void Render(RenderPipelineResourceManager& resource_manager) override {
-        resource_manager.SetResource("TestPass4_Resource", &vec);
-        std::cout << "TestPass4 Render..." << "\n";
-    }
-
-private:
-    glm::vec2 vec = { 5.0f,8.0f };
+    int x, y;
 };
 
 class TestLayer : public Layer
@@ -158,36 +33,36 @@ public:
     double counter = 0;
     bool stop = true;
     bool stop2 = true;
-    Entity entity1;
-    Entity mesh_enity;
-    Entity second_ent;
-    Entity ent_sphere;
-    Entity field[10][10];
-    std::shared_ptr<RenderBufferResource> resource;
-    std::shared_ptr<RenderBufferResource> resource_vertex;
-    std::shared_ptr<RenderBufferResource> resource_index;
-    Future<std::shared_ptr<RenderTexture2DResource>> texture;
-    
-    std::shared_ptr<RenderTexture2DResource> color_texture;
-    std::shared_ptr<RenderTexture2DResource> depth_texture;
-    std::shared_ptr<RenderFrameBufferResource> frame_buffer;
-    BoundingBox box;
-    RenderDescriptorTable table1;
-    RenderDescriptorTable table2;
-    size_t index_count;
-    Entity entity_box;
-    Future<std::shared_ptr<Mesh>> mesh;
-    OrientedBoundingBox oriented_box;
+    //Entity entity1;
+    //Entity mesh_enity;
+    //Entity second_ent;
+    //Entity ent_sphere;
+    //Entity field[10][10];
+    //std::shared_ptr<RenderBufferResource> resource;
+    //std::shared_ptr<RenderBufferResource> resource_vertex;
+    //std::shared_ptr<RenderBufferResource> resource_index;
+    //Future<std::shared_ptr<RenderTexture2DResource>> texture;
+    //
+    //std::shared_ptr<RenderTexture2DResource> color_texture;
+    //std::shared_ptr<RenderTexture2DResource> depth_texture;
+    //std::shared_ptr<RenderFrameBufferResource> frame_buffer;
+    //BoundingBox box;
+    //RenderDescriptorTable table1;
+    //RenderDescriptorTable table2;
+    //size_t index_count;
+    //Entity entity_box;
+    //Future<std::shared_ptr<Mesh>> mesh;
+    //OrientedBoundingBox oriented_box;
 
-    FrameMultiBufferResource<std::shared_ptr<RenderBufferResource>> constant_buffer;
+    //FrameMultiBufferResource<std::shared_ptr<RenderBufferResource>> constant_buffer;
 
-    
+    EventObserverBase* test_observer;
 
-    std::shared_ptr<TextureSampler> sampler;
-    std::shared_ptr<Pipeline> pipeline;
-    FrameMultiBufferResource<std::shared_ptr<RenderBufferResource>> resource2;
-    glm::vec2 position = { 0,0 };
-    glm::vec3 camerapos = {1.0f, 1.5f, -5.0f};
+    //std::shared_ptr<TextureSampler> sampler;
+    //std::shared_ptr<Pipeline> pipeline;
+    //FrameMultiBufferResource<std::shared_ptr<RenderBufferResource>> resource2;
+    //glm::vec2 position = { 0,0 };
+    //glm::vec3 camerapos = {1.0f, 1.5f, -5.0f};
 
 public:
 
@@ -196,10 +71,17 @@ public:
         //delete pipeline;
         //delete pipeline_2; 
         //Delete_Render_Box_data();
+        delete test_observer;
     }
 
     TestLayer() : Layer(){
         glm::vec2 origin = { -4,-4 };
+            //std::cout << "Test Event: " << e->x << ", " << e->y << "\n";
+        test_observer = MakeEventObserver<TestEventType>([this](TestEventType* e) -> bool { 
+            std::cout << "Test Event: " << e->x << ", " << e->y << "\n";
+            return false; });
+        Application::Get()->RegisterObserver<TestEventType>((EventObserverBase*)test_observer);
+
         //for (int i = 0; i < 10; i++) {
         //    for (int y = 0; y < 10; y++) {
         //        int color = ((i * 9 + y) % 2 == 0) ? 1 : 0;
@@ -214,53 +96,53 @@ public:
     }
 
     virtual void OnEvent(Event* e) override {
-        EventDispacher dispatch(e);
-        dispatch.Dispatch<KeyPressedEvent>([this](KeyPressedEvent* e) {
-            if (e->key_code == KeyCode::KEY_R && e->press_type == KeyPressType::KEY_PRESS) {
-                Application::GetWorld().GetPhysicsEngine().PassiveMode();
-            }
-            else if (e->key_code == KeyCode::KEY_T && e->press_type == KeyPressType::KEY_PRESS) {
-                Application::GetWorld().GetPhysicsEngine().ActiveMode();
-            }
-            else if (e->key_code == KeyCode::KEY_S && e->press_type == KeyPressType::KEY_PRESS) {
-                Application::GetWorld().SaveScene("Entity_snapshot.json");
-            }
-            else if (e->key_code == KeyCode::KEY_L && e->press_type == KeyPressType::KEY_PRESS) {
-                Application::GetWorld().LoadSceneFromFile("Entity_snapshot.json");
-            }
-            else if (e->key_code == KeyCode::KEY_Q && e->press_type == KeyPressType::KEY_PRESS) {
-                
-                
-                Application::Get()->Exit();
-            }
-            else if (e->key_code == KeyCode::KEY_KP_5 && e->press_type == KeyPressType::KEY_PRESS) {
-                TextureManager::Get()->ReleaseTexture("asset:Heaven.png"_path);
-                texture.GetValue().reset();
-                texture.~Future();
-            }
+        //EventDispacher dispatch(e);
+        //dispatch.Dispatch<KeyPressedEvent>([this](KeyPressedEvent* e) {
+        //    if (e->key_code == KeyCode::KEY_R && e->press_type == KeyPressType::KEY_PRESS) {
+        //        Application::GetWorld().GetPhysicsEngine().PassiveMode();
+        //    }
+        //    else if (e->key_code == KeyCode::KEY_T && e->press_type == KeyPressType::KEY_PRESS) {
+        //        Application::GetWorld().GetPhysicsEngine().ActiveMode();
+        //    }
+        //    else if (e->key_code == KeyCode::KEY_S && e->press_type == KeyPressType::KEY_PRESS) {
+        //        Application::GetWorld().SaveScene("Entity_snapshot.json");
+        //    }
+        //    else if (e->key_code == KeyCode::KEY_L && e->press_type == KeyPressType::KEY_PRESS) {
+        //        Application::GetWorld().LoadSceneFromFile("Entity_snapshot.json");
+        //    }
+        //    else if (e->key_code == KeyCode::KEY_Q && e->press_type == KeyPressType::KEY_PRESS) {
+        //        
+        //        
+        //        Application::Get()->Exit();
+        //    }
+        //    else if (e->key_code == KeyCode::KEY_KP_5 && e->press_type == KeyPressType::KEY_PRESS) {
+        //        TextureManager::Get()->ReleaseTexture("asset:Heaven.png"_path);
+        //        texture.GetValue().reset();
+        //        texture.~Future();
+        //    }
 
-            else if (e->key_code == KeyCode::KEY_KP_2 && e->press_type == KeyPressType::KEY_PRESS) {
-                texture = TextureManager::Get()->LoadTextureFromFileAsync("asset:Heaven.png"_path, false);
-            }
+        //    else if (e->key_code == KeyCode::KEY_KP_2 && e->press_type == KeyPressType::KEY_PRESS) {
+        //        texture = TextureManager::Get()->LoadTextureFromFileAsync("asset:Heaven.png"_path, false);
+        //    }
 
 
-            return false;
-            });
-        dispatch.Dispatch<MouseMoveEvent>([this](MouseMoveEvent* e) {
-            glm::vec2 norm_scree_pos = UnitConverter::ScreenSpaceToNDC({ e->x,e->y });
-            glm::vec2 offset = { -1.0,0.0 };
-            norm_scree_pos += offset;
-            norm_scree_pos.y *= -1;
-            float distance = 5.0f;
-            glm::vec3 pos{
-                glm::cos(norm_scree_pos.x * glm::pi<float>()) * glm::cos(norm_scree_pos.y * glm::pi<float>()/2) ,
-                glm::sin(norm_scree_pos.y * glm::pi<float>() / 2),
-                glm::sin(norm_scree_pos.x * glm::pi<float>()) * glm::cos(norm_scree_pos.y * glm::pi<float>()/2)
-            };
-            camerapos = pos * distance;
-            //camerapos = glm::vec3(0.0, 0.0, -5.0);
-            return false;
-            });
+        //    return false;
+        //    });
+        //dispatch.Dispatch<MouseMoveEvent>([this](MouseMoveEvent* e) {
+        //    glm::vec2 norm_scree_pos = UnitConverter::ScreenSpaceToNDC({ e->x,e->y });
+        //    glm::vec2 offset = { -1.0,0.0 };
+        //    norm_scree_pos += offset;
+        //    norm_scree_pos.y *= -1;
+        //    float distance = 5.0f;
+        //    glm::vec3 pos{
+        //        glm::cos(norm_scree_pos.x * glm::pi<float>()) * glm::cos(norm_scree_pos.y * glm::pi<float>()/2) ,
+        //        glm::sin(norm_scree_pos.y * glm::pi<float>() / 2),
+        //        glm::sin(norm_scree_pos.x * glm::pi<float>()) * glm::cos(norm_scree_pos.y * glm::pi<float>()/2)
+        //    };
+        //    camerapos = pos * distance;
+        //    //camerapos = glm::vec3(0.0, 0.0, -5.0);
+        //    return false;
+        //    });
     }
 
     virtual void OnUpdate(float delta_time) override {
@@ -503,7 +385,10 @@ public:
 */
 
 #pragma endregion
-
+            TestEventType ev = TestEventType();
+            ev.x = 5;
+            ev.y = 8;
+            Application::Get()->SendObservedEvent(&ev);
             stop = false;
 
         }
@@ -531,11 +416,11 @@ public:
         //    std::cout << ent.id << "\n";
         //}
 
-        auto& index = Application::GetWorld().GetSpatialIndex();
+      /*  auto& index = Application::GetWorld().GetSpatialIndex();
         std::vector<Entity> entities;
         Application::GetWorld().GetComponent<CameraComponent>(Application::GetWorld().GetPrimaryEntity()).UpdateViewFrustum(Application::GetWorld().GetComponent<TransformComponent>(Application::GetWorld().GetPrimaryEntity()).TransformMatrix);
         index.FrustumCulling(Application::GetWorld(), Application::GetWorld().GetComponent<CameraComponent>(Application::GetWorld().GetPrimaryEntity()).GetViewFrustum(), entities);
-        index.Visualize();
+        index.Visualize();*/
         //for (auto ent : entities) {
         //    std::cout << ent.id << ", ";
         //}

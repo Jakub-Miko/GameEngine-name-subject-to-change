@@ -12,7 +12,7 @@
 #include <Core/RuntimeTag.h>
 
 class ScriptComponent {
-	RuntimeTag("ScriptComponent")
+	RUNTIME_TAG("ScriptComponent")
 public:
 	ScriptComponent(const std::string& ref) : script_path(ref) {}
 	ScriptComponent() : script_path("") {}

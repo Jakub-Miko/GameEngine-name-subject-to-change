@@ -284,7 +284,7 @@ void PropertiesPanel::RenderProperties(Entity entity, const PropertiesPanel_pers
 			bool enter = ImGui::InputText("Mesh path", text_buffer, buffer_size, ImGuiInputTextFlags_EnterReturnsTrue);
 			if (ImGui::Button("Reload") || enter) {
 				try {
-					mesh.ChangeMesh(FileManager::Get()->GetPath(text_buffer));
+					Application::GetWorld().SetEntityMesh(selected, FileManager::Get()->GetPath(text_buffer));
 				}
 				catch (std::runtime_error* e) {
 					ImGui::OpenPopup(mesh_error_id);
@@ -300,7 +300,7 @@ void PropertiesPanel::RenderProperties(Entity entity, const PropertiesPanel_pers
 				memcpy(text_buffer, mesh.GetMeshPath().c_str(), mesh.GetMeshPath().size() + 1);
 			}
 			if (ImGui::Button("Set Selected")) {
-				mesh.ChangeMesh(Editor::Get()->GetSelectedFilePath());
+				Application::GetWorld().SetEntityMesh(selected,Editor::Get()->GetSelectedFilePath());
 				memcpy(text_buffer, mesh.GetMeshPath().c_str(), mesh.GetMeshPath().size() + 1);
 			}
 			ImGui::Separator();

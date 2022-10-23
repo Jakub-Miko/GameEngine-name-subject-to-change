@@ -1,4 +1,5 @@
 #include "World.h"
+#include <Events/MeshChangedEvent.h>
 #include <FileManager.h>
 #include <Core/Extensions/EntitySerializationECSAdapter.h>
 #include <Renderer/TextureManager.h>
@@ -71,6 +72,20 @@ void World::SetEntityTransformSync(Entity ent, const glm::mat4& transform)
 {
 	std::lock_guard<std::mutex> lock(SyncPool<TransformComponent>());
 	SetEntityTransform(ent, transform);
+}
+
+void World::SetEntityMesh(Entity ent, const std::string mesh_path)
+{
+	std::lock_guard<std::mutex> lock(SyncPool<MeshComponent>());
+	if (HasComponent<MeshComponent>(ent)) {
+		auto& mesh = GetComponent<MeshComponent>(ent);
+		mesh.ChangeMesh(mesh_path);
+		MeshChangedEvent ev(ent, mesh_path);
+		Application::Get()->SendObservedEvent<MeshChangedEvent>(&ev);
+	}
+	else {
+		SetComponent<MeshComponent>(ent, MeshComponent(mesh_path));
+	}
 }
 
 void World::SetEntityScaleSync(Entity ent, const glm::vec3& scale)

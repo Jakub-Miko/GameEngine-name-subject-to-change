@@ -1,4 +1,5 @@
 #pragma once
+#include <Events/SubjectObserver.h>
 #include <World/Entity.h>
 #include <deque>
 #include <mutex>
@@ -62,6 +63,8 @@ private:
 	void DestroyPhysicsObject(const PhysicsComponent& physics_comp);
 
 	bool running = true;
+
+	std::unique_ptr<EventObserverBase> mesh_change_observer;
 
 	PhysicsEngine_BulletData* bullet_data;
 	std::mutex creation_mutex;

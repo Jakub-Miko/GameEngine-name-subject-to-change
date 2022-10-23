@@ -34,7 +34,7 @@ enum class PhysicsObjectState : char {
 };
 
 struct PhysicsComponent {
-	RuntimeTag("PhysicsComponent");
+	RUNTIME_TAG("PhysicsComponent");
 	PhysicsComponent() {}
 
 	float mass = 0.0f;

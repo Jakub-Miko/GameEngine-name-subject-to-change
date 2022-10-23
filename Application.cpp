@@ -93,7 +93,7 @@ Application::~Application()
 }
 
 Application::Application()
-    : m_Window(nullptr), world()
+    : m_Window(nullptr), world(), event_subjects_mutex(), event_subjects()
 {
     
 }

@@ -2,5 +2,5 @@
 #include <Core/RuntimeTag.h>
 
 struct InitializationComponent {
-	RuntimeTag("InitializationComponent")
+	RUNTIME_TAG("InitializationComponent")
 };

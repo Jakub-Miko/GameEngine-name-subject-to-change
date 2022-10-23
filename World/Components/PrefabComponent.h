@@ -8,7 +8,7 @@ enum class PrefabStatus : char {
 };
 
 struct PrefabComponent {
-	RuntimeTag("PrefabComponent");
+	RUNTIME_TAG("PrefabComponent");
 	PrefabComponent(const std::string& file_path = "Undefined", Entity first_child = Entity()) : file_path(file_path) {}
 	Entity first_child = Entity();
 	PrefabStatus status = PrefabStatus::OK;

@@ -6,7 +6,7 @@
 #include <Core/RuntimeTag.h>
 
 class BoundingVolumeComponent {
-	RuntimeTag("BoundingVolumeComponent")
+	RUNTIME_TAG("BoundingVolumeComponent")
 public:
 	using bounding_volume_variant_type = std::variant<BoundingBox, BoundingSphere, BoundingInfinity, BoundingPointLightSphere>;
 public:

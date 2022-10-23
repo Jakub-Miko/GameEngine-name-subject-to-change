@@ -7,7 +7,7 @@
 #include <FileManager.h>
 
 class MeshComponent {
-	RuntimeTag("MeshComponent")
+	RUNTIME_TAG("MeshComponent")
 public:
 	MeshComponent() : file_path("Unknown"), mesh(nullptr) {
 		mesh = MeshManager::Get()->GetDefaultMesh();
@@ -15,12 +15,6 @@ public:
 	
 	MeshComponent(const std::string& filepath,int index = 0) : file_path("Unknown"), mesh(nullptr){
 		mesh = MeshManager::Get()->LoadMeshFromFileAsync(filepath);
-		file_path = FileManager::Get()->GetRelativeFilePath(filepath);
-	}
-
-	void ChangeMesh(const std::string& filepath) {
-		auto import_mesh = MeshManager::Get()->LoadMeshFromFileAsync(filepath);
-		mesh = import_mesh;
 		file_path = FileManager::Get()->GetRelativeFilePath(filepath);
 	}
 
@@ -65,15 +59,23 @@ public:
 
 	std::shared_ptr<Material> material = nullptr;
 private:
+	//This should only be called from World class since other components can rely on it.
+	void ChangeMesh(const std::string& filepath) {
+		auto import_mesh = MeshManager::Get()->LoadMeshFromFileAsync(filepath);
+		mesh = import_mesh;
+		file_path = FileManager::Get()->GetRelativeFilePath(filepath);
+	}
+
 	friend class MeshManager;
 	friend class World;
 	friend inline void to_json(nlohmann::json& j, const MeshComponent& p);
+	friend inline void from_json(const nlohmann::json& j, MeshComponent& p);
 	std::string file_path;
 	std::shared_ptr<Mesh> mesh;
 };
 
 class LoadingMeshComponent {
-	RuntimeTag("LoadingMeshComponent")
+	RUNTIME_TAG("LoadingMeshComponent")
 public:
 	LoadingMeshComponent(const Future<std::shared_ptr<Mesh>>& mesh_future) : mesh_future(mesh_future) {}
 

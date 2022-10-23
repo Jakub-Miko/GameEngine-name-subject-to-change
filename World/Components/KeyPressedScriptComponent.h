@@ -2,5 +2,5 @@
 #include <Core/RuntimeTag.h>
 
 struct KeyPressedScriptComponent {
-	RuntimeTag("KeyPressedScriptComponent")
+	RUNTIME_TAG("KeyPressedScriptComponent")
 };

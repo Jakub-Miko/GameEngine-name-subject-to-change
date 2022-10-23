@@ -3,18 +3,11 @@
 
 
 class MouseMoveEvent : public Event {
+	EVENT_ID(MouseMoveEvent);
 public:
 	MouseMoveEvent(double x, double y) : x(x), y(y)
 	{
 
-	}
-
-	virtual EventType GetType() override {
-		return MouseMoveEvent::GetStaticType();
-	}
-
-	static EventType GetStaticType() {
-		return EventType::MOUSE_MOVE;
 	}
 
 public:

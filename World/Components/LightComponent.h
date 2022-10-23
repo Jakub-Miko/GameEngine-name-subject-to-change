@@ -23,7 +23,7 @@ public:
 
 
 class LightComponent {
-	RuntimeTag("LightComponent")
+	RUNTIME_TAG("LightComponent")
 public:
 	LightComponent(LightType type = LightType::DIRECTIONAL, const glm::vec4& color = glm::vec4(1.0f)) : color(color), type(type), attenuation(glm::vec3(1.0, 0.1, 0.05)) {}
 	LightComponent(glm::vec3 attenuation, const glm::vec4& color = glm::vec4(1.0f)) : color(color), type(LightType::POINT), attenuation(attenuation) {}

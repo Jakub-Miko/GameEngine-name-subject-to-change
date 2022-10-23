@@ -38,7 +38,7 @@ OverlapResult OverlapBoxPlane(const BoundingBox& box, const Plane& plane);
 
 class BoundingBox : public BoundingVolume {
 	//For Serialization purposes
-	RuntimeTag("BoundingBox")
+	RUNTIME_TAG("BoundingBox")
 public:
 	BoundingBox(glm::vec3 box_size = glm::vec3(1.0f), glm::vec3 box_offset = glm::vec3(0.0f)) : box_min(-glm::abs(box_size/2.0f) + box_offset), box_max(glm::abs(box_size / 2.0f) + box_offset) {}
 
@@ -69,7 +69,7 @@ private:
 
 class BoundingSphere : public BoundingVolume {
 	//For Serialization purposes
-	RuntimeTag("BoundingSphere")
+	RUNTIME_TAG("BoundingSphere")
 public:
 	BoundingSphere(float sphere_size = 1.0f, glm::vec3 sphere_offset = glm::vec3(0.0f)) : sphere_size(sphere_size), sphere_offset(sphere_offset) {}
 
@@ -101,7 +101,7 @@ private:
 //Note: isnt affected by the scale parameter
 class BoundingPointLightSphere : public BoundingVolume {
 	//For Serialization purposes
-	RuntimeTag("BoundingPointLightSphere")
+	RUNTIME_TAG("BoundingPointLightSphere")
 public:
 	BoundingPointLightSphere(float sphere_size = 1.0f, glm::vec3 sphere_offset = glm::vec3(0.0f)) : sphere_size(sphere_size), sphere_offset(sphere_offset) {}
 
@@ -133,7 +133,7 @@ private:
 //Used to represent an infinetely large object than get loaded no matter whan(ie directional light)
 class BoundingInfinity : public BoundingVolume {
 	//For Serialization purposes
-	RuntimeTag("BoundingInfinity")
+	RUNTIME_TAG("BoundingInfinity")
 public:
 	BoundingInfinity() {}
 

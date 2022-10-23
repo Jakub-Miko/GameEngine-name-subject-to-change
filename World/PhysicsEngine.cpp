@@ -1,4 +1,5 @@
 #include "PhysicsEngine.h"
+#include <Events/MeshChangedEvent.h>
 #include <World/Components/PhysicsComponent.h>
 #include <btBulletDynamicsCommon.h>
 #include <BulletCollision/CollisionShapes/btShapeHull.h>
@@ -131,6 +132,13 @@ PhysicsEngine::PhysicsEngine(const PhysicsEngineProps& props) : bullet_data(new 
 	bullet_data->constraint_solver = std::make_unique<btSequentialImpulseConstraintSolver>();
 	bullet_data->world = std::make_unique<btDiscreteDynamicsWorld>(bullet_data->collision_dispather.get(), bullet_data->broadphase.get(), bullet_data->constraint_solver.get(), bullet_data->collision_config.get());
 	bullet_data->world->setGravity(btVector3(0.0f, -9.8f, 0.0f));
+
+	mesh_change_observer.reset(MakeEventObserver<MeshChangedEvent>([this](MeshChangedEvent* e) -> bool {
+		UnRegisterPhysicsComponent(e->ent);
+		RegisterPhysicsComponent(e->ent);
+		return false;
+		}));
+	Application::Get()->RegisterObserver<MeshChangedEvent>(mesh_change_observer.get());
 }
 
 void PhysicsEngine::UpdatePhysics(float delta_time)

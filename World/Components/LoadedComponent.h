@@ -4,7 +4,7 @@
 #include <Core/RuntimeTag.h>
 
 class LoadedComponent {
-	RuntimeTag("LoadedComponent")
+	RUNTIME_TAG("LoadedComponent")
 public:
 	LoadedComponent() : file_path("Unknown") {}
 	LoadedComponent(const std::string& file_path) : file_path(file_path) {}

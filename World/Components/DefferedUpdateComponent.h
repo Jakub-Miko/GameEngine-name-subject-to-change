@@ -2,5 +2,5 @@
 #include <Core/RuntimeTag.h>
 
 struct DefferedUpdateComponent {
-	RuntimeTag("DefferedUpdateComponent")
+	RUNTIME_TAG("DefferedUpdateComponent")
 };

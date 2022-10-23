@@ -8,6 +8,7 @@
 #include <World/World.h>
 #include <chrono>
 #include <Events/Event.h>
+#include <Events/SubjectObserver.h>
 #include <mutex>
 #include <AsyncTaskDispatcher.h>
 #include <ThreadManager.h>
@@ -30,6 +31,8 @@ private:
     friend class GameState;
     GameLayer* m_GameLayer = nullptr;
     World* world = nullptr;
+    std::unordered_map<RuntimeTagIdType, EventSubject> event_subjects;
+    std::mutex event_subjects_mutex;
 
 public:
 
@@ -44,6 +47,47 @@ public:
 
     OSApi* GetOsApi() const {
         return os_api;
+    }
+
+    template<typename EventType>
+    void SendObservedEvent(EventType* e) {
+        //TODO: this can be synchronized more granularily
+        std::unique_lock<std::mutex> lock(event_subjects_mutex);
+        auto fnd = event_subjects.find(e->GetType());
+        if (fnd == event_subjects.end()) {
+            fnd = event_subjects.emplace(std::piecewise_construct,
+                std::forward_as_tuple(e->GetType()), std::forward_as_tuple()).first;
+        }
+        EventSubject& sub = fnd->second;
+        lock.unlock();
+        sub.Notify((Event*)e);
+    }
+
+    template<typename EventType>
+    EventSubject& GetEventSubject() {
+        //TODO: this can be synchronized more granularily
+        std::unique_lock<std::mutex> lock(event_subjects_mutex);
+        auto fnd = event_subjects.find(RuntimeTag<EventType>::GetId());
+        if (fnd == event_subjects.end()) {
+            fnd = event_subjects.emplace(std::piecewise_construct,
+                std::forward_as_tuple(RuntimeTag<EventType>::GetId()), std::forward_as_tuple()).first;
+        }
+        return fnd->second;
+
+    }
+
+    template<typename EventType>
+    void RegisterObserver(EventObserverBase* observer) {
+        //TODO: this can be synchronized more granularily
+        std::unique_lock<std::mutex> lock(event_subjects_mutex);
+        auto fnd = event_subjects.find(RuntimeTag<EventType>::GetId());
+        if (fnd == event_subjects.end()) {
+            fnd = event_subjects.emplace(std::piecewise_construct,
+                std::forward_as_tuple(RuntimeTag<EventType>::GetId()), std::forward_as_tuple()).first;
+        }
+        EventSubject& sub = fnd->second;
+        lock.unlock();
+        sub.Subscribe(observer);
     }
 
     bool SendEvent(Event* event);

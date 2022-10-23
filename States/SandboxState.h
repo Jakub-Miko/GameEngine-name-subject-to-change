@@ -4,7 +4,7 @@
 #include <Core/RuntimeTag.h>
 
 class SandboxState : public GameState{
-	RuntimeTag("SandboxState");
+	RUNTIME_TAG("SandboxState");
 public:
 	SandboxState();
 	virtual void Update(float delta_time) override;
