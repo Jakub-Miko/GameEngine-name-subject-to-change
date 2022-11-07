@@ -45,8 +45,8 @@ struct PhysicsComponent {
 private:
 	friend class PhysicsEngine;
 	friend class TransformMotionState;
-	std::shared_ptr<btCollisionObject> physics_object;
-	btCollisionShape* physics_shape;
+	std::shared_ptr<btCollisionObject> physics_object = nullptr;
+	btCollisionShape* physics_shape = nullptr;
 };
 
 JSON_SERIALIZABLE(PhysicsComponent, mass, object_type, shape_type, is_kinematic);

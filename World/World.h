@@ -31,6 +31,10 @@ public:
 
 	}
 
+	static void OnUpdate(World& world, Entity entity) {
+
+	}
+
 };
 
 template<typename T, typename = void>
@@ -56,6 +60,15 @@ struct HasOnDestroy
 {
 	template<typename T, T> struct helper;
 	template<typename T> static std::uint8_t check(helper<void(*)(World&, Entity), &T::OnDestroy>*);
+	template<typename T> static std::uint16_t check(...);
+	static const bool value = sizeof(check<T>(0)) == sizeof(std::uint8_t);
+};
+
+template<typename T>
+struct HasOnUpdate
+{
+	template<typename T, T> struct helper;
+	template<typename T> static std::uint8_t check(helper<void(*)(World&, Entity), &T::OnUpdate>*);
 	template<typename T> static std::uint16_t check(...);
 	static const bool value = sizeof(check<T>(0)) == sizeof(std::uint8_t);
 };
@@ -116,7 +129,9 @@ public:
 		if constexpr (HasOnDestroy<ComponentInitProxy<T>>::value) {
 			m_ECS.on_destroy<T>().connect<&World::DestroyComponent<T, &ComponentInitProxy<T>::OnDestroy>>(*this);
 		}
-
+		if constexpr (HasOnUpdate<ComponentInitProxy<T>>::value) {
+			m_ECS.on_destroy<T>().connect<&World::UpdateComponent<T, &ComponentInitProxy<T>::OnUpdate>>(*this);
+		}
 	}
 
 	template<typename T = EntityType, typename ... Args>
@@ -256,6 +271,11 @@ private:
 
 	template<typename T, auto func>
 	void DestroyComponent(entt::registry& reg, entt::entity ent) {
+		func(*this, Entity((uint32_t)ent));
+	}
+
+	template<typename T, auto func>
+	void UpdateComponent(entt::registry& reg, entt::entity ent) {
 		func(*this, Entity((uint32_t)ent));
 	}
 

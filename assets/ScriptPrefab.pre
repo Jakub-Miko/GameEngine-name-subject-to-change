@@ -6,8 +6,7 @@
 }
 
 @EndSection
-@Section:Root
-@Entity 
+@Section:Root@Entity 
 {
 "Components": {"LabelComponent":{"label":"Script Prefab"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":0.0,"y":0.0,"z":0.0}}},
 "Children": ["local#Mesh_0"]
@@ -16,7 +15,7 @@
 
 @Entity:Construction_Script 
 
-SetProperty_INT("distance",5);
+SetProperty_FLOAT("distance",5);
 function OnConstruct()
 
 
@@ -25,6 +24,8 @@ end
 
 
 @Entity:Inline_Script
+
+
 
 
 
@@ -42,14 +43,14 @@ norm_scree_pos = offset + norm_scree_pos;
 
 norm_scree_pos = norm_scree_pos * vec2({-1,-1});
 norm_scree_pos.y = math.min(math.max(-0.8, norm_scree_pos.y),0.8)
-distance = GetProperty_INT("distance");
+distance = GetProperty_FLOAT("distance");
 
 if IsKeyPressed(KeyCode.KEY_UP) then
-		SetProperty_INT("distance", distance - 1)
+		SetProperty_FLOAT("distance", distance - 0.1)
 end
 
 if IsKeyPressed(KeyCode.KEY_DOWN) then
-		SetProperty_INT("distance", distance + 1)
+		SetProperty_FLOAT("distance", distance + 0.1)
 end
 
 pos = {
@@ -67,5 +68,7 @@ SetRotation(rot)
 
 
 end
+
+
 
 @EndSection

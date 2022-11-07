@@ -134,6 +134,7 @@ PhysicsEngine::PhysicsEngine(const PhysicsEngineProps& props) : bullet_data(new 
 	bullet_data->world->setGravity(btVector3(0.0f, -9.8f, 0.0f));
 
 	mesh_change_observer.reset(MakeEventObserver<MeshChangedEvent>([this](MeshChangedEvent* e) -> bool {
+		if (!Application::GetWorld().HasComponent<PhysicsComponent>(e->ent)) return false;
 		UnRegisterPhysicsComponent(e->ent);
 		RegisterPhysicsComponent(e->ent);
 		return false;
@@ -184,6 +185,7 @@ void PhysicsEngine::clear()
 
 void PhysicsEngine::destroy()
 {
+	CreationPhase();
 	DeletionPhase();
 	auto& col_array = bullet_data->world->getCollisionObjectArray();
 	for (int i = 0; i < bullet_data->world->getNumCollisionObjects(); i++) {
@@ -206,7 +208,7 @@ void PhysicsEngine::CreationPhase()
 		if(CreatePhysicsObject(ent.entity)) ent.processed = true;
 	}
 
-	while (!creation_queue.empty() && creation_queue.front().processed) {
+	while (!creation_queue.empty() && creation_queue.back().processed) {
 		creation_queue.pop_front();
 	}
 
@@ -282,7 +284,7 @@ bool PhysicsEngine::CreatePhysicsObject(Entity entity)
 
 void PhysicsEngine::DestroyPhysicsObject(const PhysicsComponent& physics_comp)
 {
-
+	if (physics_comp.physics_object.get() == nullptr) return;
 	btRigidBody* body = btRigidBody::upcast(physics_comp.physics_object.get());
 	btCollisionShape* shape = body->getCollisionShape();
 	btMotionState* state = body->getMotionState();
