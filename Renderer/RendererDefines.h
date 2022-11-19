@@ -156,11 +156,11 @@ struct VertexLayout {
 		CalculateStride();
 	}
 
-	VertexLayout(const VertexLayout& layout) : layout(layout.layout), stride(layout.stride) {
+	VertexLayout(const VertexLayout& layout) : layout(layout.layout), stride(layout.stride), num_of_uv_channels(layout.num_of_uv_channels) {
 
 	}
 
-	VertexLayout(VertexLayout&& layout) noexcept : layout(std::move(layout.layout)), stride(layout.stride) {
+	VertexLayout(VertexLayout&& layout) noexcept : layout(std::move(layout.layout)), stride(layout.stride), num_of_uv_channels(layout.num_of_uv_channels) {
 
 	}
 

@@ -19,6 +19,7 @@ file(GLOB SRCS
 "./Renderer/*.cpp" "./Renderer/*.h"
 "./Renderer/Renderer3D/*.cpp" "./Renderer/Renderer3D/*.h"
 "./Renderer/Renderer3D/RenderPasses/*.cpp" "./Renderer/Renderer3D/RenderPasses/*.h"
+"./Renderer/Renderer3D/Animations/*.cpp" "./Renderer/Renderer3D/Animations/*.h"
 "./Core/*.cpp"
 "./Core/Extensions/*.cpp")
 

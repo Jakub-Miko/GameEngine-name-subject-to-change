@@ -385,6 +385,7 @@ public:
 */
 
 #pragma endregion
+            std::cout << "Size of uvec4: " << sizeof(glm::uvec4) << "\n";
             TestEventType ev = TestEventType();
             ev.x = 5;
             ev.y = 8;

@@ -17,6 +17,10 @@ Mesh MeshManager::LoadMeshFromFileImpl(const std::string& file_path)
     Mesh mesh;
     mesh.status = Mesh_status::READY;
     mesh.bounding_box = import_data.bounding_box;
+    if (import_data.skeleton != nullptr) {
+        mesh.skeleton.reset(import_data.skeleton.get());
+        import_data.skeleton.release();
+    }
     auto command_list = Renderer::Get()->GetRenderCommandList(); //TODO:Make sure you dont use too many command lists.
     auto command_queue = Renderer::Get()->GetCommandQueue();
 
@@ -56,7 +60,9 @@ std::shared_ptr<Mesh> MeshManager::LoadMeshFromFileAsync(const std::string& file
     mesh.num_of_indicies = GetDefaultMesh()->num_of_indicies;
     mesh.index_buffer = GetDefaultMesh()->index_buffer;
     mesh.vertex_buffer = GetDefaultMesh()->vertex_buffer;
-    
+    if (std::filesystem::path(absolute_path).extension().generic_string() == ".skel") {
+        mesh.skeleton.reset(new Skeleton);
+    }
 
     auto mesh_final = RegisterMesh(std::make_unique<Mesh>(mesh), relative_path);
 
@@ -86,12 +92,8 @@ void MeshManager::UpdateLoadedMeshes()
     for (auto& loaded_mesh : mesh_Load_queue) {
         if (!loaded_mesh.future.IsAvailable() || loaded_mesh.destroyed) continue;
         try {
-            auto mesh_l = loaded_mesh.future.GetValue();
-            loaded_mesh.mesh->index_buffer = mesh_l.index_buffer;
-            loaded_mesh.mesh->vertex_buffer = mesh_l.vertex_buffer;
-            loaded_mesh.mesh->num_of_indicies = mesh_l.num_of_indicies;
-            loaded_mesh.mesh->status = Mesh_status::READY;
-            loaded_mesh.mesh->bounding_box = mesh_l.bounding_box;
+            *(loaded_mesh.mesh) = std::move(loaded_mesh.future.GetValue());
+            
             loaded_mesh.destroyed = true;
         }
         catch (...) {
@@ -148,6 +150,7 @@ void MeshManager::ClearMeshCache()
     mesh_Map.clear();
 
 }
+static bool CheckBoneRoot(Skeleton& skeleton, aiNode* node, aiNode** root_node);
 
 MeshManager::mesh_assimp_input_data MeshManager::Fetch_Assimp_Data(const mesh_vertex_props& props, const std::string& in_file_path, int mesh_index) {
     Assimp::Importer* importer = new Assimp::Importer;
@@ -160,7 +163,7 @@ MeshManager::mesh_assimp_input_data MeshManager::Fetch_Assimp_Data(const mesh_ve
     flags |= aiProcess_GenBoundingBoxes | (props.has_tangent ? aiProcess_CalcTangentSpace : 0);
     const aiScene* scene = importer->ReadFile(in_file_path, flags); //TODO: Handle bounding boxes somehow
     aiMesh* imported_mesh = scene->mMeshes[mesh_index];
-
+    bool has_skeleton = imported_mesh->HasBones();
     auto& aabb = imported_mesh->mAABB;
 
     auto size = aabb.mMax - aabb.mMin;
@@ -219,13 +222,79 @@ MeshManager::mesh_assimp_input_data MeshManager::Fetch_Assimp_Data(const mesh_ve
     }
     data.indicies = indicies;
 
+    if (has_skeleton) {
+        Skeleton* skeleton = new Skeleton;
+        for (int i = 0; i < imported_mesh->mNumBones; i++) {
+            skeleton->bone_hashmap.insert(std::make_pair(std::string(imported_mesh->mBones[i]->mName.C_Str()), Skeleton::bone_hashmap_entry{(uint16_t)-1,(uint16_t)i}));
+        }
+
+        data.bone_Indicies = new glm::uvec4[data.num_of_verticies];
+        memset(data.bone_Indicies, 255, sizeof(glm::uvec4) * data.num_of_verticies);
+        data.bone_weigths = new glm::vec4[data.num_of_verticies];
+        aiNode* root = nullptr;
+        CheckBoneRoot(*skeleton, scene->mRootNode, &root);
+        if (!root) {
+            throw std::runtime_error("Root bone could not be found");
+        }
+        skeleton->parent_bone_array.reserve(imported_mesh->mNumBones);
+        BuildBoneHierarchy(*skeleton, root, -1, imported_mesh, &data);
+        data.skeleton.reset(skeleton);
+
+    }
+
     return data;
 }
 
-void MeshManager::Write_assimp_processed_data(void* vertex_data, size_t vertex_size, const MeshManager::mesh_assimp_input_data& import_data, const std::string& out_data, const VertexLayout& layout)
+void MeshManager::BuildBoneHierarchy(Skeleton& skeleton, aiNode* node, uint16_t parent_index, aiMesh* mesh, mesh_assimp_input_data* data) {
+    if (!skeleton.BoneExists(node->mName.C_Str())) return;
+    Bone current_bone;
+    current_bone.name = node->mName.C_Str();
+    current_bone.parent_index = parent_index;
+    Skeleton::bone_hashmap_entry& entry = skeleton.GetBoneEntryReferenceByName(current_bone.name);
+    aiBone* bone = mesh->mBones[entry.animation_file_entry];
+    current_bone.offset_matrix = glm::transpose(glm::make_mat4(&(bone->mOffsetMatrix).a1));
+    skeleton.parent_bone_array.push_back(current_bone);
+    uint16_t current_index = skeleton.parent_bone_array.size() - 1;
+    entry.array_entry = current_index;
+
+    for (uint32_t i = 0; i < bone->mNumWeights; i++) {
+        glm::uvec4* index = &data->bone_Indicies[bone->mWeights[i].mVertexId];
+        glm::vec4* weight = &data->bone_weigths[bone->mWeights[i].mVertexId];
+        for (int x = 0; x < 4; x++) {
+            if ((*index)[x] == -1) {
+                (*index)[x] = current_index;
+                (*weight)[x] = bone->mWeights[i].mWeight;
+                break;
+            }
+        }
+    }
+
+    for (int i = 0; i < node->mNumChildren; i++) {
+        BuildBoneHierarchy(skeleton, node->mChildren[i], current_index, mesh,data);
+    }
+
+}
+
+static bool CheckBoneRoot(Skeleton& skeleton, aiNode* node, aiNode** root_node) {
+    bool is_bone = skeleton.BoneExists(node->mName.C_Str());
+    if (is_bone) {
+        *root_node = node;
+        return true;
+    }
+    for (int i = 0; i < node->mNumChildren; i++) {
+        if (CheckBoneRoot(skeleton, node->mChildren[i], root_node)) return true;
+    }
+    return false;
+}
+
+void MeshManager::Write_assimp_processed_data(void* vertex_data, size_t vertex_size, const MeshManager::mesh_assimp_input_data& import_data, const std::string& out_data_path, const VertexLayout& layout)
 {
     static_assert(std::numeric_limits<double>::is_iec559 && std::numeric_limits<float>::is_iec559, "This pc doesn't comply to IEEE 754 and thus isn't supported");
     
+    bool has_bones = import_data.bone_Indicies != nullptr;
+
+    std::string out_data = out_data_path + (has_bones ? ".skel" : ".mesh");
+
     std::ofstream output_file(out_data , std::ios_base::binary);
     if (!output_file.is_open()) {
         throw std::runtime_error("File " + out_data + " could not be created");
@@ -235,6 +304,7 @@ void MeshManager::Write_assimp_processed_data(void* vertex_data, size_t vertex_s
     output_file << import_data.num_of_indicies << "\n";
     output_file << import_data.num_of_verticies << "\n";
     output_file << import_data.num_of_uv_channels << "\n";
+    output_file << (has_bones ? "skeletal_mesh" : "normal_mesh") << "\n";
     output_file << "vertex_layout\n";
     output_file << layout.layout.size() << "\n";
     for (auto& output_element : layout.layout) {
@@ -247,6 +317,18 @@ void MeshManager::Write_assimp_processed_data(void* vertex_data, size_t vertex_s
     output_file << "\nbounding_box\n";
     output_file << import_data.bounding_box.GetBoxSize().x << " " << import_data.bounding_box.GetBoxSize().y << " " << import_data.bounding_box.GetBoxSize().z << "\n";
     output_file << import_data.bounding_box.GetBoxOffset().x << " " << import_data.bounding_box.GetBoxOffset().y << " " << import_data.bounding_box.GetBoxOffset().z << "\n";
+    if (has_bones) {
+        output_file << "skeleton" << "\n";
+        output_file << import_data.skeleton->parent_bone_array.size() << "\n";
+        auto& skelton_bone_array = import_data.skeleton->parent_bone_array;
+        for (auto& bone : skelton_bone_array) {
+            auto offset_mat = glm::value_ptr(bone.offset_matrix);
+            output_file << bone.name << " " << bone.parent_index << " " << import_data.skeleton->GetBoneEntryByName(bone.name).animation_file_entry << " ";
+            output_file.write((const char*)offset_mat, sizeof(glm::mat4));
+            output_file << "\n";
+        }
+    }
+
     output_file << "\nend";
 
     output_file.close();
@@ -256,6 +338,13 @@ void MeshManager::mesh_assimp_input_data::clear()
 {
     delete[] uvs;
     delete[] indicies;
+    if (bone_Indicies) {
+        delete[] bone_Indicies;
+    }
+    if (bone_weigths) {
+        delete[] bone_weigths;
+    }
+
     delete (Assimp::Importer*)importer;
 }
 
@@ -284,12 +373,16 @@ MeshManager::mesh_native_input_data MeshManager::Fetch_Native_Data(const std::st
 
     int num_of_indicies;
     int num_of_verticies;
+    bool has_bones = false;
 
     input_file >> check;
     if (check != "mesh_info") throw std::runtime_error("Invalid Native Mesh Format");
     input_file >> num_of_indicies;
     input_file >> num_of_verticies;
     input_file >> check; // skip this since we dont need num_of_uv_channels
+    //mesh_type
+    input_file >> check;
+    if (check == "skeletal_mesh") has_bones = true;
 
     input_file >> check;
     if (check != "vertex_layout") throw std::runtime_error("Invalid Native Mesh Format");
@@ -329,6 +422,28 @@ MeshManager::mesh_native_input_data MeshManager::Fetch_Native_Data(const std::st
         input_file >> check;
     }
     
+    if (has_bones) {
+        if(check != "skeleton") throw std::runtime_error("Invalid Native Mesh Format skeleton not found");
+        int num_of_bones;
+        input_file >> num_of_bones;
+        data.skeleton.reset(new Skeleton);
+        Skeleton& skel = *data.skeleton;
+        for (int i = 0; i < num_of_bones; i++) {
+            Bone bone;
+            uint16_t anim_file_entry;
+            input_file >> bone.name >> bone.parent_index >> anim_file_entry;
+            input_file.get();
+            input_file.read((char*)glm::value_ptr(bone.offset_matrix), sizeof(glm::mat4));
+            input_file.get();
+            skel.parent_bone_array.push_back(bone);
+            skel.bone_hashmap.insert(std::make_pair(bone.name, Skeleton::bone_hashmap_entry{ (uint16_t)i, anim_file_entry }));
+        }
+        input_file >> check;
+
+
+    }
+
+
     
     if (check != "end") throw std::runtime_error("Invalid Native Mesh Format");
 

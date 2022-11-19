@@ -5,6 +5,9 @@
 #include <Core/UnitConverter.h>
 #include <Core/RuntimeTag.h>
 #include <FileManager.h>
+#ifdef EDITOR
+#include <Editor/Editor.h>
+#endif
 
 class MeshComponent {
 	RUNTIME_TAG("MeshComponent")
@@ -15,6 +18,9 @@ public:
 	
 	MeshComponent(const std::string& filepath,int index = 0) : file_path("Unknown"), mesh(nullptr){
 		mesh = MeshManager::Get()->LoadMeshFromFileAsync(filepath);
+		if (mesh->IsSkeletal()) {
+			throw std::runtime_error("Cant use skeletal mesh as static mesh");
+		}
 		file_path = FileManager::Get()->GetRelativeFilePath(filepath);
 	}
 
@@ -62,6 +68,12 @@ private:
 	//This should only be called from World class since other components can rely on it.
 	void ChangeMesh(const std::string& filepath) {
 		auto import_mesh = MeshManager::Get()->LoadMeshFromFileAsync(filepath);
+		if (import_mesh->IsSkeletal()) {
+#ifdef EDITOR
+			Editor::Get()->EditorError("Skeletal mesh cant be used in mesh component");
+#endif
+			return;
+		}
 		mesh = import_mesh;
 		file_path = FileManager::Get()->GetRelativeFilePath(filepath);
 	}

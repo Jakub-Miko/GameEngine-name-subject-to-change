@@ -65,10 +65,11 @@ void FileExplorer::Render()
 			ImGui::SameLine();
 			if (ImGui::Button("Import") | dest_enter) {
 				std::string source_absolute = FileManager::Get()->GetPath(import_source_buffer);
-				if (!(std::filesystem::exists(std::filesystem::path(source_absolute)) && std::filesystem::path(source_absolute).extension() == ".obj")) throw std::runtime_error("Source file either doesn't exist or is not an .obj file");
+				auto extension = std::filesystem::path(source_absolute).extension();
+				if (!(std::filesystem::exists(std::filesystem::path(source_absolute)) && (extension == ".obj" || extension == ".dae"))) throw std::runtime_error("Source file either doesn't exist or is not an .obj file");
 				std::string dest_absolute = FileManager::Get()->GetPath(import_dest_buffer);
 
-				MeshManager::Get()->MakeMeshFromObjectFile(source_absolute, dest_absolute, *VertexLayoutFactory<MeshPreset>::GetLayout());
+				MeshManager::Get()->MakeMeshFromObjectFile(source_absolute, dest_absolute, *VertexLayoutFactory<MeshPreset>::GetLayout(), *VertexLayoutFactory<SkeletalMeshPreset>::GetLayout());
 
 				ImGui::CloseCurrentPopup();
 				import_dest_buffer[0] = '\0';
@@ -171,8 +172,16 @@ void FileExplorer::Render()
 				std::string extension = std::filesystem::path(files[0]).extension().generic_string();
 				if (extension == ".obj") {
 					std::string file_name = std::filesystem::path(files[0]).filename().generic_string();
-					auto find = file_name.find("obj");
-					file_name = file_name.replace(find, 3, "mesh");
+					auto find = file_name.find(".obj");
+					file_name = file_name.replace(find, 4, "");
+					std::string out_path = "absolute:" + std::filesystem::absolute(std::filesystem::path(current_path)).generic_string() + "/" + file_name;
+
+					OpenImportDialog("absolute:" + files[0], out_path);
+
+				} else if (extension == ".dae") {
+					std::string file_name = std::filesystem::path(files[0]).filename().generic_string();
+					auto find = file_name.find(".dae");
+					file_name = file_name.replace(find, 4, "");
 					std::string out_path = "absolute:" + std::filesystem::absolute(std::filesystem::path(current_path)).generic_string() + "/" + file_name;
 
 					OpenImportDialog("absolute:" + files[0], out_path);
