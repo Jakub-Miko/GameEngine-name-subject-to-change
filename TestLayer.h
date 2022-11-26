@@ -2,7 +2,7 @@
 #pragma once
 #include "Layer.h"
 #include <Core/Debug.h>
-
+#include <Renderer/Renderer3D/Animations/AnimationManager.h>
 #include "Application.h"
 #include <iostream>
 
@@ -33,6 +33,7 @@ public:
     double counter = 0;
     bool stop = true;
     bool stop2 = true;
+    std::shared_ptr<Animation> anim;
     //Entity entity1;
     //Entity mesh_enity;
     //Entity second_ent;
@@ -390,10 +391,11 @@ public:
             ev.x = 5;
             ev.y = 8;
             Application::Get()->SendObservedEvent(&ev);
+            
+            
             stop = false;
 
         }
-
 
         //RenderPassBuilder builder;
         //builder.AddPass(new TestPass2);

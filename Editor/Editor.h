@@ -85,6 +85,10 @@ public:
 		are_files_dropped = false;
 	}
 
+	PropertiesPanel& GetPropertiesPanel() {
+		return *properties_panel;
+	}
+
 	void Reset();
 
 	void Refresh();

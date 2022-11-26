@@ -46,10 +46,10 @@ set(ASSIMP_BUILD_ASSIMP_TOOLS off)
 set(ASSIMP_BUILD_TESTS off)
 set(ASSIMP_INSTALL off)
 
+add_subdirectory("./dependencies")
 add_subdirectory("./dependencies/assimp")
 
 add_subdirectory("./dependencies/Additional")
-add_subdirectory("./dependencies")
 
 add_subdirectory("./Utilities")
 

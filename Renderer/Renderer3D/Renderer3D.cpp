@@ -2,6 +2,7 @@
 #include "MaterialManager.h"
 #include <FrameManager.h>
 #include "DefferedRenderingPipeline.h"
+#include "Animations/AnimationManager.h"
 
 Renderer3D* Renderer3D::instance = nullptr;
 
@@ -10,6 +11,7 @@ void Renderer3D::Init()
 	if (!instance) {
 		instance = new Renderer3D;
 		MaterialManager::Init();
+		AnimationManager::Init();
 		instance->deffered_pipeline = DefferedRenderingPipeline::CreatePipeline();
 	}
 }
@@ -24,6 +26,7 @@ void Renderer3D::Shutdown()
 void Renderer3D::PreShutdown()
 {
 	MaterialManager::Shutdown();
+	AnimationManager::Shutdown();
 }
 
 Renderer3D* Renderer3D::Get()

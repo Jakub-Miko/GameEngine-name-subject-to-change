@@ -19,6 +19,7 @@
 #include <World/Systems/KeyPressedScriptSystem.h>
 #include <World/Systems/MousePressedScriptSystem.h>
 #include <Renderer/MeshManager.h>
+#include <Renderer/Renderer3D/Animations/AnimationManager.h>
 #include <World/Systems/EntityConstructionSystem.h>
 #include <World/SceneGraph.h>
 
@@ -58,6 +59,7 @@ void GameLayer::OnUpdate(float delta_time) {
     ScriptSystemUpdate(world, delta_time);
     world.SetPrimaryEntitySystem();
     MeshManager::Get()->UpdateLoadedMeshes(); // MultiThread
+    AnimationManager::Get()->UpdateLoadedAnimations(); // MultiThread
     world.DeletionSystem();
     world.GetPhysicsEngine().UpdatePhysics(delta_time);
     world.UpdateTransformMatricies();

@@ -88,6 +88,20 @@ void World::SetEntityMesh(Entity ent, const std::string mesh_path)
 	}
 }
 
+void World::SetEntitySkeletalMesh(Entity ent, const std::string mesh_path)
+{
+	std::lock_guard<std::mutex> lock(SyncPool<SkeletalMeshComponent>());
+	if (HasComponent<SkeletalMeshComponent>(ent)) {
+		auto& mesh = GetComponent<SkeletalMeshComponent>(ent);
+		mesh.ChangeMesh(mesh_path);
+		MeshChangedEvent ev(ent, mesh_path);
+		Application::Get()->SendObservedEvent<MeshChangedEvent>(&ev);
+	}
+	else {
+		SetComponent<SkeletalMeshComponent>(ent, SkeletalMeshComponent(mesh_path));
+	}
+}
+
 void World::SetEntityScaleSync(Entity ent, const glm::vec3& scale)
 {
 	std::lock_guard<std::mutex> lock(SyncPool<TransformComponent>());

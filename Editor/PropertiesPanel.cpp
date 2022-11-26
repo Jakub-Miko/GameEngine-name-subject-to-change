@@ -11,6 +11,8 @@
 #include <World/Components/CameraComponent.h>
 #include <World/Components/ShadowCasterComponent.h>
 #include <World/Components/MeshComponent.h>
+#include <Editor/PropertiesPanelEntries/MeshPropertiesPanelEntry.h>
+#include <Editor/PropertiesPanelEntries/SkeletalMeshPropertiesPanelEntry.h>
 #include <FileManager.h>
 
 PropertiesPanel::PropertiesPanel()
@@ -21,6 +23,9 @@ PropertiesPanel::PropertiesPanel()
 	prefab_path_buffer[0] = '\0';
 	material_file_buffer = new char[buffer_size];
 	material_file_buffer[0] = '\0';
+
+	RegisterPanelEntry(MeshPropertiesPanelEntry());
+	RegisterPanelEntry(SkeletalMeshPropertiesPanelEntry());
 }
 
 PropertiesPanel::~PropertiesPanel()
@@ -37,7 +42,7 @@ void PropertiesPanel::Render()
 
 	ImGui::Begin("Properties");
 
-	PropertiesPanel_persistent_data data;
+	PropertiesPanel_persistent_data data = CreateDefaultProperties();
 	data.buffer_size = buffer_size;
 	data.mesh_file_buffer = text_buffer;
 	data.show_flags = (ShowPropertyFlags)0;
@@ -274,65 +279,6 @@ void PropertiesPanel::RenderProperties(Entity entity, const PropertiesPanel_pers
 		}
 	}
 
-	if (world.HasComponent<MeshComponent>(selected) && !is_prefab) {
-		if (ImGui::TreeNode("Mesh")) {
-			MeshComponent& mesh = world.GetComponent<MeshComponent>(selected);
-			if (strlen(text_buffer) == 0) {
-				text_buffer[0] = '\0';
-				memcpy(text_buffer, mesh.GetMeshPath().c_str(), mesh.GetMeshPath().size() + 1);
-			}
-			bool enter = ImGui::InputText("Mesh path", text_buffer, buffer_size, ImGuiInputTextFlags_EnterReturnsTrue);
-			if (ImGui::Button("Reload") || enter) {
-				try {
-					Application::GetWorld().SetEntityMesh(selected, FileManager::Get()->GetPath(text_buffer));
-				}
-				catch (std::runtime_error* e) {
-					ImGui::OpenPopup(mesh_error_id);
-					text_buffer[0] = '\0';
-					memcpy(text_buffer, mesh.GetMeshPath().c_str(), mesh.GetMeshPath().size() + 1);
-				}
-			}
-			ImGui::SameLine();
-			if (mesh.GetMesh()->GetMeshStatus() == Mesh_status::ERROR) {
-				mesh.ResetMesh();
-				ImGui::OpenPopup(mesh_error_id);
-				text_buffer[0] = '\0';
-				memcpy(text_buffer, mesh.GetMeshPath().c_str(), mesh.GetMeshPath().size() + 1);
-			}
-			if (ImGui::Button("Set Selected")) {
-				Application::GetWorld().SetEntityMesh(selected,Editor::Get()->GetSelectedFilePath());
-				memcpy(text_buffer, mesh.GetMeshPath().c_str(), mesh.GetMeshPath().size() + 1);
-			}
-			ImGui::Separator();
-			if (strlen(material_file_buffer) == 0) {
-				material_file_buffer[0] = '\0';
-				memcpy(material_file_buffer, mesh.GetMaterialPath().c_str(), mesh.GetMaterialPath().size() + 1);
-			}
-			bool enter_material = ImGui::InputText("Material path", material_file_buffer, buffer_size, ImGuiInputTextFlags_EnterReturnsTrue);
-			if (ImGui::Button("Reload##material") || enter_material) {
-				try {
-					mesh.ChangeMaterial(material_file_buffer);
-				}
-				catch (std::runtime_error* e) {
-					ImGui::OpenPopup(material_error_id);
-					material_file_buffer[0] = '\0';
-					memcpy(material_file_buffer, mesh.GetMaterialPath().c_str(), mesh.GetMaterialPath().size() + 1);
-				}
-			}
-			ImGui::SameLine();
-			if (ImGui::Button("Set Selected##material")) {
-				mesh.ChangeMaterial(FileManager::Get()->GetRelativeFilePath(Editor::Get()->GetSelectedFilePath()));
-				memcpy(material_file_buffer, mesh.GetMaterialPath().c_str(), mesh.GetMaterialPath().size() + 1);
-			}
-			if (mesh.GetMaterialStatus() == Material::Material_status::ERROR) {
-				ImGui::OpenPopup(material_error_id);
-			}
-
-
-			ImGui::TreePop();
-		}
-	}
-
 	if (world.HasComponent<PrefabComponent>(selected) && data.prefab_path && !((char)data.show_flags & (char)ShowPropertyFlags::HIDE_PREFABS)) {
 		if (ImGui::TreeNode("Prefab Setting")) {
 			PrefabComponent& prefab = world.GetComponent<PrefabComponent>(selected);
@@ -375,43 +321,31 @@ void PropertiesPanel::RenderProperties(Entity entity, const PropertiesPanel_pers
 		}
 	}
 
+	for (auto& entry : data.panel_entries) {
+		if (entry->IsAssigned(entity)) {
+			if (ImGui::TreeNode(entry->GetName().c_str())) {
+				entry->RenderPanel(entity);
+				ImGui::TreePop();
+			}
+		}
+	}
+
+
 }
 
 void PropertiesPanel::AddComponent(Entity entity,const PropertiesPanel_persistent_data& data)
 {
 	auto& world = Application::GetWorld();
+
+
+
 	if (ImGui::TreeNode("Add Component")) {
 		bool has_mesh = world.HasComponent<MeshComponent>(entity);
 		bool has_light = world.HasComponent<LightComponent>(entity);
 		bool has_bounds = world.HasComponent<BoundingVolumeComponent>(entity);
 		bool has_shadow = world.HasComponent<ShadowCasterComponent>(entity);
 		bool has_physics = world.HasComponent<PhysicsComponent>(entity);
-		if (!has_light) {
 		
-			if (has_mesh) {
-				ImGui::BeginDisabled();
-			}
-			if (ImGui::Button("Add Mesh Component")) {
-				world.SetComponent<MeshComponent>(entity);
-			}
-			if (has_mesh) {
-				ImGui::EndDisabled();
-			}
-			ImGui::SameLine();
-			if (!has_mesh) {
-				ImGui::BeginDisabled();
-			}
-			if (ImGui::Button("Remove Mesh Component")) {
-				world.RemoveComponent<MeshComponent>(entity);
-				if (has_physics) {
-					world.RemoveComponent<PhysicsComponent>(entity);
-				}
-				memcpy(data.mesh_file_buffer, "Unknown", strlen("Unknown") + 1);
-			}
-			if (!has_mesh) {
-				ImGui::EndDisabled();
-			}
-		}
 
 		if (!has_mesh) {
 			if (has_light) {
@@ -512,6 +446,32 @@ void PropertiesPanel::AddComponent(Entity entity,const PropertiesPanel_persisten
 			}
 			if (!has_physics) {
 				ImGui::EndDisabled();
+			}
+		}
+
+		for (auto& entry : data.panel_entries) {
+
+			if (entry->IsAssignable() && entry->IsAvailable(entity)) {
+				bool assigned = entry->IsAssigned(entity);
+				if (assigned) {
+					ImGui::BeginDisabled();
+				}
+				if (ImGui::Button((std::string("Add ") + entry->GetName()).c_str())) {
+					entry->OnAssign(entity);
+				}
+				if (assigned) {
+					ImGui::EndDisabled();
+				}
+				ImGui::SameLine();
+				if (!assigned) {
+					ImGui::BeginDisabled();
+				}
+				if (ImGui::Button((std::string("Remove ") + entry->GetName()).c_str())) {
+					entry->OnRemove(entity);
+				}
+				if (!assigned) {
+					ImGui::EndDisabled();
+				}
 			}
 		}
 

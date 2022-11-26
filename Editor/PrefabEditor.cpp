@@ -152,7 +152,7 @@ void PrefabEditor::PrefabPropertiesPanel(PrefabEditorWindow& window)
 {
 	ImGui::Begin(("Properties Panel##" + std::to_string(window.entity.id)).c_str(), nullptr, ImGuiWindowFlags_None);
 	
-	PropertiesPanel_persistent_data data;
+	PropertiesPanel_persistent_data data = Editor::Get()->GetPropertiesPanel().CreateDefaultProperties();
 	data.mesh_file_buffer = window.mesh_path;
 	data.material_file_buffer = window.material_path;
 	data.buffer_size = window.buffer_size;

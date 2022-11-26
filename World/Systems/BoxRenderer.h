@@ -237,7 +237,7 @@ inline void BoundingVolumeRender(World& world) {
 
                 }
 
-                }, box.bounding_volume_variant);
+                }, BoundingVolumeComponent::GetBoundingVolume(entity));
         }
     };
 

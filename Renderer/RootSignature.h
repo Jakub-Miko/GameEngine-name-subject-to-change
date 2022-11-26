@@ -227,12 +227,12 @@ struct VertexLayoutFactory<SkeletalMeshPreset> {
 		static std::unique_ptr<VertexLayout> layout = nullptr;
 		if (!layout) {
 			VertexLayout* layout_new = new VertexLayout({
+				VertexLayoutElement(RenderPrimitiveType::UNSIGNED_INT,4,"bone_ids"),
+				VertexLayoutElement(RenderPrimitiveType::FLOAT,4,"bone_weights"),
 				VertexLayoutElement(RenderPrimitiveType::FLOAT,3,"position"),
 				VertexLayoutElement(RenderPrimitiveType::FLOAT,3,"normal"),
 				VertexLayoutElement(RenderPrimitiveType::FLOAT,3,"tangent"),
-				VertexLayoutElement(RenderPrimitiveType::FLOAT,2,"uv0"),
-				VertexLayoutElement(RenderPrimitiveType::UNSIGNED_INT,4,"bone_ids"),
-				VertexLayoutElement(RenderPrimitiveType::FLOAT,4,"bone_weights")
+				VertexLayoutElement(RenderPrimitiveType::FLOAT,2,"uv0")
 				});
 
 			layout = std::unique_ptr<VertexLayout>(layout_new);

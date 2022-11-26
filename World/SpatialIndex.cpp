@@ -26,20 +26,14 @@ void Octree::FrustumCulling(World& world, const Frustum& frustum, std::vector<En
 {
 	for (auto entity : entity_list) {
 		bool has_bounding_box = world.HasComponent<BoundingVolumeComponent>(entity);
-		if (has_bounding_box || world.HasComponent<MeshComponent>(entity)) {
+		auto variant = BoundingVolumeComponent::GetBoundingVolume(entity);
+		if (!std::holds_alternative<NullBoundingVolume>(variant)) {
 			TransformComponent& transform = world.GetComponent<TransformComponent>(entity);
-			BoundingVolumeComponent bounding_volume = BoundingBox();
-			if (!has_bounding_box) {
-				bounding_volume = world.GetComponent<MeshComponent>(entity).GetMesh()->GetBoundingBox();
-			}
-			else {
-				bounding_volume = world.GetComponent<BoundingVolumeComponent>(entity);
-			}
 			std::visit([&](auto& bounding_vol) {
 				if (bounding_vol.OverlapsFrustum(frustum, transform.TransformMatrix)) {
 					entities.push_back(entity);
 				}
-				}, bounding_volume.bounding_volume_variant);
+				}, variant);
 		}
 		else {
 			auto& transform = world.GetComponent<TransformComponent>(entity);
@@ -63,20 +57,14 @@ void Octree::BoxCulling(World& world, const OrientedBoundingBox& box, std::vecto
 {
 	for (auto entity : entity_list) {
 		bool has_bounding_box = world.HasComponent<BoundingVolumeComponent>(entity);
-		if (has_bounding_box || world.HasComponent<MeshComponent>(entity)) {
+		auto variant = BoundingVolumeComponent::GetBoundingVolume(entity);
+		if (!std::holds_alternative<NullBoundingVolume>(variant)) {
 			TransformComponent& transform = world.GetComponent<TransformComponent>(entity);
-			BoundingVolumeComponent bounding_volume = BoundingBox();
-			if (!has_bounding_box) {
-				bounding_volume = world.GetComponent<MeshComponent>(entity).GetMesh()->GetBoundingBox();
-			}
-			else {
-				bounding_volume = world.GetComponent<BoundingVolumeComponent>(entity);
-			}
 			std::visit([&](auto& bounding_vol) {
 				if (bounding_vol.OverlapsOrientedBox(box, transform.TransformMatrix)) {
 					entities.push_back(entity);
 				}
-				}, bounding_volume.bounding_volume_variant);
+				}, variant);
 		}
 		else {
 			auto& transform = world.GetComponent<TransformComponent>(entity);
@@ -99,20 +87,14 @@ void Octree::SphereCulling(World& world, const BoundingSphere& sphere, std::vect
 {
 	for (auto entity : entity_list) {
 		bool has_bounding_box = world.HasComponent<BoundingVolumeComponent>(entity);
-		if (has_bounding_box || world.HasComponent<MeshComponent>(entity)) {
+		auto variant = BoundingVolumeComponent::GetBoundingVolume(entity);
+		if (!std::holds_alternative<NullBoundingVolume>(variant)) {
 			TransformComponent& transform = world.GetComponent<TransformComponent>(entity);
-			BoundingVolumeComponent bounding_volume = BoundingBox();
-			if (!has_bounding_box) {
-				bounding_volume = world.GetComponent<MeshComponent>(entity).GetMesh()->GetBoundingBox();
-			}
-			else {
-				bounding_volume = world.GetComponent<BoundingVolumeComponent>(entity);
-			}
 			std::visit([&](auto& bounding_vol) {
 				if (bounding_vol.OverlapsSphere(sphere, transform.TransformMatrix)) {
 					entities.push_back(entity);
 				}
-				}, bounding_volume.bounding_volume_variant);
+				}, variant);
 		}
 		else {
 			auto& transform = world.GetComponent<TransformComponent>(entity);
@@ -322,15 +304,9 @@ bool Octree::ProcessEntity(World& world, char& index_out, Entity entity)
 	//Entity needs to have a Transform and a bounding volume component to be assigned into the spatial index.
 	if (world.HasComponent<TransformComponent>(entity)) {
 		bool has_bounding_box = world.HasComponent<BoundingVolumeComponent>(entity);
-		if (has_bounding_box || world.HasComponent<MeshComponent>(entity)) {
+		auto variant = BoundingVolumeComponent::GetBoundingVolume(entity);
+		if (!std::holds_alternative<NullBoundingVolume>(variant)) {
 			TransformComponent& transform = world.GetComponent<TransformComponent>(entity);
-			BoundingVolumeComponent bounding_volume = BoundingBox();
-			if (!has_bounding_box) {
-				bounding_volume = world.GetComponent<MeshComponent>(entity).GetMesh()->GetBoundingBox();
-			}
-			else {
-				bounding_volume = world.GetComponent<BoundingVolumeComponent>(entity);
-			}
 			char index = 0;
 			bool bordering = false;
 
@@ -357,7 +333,7 @@ bool Octree::ProcessEntity(World& world, char& index_out, Entity entity)
 					bordering = true;
 				}
 
-				}, bounding_volume.bounding_volume_variant);
+				}, variant);
 
 			//If the node borders multiple cells it doesnt fit into any child and will be assigned into the current cell
 			if (bordering) {

@@ -115,6 +115,8 @@ public:
 
 	void SetEntityMesh(Entity ent, const std::string mesh);
 
+	void SetEntitySkeletalMesh(Entity ent, const std::string mesh);
+
 	template<typename T>
 	auto RegisterComponentType() -> std::enable_if_t<!has_ComponentInitProxy_v<T>> {
 		m_ECS.storage<T>();

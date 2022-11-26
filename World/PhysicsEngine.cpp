@@ -8,6 +8,7 @@
 #include <Application.h>
 #include <World/Components/TransformComponent.h>
 #include <World/Components/MeshComponent.h>
+#include <World/Components/SkeletalMeshComponent.h>
 #include <Renderer/MeshManager.h>
 #include <Core/Debug.h>
 
@@ -225,19 +226,42 @@ void PhysicsEngine::DeletionPhase()
 
 bool PhysicsEngine::CreatePhysicsObject(Entity entity)
 {
-	PhysicsComponent& physics_comp = Application::GetWorld().GetComponent<PhysicsComponent>(entity);
-	if (!Application::GetWorld().HasComponent<MeshComponent>(entity)) throw std::runtime_error("Can't assign Physics component to an entity without a mesh");
-	MeshComponent& mesh_comp = Application::GetWorld().GetComponent<MeshComponent>(entity);
+	World& world = Application::GetWorld();
+	PhysicsComponent& physics_comp = world.GetComponent<PhysicsComponent>(entity);
+
+	std::shared_ptr<Mesh> mesh;
+	BoundingBox bounding_box;
+	Mesh_status status;
+	std::string path;
+	if (world.HasComponent<MeshComponent>(entity)) {
+		MeshComponent& mesh_comp = world.GetComponent<MeshComponent>(entity);
+		mesh = mesh_comp.GetMesh();
+		bounding_box = mesh->GetBoundingBox();
+		status = mesh->GetMeshStatus();
+		path = mesh_comp.GetMeshPath();
+	}
+	else if(world.HasComponent<SkeletalMeshComponent>(entity)){
+		SkeletalMeshComponent& mesh_comp = world.GetComponent<SkeletalMeshComponent>(entity);
+		mesh = mesh_comp.GetMesh();
+		bounding_box = mesh->GetBoundingBox();
+		status = mesh->GetMeshStatus();
+		path = mesh_comp.GetMeshPath();
+	}
+	else {
+		throw std::runtime_error("Can't assign Physics component to an entity without a static or skeletal mesh");
+	}
+
+
 	switch (physics_comp.shape_type) {
 	case PhysicsShapeType::BOUNDING_BOX:
 	{
-		if (mesh_comp.GetMesh()->GetMeshStatus() != Mesh_status::READY) return false;
-		glm::vec3 box_size = mesh_comp.GetMesh()->GetBoundingBox().GetBoxSize() / 2.0f;
+		if (status != Mesh_status::READY) return false;
+		glm::vec3 box_size = bounding_box.GetBoxSize() / 2.0f;
 		btVector3 half_extents = btVector3{ box_size.x,box_size.y,box_size.z };
 		btBoxShape* box_collision_shape = new btBoxShape(half_extents);
 		btVector3 inertia;
 		box_collision_shape->calculateLocalInertia(physics_comp.mass, inertia);
-		btMotionState* motion_state = new TransformMotionState(entity,mesh_comp.GetMesh()->GetBoundingBox().GetBoxOffset());
+		btMotionState* motion_state = new TransformMotionState(entity,bounding_box.GetBoxOffset());
 		physics_comp.physics_shape = box_collision_shape;
 		btRigidBody::btRigidBodyConstructionInfo info(physics_comp.mass, motion_state, box_collision_shape, inertia);
 		btRigidBody* body = new btRigidBody(info);
@@ -248,14 +272,21 @@ bool PhysicsEngine::CreatePhysicsObject(Entity entity)
 		}
 
 		bullet_data->world->addRigidBody(body);
-
+		if (physics_comp.physics_object) {
+			btRigidBody* redundant_body = btRigidBody::upcast(physics_comp.physics_object.get());
+			btMotionState* state = redundant_body->getMotionState();
+			btCollisionShape* shape = redundant_body->getCollisionShape();
+			bullet_data->world->removeRigidBody(redundant_body);
+			delete state;
+			delete shape;
+		}
 		physics_comp.physics_object.reset((btCollisionObject*)body);
 		break;
 	}
 	case PhysicsShapeType::CONVEX_HULL:
 	{
-		if (mesh_comp.GetMesh()->GetMeshStatus() != Mesh_status::READY) return false;
-		auto template_shape = bullet_data->GetHullShape(mesh_comp.GetMeshPath());
+		if (status != Mesh_status::READY) return false;
+		auto template_shape = bullet_data->GetHullShape(path);
 		btConvexHullShape* hull_collision_shape = new btConvexHullShape((btScalar*)template_shape->getPoints(),template_shape->getNumPoints(), sizeof(btVector3));
 		btVector3 inertia;
 		hull_collision_shape->calculateLocalInertia(physics_comp.mass, inertia);
@@ -270,6 +301,17 @@ bool PhysicsEngine::CreatePhysicsObject(Entity entity)
 		}
 
 		bullet_data->world->addRigidBody(body);
+
+
+		bullet_data->world->addRigidBody(body);
+		if (physics_comp.physics_object) {
+			btRigidBody* redundant_body = btRigidBody::upcast(physics_comp.physics_object.get());
+			btMotionState* state = redundant_body->getMotionState();
+			btCollisionShape* shape = redundant_body->getCollisionShape();
+			bullet_data->world->removeRigidBody(redundant_body);
+			delete state;
+			delete shape;
+		}
 
 		physics_comp.physics_object.reset((btCollisionObject*)body);
 		break;

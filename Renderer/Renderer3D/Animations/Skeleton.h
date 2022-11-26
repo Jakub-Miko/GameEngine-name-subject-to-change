@@ -28,44 +28,24 @@ public:
 		return *this;
 	}
 
-	bone_hashmap_entry GetBoneEntryByName(const std::string& name) {
-		auto fnd = bone_hashmap.find(name);
-		if (fnd == bone_hashmap.end()) {
-			throw std::runtime_error("Bone with name " + name + " could not be found");
-		}
-		return fnd->second;
+	int GetNumberOfBones() const {
+		return parent_bone_array.size();
 	}
 
-	const Bone& GetBoneById(uint16_t id) {
-		if (id >= parent_bone_array.size() || id < 0) {
-			throw std::runtime_error("Invalid Bone Id");
-		}
-		return parent_bone_array[id];
-	}
+	bone_hashmap_entry GetBoneEntryByName(const std::string& name) const;
 
-	const Bone& GetBoneByName(const std::string& name) {
-		uint16_t id = GetBoneEntryByName(name).array_entry;
-		return GetBoneById(id);
-	}
+	const Bone& GetBoneById(uint16_t id) const;
 
-	bool BoneExists(const std::string& name) {
-		auto fnd = bone_hashmap.find(name);
-		if (fnd == bone_hashmap.end()) {
-			return false;
-		}
-		return true;
-	}
+	const Bone& GetBoneByName(const std::string& name) const;
+
+	bool BoneExists(const std::string& name) const;
 
 private:
-	bone_hashmap_entry& GetBoneEntryReferenceByName(const std::string& name) {
-		auto fnd = bone_hashmap.find(name);
-		if (fnd == bone_hashmap.end()) {
-			throw std::runtime_error("Bone with name " + name + " could not be found");
-		}
-		return fnd->second;
-	}
+	bone_hashmap_entry& GetBoneEntryReferenceByName(const std::string& name);
 	class aiNode;
 	friend class MeshManager;
+	friend class Animation;
+	friend class AnimationManager;
 	using bone_array_type = typename std::template vector<Bone>;
 	using bone_hasmap_type = typename std::template unordered_map<std::string, bone_hashmap_entry>;
 	
