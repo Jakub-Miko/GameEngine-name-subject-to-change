@@ -13,6 +13,12 @@
 #include <Application.h>
 #include <Window.h>
 
+#ifndef MAX_NUM_OF_BONES
+#define MAX_NUM_OF_BONES 80
+#endif
+
+static const int max_num_of_bones = MAX_NUM_OF_BONES;
+
 struct SkeletalGeometryPassPreset;
 
 template<>
@@ -27,7 +33,7 @@ struct VertexLayoutFactory<SkeletalGeometryPassPreset> {
 				VertexLayoutElement(RenderPrimitiveType::FLOAT,3, "position"),
 				VertexLayoutElement(RenderPrimitiveType::FLOAT,3, "normal"),
 				VertexLayoutElement(RenderPrimitiveType::FLOAT,3, "tangent"),
-				VertexLayoutElement(RenderPrimitiveType::FLOAT,2, "uv")
+				VertexLayoutElement(RenderPrimitiveType::FLOAT,2, "uv0")
 				});
 
 
@@ -42,6 +48,7 @@ struct VertexLayoutFactory<SkeletalGeometryPassPreset> {
 struct DefferedSkeletalGeometryPass::internal_data {
 	std::shared_ptr<Pipeline> pipeline;
 	std::shared_ptr<RenderBufferResource> constant_scene_buf;
+	std::shared_ptr<RenderBufferResource> constant_bone_buf;
 	bool initialized = false;
 };
 
@@ -58,6 +65,9 @@ void DefferedSkeletalGeometryPass::InitPostProcessingPassData() {
 
 	RenderBufferDescriptor const_desc(sizeof(glm::mat4)*2, RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
 	data->constant_scene_buf = RenderResourceManager::Get()->CreateBuffer(const_desc);
+
+	RenderBufferDescriptor const_bone_desc(sizeof(glm::mat4) * max_num_of_bones + sizeof(unsigned int), RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
+	data->constant_bone_buf = RenderResourceManager::Get()->CreateBuffer(const_bone_desc);
 
 
 	data->initialized = true;
@@ -93,6 +103,7 @@ void DefferedSkeletalGeometryPass::Render(RenderPipelineResourceManager& resourc
 	list->SetPipeline(data->pipeline);
 	list->SetRenderTarget(out_buffer);
 	list->SetConstantBuffer("mvp", data->constant_scene_buf);
+	list->SetConstantBuffer("bones", data->constant_bone_buf);
 	auto default_mat = data->pipeline->GetShader()->GetDefaultMaterial();
 	for(auto& entity : geometry.resources) {
 		auto& mesh = world.GetComponent<SkeletalMeshComponent>(entity);
@@ -106,6 +117,9 @@ void DefferedSkeletalGeometryPass::Render(RenderPipelineResourceManager& resourc
 		}
 		list->SetVertexBuffer(mesh.GetMesh()->GetVertexBuffer());
 		list->SetIndexBuffer(mesh.GetMesh()->GetIndexBuffer());
+
+		mesh.GetAnimation().UpdateAnimation(Application::GetDeltaTime(), data->constant_bone_buf, list, mesh.GetMesh());
+
 		glm::mat4 mvp = ViewProjection * transform.TransformMatrix;
 		glm::mat4 mv_matrix = view_matrix * transform.TransformMatrix;
 		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, glm::value_ptr(mvp), sizeof(glm::mat4), 0);

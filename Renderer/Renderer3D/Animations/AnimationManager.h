@@ -21,6 +21,10 @@ public:
 
 	void UpdateLoadedAnimations();
 
+	std::shared_ptr<Animation> GetDefaultAnimation() const {
+		return default_animation;
+	}
+
 private:
 	friend class MeshManager;
 	AnimationManager();
@@ -30,7 +34,9 @@ private:
 	std::shared_ptr<Animation> RegisterAnimation(std::shared_ptr<Animation> animation_to_register, const std::string& file_path);
 	Animation LoadAnimationFromFile_impl(const std::string& path);
 	void MakeAnimations(Skeleton& reference_skeleton, aiScene* scene, const std::string& output_directory);
+	friend class World;
 
+	void ClearAnimationCache();
 
 	struct animation_load_future {
 		Future<Animation> anim;
@@ -39,6 +45,7 @@ private:
 		bool processed = false;
 	};
 
+	std::shared_ptr<Animation> default_animation;
 	std::mutex animation_map_mutex;
 	std::unordered_map<std::string, std::shared_ptr<Animation>> animation_map;
 	std::mutex load_queue_mutex;

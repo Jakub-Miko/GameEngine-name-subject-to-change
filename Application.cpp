@@ -235,7 +235,7 @@ void Application::Update()
 
     //Calculate delta_time
     std::chrono::nanoseconds time_diff = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - last_time_point);
-    float delta_time = (float)time_diff.count() / 1000000;
+    delta_time = (float)time_diff.count() / 1000000;
     last_time_point = std::chrono::high_resolution_clock::now();
     if (delta_time == 0) {
         delta_time = 1;

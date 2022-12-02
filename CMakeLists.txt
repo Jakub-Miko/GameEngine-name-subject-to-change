@@ -6,6 +6,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/out")
 
 
 set(RENDER_API "" CACHE STRING "")
+set(MAX_NUM_OF_BONES "80" CACHE STRING "")
 
 option(ENABLE_PROFILING OFF)
 option(EDITOR ON)
@@ -115,4 +116,4 @@ endif()
 
 target_include_directories(PseudoTest PRIVATE .)
 
-target_compile_definitions(PseudoTest PRIVATE ${RENDER_API})
+target_compile_definitions(PseudoTest PRIVATE ${RENDER_API} MAX_NUM_OF_BONES=${MAX_NUM_OF_BONES})

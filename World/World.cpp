@@ -3,6 +3,8 @@
 #include <FileManager.h>
 #include <Core/Extensions/EntitySerializationECSAdapter.h>
 #include <Renderer/TextureManager.h>
+#include <Renderer/MeshManager.h>
+#include <Renderer/Renderer3D/Animations/AnimationManager.h>
 #include <GameStateMachine.h>
 #include <World/EntityManager.h>
 #include <World/ComponentTypes.h>
@@ -90,7 +92,7 @@ void World::SetEntityMesh(Entity ent, const std::string mesh_path)
 
 void World::SetEntitySkeletalMesh(Entity ent, const std::string mesh_path)
 {
-	std::lock_guard<std::mutex> lock(SyncPool<SkeletalMeshComponent>());
+	std::unique_lock<std::mutex> lock(SyncPool<SkeletalMeshComponent>());
 	if (HasComponent<SkeletalMeshComponent>(ent)) {
 		auto& mesh = GetComponent<SkeletalMeshComponent>(ent);
 		mesh.ChangeMesh(mesh_path);
@@ -98,6 +100,7 @@ void World::SetEntitySkeletalMesh(Entity ent, const std::string mesh_path)
 		Application::Get()->SendObservedEvent<MeshChangedEvent>(&ev);
 	}
 	else {
+		lock.unlock();
 		SetComponent<SkeletalMeshComponent>(ent, SkeletalMeshComponent(mesh_path));
 	}
 }
@@ -282,6 +285,7 @@ void World::LoadSceneSystem()
 		TextureManager::Get()->ClearTextureCache();
 		MaterialManager::Get()->ClearMaterialCache();
 		MeshManager::Get()->ClearMeshCache();
+		AnimationManager::Get()->ClearAnimationCache(); 
 		EntityManager::Get()->ClearPrefabCache();
 
 		std::ifstream file(load_scene->scene_path);

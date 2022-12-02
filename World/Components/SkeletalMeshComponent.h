@@ -5,6 +5,8 @@
 #include <Core/UnitConverter.h>
 #include <Core/RuntimeTag.h>
 #include <FileManager.h>
+#include <Renderer/Renderer3D/Animations/Animation.h>
+#include <Renderer/Renderer3D/Animations/AnimationManager.h>
 #ifdef EDITOR
 #include <Editor/Editor.h>
 #endif
@@ -12,11 +14,11 @@
 class SkeletalMeshComponent {
 	RUNTIME_TAG("SkeletalMeshComponent")
 public:
-	SkeletalMeshComponent() : file_path("Unknown"), mesh(nullptr) {
-		mesh = MeshManager::Get()->GetDefaultMesh();
+	SkeletalMeshComponent() : file_path("Unknown"), mesh(nullptr), animation_plaback() {
+		mesh = MeshManager::Get()->GetDefaultSkeletalMesh();
 	}
 	
-	SkeletalMeshComponent(const std::string& filepath,int index = 0) : file_path("Unknown"), mesh(nullptr){
+	SkeletalMeshComponent(const std::string& filepath,int index = 0) : file_path("Unknown"), mesh(nullptr), animation_plaback() {
 		mesh = MeshManager::Get()->LoadMeshFromFileAsync(filepath);
 		if (!mesh->IsSkeletal()) {
 			throw std::runtime_error("Skeletal mesh needs to be used in skeletal mesh component");
@@ -54,6 +56,18 @@ public:
 		}
 	}
 
+	AnimationPlayback& GetAnimation() {
+		return animation_plaback;
+	}
+
+	void SetAnimation(const AnimationPlayback& animation) {
+		animation_plaback = animation;
+	}
+
+	void SetAnimationTime(float time) {
+		animation_plaback.SetTime(time);
+	}
+
 	Material::Material_status GetMaterialStatus() {
 		if (material) {
 			return material->GetStatus();
@@ -84,6 +98,7 @@ private:
 	friend inline void from_json(const nlohmann::json& j, SkeletalMeshComponent& p);
 	std::string file_path;
 	std::shared_ptr<Mesh> mesh;
+	AnimationPlayback animation_plaback;
 };
 
 #pragma region Json_Serialization

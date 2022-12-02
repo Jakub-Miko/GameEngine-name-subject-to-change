@@ -260,7 +260,7 @@ MeshManager::MeshManager() : mesh_Map(), mesh_Map_mutex(), mesh_Load_queue(), me
     auto index_buf = RenderResourceManager::Get()->CreateBuffer(desc_i);
 
     default_mesh = std::make_unique<Mesh>(vertex_buf, index_buf, 0);
-
+    default_skeletal_mesh = std::make_unique<Mesh>(vertex_buf, index_buf, 0);
 }
 
 void MeshManager::ClearMeshCache()
@@ -373,7 +373,7 @@ void MeshManager::BuildBoneHierarchy(Skeleton& skeleton, aiNode* node, uint16_t 
     aiBone* bone = mesh->mBones[entry.animation_file_entry];
     current_bone.offset_matrix = glm::transpose(glm::make_mat4(&(bone->mOffsetMatrix).a1));
     skeleton.parent_bone_array.push_back(current_bone);
-    uint16_t current_index = skeleton.parent_bone_array.size() - 1;
+    uint32_t current_index = skeleton.parent_bone_array.size() - 1;
     entry.array_entry = current_index;
 
     for (uint32_t i = 0; i < bone->mNumWeights; i++) {

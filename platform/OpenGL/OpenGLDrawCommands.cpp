@@ -38,7 +38,12 @@ void OpenGLImplicitDrawCommand::Execute()
 				glBindBuffer(GL_ARRAY_BUFFER, gl_buffer->GetRenderId());
 				for (auto attrib : gl_pipeline->GetLayout().layout) {
 					glEnableVertexAttribArray(count);
-					glVertexAttribPointer(count, attrib.size, OpenGLUnitConverter::PrimitiveToGL(attrib.type), attrib.normalized, stride, (void*)offset);
+					if (OpenGLUnitConverter::IsPrimitiveInteger(attrib.type)) {
+						glVertexAttribIPointer(count, attrib.size, OpenGLUnitConverter::PrimitiveToGL(attrib.type), stride, (void*)offset);
+					}
+					else {
+						glVertexAttribPointer(count, attrib.size, OpenGLUnitConverter::PrimitiveToGL(attrib.type), attrib.normalized, stride, (void*)offset);
+					}
 					offset += attrib.size * OpenGLUnitConverter::PrimitiveSize(attrib.type);
 					count++;
 				}

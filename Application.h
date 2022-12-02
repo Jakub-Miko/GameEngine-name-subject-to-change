@@ -27,6 +27,7 @@ private:
     std::vector<std::shared_ptr<ThreadObject>> m_TaskThreads;
     std::shared_ptr<ThreadObject> m_MainThread;
     bool m_running = false;
+    float delta_time = 0;
     AsyncTaskDispatcher* async_dispather = nullptr;
     friend class GameState;
     GameLayer* m_GameLayer = nullptr;
@@ -107,6 +108,10 @@ public:
     static void Init();
 
     static void ShutDown();
+
+    static float GetDeltaTime() {
+        return instance->delta_time;
+    }
 
     static World& GetWorld() { return *instance->world; };
 

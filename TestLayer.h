@@ -6,7 +6,7 @@
 #include "Application.h"
 #include <iostream>
 
-
+#include <World/Components/SkeletalMeshComponent.h>
 #include <Input/Input.h>
 
 #include <Events/SubjectObserver.h>
@@ -33,7 +33,7 @@ public:
     double counter = 0;
     bool stop = true;
     bool stop2 = true;
-    std::shared_ptr<Animation> anim;
+    Entity skeletal_ent;
     //Entity entity1;
     //Entity mesh_enity;
     //Entity second_ent;
@@ -392,6 +392,11 @@ public:
             ev.y = 8;
             Application::Get()->SendObservedEvent(&ev);
             
+            skeletal_ent = Application::GetWorld().CreateEntity();
+            Application::GetWorld().SetEntitySkeletalMesh(skeletal_ent,"asset:dancing_vampire.skel"_path);
+            AnimationPlayback playback(AnimationManager::Get()->LoadAnimationAsync("asset:dancing_vampire_animations/default.anim"_path));
+            playback.SetTime(0.0f);
+            Application::GetWorld().GetComponent<SkeletalMeshComponent>(skeletal_ent).SetAnimation(playback);
             
             stop = false;
 

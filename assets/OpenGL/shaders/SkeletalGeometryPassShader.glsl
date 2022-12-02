@@ -5,6 +5,12 @@
 			"name" : "mvp",
 			"type" : "constant_buffer"
 		},
+
+		{
+			"name" : "bones",
+			"type" : "constant_buffer"
+		},
+
 		{
 			"name" : "material",
 			"type" : "constant_buffer",
@@ -87,19 +93,31 @@ uniform mvp{
 	mat4 view_model_matrix;
 };
 
+uniform bones {
+	mat4 bone_matricies[80];
+	uint valid;
+};
+
 uniform material{
 	vec4 Base_Color;
 };
 
 void main() {
+	vec4 new_pos = vec4(0.0f);
+	for (int i = 0; i < 4; i++) {
+		if (bone_ids[i] != -1) {
+			new_pos += bone_weights[i] * (bone_matricies[bone_ids[i]] * vec4(position,1.0f));
+		}
+	}
+
 	vec3 normal_transformed = normalize(mat3(transpose(inverse(view_model_matrix))) * normal.xyz).xyz;
 	vec3 tangent_transformed = normalize(mat3(transpose(inverse(view_model_matrix))) * tangent.xyz).xyz;
 	vec3 bitangent_transformed = cross(normal_transformed, tangent_transformed);
 
 	TBN = mat3(tangent_transformed, bitangent_transformed, normal_transformed);
 	
-	pos_fragment = (view_model_matrix * vec4(position, 1.0)).xyz;
-	gl_Position = mvp_matrix * vec4(position, 1.0);
+	pos_fragment = (view_model_matrix * vec4(new_pos.xyz,1.0f)).xyz;
+	gl_Position = mvp_matrix * vec4(new_pos.xyz, 1.0f);
 	uv_fragment = uv;
 	normal_fragment = normalize(mat3(transpose(inverse(view_model_matrix))) * normal.xyz).xyz;
 }

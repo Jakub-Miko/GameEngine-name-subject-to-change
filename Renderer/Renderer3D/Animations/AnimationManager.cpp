@@ -98,9 +98,14 @@ void AnimationManager::UpdateLoadedAnimations()
 
 }
 
-AnimationManager::AnimationManager()
+AnimationManager::AnimationManager() : default_animation(nullptr)
 {
-
+	Animation* anim = new Animation();
+	anim->duration = 0.0f;
+	anim->ticks_per_second = 0;
+	anim->bone_anim = std::vector<BoneAnimation>();
+	anim->status = Animation::animation_status::UNINITIALIZED;
+	default_animation.reset(anim);
 }
 
 void AnimationManager::MakeAnimations(Skeleton& reference_skeleton, aiScene* scene, const std::string& output_directory)
@@ -164,6 +169,13 @@ void AnimationManager::MakeAnimations(Skeleton& reference_skeleton, aiScene* sce
 
 		file.close();
 	}
+}
+
+void AnimationManager::ClearAnimationCache()
+{
+	std::lock_guard<std::mutex> lock1(load_queue_mutex);
+	std::lock_guard<std::mutex> lock2(animation_map_mutex);
+	animation_map.clear();
 }
 
 Animation AnimationManager::LoadAnimationFromFile_impl(const std::string& path)

@@ -5,6 +5,8 @@
 #include <glm/gtx/quaternion.hpp>
 #include <Renderer/RenderResource.h>
 
+class RenderCommandList;
+
 struct BoneAnimationPositionKeyFrame {
 	glm::vec3 position;
 	double time_stamp;
@@ -28,6 +30,7 @@ struct BoneAnimationPlaybackState {
 };
 
 struct AnimationPlaybackState {
+	void ClearState();
 	std::vector<BoneAnimationPlaybackState> bone_playback_states;
 };
 
@@ -56,6 +59,10 @@ public:
 	int GetAnimationBoneNumber() const {
 		return bone_anim.size();
 	}
+	float GetDuration() const {
+		return duration;
+	}
+
 	enum class animation_status : char {
 		UNINITIALIZED = 0, LOADING = 1, READY = 2, ERROR = 3
 	};
@@ -70,16 +77,16 @@ private:
 
 class AnimationPlayback {
 public:
-	AnimationPlayback(std::shared_ptr<Animation> animation, std::shared_ptr<Mesh> skeletal_mesh);
+	AnimationPlayback();
+	AnimationPlayback(std::shared_ptr<Animation> animation);
 	//returns false if animation was not loaded yet
-	bool UpdateAnimation(float delta_time);
-	std::shared_ptr<RenderBufferResource> GetBuffer() const {
-		return animation_buffer;
+	void SetTime(float time) {
+		current_time = time;
 	}
+
+	bool UpdateAnimation(float delta_time, std::shared_ptr<RenderBufferResource> animation_buffer, RenderCommandList* list, std::shared_ptr<Mesh> skeletal_mesh);
 private:
 	float current_time = 0.0f;
 	std::shared_ptr<Animation> anim;
-	std::shared_ptr<Mesh> skeletal_mesh;
-	std::shared_ptr<RenderBufferResource> animation_buffer;
 	AnimationPlaybackState playback_state;
 };

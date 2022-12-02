@@ -24,6 +24,23 @@ public:
 		}
 	}
 
+	static bool IsPrimitiveInteger(RenderPrimitiveType type) {
+		switch (type) {
+		case RenderPrimitiveType::CHAR:				return true;
+		case RenderPrimitiveType::FLOAT:			return false;
+		case RenderPrimitiveType::INT:				return true;
+		case RenderPrimitiveType::UNSIGNED_CHAR:	return true;
+		case RenderPrimitiveType::UNSIGNED_INT:		return true;
+		case RenderPrimitiveType::VEC2:				return false;
+		case RenderPrimitiveType::VEC3:				return false;
+		case RenderPrimitiveType::VEC4:				return false;
+		case RenderPrimitiveType::MAT3:				return false;
+		case RenderPrimitiveType::MAT4:				return false;
+		default:
+			throw std::runtime_error("Conversion failed");
+		}
+	}
+
 	static int PrimitiveSize(RenderPrimitiveType type) {
 		return UnitConverter::PrimitiveSize(type);
 	}
