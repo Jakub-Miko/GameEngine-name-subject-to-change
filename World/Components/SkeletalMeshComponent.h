@@ -14,16 +14,25 @@
 class SkeletalMeshComponent {
 	RUNTIME_TAG("SkeletalMeshComponent")
 public:
-	SkeletalMeshComponent() : file_path("Unknown"), mesh(nullptr), animation_plaback() {
+	SkeletalMeshComponent() : file_path("Unknown"), mesh(nullptr), animation_plaback(), default_animation_path("") {
 		mesh = MeshManager::Get()->GetDefaultSkeletalMesh();
 	}
 	
-	SkeletalMeshComponent(const std::string& filepath,int index = 0) : file_path("Unknown"), mesh(nullptr), animation_plaback() {
+	SkeletalMeshComponent(const std::string& filepath,const std::string& default_anim_path = "", int index = 0) : file_path("Unknown"), mesh(nullptr), animation_plaback(), default_animation_path(default_anim_path){
 		mesh = MeshManager::Get()->LoadMeshFromFileAsync(filepath);
 		if (!mesh->IsSkeletal()) {
 			throw std::runtime_error("Skeletal mesh needs to be used in skeletal mesh component");
 		}
 		file_path = FileManager::Get()->GetRelativeFilePath(filepath);
+		if (!default_animation_path.empty()) {
+			SetDefaultAnimationPath(default_anim_path);
+		}
+	}
+
+	SkeletalMeshComponent(const SkeletalMeshComponent& other) : file_path(other.file_path), mesh(other.mesh), animation_plaback(), default_animation_path(other.default_animation_path), material(other.material) {
+		if (!default_animation_path.empty()) {
+			SetDefaultAnimationPath(default_animation_path);
+		}
 	}
 
 	void ChangeMaterial(const std::string& filepath) {
@@ -56,8 +65,24 @@ public:
 		}
 	}
 
+	std::string GetDefaultAnimationPath() const {
+		return default_animation_path;
+	}
+
 	AnimationPlayback& GetAnimation() {
 		return animation_plaback;
+	}
+
+	void SetDefaultAnimationPath(const std::string& default_anim_path, bool force = false) {
+		if (default_anim_path.empty()) {
+			default_animation_path = "";
+			SetAnimation(AnimationManager::Get()->GetDefaultAnimation());
+			return;
+		}
+		default_animation_path = default_anim_path;
+		if (!animation_plaback.IsValidAnim() || force) {
+			SetAnimation(AnimationPlayback(AnimationManager::Get()->LoadAnimationAsync(FileManager::Get()->GetPath(default_anim_path))));
+		}
 	}
 
 	void SetAnimation(const AnimationPlayback& animation) {
@@ -97,6 +122,7 @@ private:
 	friend inline void to_json(nlohmann::json& j, const SkeletalMeshComponent& p);
 	friend inline void from_json(const nlohmann::json& j, SkeletalMeshComponent& p);
 	std::string file_path;
+	std::string default_animation_path;
 	std::shared_ptr<Mesh> mesh;
 	AnimationPlayback animation_plaback;
 };
@@ -108,6 +134,9 @@ inline void to_json(nlohmann::json& j, const SkeletalMeshComponent& p) {
 	if (p.material != nullptr) {
 		j["material_path"] = p.GetMaterialPath();
 	}
+	if (!p.default_animation_path.empty()) {
+		j["animation_path"] = p.default_animation_path;
+	}
 
 }
 
@@ -116,6 +145,10 @@ inline void from_json(const nlohmann::json& j, SkeletalMeshComponent& p) {
 	if (j.contains("material_path")) {
 		auto material_path = j["material_path"].get<std::string>();
 		p.ChangeMaterial(j["material_path"].get<std::string>());
+	}
+	if (j.contains("animation_path")) {
+		auto material_path = j["animation_path"].get<std::string>();
+		p.SetDefaultAnimationPath(j["animation_path"].get<std::string>());
 	}
 }
 

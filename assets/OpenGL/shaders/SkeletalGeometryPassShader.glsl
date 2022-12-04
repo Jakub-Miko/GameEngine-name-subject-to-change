@@ -104,14 +104,26 @@ uniform material{
 
 void main() {
 	vec4 new_pos = vec4(0.0f);
-	for (int i = 0; i < 4; i++) {
-		if (bone_ids[i] != -1) {
-			new_pos += bone_weights[i] * (bone_matricies[bone_ids[i]] * vec4(position,1.0f));
+	vec4 new_normal = vec4(0.0f);
+	vec4 new_tangent = vec4(0.0f);
+	if (valid == 1) {
+		for (int i = 0; i < 4; i++) {
+			if (bone_ids[i] != -1) {
+				new_pos += bone_weights[i] * (bone_matricies[bone_ids[i]] * vec4(position, 1.0f));
+				new_normal += bone_weights[i] * (bone_matricies[bone_ids[i]] * vec4(normal, 0.0f));
+				new_tangent += bone_weights[i] * (bone_matricies[bone_ids[i]] * vec4(tangent, 0.0f));
+			}
 		}
 	}
-
-	vec3 normal_transformed = normalize(mat3(transpose(inverse(view_model_matrix))) * normal.xyz).xyz;
-	vec3 tangent_transformed = normalize(mat3(transpose(inverse(view_model_matrix))) * tangent.xyz).xyz;
+	else {
+		new_pos = vec4(position, 1.0f);
+		new_normal = vec4(normal, 1.0f);
+		new_tangent = vec4(tangent, 1.0f);
+	}
+	new_normal = normalize(new_normal);
+	new_tangent = normalize(new_tangent);
+	vec3 normal_transformed = normalize(mat3(transpose(inverse(view_model_matrix))) * new_normal.xyz).xyz;
+	vec3 tangent_transformed = normalize(mat3(transpose(inverse(view_model_matrix))) * new_tangent.xyz).xyz;
 	vec3 bitangent_transformed = cross(normal_transformed, tangent_transformed);
 
 	TBN = mat3(tangent_transformed, bitangent_transformed, normal_transformed);

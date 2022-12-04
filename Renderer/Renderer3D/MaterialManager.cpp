@@ -41,10 +41,18 @@ std::shared_ptr<Material> MaterialManager::GetMaterial(const std::string& path_i
 	if (fnd != materials.end()) {
 		return fnd->second;
 	}
-	auto material = ParseMaterialFromFile(path);
-	material->material_path = path_in;
-	materials.insert(std::make_pair(path, material));
-	return material;
+	try {
+		auto material = ParseMaterialFromFile(path);
+		material->material_path = path_in;
+		materials.insert(std::make_pair(path, material));
+		return material;
+
+	}
+	catch(...) {
+		auto mat = std::make_shared<Material>();
+		mat->status = Material::Material_status::ERROR;
+		return std::make_shared<Material>();
+	}
 }
 
 MaterialManager::MaterialManager() : materials(), material_templates(), material_mutex(), material_load(), material_load_mutex()
@@ -69,6 +77,7 @@ std::shared_ptr<Material> MaterialManager::ParseMaterialFromFile(const std::stri
 	sstream << stream.rdbuf();
 	stream.close();
 	auto mat = ParseMaterialFromString(sstream.str());
+	mat->status = Material::Material_status::OK;
 	return mat;
 }
 
@@ -78,6 +87,7 @@ std::shared_ptr<Material> MaterialManager::ParseMaterialFromString(const std::st
 	json material_json = json::parse(string);
 	std::shared_ptr<MaterialTemplate> mat_template;
 	if (shader_spec == nullptr) {
+		if (!material_json.contains("shader")) throw std::runtime_error("Material format undefined");
 		std::string shader_path = material_json["shader"].get<std::string>();
 		auto fnd_template = material_templates.find(shader_path);
 		if (fnd_template != material_templates.end()) {

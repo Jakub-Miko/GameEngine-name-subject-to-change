@@ -12,6 +12,7 @@
 #include <Core/UnitConverter.h>
 #include <World/Components/LoadedComponent.h>
 #include <World/Components/MeshComponent.h>
+#include <World/Components/SkeletalMeshComponent.h>
 #include <World/Components/CameraComponent.h>
 #include <World/Components/PrefabComponent.h>
 #include <World/Components/ShadowCasterComponent.h>
@@ -380,7 +381,7 @@ std::string EntityManager::SerializeComponentsToJson(Entity entity)
 {
 	nlohmann::json json_object;
 
-	SerializeComponentToJson<TransformComponent, LabelComponent, MeshComponent, CameraComponent, LightComponent, ShadowCasterComponent, PhysicsComponent>(entity, json_object);
+	SerializeComponentToJson<TransformComponent, LabelComponent, MeshComponent, CameraComponent, LightComponent, ShadowCasterComponent, PhysicsComponent, SkeletalMeshComponent>(entity, json_object);
 	return json_object.dump();
 }
 
@@ -399,7 +400,7 @@ void EntityManager::DeserializeComponentsToTemplate(Entity target_entity, const 
 {
 	nlohmann::json json_object = nlohmann::json::parse(json_string);
 
-	DeserializeComponentToTemplate<TransformComponent, LabelComponent, MeshComponent, CameraComponent, LightComponent, ShadowCasterComponent, PhysicsComponent>(auxilary_registry, target_entity, json_object);
+	DeserializeComponentToTemplate<TransformComponent, LabelComponent, MeshComponent, CameraComponent, LightComponent, ShadowCasterComponent, PhysicsComponent, SkeletalMeshComponent>(auxilary_registry, target_entity, json_object);
 }
 
 
@@ -420,7 +421,7 @@ void EntityManager::DeserializeComponents(Entity target_entity, const std::strin
 	std::lock_guard<std::mutex> lock(auxilary_registry_mutex);
 	nlohmann::json json_object = nlohmann::json::parse(json_string);
 		
-	DeserializeComponent<TransformComponent, PrefabComponent, DynamicPropertiesComponent, LabelComponent, MeshComponent, CameraComponent, LightComponent, ShadowCasterComponent, PhysicsComponent, ScriptComponent>(target_entity, json_object);
+	DeserializeComponent<TransformComponent, PrefabComponent, DynamicPropertiesComponent, LabelComponent, MeshComponent, CameraComponent, LightComponent, ShadowCasterComponent, PhysicsComponent, ScriptComponent, SkeletalMeshComponent>(target_entity, json_object);
 }
 
 

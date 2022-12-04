@@ -66,7 +66,7 @@ glm::quat BoneAnimation::GetRotation(float time, BoneAnimationPlaybackState* nex
 	}
 	auto& next = rotation_keyframes[index + 1];
 	float mix = (time - cur_rot.time_stamp) / (next.time_stamp - cur_rot.time_stamp);
-	return glm::mix(cur_rot.rotation, next.rotation, mix);
+	return glm::slerp(cur_rot.rotation, next.rotation, mix);
 }
 
 glm::vec3 BoneAnimation::GetScale(float time, BoneAnimationPlaybackState* next_state_hint) const {
@@ -109,14 +109,21 @@ AnimationPlayback::AnimationPlayback(std::shared_ptr<Animation> animation) : ani
 bool AnimationPlayback::UpdateAnimation(float delta_time, std::shared_ptr<RenderBufferResource> animation_buffer, RenderCommandList* list, std::shared_ptr<Mesh> skeletal_mesh)
 {
 	std::vector<glm::mat4> bone_transforms;
-	current_time += delta_time * 0.001;
+	current_time += delta_time * 0.001 * anim->GetTicksPerSecond();
+	unsigned int value = 1;
+	
 	if (current_time >= anim->GetDuration()) {
 		current_time = 0.0f;
 		playback_state.ClearState();
 	}
 
+	if (skeletal_mesh->GetMeshStatus() == Mesh_status::LOADING) {
+		value = 0;
+		RenderResourceManager::Get()->UploadDataToBuffer(list, animation_buffer, &value, sizeof(unsigned int), 80 * sizeof(glm::mat4));
+		return false;
+	}
+
 	auto queue = Renderer::Get()->GetCommandQueue();
-	unsigned int value = 1;
 	if (anim->IsEmpty()) {
 		value = 0;
 		RenderResourceManager::Get()->UploadDataToBuffer(list, animation_buffer, &value, sizeof(unsigned int) , 80*sizeof(glm::mat4));

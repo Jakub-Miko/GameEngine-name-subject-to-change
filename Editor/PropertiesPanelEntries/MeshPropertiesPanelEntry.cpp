@@ -72,6 +72,9 @@ void MeshPropertiesPanelEntry::RenderPanel(Entity ent)
 	}
 	if (mesh.GetMaterialStatus() == Material::Material_status::ERROR) {
 		Editor::Get()->EditorError("Invalid or corrupted Material file");
+		mesh.ChangeMaterial("");
+		material_path_buffer[0] = '\0';
+		memcpy(material_path_buffer, mesh.GetMaterialPath().c_str(), mesh.GetMaterialPath().size() + 1);
 	}
 
 

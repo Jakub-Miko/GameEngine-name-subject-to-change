@@ -8,18 +8,18 @@
 class RenderCommandList;
 
 struct BoneAnimationPositionKeyFrame {
-	glm::vec3 position;
-	double time_stamp;
+	glm::vec3 position = glm::vec3(0.0f);
+	double time_stamp = 0.0f;
 };
 
 struct BoneAnimationRotationKeyFrame {
-	glm::quat rotation;
-	double time_stamp;
+	glm::quat rotation = glm::quat(0.0f,0.0f,0.0f,0.0f);
+	double time_stamp = 0.0f;
 };
 
 struct BoneAnimationScaleKeyFrame {
-	glm::vec3 scale;
-	double time_stamp;
+	glm::vec3 scale = glm::vec3(1.0f);
+	double time_stamp = 0.0f;
 };
 
 
@@ -35,6 +35,13 @@ struct AnimationPlaybackState {
 };
 
 struct BoneAnimation {
+
+	BoneAnimation() :position_keyframes(), rotation_keyframes(), scale_keyframes(){
+		position_keyframes.emplace_back();
+		rotation_keyframes.emplace_back();
+		scale_keyframes.emplace_back();
+	}
+
 	std::vector<BoneAnimationPositionKeyFrame> position_keyframes;
 	std::vector<BoneAnimationRotationKeyFrame> rotation_keyframes;
 	std::vector<BoneAnimationScaleKeyFrame> scale_keyframes;
@@ -51,6 +58,9 @@ struct BoneAnimation {
 
 class Animation {
 public:
+	enum class animation_status : char {
+		UNINITIALIZED = 0, LOADING = 1, READY = 2, ERROR = 3
+	};
 
 	std::vector<glm::mat4> GetBoneTransforms(std::shared_ptr<Mesh> skeletal_mesh, float time, AnimationPlaybackState* playback_state);
 	bool IsEmpty() const {
@@ -63,9 +73,14 @@ public:
 		return duration;
 	}
 
-	enum class animation_status : char {
-		UNINITIALIZED = 0, LOADING = 1, READY = 2, ERROR = 3
-	};
+	animation_status GetAnimationStatus() const {
+		return status;
+	}
+
+	int GetTicksPerSecond() const {
+		return ticks_per_second;
+	}
+
 
 private:
 	friend class AnimationManager;
@@ -80,8 +95,18 @@ public:
 	AnimationPlayback();
 	AnimationPlayback(std::shared_ptr<Animation> animation);
 	//returns false if animation was not loaded yet
+
+	Animation::animation_status GetAnimationStatus() const {
+		return anim->GetAnimationStatus();
+	}
+
 	void SetTime(float time) {
 		current_time = time;
+		playback_state.ClearState();
+	}
+
+	bool IsValidAnim() const {
+		return !anim->IsEmpty();
 	}
 
 	bool UpdateAnimation(float delta_time, std::shared_ptr<RenderBufferResource> animation_buffer, RenderCommandList* list, std::shared_ptr<Mesh> skeletal_mesh);

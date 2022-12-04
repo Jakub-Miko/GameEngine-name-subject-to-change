@@ -70,6 +70,8 @@ private:
 class Material : public std::enable_shared_from_this<Material>{
 public:
 
+    Material() = default;
+
     struct Texture_type {
         std::shared_ptr<RenderTexture2DResource> texture;
 #ifdef EDITOR
@@ -139,11 +141,11 @@ private:
 #endif
     Material(std::shared_ptr<MaterialTemplate> material_template);
     void UpdateValues(RenderCommandList* command_list);
-    std::string material_path;
-    std::shared_ptr<MaterialTemplate> material_template;
-    std::vector<MaterialParameter> parameters;
-    std::vector<MaterialResource> resources;
-    Material_status status = Material_status::OK;
+    std::string material_path = "";
+    std::shared_ptr<MaterialTemplate> material_template = nullptr;
+    std::vector<MaterialParameter> parameters = std::vector<MaterialParameter>();
+    std::vector<MaterialResource> resources = std::vector<MaterialResource>();
+    Material_status status = Material_status::ERROR;
 };
 
 inline Material::MaterialParameter_flags operator|(const Material::MaterialParameter_flags& first, const Material::MaterialParameter_flags& second) {

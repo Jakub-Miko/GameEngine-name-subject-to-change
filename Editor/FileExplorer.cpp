@@ -66,7 +66,7 @@ void FileExplorer::Render()
 			if (ImGui::Button("Import") | dest_enter) {
 				std::string source_absolute = FileManager::Get()->GetPath(import_source_buffer);
 				auto extension = std::filesystem::path(source_absolute).extension();
-				if (!(std::filesystem::exists(std::filesystem::path(source_absolute)) && (extension == ".obj" || extension == ".dae"))) throw std::runtime_error("Source file either doesn't exist or is not an .obj file");
+				if (!(std::filesystem::exists(std::filesystem::path(source_absolute)) && (extension == ".obj" || extension == ".dae" || extension == ".fbx"))) throw std::runtime_error("Source file either doesn't exist or is not in a supported file format");
 				std::string dest_absolute = FileManager::Get()->GetPath(import_dest_buffer);
 
 				MeshManager::Get()->MakeMeshFromObjectFile(source_absolute, dest_absolute, *VertexLayoutFactory<MeshPreset>::GetLayout(), *VertexLayoutFactory<SkeletalMeshPreset>::GetLayout());
@@ -181,6 +181,15 @@ void FileExplorer::Render()
 				} else if (extension == ".dae") {
 					std::string file_name = std::filesystem::path(files[0]).filename().generic_string();
 					auto find = file_name.find(".dae");
+					file_name = file_name.replace(find, 4, "");
+					std::string out_path = "absolute:" + std::filesystem::absolute(std::filesystem::path(current_path)).generic_string() + "/" + file_name;
+
+					OpenImportDialog("absolute:" + files[0], out_path);
+
+				}
+				else if (extension == ".fbx") {
+					std::string file_name = std::filesystem::path(files[0]).filename().generic_string();
+					auto find = file_name.find(".fbx");
 					file_name = file_name.replace(find, 4, "");
 					std::string out_path = "absolute:" + std::filesystem::absolute(std::filesystem::path(current_path)).generic_string() + "/" + file_name;
 

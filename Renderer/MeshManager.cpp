@@ -281,7 +281,7 @@ MeshManager::mesh_assimp_input_data MeshManager::Fetch_Assimp_Data(const mesh_ve
     unsigned int flags = 0;
     flags |= aiProcess_GenBoundingBoxes | (props.has_normal ? aiProcess_GenNormals : 0);
     flags |= aiProcess_GenBoundingBoxes | (props.has_tangent ? aiProcess_CalcTangentSpace : 0);
-    const aiScene* scene = importer->ReadFile(in_file_path, flags); //TODO: Handle bounding boxes somehow
+    const aiScene* scene = importer->ReadFile(in_file_path, flags |aiProcess_Triangulate); //TODO: Handle bounding boxes somehow
     aiMesh* imported_mesh = scene->mMeshes[mesh_index];
     bool has_skeleton = imported_mesh->HasBones();
     auto& aabb = imported_mesh->mAABB;
@@ -365,7 +365,12 @@ MeshManager::mesh_assimp_input_data MeshManager::Fetch_Assimp_Data(const mesh_ve
 }
 
 void MeshManager::BuildBoneHierarchy(Skeleton& skeleton, aiNode* node, uint16_t parent_index, aiMesh* mesh, mesh_assimp_input_data* data) {
-    if (!skeleton.BoneExists(node->mName.C_Str())) return;
+    if (!skeleton.BoneExists(node->mName.C_Str())) {
+        for (int i = 0; i < node->mNumChildren; i++) {
+            BuildBoneHierarchy(skeleton, node->mChildren[i], parent_index, mesh, data);
+        }
+        return;
+    };
     Bone current_bone;
     current_bone.name = node->mName.C_Str();
     current_bone.parent_index = parent_index;

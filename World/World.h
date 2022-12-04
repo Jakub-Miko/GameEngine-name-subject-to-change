@@ -115,7 +115,7 @@ public:
 
 	void SetEntityMesh(Entity ent, const std::string mesh);
 
-	void SetEntitySkeletalMesh(Entity ent, const std::string mesh);
+	void SetEntitySkeletalMesh(Entity ent, const std::string& mesh, const std::string& default_animation_path = "");
 
 	template<typename T>
 	auto RegisterComponentType() -> std::enable_if_t<!has_ComponentInitProxy_v<T>> {

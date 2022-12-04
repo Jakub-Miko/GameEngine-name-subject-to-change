@@ -113,17 +113,17 @@ void AnimationManager::MakeAnimations(Skeleton& reference_skeleton, aiScene* sce
 	if (!scene) throw std::runtime_error("Scene was not supplied to MakeAnimations");
 	for (int i = 0; i < scene->mNumAnimations; i++) {
 		auto anim = scene->mAnimations[i];
-		if (reference_skeleton.GetNumberOfBones() != anim->mNumChannels) continue;
+		if (reference_skeleton.GetNumberOfBones() < anim->mNumChannels) continue;
 		std::string label = anim->mName.C_Str();
 		std::string path = output_directory + "/" + (label.empty() ? "default" : label) + ".anim";
 		std::ofstream file(path, std::ios::binary | std::ios::out);
 		if (!file.is_open()) throw std::runtime_error("Animation File " + path + " could not be created.");
 		
-		file << anim->mDuration << " " << anim->mTicksPerSecond << " " << anim->mNumChannels << "\n";
+		file << anim->mDuration << " " << anim->mTicksPerSecond << " " << reference_skeleton.GetNumberOfBones() << "\n";
 		
 		std::vector<BoneAnimation> anims;
 		anims.reserve(anim->mNumChannels);
-		for (int fill = 0; fill < anim->mNumChannels; fill++) {
+		for (int fill = 0; fill < reference_skeleton.GetNumberOfBones(); fill++) {
 			anims.emplace_back();
 		}
 		for (int channnel_index = 0; channnel_index < anim->mNumChannels; channnel_index++) {
