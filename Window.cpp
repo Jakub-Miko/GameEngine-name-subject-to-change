@@ -18,4 +18,3 @@ Window* Window::CreateWindow(const WindowProperties& props) {
     static_assert(false, "Wrong Window Type");
     #endif
 }
-

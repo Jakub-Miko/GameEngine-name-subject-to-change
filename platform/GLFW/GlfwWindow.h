@@ -18,6 +18,16 @@ public:
 
     virtual void RegistorDragAndDropCallback(void(*callback)(int count, std::vector<std::string> paths)) override;
 
+
+#ifdef EDITOR
+
+    virtual void AdjustWidowToDisabledEditor() override;
+
+    virtual void AdjustWidowToEnabledEditor() override;
+
+
+#endif
+
     virtual ~GlfwWindow();
 
     GLFWwindow* GetHandle() const { return m_Window; }

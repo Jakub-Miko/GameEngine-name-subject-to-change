@@ -3,7 +3,7 @@
 #include <vector>
 
 struct WindowProperties {
-    int resolution_x = 1280, resolution_y = 720;
+    int resolution_x = -1, resolution_y = -1;
     std::string name = "GameEngine NSTC";
 };
 
@@ -22,6 +22,15 @@ public:
     }
 
     virtual void SwapBuffers() = 0;
+
+#ifdef EDITOR
+
+    virtual void AdjustWidowToDisabledEditor() = 0;
+
+    virtual void AdjustWidowToEnabledEditor() = 0;
+
+
+#endif
 
     virtual void RegistorDragAndDropCallback(void(*callback)(int count, std::vector<std::string> paths)) = 0;
 

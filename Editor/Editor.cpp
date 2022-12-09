@@ -50,7 +50,7 @@ bool Editor::OnEvent(Event* e)
 	if (!enabled) {
 		dispatch.Dispatch<KeyPressedEvent>([this](KeyPressedEvent* e) {
 			if (e->key_code == KeyCode::KEY_ESCAPE && e->press_type == KeyPressType::KEY_PRESS) {
-				enabled = true;
+				EnableEditor();
 			}
 
 			return false;
@@ -173,7 +173,7 @@ void Editor::Run()
 
 		if (ImGui::BeginMenu("Play")) {
 			if (ImGui::MenuItem("Play Without editor")) {
-				enabled = false;
+				DisableEditor();
 				Renderer::Get()->SetDefaultFrameBuffer();
 				auto queue = Renderer::Get()->GetCommandQueue();
 				auto list = Renderer::Get()->GetRenderCommandList();
@@ -393,6 +393,18 @@ void Editor::ViewportBegin()
 	if (enabled) {
 		viewport->BeginViewportFrameBuffer();
 	}
+}
+
+void Editor::DisableEditor()
+{
+	Application::Get()->GetWindow()->AdjustWidowToDisabledEditor();
+	enabled = false;
+}
+
+void Editor::EnableEditor()
+{
+	Application::Get()->GetWindow()->AdjustWidowToEnabledEditor();
+	enabled = true;
 }
 
 void Editor::ViewportEnd()

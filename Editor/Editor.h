@@ -34,6 +34,10 @@ public:
 
 	void ViewportBegin();
 
+	void DisableEditor();
+
+	void EnableEditor();
+
 	const Viewport* GetViewport() const {
 		return viewport.get();
 	}
