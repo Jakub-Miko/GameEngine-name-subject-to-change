@@ -6,6 +6,7 @@
 struct PrefabEditorWindow {
 	Entity entity;
 	Entity selected_entity = Entity();
+	bool is_initializing = false;
 	char* mesh_path = nullptr;
 	char* material_path = nullptr;
 	int buffer_size = 200;

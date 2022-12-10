@@ -172,9 +172,11 @@ void World::SerializePrefab(Entity entity, const std::string& path)
 	EntityParseResult result;
 	PrefabComponent& prefab = GetComponent<PrefabComponent>(entity);
 
-	EntityTemplate ent_template = EntityManager::Get()->GetEntitySignature(prefab.GetFilePath());
-	result.construction_script = ent_template.construction_script;
-	result.inline_script = ent_template.inline_script;
+	if (prefab.status != PrefabStatus::UNINITIALIZED) {
+		EntityTemplate ent_template = EntityManager::Get()->GetEntitySignature(prefab.GetFilePath());
+		result.construction_script = ent_template.construction_script;
+		result.inline_script = ent_template.inline_script;
+	}
 
 
 	result.component_json = EntityManager::Get()->SerializeComponentsToJson(entity);
@@ -199,8 +201,12 @@ void World::SerializePrefab(Entity entity, const std::string& path)
 	stream << "\"Children\": " << children_array.dump() << "\n";
 	stream << "}\n";
 
-	stream << "@Entity:Construction_Script\n" << result.construction_script << "\n";
-	stream << "@Entity:Inline_Script\n" << result.inline_script << "\n";
+	if (!result.construction_script.empty()) {
+		stream << "@Entity:Construction_Script\n" << result.construction_script << "\n";
+	}
+	if (!result.inline_script.empty()) {
+		stream << "@Entity:Inline_Script\n" << result.inline_script << "\n";
+	}
 
 	file_structure.push_back(std::make_pair("Root", stream.str()));
 
