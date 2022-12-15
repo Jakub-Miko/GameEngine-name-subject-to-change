@@ -274,12 +274,12 @@ void EntityManager::DeserializeEntityPrefab(Entity target_entity, const std::str
 	EntityTemplate entity_template = GetEntitySignatureLocal(path, file_buffer);
 	Entity new_ent = target_entity;
 	auto& world = Application::GetWorld();
-
+	
 	bool has_construction_script = !entity_template.construction_script.empty();
 	bool has_script = !entity_template.inline_script.empty();
 
 	if (entity_template.template_entity != Entity()) {
-		InitializeFromTemplate(new_ent, entity_template.template_entity, {"struct TransformComponent","class LabelComponent"});
+		InitializeFromTemplate(new_ent, entity_template.template_entity, {"struct TransformComponent","class LabelComponent","class DynamicPropertiesComponent"});
 	}
 
 	//For Deserialized entities

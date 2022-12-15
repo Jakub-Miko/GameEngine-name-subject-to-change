@@ -13,11 +13,13 @@
 }
 
 
-@Entity:Construction_Script 
+@Entity:Construction_Script
 
-SetProperty_FLOAT("distance",5);
+ 
+
 function OnConstruct()
 
+CreateProperty_FLOAT("distance",5.0)
 
 
 end
@@ -68,6 +70,8 @@ SetRotation(rot)
 
 
 end
+
+
 
 
 

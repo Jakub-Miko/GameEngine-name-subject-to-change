@@ -46,6 +46,26 @@ void SetProperty(std::string name, T value) {
     }
 }
 
+template<typename T>
+void CreateProperty(std::string name, T value) {
+    auto& props = Application::GetWorld().GetComponent<DynamicPropertiesComponent>(Entity(GetCurrentEntity_L().id)).m_Properties;
+    auto find = props.find(name);
+    if (find != props.end()) {
+        Script_Variant_type& prop = (*find).second;
+        if (std::get_if<T>(&prop)) {
+            return;
+        }
+        else {
+            throw std::runtime_error("Invalid Property Access");
+        }
+    }
+    else {
+        props.insert(std::make_pair(name, value));
+        return;
+    }
+}
+
+
 extern "C" {
     int GetProperty_INT_L(const char * name) {
         return GetProperty<int>(name);
@@ -106,6 +126,33 @@ extern "C" {
         SetProperty(name, val);
     }
 
+    void CreateProperty_INT_L(const char* name, int value) {
+        CreateProperty(name, value);
+    }
+
+    void CreateProperty_FLOAT_L(const char* name, float value) {
+        CreateProperty(name, value);
+    }
+
+    void CreateProperty_STRING_L(const char* name, const char* value) {
+        CreateProperty(name, std::string(value));
+    }
+
+    void CreateProperty_VEC2_L(const char* name, vec2 value) {
+        auto val = *reinterpret_cast<glm::vec2*>(&value);
+        CreateProperty(name, val);
+    }
+
+    void CreateProperty_VEC3_L(const char* name, vec3 value) {
+        auto val = *reinterpret_cast<glm::vec3*>(&value);
+        CreateProperty(name, val);
+    }
+
+    void CreateProperty_VEC4_L(const char* name, vec4 value) {
+        auto val = *reinterpret_cast<glm::vec3*>(&value);
+        CreateProperty(name, val);
+    }
+
     bool PropertyExists_L(const char* name)
     {
         auto& props = Application::GetWorld().GetComponent<DynamicPropertiesComponent>(Entity(GetCurrentEntity_L().id)).m_Properties;
@@ -137,6 +184,13 @@ void LocalPropertySetModule::OnRegisterModule(ModuleBindingProperties& props)
     void SetProperty_VEC3_L(const char* name, vec3 value);
     void SetProperty_VEC4_L(const char* name, vec4 value);
 
+    void CreateProperty_INT_L(const char* name,int value);
+    void CreateProperty_FLOAT_L(const char* name, float value);
+    void CreateProperty_STRING_L(const char* name, const char* value);
+    void CreateProperty_VEC2_L(const char* name, vec2 value);
+    void CreateProperty_VEC3_L(const char* name, vec3 value);
+    void CreateProperty_VEC4_L(const char* name, vec4 value);
+
     bool PropertyExists_L(const char* name);
 
 	)");
@@ -155,6 +209,13 @@ void LocalPropertySetModule::OnRegisterModule(ModuleBindingProperties& props)
         {"SetProperty_VEC2_L","SetProperty_VEC2"},
         {"SetProperty_VEC3_L","SetProperty_VEC3"},
         {"SetProperty_VEC4_L","SetProperty_VEC4"},
+
+        {"CreateProperty_INT_L","CreateProperty_INT"},
+        {"CreateProperty_FLOAT_L","CreateProperty_FLOAT"},
+        {"CreateProperty_STRING_L","CreateProperty_STRING"},
+        {"CreateProperty_VEC2_L","CreateProperty_VEC2"},
+        {"CreateProperty_VEC3_L","CreateProperty_VEC3"},
+        {"CreateProperty_VEC4_L","CreateProperty_VEC4"},
 
         {"PropertyExists_L","PropertyExists"}
 

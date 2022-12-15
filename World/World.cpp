@@ -393,6 +393,7 @@ void World::DeletionSystem()
 			
 				for (auto stor : m_ECS.storage()) {
 					if (stor.second.type() == entt::type_id<TransformComponent>() || stor.second.type() == entt::type_id<LabelComponent>() || stor.second.type() == entt::type_id<PrefabComponent>() 
+						|| stor.second.type() == entt::type_id<DynamicPropertiesComponent>()
 						|| stor.second.type() == entt::type_id<SerializableComponent>()) {
 						continue;
 					}

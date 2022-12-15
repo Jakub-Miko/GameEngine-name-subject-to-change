@@ -13,6 +13,7 @@
 #include <World/Components/MeshComponent.h>
 #include <Editor/PropertiesPanelEntries/MeshPropertiesPanelEntry.h>
 #include <Editor/PropertiesPanelEntries/SkeletalMeshPropertiesPanelEntry.h>
+#include <Editor/PropertiesPanelEntries/DynamicPropertiesPanelEntry.h>
 #include <FileManager.h>
 
 PropertiesPanel::PropertiesPanel()
@@ -26,6 +27,7 @@ PropertiesPanel::PropertiesPanel()
 
 	RegisterPanelEntry(MeshPropertiesPanelEntry());
 	RegisterPanelEntry(SkeletalMeshPropertiesPanelEntry());
+	RegisterPanelEntry(DynamicPropertiesPanelEntry());
 }
 
 PropertiesPanel::~PropertiesPanel()
