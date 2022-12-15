@@ -5,7 +5,7 @@
 #include <Core/RuntimeTag.h>
 #include <Core/UnitConverter.h>
 
-using Script_Variant_type = std::variant<int, float, double, glm::vec2, glm::vec3, glm::vec4, std::string>;
+using Script_Variant_type = std::variant<int, float, double, glm::vec2, glm::vec3, glm::vec4, std::string, Entity>;
 
 class DynamicPropertiesComponent {
 	RUNTIME_TAG("DynamicPropertiesComponent")

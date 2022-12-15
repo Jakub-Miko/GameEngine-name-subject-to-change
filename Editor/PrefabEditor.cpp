@@ -241,14 +241,25 @@ void PrefabEditor::RenderWindow(PrefabEditorWindow& window)
 			if (ImGui::MenuItem(ent_template.construction_script.empty() ? "Add Construction Script" : "Edit Construction Script")) {
 				std::ofstream temp_file(temp_file_name);
 				if (!temp_file.is_open()) throw std::runtime_error("File " + temp_file_name + " could not be created!");
-				temp_file << ent_template.construction_script;
+
+				if (ent_template.construction_script.empty()) {
+					temp_file << "function OnConstruct() \n\nend";
+				}
+				else {
+					temp_file << ent_template.construction_script;
+				}
 				temp_file.close();
 				Application::Get()->GetOsApi()->OpenFileInDefaultApp(temp_file_name);
 			}
 			if (ImGui::MenuItem(ent_template.inline_script.empty() ? "Add Inline Script" : "Edit Inline Script")) {
 				std::ofstream temp_file(temp_file_inline_name);
 				if (!temp_file.is_open()) throw std::runtime_error("File " + temp_file_inline_name + " could not be created!");
-				temp_file << ent_template.inline_script;
+				if (ent_template.inline_script.empty()) {
+					temp_file << "function OnUpdate(delta_time) \n\nend";
+				}
+				else {
+					temp_file << ent_template.inline_script;
+				}
 				temp_file.close();
 				Application::Get()->GetOsApi()->OpenFileInDefaultApp(temp_file_inline_name);
 			}

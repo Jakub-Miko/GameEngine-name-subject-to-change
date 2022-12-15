@@ -20,6 +20,7 @@
 #include <World/ScriptModules/ApplicationDataModule.h>
 #include <World/ScriptModules/LocalPropertySetModule.h>
 #include <World/ScriptModules/TimeModule.h>
+#include <World/ScriptModules/PrefabManipulationModule.h>
 #include <World/ScriptModules/LocalEntityModule.h>
 #include <stdexcept>
 
@@ -280,6 +281,7 @@ void ScriptHandler::BindHandlerFunctions(LuaEngineClass<ScriptHandler>* script_e
     ApplicationDataModule().RegisterModule(props);
     LocalEntityModule().RegisterModule(props);
     LocalPropertySetModule().RegisterModule(props);
+    PrefabManipulationModule().RegisterModule(props);
 
     script_engine->RegisterModule(props);
 }

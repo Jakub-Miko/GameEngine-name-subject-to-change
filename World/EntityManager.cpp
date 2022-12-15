@@ -309,14 +309,13 @@ void EntityManager::DeserializeEntityPrefab(Entity target_entity, const std::str
 		}
 	}
 
-
 	for (auto child : entity_template.children) {
 		
-		DeserializeEntityPrefab_impl(child, path,file_buffer, new_ent);
+		DeserializeEntityPrefab_impl(child, path,file_buffer, new_ent, new_ent);
 	}
 }
 
-void EntityManager::DeserializeEntityPrefab_impl(const std::string& path_in, const std::string& original_path, const std::string& local_file_buffer, Entity parent)
+void EntityManager::DeserializeEntityPrefab_impl(const std::string& path_in, const std::string& original_path, const std::string& local_file_buffer, Entity parent, Entity prefab_parent)
 {
 	auto path = path_in;
 	auto script_vm = ScriptSystemManager::Get()->TryGetScriptSystemVM();
@@ -358,10 +357,13 @@ void EntityManager::DeserializeEntityPrefab_impl(const std::string& path_in, con
 		world.SetComponent<InitializationComponent>(child_ent);
 	}
 
+	if (world.HasComponentSynced<LabelComponent>(child_ent)) {
+		world.GetComponent<DynamicPropertiesComponent>(prefab_parent).m_Properties.insert(std::make_pair(world.GetComponent<LabelComponent>(child_ent).label, child_ent));
+	}
 
 	for (auto child : child_entity_template.children) {
 
-		DeserializeEntityPrefab_impl(child, original_path, local_file_buffer, child_ent);
+		DeserializeEntityPrefab_impl(child, original_path, local_file_buffer, child_ent, prefab_parent);
 	}
 
 }

@@ -71,7 +71,7 @@ private:
 
     const EntityTemplate& GetEntitySignatureLocal(const std::string& path, const std::string& file_buffer);
 
-    void DeserializeEntityPrefab_impl( const std::string& path, const std::string& original_path ,const std::string& local_file_buffer, Entity parent = Entity());
+    void DeserializeEntityPrefab_impl( const std::string& path, const std::string& original_path ,const std::string& local_file_buffer, Entity parent = Entity(), Entity prefab_parent = Entity());
 
 
     void DeserializeComponentsToTemplate(Entity target_entity, const std::string& json_string);
