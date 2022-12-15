@@ -298,8 +298,13 @@ void PropertiesPanel::RenderProperties(Entity entity, const PropertiesPanel_pers
 			bool enter = ImGui::InputText("Prefab path", data.prefab_path, buffer_size, ImGuiInputTextFlags_EnterReturnsTrue);
 			if (ImGui::Button("Reload") || enter) {
 				try {
-					prefab.SetFilePath(data.prefab_path);
-					Application::GetWorld().RemoveEntity(selected, RemoveEntityAction::RELOAD_PREFAB);
+					if (prefab.GetFilePath() != data.prefab_path) {
+						Application::GetWorld().ResetEntityPrefab(selected, data.prefab_path);
+					}
+					else {
+						Application::GetWorld().RemoveEntity(selected, RemoveEntityAction::RELOAD_PREFAB);
+					}
+
 				}
 				catch (std::runtime_error* e) {
 					ImGui::OpenPopup(prefab_error_id);
@@ -310,8 +315,7 @@ void PropertiesPanel::RenderProperties(Entity entity, const PropertiesPanel_pers
 			ImGui::SameLine();
 			
 			if (ImGui::Button("Set Selected")) {
-				prefab.SetFilePath(FileManager::Get()->GetRelativeFilePath(Editor::Get()->GetSelectedFilePath()));
-				Application::GetWorld().RemoveEntity(selected, RemoveEntityAction::RELOAD_PREFAB);
+				Application::GetWorld().ResetEntityPrefab(selected, FileManager::Get()->GetRelativeFilePath(Editor::Get()->GetSelectedFilePath()));
 				memcpy(data.prefab_path, prefab.GetFilePath().c_str(), prefab.GetFilePath().size() + 1);
 			}
 			
@@ -415,7 +419,6 @@ void PropertiesPanel::AddComponent(Entity entity,const PropertiesPanel_persisten
 			}
 			if (ImGui::Button("Remove Prefab Component")) {
 				world.GetSceneGraph()->GetSceneGraphNode(entity)->state = world.GetSceneGraph()->GetSceneGraphNode(entity)->state & ~SceneNodeState::PREFAB;
-				world.GetComponent<PrefabComponent>(entity).SetFilePath("Unknown");
 				world.RemoveEntity(entity, RemoveEntityAction::REMOVE_PREFABS);
 				data.prefab_path[0] = '\0';
 			}

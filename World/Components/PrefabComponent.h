@@ -17,11 +17,9 @@ struct PrefabComponent {
 		return file_path;
 	}
 
-	void SetFilePath(const std::string& path) {
-		file_path = FileManager::Get()->GetRelativeFilePath(FileManager::Get()->GetPath(path));
-	}
-
 private:
+	friend class World;
+	friend void from_json(const nlohmann::json& nlohmann_json_j, PrefabComponent& nlohmann_json_t);
 	std::string file_path;
 };
 
@@ -30,5 +28,5 @@ inline void to_json(nlohmann::json& nlohmann_json_j, const PrefabComponent& nloh
 }
 
 inline void from_json(const nlohmann::json& nlohmann_json_j, PrefabComponent& nlohmann_json_t) { 
-	nlohmann_json_t.SetFilePath(nlohmann_json_j["file_path"].get<std::string>());
+	nlohmann_json_t.file_path = (nlohmann_json_j["file_path"].get<std::string>());
 }

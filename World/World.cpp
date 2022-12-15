@@ -108,6 +108,15 @@ void World::SetEntitySkeletalMesh(Entity ent, const std::string& mesh_path, cons
 	}
 }
 
+void World::ResetEntityPrefab(Entity ent, const std::string& prefab_path)
+{
+	//Reloading a prefab after changing the path does what we want, but we'll need to clear its dynamic properties component otherwise we'll corrupt it.
+	std::lock_guard<std::mutex> lock(SyncPool<PrefabComponent>());
+	if (!HasComponent<PrefabComponent>(ent)) throw std::runtime_error("Attempting to reset entity prefab of an entity which doesn't have a prefab component");
+	GetComponent<PrefabComponent>(ent).file_path = prefab_path;
+	RemoveEntity(ent, RemoveEntityAction::CHANGE_PREFAB);
+}
+
 void World::SetEntityScaleSync(Entity ent, const glm::vec3& scale)
 {
 	std::lock_guard<std::mutex> lock(SyncPool<TransformComponent>());
@@ -375,7 +384,7 @@ void World::DeletionSystem()
 			m_SceneGraph.RemoveEntity(ent);
 			m_ECS.destroy((entt::entity)ent.id);
 		}
-		else if (action == RemoveEntityAction::RELOAD_PREFAB) {
+		else if (action == RemoveEntityAction::RELOAD_PREFAB || action == RemoveEntityAction::CHANGE_PREFAB) {
 			try {
 
 				if (!HasComponent<PrefabComponent>(ent)) {
@@ -393,8 +402,11 @@ void World::DeletionSystem()
 			
 				for (auto stor : m_ECS.storage()) {
 					if (stor.second.type() == entt::type_id<TransformComponent>() || stor.second.type() == entt::type_id<LabelComponent>() || stor.second.type() == entt::type_id<PrefabComponent>() 
-						|| stor.second.type() == entt::type_id<DynamicPropertiesComponent>()
 						|| stor.second.type() == entt::type_id<SerializableComponent>()) {
+						continue;
+					}
+					//Before we refresh the prefab we need to clear its dynamic properties if the prefab changes.
+					if (action == RemoveEntityAction::RELOAD_PREFAB && stor.second.type() == entt::type_id<DynamicPropertiesComponent>()) {
 						continue;
 					}
 					stor.second.remove((entt::entity)ent.id);
@@ -407,7 +419,8 @@ void World::DeletionSystem()
 				if (HasComponent<PrefabComponent>(ent)) {
 					auto& comp = GetComponent<PrefabComponent>(ent);
 					comp.status = PrefabStatus::ERROR;
-					comp.SetFilePath("Unknown");
+					
+					comp.file_path = "Unknown";
 					for (auto stor : m_ECS.storage()) {
 						if (stor.second.type() == entt::type_id<TransformComponent>() || stor.second.type() == entt::type_id<LabelComponent>() || stor.second.type() == entt::type_id<PrefabComponent>() 
 							|| stor.second.type() == entt::type_id<SerializableComponent>()) {

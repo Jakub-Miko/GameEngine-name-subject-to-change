@@ -74,7 +74,7 @@ struct HasOnUpdate
 };
 
 enum class RemoveEntityAction : char {
-	REMOVE = 0, RELOAD_PREFAB = 1, REMOVE_PREFABS = 2, RELOAD_ALL_PREFABS_OF_THIS_TYPE = 3
+	REMOVE = 0, RELOAD_PREFAB = 1, REMOVE_PREFABS = 2, RELOAD_ALL_PREFABS_OF_THIS_TYPE = 3, CHANGE_PREFAB = 5
 };
 
 class World {
@@ -116,6 +116,8 @@ public:
 	void SetEntityMesh(Entity ent, const std::string mesh);
 
 	void SetEntitySkeletalMesh(Entity ent, const std::string& mesh, const std::string& default_animation_path = "");
+
+	void ResetEntityPrefab(Entity ent, const std::string& prefab_path);
 
 	template<typename T>
 	auto RegisterComponentType() -> std::enable_if_t<!has_ComponentInitProxy_v<T>> {
