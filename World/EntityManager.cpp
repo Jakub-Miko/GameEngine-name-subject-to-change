@@ -358,7 +358,7 @@ void EntityManager::DeserializeEntityPrefab_impl(const std::string& path_in, con
 	}
 
 	if (world.HasComponentSynced<LabelComponent>(child_ent)) {
-		world.GetComponent<DynamicPropertiesComponent>(prefab_parent).m_Properties.insert(std::make_pair(world.GetComponent<LabelComponent>(child_ent).label, child_ent));
+		world.GetComponent<DynamicPropertiesComponent>(prefab_parent).m_Properties.insert_or_assign(world.GetComponent<LabelComponent>(child_ent).label, child_ent);
 	}
 
 	for (auto child : child_entity_template.children) {
