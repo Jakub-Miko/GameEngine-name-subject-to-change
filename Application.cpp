@@ -9,6 +9,7 @@
 #include <World/Systems/MeshRenderSystem.h>
 #include <World/Components/MeshComponent.h>
 #include <World/Systems/BoxRenderer.h>
+#include <Audio/AudioSystem.h>
 #include "Layer.h"
 #include <World/EntityManager.h>
 #include <Profiler.h>
@@ -57,6 +58,8 @@ Application::~Application()
 #ifdef EDITOR
     Editor::Get()->PreShutdown();
 #endif
+    
+    AudioSystem::Shutdown();
     
     ShutdownSystems();
     
@@ -158,6 +161,8 @@ void Application::InitInstance()
     Input::Init();
 
     EntityManager::Initialize();
+
+    AudioSystem::Init();
 
     InitializeSystems();
 

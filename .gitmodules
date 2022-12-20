@@ -23,3 +23,6 @@
 [submodule ".\\dependencies\\bullet"]
 	path = .\\dependencies\\bullet
 	url = https://github.com/bulletphysics/bullet3.git
+[submodule ".\\dependencies\\OpenAL"]
+	path = .\\dependencies\\OpenAL
+	url = https://github.com/kcat/openal-soft.git

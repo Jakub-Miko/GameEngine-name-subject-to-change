@@ -17,6 +17,8 @@ file(GLOB SRCS
 "./States/*.cpp"
 "./World/*.cpp"
 "./World/*/*.cpp"
+"./Audio/*.cpp"
+"./Audio/*/*.cpp"
 "./Renderer/*.cpp" "./Renderer/*.h"
 "./Renderer/Renderer3D/*.cpp" "./Renderer/Renderer3D/*.h"
 "./Renderer/Renderer3D/RenderPasses/*.cpp" "./Renderer/Renderer3D/RenderPasses/*.h"
@@ -38,6 +40,11 @@ add_subdirectory("./dependencies/glfw")
 
 add_subdirectory("./dependencies/EnTT")
 
+set(ALSOFT_INSTALL off CACHE BOOL "" FORCE)
+set(ALSOFT_EXAMPLES off CACHE BOOL "" FORCE)
+
+add_subdirectory("./dependencies/OpenAL")
+
 add_subdirectory("./dependencies/glew/build/cmake")
 
 add_subdirectory("./dependencies/glm")
@@ -57,7 +64,7 @@ add_subdirectory("./Utilities")
 target_include_directories(glew_s PUBLIC "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/dependencies/glew/include>")
 
 target_link_libraries(PseudoTest PRIVATE glfw glew_s glm Profiler MemoryManagement 
-TaskSystem LuaEngine RuntimeTypeIdentifier ThreadManager FileManager ConfigManager EnTT::EnTT RuntimeTypeIdentifier JsonParser STB_Image assimp
+TaskSystem LuaEngine RuntimeTypeIdentifier ThreadManager FileManager ConfigManager EnTT::EnTT RuntimeTypeIdentifier JsonParser STB_Image assimp OpenAL
 Bullet)
 
 if(EDITOR)
