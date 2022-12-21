@@ -19,11 +19,20 @@ public:
 		return state;
 	}
 
+	virtual ~AudioObject() {}
+
 protected:
 	friend AudioSystem;
 	AudioObjectState state;
 };
 
+struct AudioStandardObjectDescriptor {
+	int duration = -1;
+	int buffer_size = -1;
+	int32_t sample_rate = -1;
+	uint16_t bits_per_sample = -1;
+	uint16_t channels = -1;
+};
 
 class AudioStandardObject : public AudioObject {
 public:
@@ -36,8 +45,15 @@ public:
 		return buffer_id;
 	}
 
+	const AudioStandardObjectDescriptor& GetAudioObjectDescriptor() const {
+		return descriptor;
+	}
+
+	virtual ~AudioStandardObject() {}
+
 private:
 	friend AudioSystem;
+	AudioStandardObjectDescriptor descriptor;
 	unsigned int buffer_id = -1;
 };
 
@@ -48,4 +64,5 @@ public:
 		return AudioObjectType::STREAM;
 	}
 
+	virtual ~AudioStreamObject() {}
 };

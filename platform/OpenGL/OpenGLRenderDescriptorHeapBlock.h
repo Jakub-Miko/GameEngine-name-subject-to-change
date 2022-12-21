@@ -55,7 +55,7 @@ private:
 	struct InternalAllocation;
 	
 	using OffsetMap = std::map<size_t, InternalAllocation>;
-	using SizeMap = std::map<size_t, OffsetMap::iterator>;
+	using SizeMap = std::multimap<size_t, OffsetMap::iterator>;
 	
 	struct InternalAllocation {
 		InternalAllocation(SizeMap::iterator iter) : size_map_entry(iter) {};

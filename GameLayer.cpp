@@ -12,6 +12,7 @@
 #include <Events/MouseMoveEvent.h>
 #include <glm/glm.hpp>
 #include <World/World.h>
+#include <Audio/AudioSystem.h>
 #include <World/Systems/SquareRenderSystem.h>
 #include <World/Systems/BoxRenderer.h>
 #include <World/Systems/InitializationSystem.h>
@@ -59,6 +60,7 @@ void GameLayer::OnUpdate(float delta_time) {
     ScriptSystemUpdate(world, delta_time);
     world.SetPrimaryEntitySystem();
     MeshManager::Get()->UpdateLoadedMeshes(); // MultiThread
+    AudioSystem::Get()->UpdateLoadedSounds();
     AnimationManager::Get()->UpdateLoadedAnimations(); // MultiThread
     world.GetPhysicsEngine().UpdatePhysics(delta_time);
     world.UpdateTransformMatricies();

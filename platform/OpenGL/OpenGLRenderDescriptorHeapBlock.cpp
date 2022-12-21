@@ -29,7 +29,7 @@ RenderDescriptorAllocation* OpenGLRenderDescriptorHeapBlock::Allocate(size_t num
 	if (old_block_size) {
 		auto old_block_iter = m_OffsetTable.insert(std::make_pair(old_block_offset, InternalAllocation(m_SizeTable.end())));
 		auto size_block_iter_old = m_SizeTable.insert(std::make_pair(old_block_size, old_block_iter.first));
-		old_block_iter.first->second.size_map_entry = size_block_iter_old.first;
+		old_block_iter.first->second.size_map_entry = size_block_iter_old;
 	}
 
 	free_descriptors -= num_of_descriptors;
@@ -97,7 +97,7 @@ void OpenGLRenderDescriptorHeapBlock::FreeInternal(const InternalFreeStructure& 
 
 	auto offset_iter = m_OffsetTable.insert(std::make_pair(new_offset, InternalAllocation(m_SizeTable.end())));
 	auto size_iter = m_SizeTable.insert(std::make_pair(new_size, offset_iter.first));
-	offset_iter.first->second.size_map_entry = size_iter.first;
+	offset_iter.first->second.size_map_entry = size_iter;
 
 	free_descriptors += free_block.num_of_descriptors;
 }
@@ -111,7 +111,7 @@ OpenGLRenderDescriptorHeapBlock::OpenGLRenderDescriptorHeapBlock(size_t size)
 	}
 	auto offset_iter = m_OffsetTable.insert(std::make_pair(0, InternalAllocation(m_SizeTable.end())));
 	auto size_iter = m_SizeTable.insert(std::make_pair(size, offset_iter.first));
-	offset_iter.first->second.size_map_entry = size_iter.first;
+	offset_iter.first->second.size_map_entry = size_iter;
 }
 
 OpenGLRenderDescriptorAllocation::~OpenGLRenderDescriptorAllocation()

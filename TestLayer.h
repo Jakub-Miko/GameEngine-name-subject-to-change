@@ -9,6 +9,9 @@
 #include <World/Components/SkeletalMeshComponent.h>
 #include <Input/Input.h>
 
+#include <Audio/AudioSystem.h>
+#include <AL/al.h>
+
 #include <Events/SubjectObserver.h>
 #include <glm/glm.hpp>
 #include <Events/Event.h>
@@ -34,6 +37,8 @@ public:
     bool stop = true;
     bool stop2 = true;
     Entity skeletal_ent;
+    std::shared_ptr<AudioObject> audio ;
+    unsigned int source;
     //Entity entity1;
     //Entity mesh_enity;
     //Entity second_ent;
@@ -73,6 +78,7 @@ public:
         //delete pipeline_2; 
         //Delete_Render_Box_data();
         delete test_observer;
+       
     }
 
     TestLayer() : Layer(){
@@ -397,9 +403,32 @@ public:
             Application::GetWorld().SetComponent< SerializableComponent>(skeletal_ent);
           */
             
+#pragma region AudioTest
+
+            audio = AudioSystem::Get()->GetAudioObject("asset:test_track.wav"_path);
+            alGenSources(1, &source);
+            alSourcei(source, AL_LOOPING, AL_FALSE);
+            alSourcei(source, AL_BUFFER, std::dynamic_pointer_cast<AudioStandardObject>(audio)->GetBufferId());
+            alSourcePlay(source);
+
+
+#pragma endregion
+
+
+
+
             stop = false;
 
         }
+        ALint state;
+        alGetSourcei(source, AL_SOURCE_STATE, &state);
+        
+        if (audio->GetAudioObjectState() == AudioObjectState::LOADED && state != AL_PLAYING) {
+            alSourcei(source, AL_BUFFER, std::dynamic_pointer_cast<AudioStandardObject>(audio)->GetBufferId());
+            alSourcePlay(source);
+        }
+       
+
 
         //RenderPassBuilder builder;
         //builder.AddPass(new TestPass2);
