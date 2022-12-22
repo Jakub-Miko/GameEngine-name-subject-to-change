@@ -1,5 +1,5 @@
 #pragma once
-
+#include <stdint.h>
 class AudioSystem;
 
 enum class AudioObjectType : char {
@@ -49,7 +49,6 @@ public:
 		return descriptor;
 	}
 
-	virtual ~AudioStandardObject() {}
 
 private:
 	friend AudioSystem;

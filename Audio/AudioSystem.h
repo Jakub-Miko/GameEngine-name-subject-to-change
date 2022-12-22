@@ -6,8 +6,9 @@
 #include <string>
 #include <memory>
 #include <Audio/AudioObject.h>
+#include <Audio/AudioSource.h>
 
-struct ALCcontext;
+class ALCcontext;
 
 class AudioSystem {
 public:
@@ -19,6 +20,8 @@ public:
 	static void Init();
 	static void Shutdown();
 	static AudioSystem* Get();
+
+	std::shared_ptr<AudioSource> CreateAudioSource();
 
 	std::shared_ptr<AudioObject> GetAudioObject(const std::string& path);
 	std::shared_ptr<AudioObject> GetDefaultAudioObject() const {
@@ -35,6 +38,7 @@ private:
 	AudioStandardObject LoadAudioFromFileImpl(const std::string& path);
 	void ImportWaveFormAudioObject(AudioStandardObject& object, const std::string& path);
 
+	std::shared_ptr<AudioStandardObject> CreateAudioStandardObject();
 
 	struct audio_load_future {
 		std::shared_ptr<AudioStandardObject> audio;

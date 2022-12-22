@@ -30,6 +30,21 @@ AudioSystem* AudioSystem::Get()
 	return instance;
 }
 
+std::shared_ptr<AudioSource> AudioSystem::CreateAudioSource()
+{
+    unsigned int source_id;
+    alGenSources(1, &source_id);
+    alSourcei(source_id, AL_BUFFER, std::dynamic_pointer_cast<AudioStandardObject>(GetDefaultAudioObject())->GetBufferId());
+    auto source_obj = std::shared_ptr<AudioSource>(new AudioSource(), [](AudioSource* ptr) {
+        unsigned int id = ptr->GetSourceId();
+        alDeleteSources(1, &id);
+        delete ptr;
+        });
+    source_obj->source_id = source_id;
+    source_obj->audio_object.reset();
+    return source_obj;
+}
+
 std::shared_ptr<AudioObject> AudioSystem::GetAudioObject(const std::string& input_path)
 {
 	using namespace std::filesystem;
@@ -43,11 +58,7 @@ std::shared_ptr<AudioObject> AudioSystem::GetAudioObject(const std::string& inpu
 	}
 
 
-    auto object = std::shared_ptr<AudioStandardObject>(new AudioStandardObject(), [](AudioStandardObject* ptr) {
-        ALuint buffer_id = ptr->GetBufferId();
-        alDeleteBuffers(1, &buffer_id);
-        delete ptr;
-        });
+    auto object = CreateAudioStandardObject();
 
     object->state = AudioObjectState::LOADING;
     object->buffer_id = std::dynamic_pointer_cast<AudioStandardObject>(GetDefaultAudioObject())->buffer_id;
@@ -242,6 +253,15 @@ void AudioSystem::ImportWaveFormAudioObject(AudioStandardObject& object, const s
 	file.close();
 }
 
+std::shared_ptr<AudioStandardObject> AudioSystem::CreateAudioStandardObject()
+{
+    return std::shared_ptr<AudioStandardObject>(new AudioStandardObject, [](AudioStandardObject* ptr) {
+        unsigned int id = ptr->GetBufferId();
+        alDeleteBuffers(1, &id);
+        delete ptr;
+        });
+}
+
 AudioSystem::AudioSystem()
 {
 	ALCdevice* dev = alcOpenDevice(nullptr);
@@ -259,11 +279,7 @@ AudioSystem::AudioSystem()
     alGenBuffers(1, &buffer);
     unsigned int data = 0;
     alBufferData(1, AL_FORMAT_MONO8, &data, 0, 48000);
-	default_audio_object = std::shared_ptr<AudioStandardObject>(new AudioStandardObject(), [](AudioStandardObject* ptr) {
-        ALuint buffer_id = ptr->GetBufferId();
-        alDeleteBuffers(1, &buffer_id);
-        delete ptr;
-        });
+    default_audio_object = CreateAudioStandardObject();
     std::dynamic_pointer_cast<AudioStandardObject>(default_audio_object)->buffer_id = buffer;
     default_audio_object->state = AudioObjectState::LOADED;
 

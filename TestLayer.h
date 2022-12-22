@@ -36,9 +36,9 @@ public:
     double counter = 0;
     bool stop = true;
     bool stop2 = true;
+    bool playing = false;
     Entity skeletal_ent;
-    std::shared_ptr<AudioObject> audio ;
-    unsigned int source;
+    std::shared_ptr<AudioSource> audio_source;
     //Entity entity1;
     //Entity mesh_enity;
     //Entity second_ent;
@@ -404,13 +404,12 @@ public:
           */
             
 #pragma region AudioTest
-
-            audio = AudioSystem::Get()->GetAudioObject("asset:test_track.wav"_path);
-            alGenSources(1, &source);
-            alSourcei(source, AL_LOOPING, AL_FALSE);
-            alSourcei(source, AL_BUFFER, std::dynamic_pointer_cast<AudioStandardObject>(audio)->GetBufferId());
-            alSourcePlay(source);
-
+            
+            audio_source = AudioSystem::Get()->CreateAudioSource();
+            audio_source->SetAudioObject(AudioSystem::Get()->GetAudioObject("asset:test_track_mono.wav"_path));
+            audio_source->SetLooping(false);
+            audio_source->SetSourcePosition({ -100.0f,10.0f,10.0f });
+            audio_source->Play();
 
 #pragma endregion
 
@@ -420,12 +419,17 @@ public:
             stop = false;
 
         }
-        ALint state;
-        alGetSourcei(source, AL_SOURCE_STATE, &state);
+
         
-        if (audio->GetAudioObjectState() == AudioObjectState::LOADED && state != AL_PLAYING) {
-            alSourcei(source, AL_BUFFER, std::dynamic_pointer_cast<AudioStandardObject>(audio)->GetBufferId());
-            alSourcePlay(source);
+        if (audio_source && playing && audio_source->GetSourceState() != AudioSourceState::PLAYING) {
+            audio_source.reset();
+        }
+
+        if (audio_source && (audio_source->GetAudioObject()->GetAudioObjectState() == AudioObjectState::LOADED && audio_source->GetSourceState() != AudioSourceState::PLAYING)) {
+            audio_source->ResetAudioObject();
+
+            audio_source->Play();
+            playing = true;
         }
        
 
