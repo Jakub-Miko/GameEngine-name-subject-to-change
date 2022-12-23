@@ -54,6 +54,60 @@ void AudioSource::SetVelocity(const glm::vec3& velocity)
 	alSourcefv(source_id, AL_VELOCITY, glm::value_ptr(velocity));
 }
 
+glm::vec3 AudioSource::GetSourcePosition(const glm::vec3& position)
+{
+	glm::vec3 pos;
+	alGetSourcefv(source_id, AL_POSITION, glm::value_ptr(pos));
+	return pos;
+}
+
+float AudioSource::GetGain()
+{
+	float gain;
+	alGetSourcef(source_id, AL_GAIN, &gain);
+	return gain;
+}
+
+float AudioSource::GetPitch()
+{
+	float pitch;
+	alGetSourcef(source_id, AL_PITCH, &pitch);
+	return pitch;
+}
+
+float AudioSource::GetMaxDistance()
+{
+	float max_distance;
+	alGetSourcef(source_id, AL_MAX_DISTANCE, &max_distance);
+	return max_distance;
+}
+
+float AudioSource::GetRolloffFactor()
+{
+	float rolloff_factor;
+	alGetSourcef(source_id, AL_ROLLOFF_FACTOR, &rolloff_factor);
+	return rolloff_factor;
+}
+
+bool AudioSource::GetLooping()
+{
+	int looping;
+	alGetSourcei(source_id, AL_LOOPING, &looping);
+	if (looping == AL_TRUE) {
+		return true;
+	}
+	else {
+		return false;
+	}
+}
+
+glm::vec3 AudioSource::GetVelocity()
+{
+	glm::vec3 vel;
+	alGetSourcefv(source_id, AL_VELOCITY, glm::value_ptr(vel));
+	return vel;
+}
+
 void AudioSource::Play()
 {
 	alSourcePlay(source_id);

@@ -5,6 +5,7 @@
 #include <deque>
 #include <string>
 #include <memory>
+#include <World/Entity.h>
 #include <Audio/AudioObject.h>
 #include <Audio/AudioSource.h>
 
@@ -28,7 +29,11 @@ public:
 		return default_audio_object;
 	}
 
+	void SetListenerPosition(const glm::vec3& position);
+
 	void UpdateLoadedSounds();
+
+	void UpdateAudioComponent(Entity ent);
 
 private:
 	~AudioSystem();

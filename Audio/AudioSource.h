@@ -19,6 +19,15 @@ public:
 	void SetRolloffFactor(float rolloff_factor);
 	void SetLooping(bool should_loop);
 	void SetVelocity(const glm::vec3& velocity);
+
+	glm::vec3 GetSourcePosition(const glm::vec3& position);
+	float GetGain();
+	float GetPitch();
+	float GetMaxDistance();
+	float GetRolloffFactor();
+	bool GetLooping();
+	glm::vec3 GetVelocity();
+
 	void Play();
 	void Pause();
 	void Stop();

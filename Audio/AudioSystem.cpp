@@ -8,6 +8,8 @@
 #include <fstream>
 #include <Application.h>
 #include <AsyncTaskDispatcher.h>
+#include <World/World.h>
+#include <World/Components/AudioComponent.h>
 
 AudioSystem* AudioSystem::instance = nullptr;
 
@@ -85,6 +87,11 @@ std::shared_ptr<AudioObject> AudioSystem::GetAudioObject(const std::string& inpu
     return audio_final; 
 }
 
+void AudioSystem::SetListenerPosition(const glm::vec3& position)
+{
+    alListenerfv(AL_POSITION, glm::value_ptr(position));
+}
+
 void AudioSystem::UpdateLoadedSounds()
 {
     std::lock_guard<std::mutex> lock(audio_Load_queue_mutex);
@@ -109,6 +116,37 @@ void AudioSystem::UpdateLoadedSounds()
     }
 
 }
+
+void AudioSystem::UpdateAudioComponent(Entity ent)
+{
+    auto& component = Application::GetWorld().GetComponent<AudioComponent>(ent);
+    switch (component.GetAudioState())
+    {
+    case AudioComponentState::STOPPED:
+        return;
+
+    case AudioComponentState::PLAYING:
+        if (component.GetAudioSource()->GetSourceState() == AudioSourceState::STOPPPED) {
+            component.state = AudioComponentState::STOPPED;
+        }
+        break;
+
+    case AudioComponentState::PLAY_REQUEST:
+        {
+        auto audio_object = GetAudioObject(FileManager::Get()->GetPath(component.GetRequestedPath()));
+        if (audio_object->GetAudioObjectState() == AudioObjectState::LOADED) {
+            component.GetAudioSource()->SetAudioObject(audio_object);
+            component.GetAudioSource()->Play();
+            component.state = AudioComponentState::PLAYING;
+        }
+        break;
+        }
+    }
+    TransformComponent& transform = Application::GetWorld().GetComponent<TransformComponent>(ent);
+    component.audio_source->SetSourcePosition(glm::vec3(transform.TransformMatrix[3]));
+
+}
+
 
 AudioStandardObject AudioSystem::LoadAudioFromFileImpl(const std::string& input_path)
 {

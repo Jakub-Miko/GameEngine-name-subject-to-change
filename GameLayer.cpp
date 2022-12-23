@@ -17,6 +17,7 @@
 #include <World/Systems/BoxRenderer.h>
 #include <World/Systems/InitializationSystem.h>
 #include <World/Systems/MeshRenderSystem.h>
+#include <World/Systems/AudioUpdateSystem.h>
 #include <World/Systems/KeyPressedScriptSystem.h>
 #include <World/Systems/MousePressedScriptSystem.h>
 #include <Renderer/MeshManager.h>
@@ -64,6 +65,7 @@ void GameLayer::OnUpdate(float delta_time) {
     AnimationManager::Get()->UpdateLoadedAnimations(); // MultiThread
     world.GetPhysicsEngine().UpdatePhysics(delta_time);
     world.UpdateTransformMatricies();
+    AudioUpdateSystem(world);
     world.DeletionSystem();
     //BoundingVolumeRender(world);
 } 

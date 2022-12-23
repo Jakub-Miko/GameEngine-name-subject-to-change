@@ -7,6 +7,7 @@
 #include <iostream>
 #include <World/Components/SerializableComponent.h>
 #include <World/Components/SkeletalMeshComponent.h>
+#include <World/Components/AudioComponent.h>
 #include <Input/Input.h>
 
 #include <Audio/AudioSystem.h>
@@ -38,7 +39,7 @@ public:
     bool stop2 = true;
     bool playing = false;
     Entity skeletal_ent;
-    std::shared_ptr<AudioSource> audio_source;
+    Entity AudioEntity;
     //Entity entity1;
     //Entity mesh_enity;
     //Entity second_ent;
@@ -405,11 +406,13 @@ public:
             
 #pragma region AudioTest
             
-            audio_source = AudioSystem::Get()->CreateAudioSource();
+           /* audio_source = AudioSystem::Get()->CreateAudioSource();
             audio_source->SetAudioObject(AudioSystem::Get()->GetAudioObject("asset:test_track_mono.wav"_path));
             audio_source->SetLooping(false);
             audio_source->SetSourcePosition({ -100.0f,10.0f,10.0f });
-            audio_source->Play();
+            audio_source->Play();*/
+
+
 
 #pragma endregion
 
@@ -419,19 +422,6 @@ public:
             stop = false;
 
         }
-
-        
-        if (audio_source && playing && audio_source->GetSourceState() != AudioSourceState::PLAYING) {
-            audio_source.reset();
-        }
-
-        if (audio_source && (audio_source->GetAudioObject()->GetAudioObjectState() == AudioObjectState::LOADED && audio_source->GetSourceState() != AudioSourceState::PLAYING)) {
-            audio_source->ResetAudioObject();
-
-            audio_source->Play();
-            playing = true;
-        }
-       
 
 
         //RenderPassBuilder builder;

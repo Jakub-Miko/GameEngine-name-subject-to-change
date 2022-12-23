@@ -19,8 +19,9 @@
 #include <World/Components/ShadowCasterComponent.h>
 #include <World/Components/TransformComponent.h>
 #include <World/Components/SkeletalMeshComponent.h>
+#include <World/Components/AudioComponent.h>
 #include <Core/TypeList.h>
 
 using Component_Types = typename TypeList<BoundingVolumeComponent, CameraComponent, ConstructionComponent, DefferedUpdateComponent, DynamicPropertiesComponent, InitializationComponent
 	,KeyPressedScriptComponent, LabelComponent, LightComponent, LoadedComponent, MeshComponent, MousePressedScriptComponent, PrefabComponent, ScriptComponent, SerializableComponent, SquareComponent,
-	TransformComponent, ShadowCasterComponent, PhysicsComponent, SkeletalMeshComponent>;
+	TransformComponent, ShadowCasterComponent, PhysicsComponent, SkeletalMeshComponent, AudioComponent>;
