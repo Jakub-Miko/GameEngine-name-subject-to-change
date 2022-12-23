@@ -1,6 +1,7 @@
 #include "PrefabManipulationModule.h"
 #include "LocalEntityModule.h"
 #include <World/Components/SkeletalMeshComponent.h>
+#include <World/Components/AudioComponent.h>
 #include "LocalPropertySetModule.h"
 #include <glm/glm.hpp>
 #include <Application.h>
@@ -57,6 +58,15 @@ extern "C" {
 		Application::GetWorld().GetComponent<SkeletalMeshComponent>(ent).SetAnimation(AnimationPlayback(AnimationManager::Get()->LoadAnimationAsync(FileManager::Get()->GetPath(path))));
 	}
 
+	void PlaySound_L(const char* name, const char* path) {
+		Entity ent = GetEntityByName(name);
+		auto& world = Application::GetWorld();
+		if (!world.HasComponent<AudioComponent>(ent)) throw std::runtime_error(std::string("Child with name: ") + name + " of entity: " + std::to_string(GetCurrentEntity_L().id)
+			+ " does not have an Audio Component.");
+		auto& comp = world.GetComponent<AudioComponent>(ent);
+		comp.PlayAudio(path);
+	}
+
 }
 
 void PrefabManipulationModule::OnRegisterModule(ModuleBindingProperties& props)
@@ -69,12 +79,14 @@ void PrefabManipulationModule::OnRegisterModule(ModuleBindingProperties& props)
 	void SetChildScale_L(const char* name, vec3 scale);
 	void SetChildRotation_L(const char* name, quat rot);
 	void PlayAnimation_L(const char* name, const char* path);
+	void PlaySound_L(const char* name, const char* path);
 	)");
 
 	props.Add_FFI_aliases({
 		{"SetChildTranslation_L","SetChildTranslation"},
 		{"SetChildScale_L","SetChildScale"},
 		{"SetChildRotation_L","SetChildRotation"},
-		{"PlayAnimation_L","PlayAnimation"}
+		{"PlayAnimation_L","PlayAnimation"},
+		{"PlaySound_L","PlaySound"}
 		});
 }

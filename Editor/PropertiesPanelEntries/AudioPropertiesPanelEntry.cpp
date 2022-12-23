@@ -29,11 +29,13 @@ void AudioPropertiesPanelEntry::RenderPanel(Entity ent)
 	}
 	bool enter_buffer = ImGui::InputText("Audio path", buffer, 200, ImGuiInputTextFlags_EnterReturnsTrue);
 	if (ImGui::Button("Reload##audio") || enter_buffer) {
-		audio.PlayAudio(buffer);
+		audio.SetDefaultAudioPath(buffer);
+		audio.PlayAudio();
 	}
 	ImGui::SameLine();
 	if (ImGui::Button("Set Selected##audio")) {
-		audio.PlayAudio(FileManager::Get()->GetRelativeFilePath(Editor::Get()->GetSelectedFilePath()));
+		audio.SetDefaultAudioPath(FileManager::Get()->GetRelativeFilePath(Editor::Get()->GetSelectedFilePath()));
+		audio.PlayAudio();
 		memcpy(buffer, audio.GetRequestedPath().c_str(), audio.GetRequestedPath().size() + 1);
 	}
 

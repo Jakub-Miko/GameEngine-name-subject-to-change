@@ -147,6 +147,12 @@ void AudioSystem::UpdateAudioComponent(Entity ent)
 
 }
 
+void AudioSystem::SetListenerOrientation(const glm::mat3& orientation)
+{
+    glm::vec3 at_and_up[2] = { glm::normalize(-glm::vec3(orientation[2])), glm::normalize(glm::vec3(orientation[1])) };
+    alListenerfv(AL_ORIENTATION, (float*)at_and_up);
+}
+
 
 AudioStandardObject AudioSystem::LoadAudioFromFileImpl(const std::string& input_path)
 {

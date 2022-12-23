@@ -1,6 +1,7 @@
 #pragma once 
 #include <Audio/AudioSystem.h>
 #include <Core/RuntimeTag.h>
+#include <Core/UnitConverter.h>
 #include <string>
 
 enum class AudioComponentState : char {
@@ -23,8 +24,29 @@ public:
 		return audio_source;
 	}
 
-	void PlayAudio(const std::string& audio_path) {
-		requested_path = audio_path;
+	void SetDefaultAudioPath(const std::string& audio_path) {
+		default_path = audio_path;
+	}
+
+	const std::string& GetDefaultAudioPath() const {
+		return default_path;
+	}
+
+	void PlayAudio(const std::string& audio_path = "") {
+		if (audio_path.empty()) {
+			if (default_path.empty()) {
+				requested_path = default_path;
+				state = AudioComponentState::STOPPED;
+				audio_source->Stop();
+				return;
+			}
+			else {
+				requested_path = default_path;
+			}
+		}
+		else {
+			requested_path = audio_path;
+		}
 		state = AudioComponentState::PLAY_REQUEST;
 	}
 
@@ -37,4 +59,30 @@ private:
 	std::shared_ptr<AudioSource> audio_source = nullptr;
 	AudioComponentState state = AudioComponentState::STOPPED;
 	std::string requested_path = "";
+	std::string default_path = "";
 };
+
+#pragma region Json_Serialization
+
+inline void to_json(nlohmann::json& j, const AudioComponent& p) {
+	j["gain"] = p.GetAudioSource()->GetGain();
+	j["pitch"] = p.GetAudioSource()->GetPitch();
+	j["max_distance"] = p.GetAudioSource()->GetMaxDistance();
+	j["rolloff_factor"] = p.GetAudioSource()->GetRolloffFactor();
+	j["looping"] = p.GetAudioSource()->GetLooping();
+	j["default"] = p.GetDefaultAudioPath();
+}
+
+inline void from_json(const nlohmann::json& j, AudioComponent& p) {
+	p.GetAudioSource()->SetGain(j["gain"].get<float>());
+	p.GetAudioSource()->SetPitch(j["pitch"].get<float>());
+	p.GetAudioSource()->SetMaxDistance(j["max_distance"].get<float>());
+	p.GetAudioSource()->SetRolloffFactor(j["rolloff_factor"].get<float>());
+	p.GetAudioSource()->SetLooping(j["looping"].get<bool>());
+	if (j.contains("default") && !j["default"].get<std::string>().empty()) {
+		p.SetDefaultAudioPath(j["default"].get<std::string>());
+		p.PlayAudio();
+	}
+}
+
+#pragma endregion

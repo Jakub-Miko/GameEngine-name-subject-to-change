@@ -34,6 +34,7 @@ public:
 	void UpdateLoadedSounds();
 
 	void UpdateAudioComponent(Entity ent);
+	void SetListenerOrientation(const glm::mat3& orientation);
 
 private:
 	~AudioSystem();

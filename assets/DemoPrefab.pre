@@ -1,4 +1,4 @@
-@Section:Skeleton_2097166
+@Section:Skeleton_15
 @Entity 
 {
 "Components": {"LabelComponent":{"label":"Skeleton"},"SkeletalMeshComponent":{"material_path":"assets/vampire_mat.mat","path":"assets/default_dance_vampire.skel"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":0.03999999910593033,"y":0.03999999910593033,"z":0.03999999910593033},"translation":{"x":0.0,"y":0.0,"z":3.359999895095825}}},
@@ -6,7 +6,7 @@
 }
 
 @EndSection
-@Section:Mesh_0
+@Section:Mesh_14
 @Entity 
 {
 "Components": {"LabelComponent":{"label":"Mesh"},"MeshComponent":{"material_path":"assets/Material/MaterialGeometry.mat","path":"assets/Pillar_with_uvs.mesh"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":0.9426414370536804,"x":0.0,"y":0.3338069021701813,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":0.0,"y":-2.0,"z":0.0}}},
@@ -14,7 +14,7 @@
 }
 
 @EndSection
-@Section:Mesh2_10
+@Section:Mesh2_0
 @Entity 
 {
 "Components": {"LabelComponent":{"label":"Mesh2"},"MeshComponent":{"material_path":"assets/Material/MaterialGeometry.mat","path":"assets/Pillar_with_uvs.mesh"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":0.9526656270027161,"x":0.005102590657770634,"y":0.29232707619667053,"z":-0.08334743231534958},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":3.0,"y":2.0,"z":5.0}}},
@@ -22,7 +22,7 @@
 }
 
 @EndSection
-@Section:Point_Light_11
+@Section:Point_Light_10
 @Entity 
 {
 "Components": {"LabelComponent":{"label":"Point Light"},"LightComponent":{"attenuation":{"x":1.0,"y":0.10000000149011612,"z":0.05000000074505806},"color":{"w":5.929999828338623,"x":0.0,"y":0.7063829898834229,"z":1.0},"type":1},"ShadowCasterComponent":{"far_plane":500.0,"near_plane":0.10000000149011612,"res_x":800,"res_y":800},"TransformComponent":{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":0.0,"y":4.0,"z":11.0}}},
@@ -30,14 +30,26 @@
 }
 
 @EndSection
+@Section:Audio_11
+@Entity 
+{
+"Components": {"AudioComponent":{"default":"","gain":2.0,"looping":true,"max_distance":3.4028234663852886e+38,"pitch":1.0,"rolloff_factor":0.20000000298023224},"LabelComponent":{"label":"Audio"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":0.0,"y":0.0,"z":0.0}}},
+"Children": []
+}
+
+@EndSection
 @Section:Root@Entity 
 {
-"Components": {"LabelComponent":{"label":"Prefab"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":0.0,"y":0.0,"z":0.0}}},
-"Children": ["local#Skeleton_2097166","local#Mesh_0","local#Mesh2_10","local#Point_Light_11"]
+"Components": {"LabelComponent":{"label":"Prefab"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":1.0,"y":0.0,"z":0.0}}},
+"Children": ["local#Skeleton_15","local#Mesh_14","local#Mesh2_0","local#Point_Light_10","local#Audio_11"]
 }
 @Entity:Inline_Script
+
+
+
 function OnStart() 
 	PlayAnimation("Skeleton","asset:default_dance_vampire_animations/DanceMoves.anim")
+	PlaySound("Audio","asset:test_track_mono.wav")
 	print("Start")
 end
 
@@ -45,6 +57,11 @@ function OnUpdate(delta_time)
 SetChildTranslation("Mesh",vec3(0.0,-2.0,0.0))
 SetChildTranslation("Mesh2",vec3(3.0,2.0,5.0))
 end
+
+
+
+
+
 
 
 
