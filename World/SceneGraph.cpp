@@ -76,13 +76,13 @@ void SceneGraph::RemoveEntity(Entity entity)
 	if (node->previous) {
 		node->previous->next = node->next;
 	}
-	PrefabComponent prefab_comp;
-	if (node->parent->IsPrefab() && (prefab_comp = Application::GetWorld().GetComponentSync<PrefabComponent>(node->parent->entity)).first_child == node->entity) {
+	PrefabComponent* prefab_comp;
+	if (node->parent->IsPrefab() && (prefab_comp = &Application::GetWorld().GetComponentSync<PrefabComponent>(node->parent->entity))->first_child == node->entity) {
 		if (node->next) {
-			prefab_comp.first_child = node->next->entity;
+			prefab_comp->first_child = node->next->entity;
 		}
 		else {
-			prefab_comp.first_child = Entity();
+			prefab_comp->first_child = Entity();
 		}
 	}
 	if (node->parent->first_child == node) {

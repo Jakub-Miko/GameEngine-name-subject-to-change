@@ -8,6 +8,7 @@
 #include <Application.h>
 #include <fstream>
 #include <FileManager.h>
+#include <ImGuizmo.h>
 
 #ifdef OpenGL
 #include <GLFW/glfw3.h>
@@ -81,6 +82,7 @@ void Editor::Run()
 	ImGui_ImplGlfw_NewFrame();
 	impl_custom_imgui_backend::NewFrame();
 	ImGui::NewFrame();
+	ImGuizmo::BeginFrame();
 	if (enabled) {
 
 		//ImGui::ShowDemoWindow();

@@ -14,6 +14,19 @@ public:
 	AudioComponent() {
 		audio_source = AudioSystem::Get()->CreateAudioSource();
 	};
+
+	AudioComponent(const AudioComponent& other) {
+		audio_source = AudioSystem::Get()->CreateAudioSource();
+		default_path = other.default_path;
+		requested_path = other.requested_path;
+		if (other.state == AudioComponentState::PLAYING || other.state == AudioComponentState::PLAY_REQUEST) {
+			state = AudioComponentState::PLAY_REQUEST;
+		}
+		else {
+			state = AudioComponentState::STOPPED;
+		}
+	};
+
 	AudioComponent(std::shared_ptr<AudioSource> audio_source) : audio_source(audio_source) {}
 
 	AudioComponentState GetAudioState() const {

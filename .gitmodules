@@ -26,3 +26,6 @@
 [submodule ".\\dependencies\\OpenAL"]
 	path = .\\dependencies\\OpenAL
 	url = https://github.com/kcat/openal-soft.git
+[submodule ".\\dependencies\\ImGuizmo"]
+	path = .\\dependencies\\ImGuizmo
+	url = https://github.com/CedricGuillemet/ImGuizmo.git

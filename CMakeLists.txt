@@ -64,7 +64,7 @@ add_subdirectory("./Utilities")
 target_include_directories(glew_s PUBLIC "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/dependencies/glew/include>")
 
 target_link_libraries(PseudoTest PRIVATE glfw glew_s glm Profiler MemoryManagement 
-TaskSystem LuaEngine RuntimeTypeIdentifier ThreadManager FileManager ConfigManager EnTT::EnTT RuntimeTypeIdentifier JsonParser STB_Image assimp OpenAL
+TaskSystem LuaEngine RuntimeTypeIdentifier ThreadManager FileManager ConfigManager EnTT::EnTT RuntimeTypeIdentifier JsonParser STB_Image assimp OpenAL ImGuizmo
 Bullet)
 
 if(EDITOR)
