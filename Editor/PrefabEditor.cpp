@@ -196,7 +196,7 @@ void PrefabEditor::RenderWindow(PrefabEditorWindow& window)
 			Application::GetWorld().SerializePrefab(window.entity, FileManager::Get()->GetPath(actual_path));
 			auto& prefab = Application::GetWorld().GetComponent<PrefabComponent>(window.entity);
 			if (prefab.status == PrefabStatus::UNINITIALIZED) {
-				Application::GetWorld().ResetEntityPrefab(window.entity, actual_path);
+				//Application::GetWorld().ResetEntityPrefab(window.entity, actual_path); TODO: Why was this here again ????  investigate
 				prefab.status = PrefabStatus::OK;
 				Editor::Get()->Refresh();
 			}

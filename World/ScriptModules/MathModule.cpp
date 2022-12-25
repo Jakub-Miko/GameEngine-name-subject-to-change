@@ -1,6 +1,7 @@
 #include "MathModule.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 extern "C" {
 	vec3 multiply_matrix_vec3_L(mat3* matrix, vec3* vector) {
@@ -44,6 +45,13 @@ extern "C" {
 		return *reinterpret_cast<mat4*>(&result);
 	}
 
+	vec3 rotate_vec3_L(vec3 vec, quat rotation) {
+		glm::quat quaternion = *reinterpret_cast<glm::quat*>(&rotation);
+		glm::vec3 vec_to_rotate = *reinterpret_cast<glm::vec3*>(&vec);
+		vec_to_rotate = glm::toMat3(quaternion) * vec_to_rotate;
+		return *reinterpret_cast<vec3*>(&vec_to_rotate);
+	}
+
 }
 
 void MathModule::OnRegisterModule(ModuleBindingProperties& props)
@@ -62,6 +70,7 @@ void MathModule::OnRegisterModule(ModuleBindingProperties& props)
 	mat3 multiple_mat3_L(mat3* first, mat3* second);
 	quat quat_lookat_L(vec3* direction, vec3* up_vector);
 	quat mat3_to_quat_L(mat3 matrix);
+	vec3 rotate_vec3_L(vec3 vec, quat rotation);
 	)");
 
 	props.Add_FFI_aliases({
@@ -76,7 +85,8 @@ void MathModule::OnRegisterModule(ModuleBindingProperties& props)
 		{"multiple_mat4_L","multiple_mat4"},
 		{"multiple_mat3_L","multiple_mat3"},
 		{"quat_lookat_L","quat_lookat"},
-		{"mat3_to_quat_L","mat3_to_quat"}
+		{"mat3_to_quat_L","mat3_to_quat"},
+		{"rotate_vec3_L","rotate_vec3"}
 		});
 
 	props.Add_init_script(R"(
@@ -118,7 +128,7 @@ void MathModule::OnRegisterModule(ModuleBindingProperties& props)
 	end
 
 	function multiply_vec3(num1, num2)
-	return vec3({x = num1.x - num2.x,y = num1.y - num2.y, z = num1.z - num2.z}) 
+	return vec3({x = num1.x * num2.x,y = num1.y * num2.y, z = num1.z * num2.z}) 
 	end
 
 	function multiply_vec4(num1, num2)

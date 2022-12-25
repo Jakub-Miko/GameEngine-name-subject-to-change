@@ -28,6 +28,24 @@ extern "C" {
 		Application::GetWorld().SetEntityRotation(Entity{ GetCurrentEntity_L().id }, *rt);
 	}
 
+	vec3 GetTranslation_L() {
+		glm::vec3 trans = Application::GetWorld().GetComponent<TransformComponent>(Entity{ GetCurrentEntity_L().id }).translation;
+		vec3 translation = vec3{ trans.x, trans.y, trans.z };
+		return translation;
+	}
+
+	vec3 GetScale_L() {
+		glm::vec3 scl = Application::GetWorld().GetComponent<TransformComponent>(Entity{ GetCurrentEntity_L().id }).size;
+		vec3 scale = vec3{ scl.x, scl.y, scl.z };
+		return scale;
+	}
+
+	quat GetRotation_L() {
+		glm::quat rot = Application::GetWorld().GetComponent<TransformComponent>(Entity{ GetCurrentEntity_L().id }).rotation;
+		quat rotation = *reinterpret_cast<quat*>(&rot);
+		return rotation;
+	}
+
 }
 
 
@@ -41,14 +59,19 @@ void LocalEntityModule::OnRegisterModule(ModuleBindingProperties& props)
 	void SetTranslation_L(vec3 translation);
 	void SetScale_L(vec3 scale);
 	void SetRotation_L(quat rot);
-
+	vec3 GetTranslation_L();
+	vec3 GetScale_L();
+	quat GetRotation_L();
 	)");
 
 	props.Add_FFI_aliases({
 		{"GetCurrentEntity_L", "GetCurrentEntity"},
 		{"SetTranslation_L", "SetTranslation"},
 		{"SetScale_L", "SetScale"},
-		{"SetRotation_L", "SetRotation"}
+		{"SetRotation_L", "SetRotation"},
+		{"GetTranslation_L", "GetTranslation"},
+		{"GetScale_L", "GetScale"},
+		{"GetRotation_L", "GetRotation"}
 		});
 
 }

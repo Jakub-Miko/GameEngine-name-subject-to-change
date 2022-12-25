@@ -181,7 +181,7 @@ void World::SerializePrefab(Entity entity, const std::string& path)
 	EntityParseResult result;
 	PrefabComponent& prefab = GetComponent<PrefabComponent>(entity);
 
-	if (prefab.status != PrefabStatus::UNINITIALIZED) {
+	if (!prefab.GetFilePath().empty()) {
 		EntityTemplate ent_template = EntityManager::Get()->GetEntitySignature(prefab.GetFilePath());
 		result.construction_script = ent_template.construction_script;
 		result.inline_script = ent_template.inline_script;
