@@ -21,6 +21,11 @@ public:
         return default_descriptor_heap;
     }
 
+    template<typename T>
+    const T& GetPersistentResource(const std::string& name) const {
+        return deffered_pipeline->GetPersistentResource<T>(name);
+    }
+
 private:
     Renderer3D();
     static Renderer3D* instance;

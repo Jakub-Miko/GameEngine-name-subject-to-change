@@ -53,6 +53,27 @@ void RenderPassBuilder::AddPass(RenderPass* render_pass)
 			throw std::runtime_error("Invalid Resource Access");
 		}
 	}
+	std::unordered_set<std::string> persistent_names;
+
+	for (auto persistent_data : def.persistent_resources) {
+		auto check = persistent_names.find(persistent_data.resource_desc.resource_name);
+		if (check == persistent_names.end()) {
+			names.insert(persistent_data.resource_desc.resource_name);
+		}
+		else {
+			throw std::runtime_error("Duplicate persistent resource name " + persistent_data.resource_desc.resource_name);
+		}
+		auto fnd = persistent_resources.find(persistent_data.resource_desc.resource_name);
+		if (fnd != persistent_resources.end()) {
+			if (fnd->second.resource_desc.type_id != persistent_data.resource_desc.type_id) {
+				throw std::runtime_error("Type mismatch in resource " + persistent_data.resource_desc.resource_name);
+			}
+		}
+		else {
+			auto new_res = persistent_resources.insert(std::make_pair(persistent_data.resource_desc.resource_name, persistent_data));
+		}
+	}
+
 }
 
 RenderPipeline RenderPassBuilder::Build()
@@ -81,11 +102,15 @@ RenderPipeline RenderPassBuilder::Build()
 	}
 	
 	std::unordered_map<std::string, RenderPipeline::RenderPipelineResourceData_internal> resources;
+	std::unordered_map<std::string, RenderPipeline::RenderPipelineResourceData_internal> out_persistent_resources;
 	for (auto& resource_entry : resource_data) {
 		resources.insert(std::make_pair(resource_entry.first, RenderPipeline::RenderPipelineResourceData_internal{nullptr,  resource_entry.second.desc }));
 	}
+	for (auto& persistent_resource_entry : persistent_resources) {
+		out_persistent_resources.insert(std::make_pair(persistent_resource_entry.first, RenderPipeline::RenderPipelineResourceData_internal{ persistent_resource_entry.second.resource,  persistent_resource_entry.second.resource_desc }));
+	}
 
-	return RenderPipeline(std::move(render_pass_order), std::move(resources));
+	return RenderPipeline(std::move(render_pass_order), std::move(resources), std::move(out_persistent_resources));
 }
 
 void RenderPassBuilder::CompileDependencies()

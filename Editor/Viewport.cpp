@@ -4,6 +4,7 @@
 #include "imgui_internal.h"
 #include <World/Components/CameraComponent.h>
 #include <Renderer/Renderer.h>
+#include <Renderer/Renderer3D/Renderer3D.h>
 #include <Renderer/RenderResourceManager.h>
 #include <Application.h>
 #include <Editor/Editor.h>
@@ -57,6 +58,18 @@ Viewport::~Viewport()
 
 void Viewport::Render()
 {
+    if (entity_pick_request.IsValid() && entity_pick_request.IsAvailable()) {
+        read_pixel_data data = entity_pick_request.GetValue();
+        Entity select = Entity(std::get<unsigned int>(data));
+        if (Application::GetWorld().EntityIsValid(select)) {
+            Editor::Get()->SetSelectedEntity(select);
+            entity_pick_request = Future<read_pixel_data>();
+        }
+        else {
+            entity_pick_request = Future<read_pixel_data>();
+        }
+    }
+
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0,0 });
 
     ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
@@ -113,11 +126,17 @@ void Viewport::Render()
 
     ImGui::SetCursorPos((ImGui::GetWindowSize() + ImVec2{ 0,ImGui::GetCurrentWindow()->TitleBarHeight() } - ImVec2{ viewport_size.x,viewport_size.y }) * 0.5f); 
 
+    ImVec2 mid = ImGui::GetWindowSize() / 2;
     ImGui::Image(static_cast<ImTextureID>(viewport_frame_buffer->GetBufferDescriptor().color_attachments[0].get()), { viewport_size.x,viewport_size.y}, { 0,1 }, { 1,0 });
+    if (ImGui::IsItemClicked() && !(ImGuizmo::IsOver() || ImGuizmo::IsUsing())) {
+        ImVec2 mouse_pos = ImGui::GetMousePos() - ImGui::GetWindowPos() - ImVec2{ 0,ImGui::GetCurrentWindow()->TitleBarHeight() / 2 } - mid + ImVec2{ viewport_size.x,viewport_size.y } / 2;
+        mouse_pos /= ImVec2{ viewport_size.x,viewport_size.y };
+        glm::vec2 clamped_pos = glm::clamp(glm::vec2(mouse_pos.x, mouse_pos.y), glm::vec2(0.0f), glm::vec2(1.0f));
+        SelectEntityOnViewportPos(clamped_pos.x, clamped_pos.y);
+    }
 
     ImGuizmo::SetOrthographic(false);
     ImGuizmo::SetDrawlist();
-    ImVec2 mid = ImGui::GetWindowSize() / 2;
     ImVec2 pos = ImGui::GetWindowPos() + ImVec2{ 0,ImGui::GetCurrentWindow()->TitleBarHeight()/2 };
     ImGuizmo::SetRect(pos.x + mid.x - viewport_size.x/2, pos.y + mid.y - viewport_size.y/2, viewport_size.x, viewport_size.y);
 
@@ -174,6 +193,8 @@ void Viewport::Render()
 
     }
 
+
+
     ImGui::End();
 
     ImGui::PopStyleVar();
@@ -197,4 +218,11 @@ void Viewport::EndViewportFrameBuffer()
     auto list = Renderer::Get()->GetRenderCommandList();
     list->SetDefaultRenderTarget();
     queue->ExecuteRenderCommandList(list);
+}
+
+void Viewport::SelectEntityOnViewportPos(float x, float y)
+{
+    auto buffer = Renderer3D::Get()->GetPersistentResource<std::shared_ptr<RenderFrameBufferResource>>("G_Buffer");
+    auto index = Renderer3D::Get()->GetPersistentResource<int>("ID");
+    entity_pick_request = RenderResourceManager::Get()->GetPixelValue(buffer, index, x, y);
 }

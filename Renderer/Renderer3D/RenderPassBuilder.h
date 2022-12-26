@@ -31,6 +31,7 @@ private:
 	void TopologicalSortDFT(std::stack<size_t>& render_pass_dft_stack, size_t pass, std::vector<bool>& visited, std::vector<bool>& visited_cycle);
 
 	std::unordered_map<std::string, RenderPassBuilder_Resource_data> resource_data;
+	std::unordered_map<std::string, PersistentRenderPassResource> persistent_resources;
 	std::vector<RenderPassBuilder_RenderPass_data> render_passes;
 	std::vector<size_t> root_passes;
 };

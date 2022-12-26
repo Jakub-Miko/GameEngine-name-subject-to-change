@@ -60,10 +60,22 @@ void DefferedSkeletalGeometryPass::InitPostProcessingPassData() {
 	pipeline_desc.flags = PipelineFlags::ENABLE_DEPTH_TEST;
 	pipeline_desc.layout = VertexLayoutFactory<SkeletalGeometryPassPreset>::GetLayout();
 	pipeline_desc.polygon_render_mode = PrimitivePolygonRenderMode::DEFAULT;
+#ifdef EDITOR
+
+	//Use a shader with ids, for viewport picking in the editor.
+	pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/SkeletalGeometryPassShaderEditor.glsl");
+#else 
 	pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/SkeletalGeometryPassShader.glsl");
+#endif
+
 	data->pipeline = PipelineManager::Get()->CreatePipeline(pipeline_desc);
 
-	RenderBufferDescriptor const_desc(sizeof(glm::mat4)*2, RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
+#ifdef EDITOR
+	//we need to pass an extra entity id 
+	RenderBufferDescriptor const_desc(sizeof(glm::mat4) * 2 + sizeof(uint32_t), RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
+#else 
+	RenderBufferDescriptor const_desc(sizeof(glm::mat4) * 2, RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
+#endif
 	data->constant_scene_buf = RenderResourceManager::Get()->CreateBuffer(const_desc);
 
 	RenderBufferDescriptor const_bone_desc(sizeof(glm::mat4) * max_num_of_bones + sizeof(unsigned int), RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
@@ -124,6 +136,12 @@ void DefferedSkeletalGeometryPass::Render(RenderPipelineResourceManager& resourc
 		glm::mat4 mv_matrix = view_matrix * transform.TransformMatrix;
 		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, glm::value_ptr(mvp), sizeof(glm::mat4), 0);
 		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, glm::value_ptr(mv_matrix), sizeof(glm::mat4), sizeof(glm::mat4));
+
+#ifdef EDITOR
+		//Pass the extra entity id
+		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, (void*)&entity.id, sizeof(uint32_t), sizeof(glm::mat4) * 2);
+#endif
+
 		list->Draw(mesh.GetMesh()->GetIndexCount());
 
 

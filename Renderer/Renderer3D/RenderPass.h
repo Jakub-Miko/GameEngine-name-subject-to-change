@@ -3,6 +3,7 @@
 #include <string>
 #include <Core/RuntimeTag.h>
 #include <vector>
+#include <any>
 
 struct DependencyTag {
 	RUNTIME_TAG("DependencyTag");
@@ -18,6 +19,11 @@ struct RenderPassResourceDescriptor {
 	std::string resource_name;
 	RuntimeTagIdType type_id;
 	RenderPassResourceDescriptor_Access desc_access;
+};
+
+struct PersistentRenderPassResource {
+	std::any resource;
+	RenderPassResourceDescriptor resource_desc;
 };
 
 class RenderPassResourceDefinnition {
@@ -36,12 +42,22 @@ public:
 		descriptors.push_back(desc);
 	}
 
+	template<typename T>
+	void AddPersistentResource(const std::string& name, const T& resource) {
+		PersistentRenderPassResource persistent_data;
+		persistent_data.resource_desc.desc_access = RenderPassResourceDescriptor_Access::READ;
+		persistent_data.resource_desc.resource_name = name;
+		persistent_data.resource_desc.type_id = RuntimeTag<T>::GetId();
+		persistent_data.resource = resource;
+		persistent_resources.push_back(persistent_data);
+	}
+
 private:
 	friend class RenderPassBuilder;
 	friend class RenderPipeline;
 	friend class RenderPipelineResourceManager;
 	std::vector<RenderPassResourceDescriptor> descriptors;
-
+	std::vector< PersistentRenderPassResource> persistent_resources;
 };
 
 class RenderPass {

@@ -3,6 +3,12 @@
 #include "RenderResource.h"
 #include <Renderer/RenderDescriptorHeap.h>
 #include <Renderer/Renderer.h>
+#include <variant>
+#include <Promise.h>
+
+
+using read_pixel_data = typename std::template variant<glm::vec4, glm::vec3, glm::vec2, glm::uvec4, glm::uvec2, float, unsigned int, char>;
+
 
 class RenderResourceManager {
 public:
@@ -34,6 +40,7 @@ public:
 
 	virtual void CreateConstantBufferDescriptor(const RenderDescriptorTable& table, int index, std::shared_ptr<RenderBufferResource> resource) = 0;
 	virtual void CreateTexture2DDescriptor(const RenderDescriptorTable& table, int index, std::shared_ptr<RenderTexture2DResource> resource) = 0;
+	virtual Future<read_pixel_data> GetPixelValue(std::shared_ptr<RenderFrameBufferResource> framebuffer, int color_attachment_index, float x, float y) = 0;
 	virtual void CreateTexture2DArrayDescriptor(const RenderDescriptorTable& table, int index, std::shared_ptr<RenderTexture2DArrayResource> resource) = 0;
 	virtual void CreateTexture2DCubemapDescriptor(const RenderDescriptorTable& table, int index, std::shared_ptr<RenderTexture2DCubemapResource> resource) = 0;
 

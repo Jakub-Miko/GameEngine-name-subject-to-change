@@ -373,6 +373,62 @@ void OpenGLRenderResourceManager::CreateTexture2DDescriptor(const RenderDescript
 	desc->type = RootParameterType::TEXTURE_2D;
 }
 
+Future<read_pixel_data> OpenGLRenderResourceManager::GetPixelValue(std::shared_ptr<RenderFrameBufferResource> framebuffer, int color_attachment_index, float x, float y)
+{
+	if (framebuffer->GetBufferDescriptor().color_attachments.size() - 1 < color_attachment_index) throw std::runtime_error("Color attachment on a framebuffer doesn't exist");
+	if (framebuffer->GetBufferDescriptor().color_attachments[color_attachment_index]->GetResourceType() != RenderResourceType::RenderTexture2DResource)
+		throw std::runtime_error("Unsupported buffer attachment type")
+		;
+	std::shared_ptr<Promise<read_pixel_data>> data = std::make_shared<Promise<read_pixel_data>>();
+	Future<read_pixel_data> future = data->GetFuture();
+	std::shared_ptr<RenderTexture2DResource> texture = std::dynamic_pointer_cast<RenderTexture2DResource>(framebuffer->GetBufferDescriptor().color_attachments[color_attachment_index]);
+	int x_int = x * texture->GetBufferDescriptor().width;
+	int y_int = (1-y) * texture->GetBufferDescriptor().height;
+	OpenGLRenderCommandQueue* queue = static_cast<OpenGLRenderCommandQueue*>(Renderer::Get()->GetCommandQueue());
+	queue->ExecuteCustomCommand(new ExecutableCommandAdapter([data, x_int, y_int, texture, color_attachment_index, framebuffer]() {
+		int buffer = 0;
+		int this_buffer = std::dynamic_pointer_cast<OpenGLRenderFrameBufferResource>(framebuffer)->GetRenderId();
+		glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &buffer);
+		if (this_buffer != buffer) {
+			glBindFramebuffer(GL_FRAMEBUFFER, this_buffer);
+		}
+		switch (texture->GetBufferDescriptor().format)
+		{
+		case TextureFormat::RGBA_32FLOAT:
+		{
+			glm::vec4 value; //This is just fucked, what am i even doing, i just realized this is a suicide attempt.
+			glReadBuffer(GL_COLOR_ATTACHMENT0 + color_attachment_index);
+			glReadPixels(x_int, y_int, 1, 1, OpenGLUnitConverter::TextureFormatToGLFormat(texture->GetBufferDescriptor().format), OpenGLUnitConverter::TextureFormatToGLDataType(texture->GetBufferDescriptor().format), glm::value_ptr(value));
+			data->SetValue(read_pixel_data(value));
+			break;
+		}
+		case TextureFormat::RGB_32FLOAT:
+		{
+			glm::vec3 value;
+			glReadBuffer(GL_COLOR_ATTACHMENT0 + color_attachment_index);
+			glReadPixels(x_int, y_int, 1, 1, OpenGLUnitConverter::TextureFormatToGLFormat(texture->GetBufferDescriptor().format), OpenGLUnitConverter::TextureFormatToGLDataType(texture->GetBufferDescriptor().format), glm::value_ptr(value));
+			data->SetValue(read_pixel_data(value));
+			break;
+		}
+		case TextureFormat::R_UNSIGNED_INT:
+		{
+			unsigned int value;
+			glReadBuffer(GL_COLOR_ATTACHMENT0 + color_attachment_index);
+			glReadPixels(x_int, y_int, 1, 1, OpenGLUnitConverter::TextureFormatToGLFormat(texture->GetBufferDescriptor().format), OpenGLUnitConverter::TextureFormatToGLDataType(texture->GetBufferDescriptor().format), &value);
+			data->SetValue(read_pixel_data(value));
+			break;
+		}
+		default:
+			throw std::runtime_error("GetPixelValue currently doesn't support this data type");
+		}
+		if (this_buffer != buffer) {
+			glBindFramebuffer(GL_FRAMEBUFFER, buffer);
+		}
+		}));
+
+	return future;
+}
+
 void OpenGLRenderResourceManager::CreateTexture2DArrayDescriptor(const RenderDescriptorTable& table, int index, std::shared_ptr<RenderTexture2DArrayResource> resource)
 {
 	OpenGLRenderDescriptorAllocation* gl_table = static_cast<OpenGLRenderDescriptorAllocation*>(table.get());

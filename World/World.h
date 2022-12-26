@@ -119,6 +119,8 @@ public:
 
 	void ResetEntityPrefab(Entity ent, const std::string& prefab_path);
 
+	bool EntityIsValid(Entity ent);
+
 	template<typename T>
 	auto RegisterComponentType() -> std::enable_if_t<!has_ComponentInitProxy_v<T>> {
 		m_ECS.storage<T>();

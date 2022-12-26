@@ -66,6 +66,11 @@ public:
 	}
 
 	template<typename T>
+	const T& GetPersistentResource(const std::string& name) const {
+		return pipeline->GetPersistentResource<T>(name);
+	}
+
+	template<typename T>
 	auto SetResource(const std::string& name, T&& resource) -> std::enable_if_t<!std::is_reference_v<T>,void> {
 		auto& desc_list = current_pass->def.descriptors;
 		typename decltype(current_pass->def.descriptors)::iterator fnd = std::find_if(desc_list.begin(), desc_list.end(), [&name](const RenderPassResourceDescriptor& descriptor) {
@@ -101,6 +106,28 @@ public:
 
 	void Render();
 
+	template<typename T>
+	const T& GetPersistentResource(const std::string& name) const {
+		auto fnd = persistent_resources.find(name);
+
+		if (fnd != persistent_resources.end()) {
+			if (fnd->second.desc.type_id != RuntimeTag<T>::GetId()) {
+				throw std::runtime_error("Type mismatch when getting resource " + fnd->second.desc.resource_name);
+			}
+			try {
+				return *std::any_cast<T>(&((fnd->second).data));
+			}
+			catch (const std::bad_any_cast&) {
+				throw std::runtime_error("Type mismatch when getting resource " + fnd->second.desc.resource_name);
+			}
+		}
+		else {
+			throw std::runtime_error("Persistent Resource " + name + " doesn't exist");
+		}
+
+
+	}
+
 private:
 	friend class RenderPipelineResourceManager;
 	friend class RenderPassBuilder;
@@ -108,8 +135,10 @@ private:
 		std::any data;
 		RenderPassResourceDescriptor desc;
 	};
-	RenderPipeline(std::vector<RenderPassData>&& render_passes, std::unordered_map<std::string, RenderPipelineResourceData_internal>&& resources);
+	RenderPipeline::RenderPipeline(std::vector<RenderPassData>&& render_passes, std::unordered_map<std::string, RenderPipelineResourceData_internal>&& resources,
+		std::unordered_map<std::string, RenderPipelineResourceData_internal>&& persistent_resources);
 	std::unordered_map<std::string, RenderPipelineResourceData_internal> resources;
+	std::unordered_map<std::string, RenderPipelineResourceData_internal> persistent_resources;
 	std::vector<RenderPassData> passes;
 
 };

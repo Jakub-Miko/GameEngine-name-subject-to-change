@@ -52,6 +52,7 @@ public:
 		case TextureFormat::DEPTH24_STENCIL8_UNSIGNED_CHAR:	return GL_DEPTH24_STENCIL8;
 		case TextureFormat::RGB_32FLOAT:					return GL_RGBA32F;
 		case TextureFormat::RGBA_32FLOAT:					return GL_RGBA32F;
+		case TextureFormat::R_UNSIGNED_INT:					return GL_R32UI;
 		default:
 			throw std::runtime_error("Conversion failed");
 		}
@@ -85,6 +86,7 @@ public:
 		case TextureFormat::DEPTH24_STENCIL8_UNSIGNED_CHAR:	return GL_DEPTH_STENCIL;
 		case TextureFormat::RGB_32FLOAT:					return GL_RGB;
 		case TextureFormat::RGBA_32FLOAT:					return GL_RGBA;
+		case TextureFormat::R_UNSIGNED_INT:					return GL_RED_INTEGER;
 		default:
 			throw std::runtime_error("Conversion failed");
 		}
@@ -97,6 +99,7 @@ public:
 		case TextureFormat::DEPTH24_STENCIL8_UNSIGNED_CHAR:	return GL_UNSIGNED_INT_24_8;
 		case TextureFormat::RGB_32FLOAT:					return GL_FLOAT;
 		case TextureFormat::RGBA_32FLOAT:					return GL_FLOAT;
+		case TextureFormat::R_UNSIGNED_INT:					return GL_UNSIGNED_INT;
 		default:
 			throw std::runtime_error("Conversion failed");
 		}
@@ -109,6 +112,7 @@ public:
 		case TextureFormat::DEPTH24_STENCIL8_UNSIGNED_CHAR:	return 4*sizeof(unsigned char);
 		case TextureFormat::RGB_32FLOAT:					return 3*sizeof(float);
 		case TextureFormat::RGBA_32FLOAT:					return 4*sizeof(float);
+		case TextureFormat::R_UNSIGNED_INT:					return sizeof(uint32_t);
 		default:
 			throw std::runtime_error("Conversion failed");
 		}

@@ -117,6 +117,11 @@ void World::ResetEntityPrefab(Entity ent, const std::string& prefab_path)
 	RemoveEntity(ent, RemoveEntityAction::CHANGE_PREFAB);
 }
 
+bool World::EntityIsValid(Entity ent)
+{
+	return m_ECS.valid((entt::entity)ent.id);
+}
+
 void World::SetEntityScaleSync(Entity ent, const glm::vec3& scale)
 {
 	std::lock_guard<std::mutex> lock(SyncPool<TransformComponent>());
