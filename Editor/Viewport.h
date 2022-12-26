@@ -5,6 +5,13 @@ enum class ViewportGizmoMode : char {
 	TRANSLATION = 0, SCALE = 1, ROTATION = 2
 };
 
+enum class ViewportGizmoSpace : char {
+	WORLD = 0, LOCAL = 1
+};
+
+enum class ViewportSelectMode : char {
+	PREFABS = 0, PREFAB_CHILDREN = 1
+};
 
 class Viewport {
 public:
@@ -24,7 +31,15 @@ public:
 	void SetGizmoMode(ViewportGizmoMode in_gizmo_mode) {
 		gizmo_mode = in_gizmo_mode;
 	}
+
+	void SetGizmoSpace(ViewportGizmoSpace in_gizmo_space) {
+		gizmo_space = in_gizmo_space;
+	}
 	
+	ViewportGizmoSpace GetGizmoSpace() const {
+		return gizmo_space;
+	}
+
 	void SelectEntityOnViewportPos(float x, float y);
 
 private:
@@ -33,5 +48,7 @@ private:
 	int viewport_resolution_x, viewport_resolution_y;
 	glm::vec2 viewport_size;
 	ViewportGizmoMode gizmo_mode = ViewportGizmoMode::TRANSLATION;
+	ViewportGizmoSpace gizmo_space = ViewportGizmoSpace::LOCAL;
+	ViewportSelectMode select_mode = ViewportSelectMode::PREFABS;
 
 };

@@ -10,7 +10,7 @@ class World;
 class Octree;
 
 enum class SceneNodeState : char {
-	DIRTY = 1, PREFAB = 2, DIRTY_TRANSFORM = 4
+	DIRTY = 1, PREFAB = 2, DIRTY_TRANSFORM = 4, PREFAB_CHILD = 8
 };
 
 inline SceneNodeState operator|(const SceneNodeState& first, const SceneNodeState& second) {

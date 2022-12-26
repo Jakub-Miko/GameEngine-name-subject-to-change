@@ -58,17 +58,22 @@ void PrefabChildEntityType::CreateEntity(World& world, Entity entity, Entity par
 	if (include_transform) {
 		world.SetComponent<TransformComponent>(entity);
 	}
+
 	auto scene_graph = Application::GetWorld().GetSceneGraph();
+	SceneNode* node = nullptr;
 	if (world.HasComponentSynced<PrefabComponent>(parent)) {
-		Application::GetWorld().GetSceneGraph()->AddEntityToPrefabRoot(entity, scene_graph->GetSceneGraphNode(parent));
+		node = Application::GetWorld().GetSceneGraph()->AddEntityToPrefabRoot(entity, scene_graph->GetSceneGraphNode(parent));
 	}
 	else {
-		Application::GetWorld().GetSceneGraph()->AddEntity(entity, scene_graph->GetSceneGraphNode(parent));
+		node = Application::GetWorld().GetSceneGraph()->AddEntity(entity, scene_graph->GetSceneGraphNode(parent));
 	}
-	
+	if (!node) throw std::runtime_error("Prefab Child SceneNode could not be created");
+	node->state = node->state | SceneNodeState::PREFAB_CHILD;
 }
 
 void PrefabChildEntityType::CreateEntity(World& world, Entity entity, Entity parent, const glm::vec3& translation, const glm::vec3& scale, const glm::vec3& rotation_axis, float rotation_angle)
 {
-	world.SetComponent<TransformComponent>(entity,TransformComponent(translation, scale, rotation_axis, rotation_angle));
+	//world.SetComponent<TransformComponent>(entity,TransformComponent(translation, scale, rotation_axis, rotation_angle));
+	
+	throw std::runtime_error("Not Implemented");
 }

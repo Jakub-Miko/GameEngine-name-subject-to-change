@@ -27,7 +27,7 @@ private:
 };
 
 enum class ShowPropertyFlags {
-	NONE = 0, HIDE_PREFABS = 1
+	NONE = 0, HIDE_PREFABS = 1, IS_PREFAB_CHILD = 2
 };
 
 struct PropertiesPanel_persistent_data {
@@ -69,7 +69,7 @@ private:
 		panel_entries.clear();
 	}
 
-	static void AddComponent(Entity entity, const PropertiesPanel_persistent_data& data);
+	static void AddComponent(Entity entity, const PropertiesPanel_persistent_data& data, bool show_prefabs);
 
 	char* text_buffer = nullptr;
 	char* prefab_path_buffer = nullptr;

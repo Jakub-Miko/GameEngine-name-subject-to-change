@@ -7,6 +7,7 @@
 #include <Application.h>
 #include <imgui.h>
 #include <Window.h>
+#include <Input/Input.h>
 
 SceneGraphViewer::SceneGraphViewer()
 {
@@ -26,7 +27,7 @@ static void RenderNode(SceneNode* node) {
 	else {
 		name = std::to_string(node->entity.id);
 	}
-	
+
 	auto node_flags = node->first_child == nullptr ? ImGuiTreeNodeFlags_Leaf : 0;
 	node_flags |= ImGuiTreeNodeFlags_SpanFullWidth;
 	node_flags |= Editor::Get()->GetSelectedEntity() == node->entity ? ImGuiTreeNodeFlags_Selected : 0;
@@ -51,10 +52,14 @@ static void RenderNode(SceneNode* node) {
 void SceneGraphViewer::Render()
 {
 	auto scene_garph = Application::GetWorld().GetSceneGraph();
-
 	 
 	ImGui::SetNextWindowSizeConstraints({ (float)Application::Get()->GetWindow()->GetProperties().resolution_x / 6.0f,0 }, { 10000,10000 });
 	ImGui::Begin("SceneGraph");
+
+	if (ImGui::IsWindowFocused() && Input::Get()->IsKeyPressed_Editor(KeyCode::KEY_DELETE) && Application::GetWorld().EntityExists(Editor::Get()->GetSelectedEntity())) {
+		Application::GetWorld().RemoveEntity(Editor::Get()->GetSelectedEntity());
+		Editor::Get()->SetSelectedEntity(Entity());
+	}
 
 	if (ImGui::Button("Create Empty Entity")) {
 		Entity ent = Application::GetWorld().CreateEntity(Editor::Get()->GetSelectedEntity());

@@ -22,7 +22,6 @@ public:
 #endif // EDITOR
 		return IsKeyPressed_impl(key_code);
 	}
-
 	bool IsMouseButtonPressed(MouseButtonCode key_code) {
 #ifdef EDITOR
 		if (!Editor::Get()->IsViewportFocused()) return false;
@@ -38,6 +37,20 @@ public:
 #endif // EDITOR
 		return GetMoutePosition_impl();
 	}
+
+#ifdef EDITOR
+	bool IsKeyPressed_Editor(KeyCode key_code) {
+		return IsKeyPressed_impl(key_code);
+	}
+	bool IsMouseButtonPressed_Editor(MouseButtonCode key_code) {
+		return IsMouseButtonPressed_impl(key_code);
+	}
+
+	glm::vec2 GetMoutePosition_Editor() {
+		return GetMoutePosition_impl();
+	}
+#endif
+
 
 
 private:

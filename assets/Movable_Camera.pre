@@ -6,23 +6,12 @@
 }
 
 @EndSection
-@Section:Root
-@Entity 
+@Section:Root@Entity 
 {
 "Components": {"TransformComponent":{"props":{"mode":0},"rotation":{"w":0.592252254486084,"x":-0.09380356967449188,"y":0.7904211282730103,"z":0.12519042193889618},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":28.837013244628906,"y":12.914884567260742,"z":21.72262191772461}}},
 "Children": ["local#Camera_1048593"]
 }
 @Entity:Inline_Script
-
-
-
-
-
-
-
-
-
-
 
 function OnStart()
 
@@ -57,7 +46,7 @@ function OnUpdate(delta_time)
 	end
 
 	norm_scree_pos = GetMousePosition()
-	offset = vec2({ x = 1.0, y =0.0 })
+	offset = vec2({ x = 0.0, y =0.0 })
 	
 	norm_scree_pos = offset + norm_scree_pos;
 	
@@ -76,6 +65,7 @@ function OnUpdate(delta_time)
 
 
 end
+
 
 
 

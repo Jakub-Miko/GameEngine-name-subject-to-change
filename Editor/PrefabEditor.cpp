@@ -9,6 +9,7 @@
 #include <Application.h>
 #include <World/Components/PrefabComponent.h>
 #include <World/World.h>
+#include <Input/Input.h>
 
 PrefabEditor::PrefabEditor() : open_windows()
 {
@@ -74,6 +75,11 @@ void PrefabEditor::PrefabSceneGraph(PrefabEditorWindow& window)
 			ent = Application::GetWorld().CreateEntity<PrefabChildEntityType>(window.entity, true);
 		}
 		window.selected_entity = ent;
+	}
+
+	if (ImGui::IsWindowFocused() && Input::Get()->IsKeyPressed_Editor(KeyCode::KEY_DELETE) && Application::GetWorld().EntityExists(window.selected_entity)) {
+		Application::GetWorld().RemoveEntity(window.selected_entity);
+		window.selected_entity = Entity();
 	}
 
 	if (ImGui::Button("Delete Entity") && window.selected_entity != Entity()) {
@@ -156,7 +162,7 @@ void PrefabEditor::PrefabPropertiesPanel(PrefabEditorWindow& window)
 	data.mesh_file_buffer = window.mesh_path;
 	data.material_file_buffer = window.material_path;
 	data.buffer_size = window.buffer_size;
-	data.show_flags = ShowPropertyFlags::HIDE_PREFABS;
+	data.show_flags = ShowPropertyFlags((char)ShowPropertyFlags::HIDE_PREFABS | (char)ShowPropertyFlags::IS_PREFAB_CHILD);
 	if (window.selected_entity != window.last_entity) {
 		window.mesh_path[0] = '\0';
 		window.material_path[0] = '\0';

@@ -77,7 +77,15 @@ void PropertiesPanel::RenderProperties(Entity entity, const PropertiesPanel_pers
 {
 	Entity selected = entity;
 	World& world = Application::GetWorld();
-	
+	bool show_prefabs = true;
+	if (selected == Entity()) {
+		return;
+	}
+	if (!(int)((char)data.show_flags & (char)ShowPropertyFlags::IS_PREFAB_CHILD) && (int)(Application::GetWorld().GetSceneGraph()->GetSceneGraphNode(selected)->state & SceneNodeState::PREFAB_CHILD)) {
+		show_prefabs = false;
+	}
+
+
 	char* text_buffer = data.mesh_file_buffer;
 	char* material_file_buffer = data.material_file_buffer;
 	int buffer_size = data.buffer_size;
@@ -115,12 +123,8 @@ void PropertiesPanel::RenderProperties(Entity entity, const PropertiesPanel_pers
 		ImGui::EndPopup();
 	}
 	int material_error_id = ImGui::GetID("Error##material");
-
-	if (selected == Entity()) {
-		return;
-	}
 	bool is_prefab = world.HasComponent<PrefabComponent>(selected);
-	AddComponent(selected, data);
+	AddComponent(selected, data, show_prefabs);
 	bool is_camera = world.HasComponent<CameraComponent>(selected);
 
 	if (ImGui::TreeNode("Label")) {
@@ -341,7 +345,7 @@ void PropertiesPanel::RenderProperties(Entity entity, const PropertiesPanel_pers
 
 }
 
-void PropertiesPanel::AddComponent(Entity entity,const PropertiesPanel_persistent_data& data)
+void PropertiesPanel::AddComponent(Entity entity,const PropertiesPanel_persistent_data& data, bool show_prefabs)
 {
 	auto& world = Application::GetWorld();
 
@@ -401,7 +405,7 @@ void PropertiesPanel::AddComponent(Entity entity,const PropertiesPanel_persisten
 			ImGui::EndDisabled();
 		}
 
-		if (!((char)data.show_flags & (char)ShowPropertyFlags::HIDE_PREFABS)) {
+		if (!((char)data.show_flags & (char)ShowPropertyFlags::HIDE_PREFABS) && show_prefabs) {
 			bool has_prefab = world.HasComponent<PrefabComponent>(entity);
 			if (has_prefab) {
 				ImGui::BeginDisabled();

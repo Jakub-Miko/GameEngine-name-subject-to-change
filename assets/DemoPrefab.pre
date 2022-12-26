@@ -47,6 +47,7 @@
 
 
 
+
 function OnStart() 
 	PlayAnimation("Skeleton","asset:default_dance_vampire_animations/DanceMoves.anim")
 	PlaySound("Audio","asset:test_track_mono.wav")
@@ -54,9 +55,9 @@ function OnStart()
 end
 
 function OnUpdate(delta_time) 
-SetChildTranslation("Mesh",vec3(0.0,-2.0,0.0))
-SetChildTranslation("Mesh2",vec3(3.0,2.0,5.0))
+
 end
+
 
 
 

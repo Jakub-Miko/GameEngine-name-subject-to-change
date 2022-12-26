@@ -10,6 +10,7 @@
 #include <Editor/Editor.h>
 #include <Application.h>
 #include <ImGuizmo.h>
+#include <Input/Input.h>
 #include <World/World.h>
 #include <Window.h>
 
@@ -58,11 +59,25 @@ Viewport::~Viewport()
 
 void Viewport::Render()
 {
+
+
     if (entity_pick_request.IsValid() && entity_pick_request.IsAvailable()) {
         read_pixel_data data = entity_pick_request.GetValue();
         Entity select = Entity(std::get<unsigned int>(data));
         if (Application::GetWorld().EntityIsValid(select)) {
-            Editor::Get()->SetSelectedEntity(select);
+            SceneNode* node = Application::GetWorld().GetSceneGraph()->GetSceneGraphNode(select);
+            if ((int)(node->state & SceneNodeState::PREFAB_CHILD) && select_mode != ViewportSelectMode::PREFAB_CHILDREN) {
+                SceneNode* parent_node = node;
+                while (!(int)(parent_node->state & SceneNodeState::PREFAB) && parent_node->parent != nullptr)
+                {
+                    parent_node = parent_node->parent;
+                }
+                if (!parent_node) throw std::runtime_error("Could not Find the Prefab Parent node of a Prefab Child");
+                Editor::Get()->SetSelectedEntity(parent_node->entity);
+            }
+            else {
+                Editor::Get()->SetSelectedEntity(select);
+            }
             entity_pick_request = Future<read_pixel_data>();
         }
         else {
@@ -74,6 +89,10 @@ void Viewport::Render()
 
     ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
     ImGui::SetWindowSize(ImVec2{ viewport_size.x,viewport_size.y + ImGui::GetCurrentWindow()->TitleBarHeight() });
+    if (ImGui::IsWindowFocused() && Input::Get()->IsKeyPressed_Editor(KeyCode::KEY_DELETE) && Application::GetWorld().EntityExists(Editor::Get()->GetSelectedEntity())) {
+        Application::GetWorld().RemoveEntity(Editor::Get()->GetSelectedEntity());
+        Editor::Get()->SetSelectedEntity(Entity());
+    }
 
     Editor::Get()->is_viewport_focused = ImGui::IsWindowFocused();
 
@@ -124,6 +143,53 @@ void Viewport::Render()
     }
     gizmo_mode = mode;
 
+    ViewportGizmoSpace space = gizmo_space;
+    if (gizmo_space ==ViewportGizmoSpace::LOCAL) {
+        ImGui::BeginDisabled();
+    }
+    if (ImGui::Button("Local")) {
+        space = ViewportGizmoSpace::LOCAL;
+    }
+    if (gizmo_space == ViewportGizmoSpace::LOCAL) {
+        ImGui::EndDisabled();
+    }
+    ImGui::SameLine();
+    if (gizmo_space == ViewportGizmoSpace::WORLD) {
+        ImGui::BeginDisabled();
+    }
+    if (ImGui::Button("World")) {
+        space = ViewportGizmoSpace::WORLD;
+    }
+    if (gizmo_space == ViewportGizmoSpace::WORLD) {
+        ImGui::EndDisabled();
+    }
+    gizmo_space = space;
+
+
+    ViewportSelectMode sel_md = select_mode;
+    if (select_mode == ViewportSelectMode::PREFABS) {
+        ImGui::BeginDisabled();
+    }
+    if (ImGui::Button("Prefabs")) {
+        sel_md = ViewportSelectMode::PREFABS;
+    }
+    if (select_mode == ViewportSelectMode::PREFABS) {
+        ImGui::EndDisabled();
+    }
+    ImGui::SameLine();
+    if (select_mode == ViewportSelectMode::PREFAB_CHILDREN) {
+        ImGui::BeginDisabled();
+    }
+    if (ImGui::Button("Prefab Children")) {
+        sel_md = ViewportSelectMode::PREFAB_CHILDREN;
+    }
+    if (select_mode == ViewportSelectMode::PREFAB_CHILDREN) {
+        ImGui::EndDisabled();
+    }
+    select_mode = sel_md;
+
+
+
     ImGui::SetCursorPos((ImGui::GetWindowSize() + ImVec2{ 0,ImGui::GetCurrentWindow()->TitleBarHeight() } - ImVec2{ viewport_size.x,viewport_size.y }) * 0.5f); 
 
     ImVec2 mid = ImGui::GetWindowSize() / 2;
@@ -165,30 +231,44 @@ void Viewport::Render()
             break;
         }
 
+        ImGuizmo::MODE md = ImGuizmo::MODE::LOCAL;
+        switch (gizmo_space)
+        {
+        case ViewportGizmoSpace::LOCAL:
+            md = ImGuizmo::LOCAL;
+            break;
+        case ViewportGizmoSpace::WORLD:
+            md = ImGuizmo::WORLD;
+            break;
+        }
 
-        ImGuizmo::Manipulate(glm::value_ptr(camera_transform), glm::value_ptr(projection), op, ImGuizmo::MODE::LOCAL, glm::value_ptr(transform),glm::value_ptr(delta));
-        
-        if (ImGuizmo::IsUsing()) {
-            glm::mat3 rot = delta;
-            glm::vec3 scale = glm::vec3(glm::length(rot[0]), glm::length(rot[1]), glm::length(rot[2]));
-            rot[0] = rot[0] / scale.x;
-            rot[1] = rot[1] / scale.y;
-            rot[2] = rot[2] / scale.z;
-            glm::quat rot_quat = glm::toQuat(rot);
+        if (Editor::Get()->IsEditorEnabled()) {
 
-            switch (gizmo_mode)
-            {
-            case ViewportGizmoMode::TRANSLATION:
-                Application::GetWorld().SetEntityTranslation(selected, transform_comp.translation + glm::vec3(delta[3]));
-                break;
-            case ViewportGizmoMode::SCALE:
-                Application::GetWorld().SetEntityScale(selected, transform_comp.size * scale);
-                break;
-            case ViewportGizmoMode::ROTATION:
-                Application::GetWorld().SetEntityRotation(selected, rot_quat * transform_comp.rotation);
-                break;
+            ImGuizmo::Manipulate(glm::value_ptr(camera_transform), glm::value_ptr(projection), op, md, glm::value_ptr(transform), glm::value_ptr(delta));
+
+            if (ImGuizmo::IsUsing()) {
+                glm::mat3 rot = delta;
+                glm::vec3 scale = glm::vec3(glm::length(rot[0]), glm::length(rot[1]), glm::length(rot[2]));
+                glm::vec3 trans_scale = glm::vec3(glm::length(transform[0]), glm::length(transform[1]), glm::length(transform[2])) / transform_comp.size;
+                rot[0] = rot[0] / scale.x;
+                rot[1] = rot[1] / scale.y;
+                rot[2] = rot[2] / scale.z;
+                glm::quat rot_quat = glm::toQuat(rot);
+
+                switch (gizmo_mode)
+                {
+                case ViewportGizmoMode::TRANSLATION:
+                    Application::GetWorld().SetEntityTranslation(selected, transform_comp.translation + glm::vec3(delta[3])/ trans_scale);
+                    break;
+                case ViewportGizmoMode::SCALE:
+                    Application::GetWorld().SetEntityScale(selected, transform_comp.size * scale);
+                    break;
+                case ViewportGizmoMode::ROTATION:
+                    Application::GetWorld().SetEntityRotation(selected, rot_quat * transform_comp.rotation);
+                    break;
+                }
+
             }
-
         }
 
     }
