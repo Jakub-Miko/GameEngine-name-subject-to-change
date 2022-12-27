@@ -57,6 +57,7 @@ void GameLayer::PreUpdate(float delta_time)
 
 void GameLayer::OnUpdate(float delta_time) { 
     World& world = Application::GetWorld();
+    world.UpdateSceneScript(delta_time);
     InitializationSystem(world);
     ScriptSystemUpdate(world, delta_time);
     world.SetPrimaryEntitySystem();

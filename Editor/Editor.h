@@ -97,11 +97,12 @@ public:
 
 	void Refresh();
 
-
 	static Editor* Get();
 private:
 	
 	static void DropCallback(int count, std::vector<std::string> files);
+
+	void SceneScriptOptions();
 
 	std::vector<std::string> drop_callback_strings;
 	bool are_files_dropped = false;

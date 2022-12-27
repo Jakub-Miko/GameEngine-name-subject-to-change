@@ -14,6 +14,8 @@
 #include <World/SceneProxy.h>
 #include <memory>
 #include <utility>
+#include <LuaEngine.h>
+#include <LuaEngineUtilities.h>
 
 class EntityType;
 class World;
@@ -96,6 +98,8 @@ public:
 	World& operator=(World&& ref) = delete;
 
 	void UpdateTransformMatricies();
+
+	void UpdateSceneScript(float delta_time);
 
 	void SetEntityTranslation(Entity ent, const glm::vec3& translation);
 
@@ -267,8 +271,17 @@ public:
 
 	void CheckCamera();
 
+	bool HasSceneScript() const {
+		return has_script;
+	}
+
 private:
 	friend class GameLayer;
+#ifdef EDITOR
+	friend class Editor;
+#endif
+	void BindLuaFunctions();
+	void ResetLuaEngine();
 
 	template<typename T, auto func>
 	void ConstructComponent(entt::registry& reg, entt::entity ent) {
@@ -308,6 +321,9 @@ private:
 	Entity set_primary_entity = Entity();
 	Entity primary_entity = Entity();
 	Entity default_camera = Entity();
+
+	LuaEngine scene_lua_engine;
+	bool has_script = false;
 
 	std::shared_ptr<SceneProxy> current_scene = nullptr;
 	std::shared_ptr<SceneProxy> load_scene = nullptr;

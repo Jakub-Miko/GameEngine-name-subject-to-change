@@ -1,6 +1,7 @@
 #include "World.h"
 #include <Events/MeshChangedEvent.h>
 #include <FileManager.h>
+#include <Events/KeyCodes.h>
 #include <Core/Extensions/EntitySerializationECSAdapter.h>
 #include <Renderer/TextureManager.h>
 #include <Renderer/MeshManager.h>
@@ -8,6 +9,10 @@
 #include <GameStateMachine.h>
 #include <World/EntityManager.h>
 #include <World/ComponentTypes.h>
+#include <World/ScriptModules/DefferedPropertySetModule.h>
+#include <World/ScriptModules/IOModule.h>
+#include <World/ScriptModules/ApplicationDataModule.h>
+#include <World/ScriptModules/TimeModule.h>
 #ifdef EDITOR
 #include <Editor/Editor.h>
 #endif
@@ -18,8 +23,9 @@ void World::Init()
 	m_SpatialIndex.Init(SpatialIndexProperties());
 }
 
-World::World() : m_ECS(), m_SceneGraph(this), load_scene(std::make_shared<SceneProxy>()), deletion_queue(), deletion_mutex(), m_SpatialIndex(), m_PhysicsEngine(PhysicsEngineProps())
+World::World() : m_ECS(), m_SceneGraph(this), load_scene(std::make_shared<SceneProxy>()), deletion_queue(), deletion_mutex(), m_SpatialIndex(), m_PhysicsEngine(PhysicsEngineProps()), scene_lua_engine()
 {
+	BindLuaFunctions();
 	RegisterComponents(Component_Types());
 	//if((uint32_t)(m_ECS.create())!=0) throw std::runtime_error("A null Entity could not be reserved");
 }
@@ -32,6 +38,13 @@ World::~World()
 void World::UpdateTransformMatricies()
 {
 	m_SceneGraph.CalculateMatricies();
+}
+
+void World::UpdateSceneScript(float delta_time)
+{
+	if (has_script) {
+		scene_lua_engine.TryCall<void>(nullptr,"OnUpdate", delta_time);
+	}
 }
 
 void World::SetEntityTranslation(Entity ent, const glm::vec3& translation)
@@ -257,6 +270,30 @@ void World::CheckCamera()
 	}
 }
 
+void World::BindLuaFunctions()
+{
+
+	scene_lua_engine.RunString(ScriptKeyBindings);
+	scene_lua_engine.InitFFI();
+
+	ModuleBindingProperties props;
+
+	DefferedPropertySetModule().RegisterModule(props);
+	IOModule().RegisterModule(props);
+	ApplicationDataModule().RegisterModule(props);
+	TimeModule().RegisterModule(props);
+
+	scene_lua_engine.RegisterModule(props);
+
+
+}
+
+void World::ResetLuaEngine()
+{
+	scene_lua_engine = LuaEngine();
+	BindLuaFunctions();
+}
+
 void World::SerializePrefabChild(Entity child, std::vector<std::pair<std::string, std::string>>& file_structure)
 {
 	EntityParseResult result;
@@ -311,13 +348,31 @@ void World::LoadSceneSystem()
 		AnimationManager::Get()->ClearAnimationCache(); 
 		EntityManager::Get()->ClearPrefabCache();
 
-		std::ifstream file(load_scene->scene_path);
-		if (!file.is_open()) {
-			throw std::runtime_error("File could not be opened: " + load_scene->scene_path);
+		ResetLuaEngine();
+
+		SectionList sections;
+		std::string file = FileManager::Get()->OpenFileRaw(load_scene->scene_path, &sections);
+		std::string script = "";
+		if (sections.find("Script") != sections.end()) {
+			script = FileManager::Get()->GetFileSectionFromString(file, "Script");
+			has_script = true;
+			scene_lua_engine.RunString(script);
 		}
-		nlohmann::json json;
-		file >> json;
-		file.close();
+		else {
+			has_script = false;
+		}
+		if (sections.size() != 0) {
+			file = FileManager::Get()->GetFileSection(FileManager::Get()->GetPath(load_scene->scene_path), "Root");
+		}
+
+
+		nlohmann::json json = nlohmann::json::parse(file);
+
+		Entity primary;
+		if (json.find("primary_entity") != json.end()) {
+			primary = json["primary_entity"].get<Entity>();
+		}
+
 
 		RegisterComponents(Component_Types());
 
@@ -328,8 +383,8 @@ void World::LoadSceneSystem()
 
 		m_SceneGraph.Deserialize(json);
 
-		SetPrimaryEntity(load_scene->primary_entity);
-		if (load_scene->primary_entity != Entity()) {
+		SetPrimaryEntity(primary);
+		if (primary != Entity()) {
 			if (!HasComponent<CameraComponent>(set_primary_entity)) {
 				CheckCamera();
 			}
@@ -512,7 +567,7 @@ void World::LoadSceneFromFile(const std::string& file_path)
 
 void World::LoadEmptyScene()
 {
-	load_scene = std::make_shared<SceneProxy>("engine_asset:EmptyScene.json"_path);
+	load_scene = std::make_shared<SceneProxy>("engine_asset:EmptyScene.json");
 }
 
 void World::SaveScene(const std::string& file_path)
@@ -529,17 +584,30 @@ void World::SaveScene(const std::string& file_path)
 	nlohmann::json json;
 	json["Entities"] = archive.AsJson();
 
+
 	m_SceneGraph.Serialize(json);
 
 	if (primary_entity != Entity() && HasComponent<SerializableComponent>(primary_entity)) {
 		json["primary_entity"] = primary_entity;
 	}
 
+	std::string script = "";
+
+	if (has_script) {
+		script = FileManager::Get()->GetFileSection(FileManager::Get()->GetPath(GetCurrentSceneProxy().scene_path), "Script");
+	}
 	std::ofstream file(file_path,std::ios_base::trunc);
 	if (!file.is_open()) {
 		throw std::runtime_error("File could not be opened: " + file_path);
 	}
+	file << "@Section:Root\n";
 	file << json;
+	file << "\n@EndSection\n";
+	if (!script.empty()) {
+		file << "\n@Section:Script\n";
+		file << script;
+		file << "\n@EndSection\n";
+	}
 
 
 	file.close();

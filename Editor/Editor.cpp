@@ -146,6 +146,9 @@ void Editor::Run()
 			if (ImGui::MenuItem("Load Scene")) {
 				ImGui::OpenPopup(load_id);
 			};
+
+			SceneScriptOptions();
+
 			if (ImGui::MenuItem("Empty Scene")) {
 				Application::GetWorld().LoadEmptyScene();
 			};
@@ -243,7 +246,7 @@ void Editor::Run()
 				}
 
 				if (enter_pressed || ImGui::Button("Load")) {
-					Application::GetWorld().LoadSceneFromFile(FileManager::Get()->GetPath(file_dialog_text_buffer));
+					Application::GetWorld().LoadSceneFromFile(file_dialog_text_buffer);
 					ImGui::CloseCurrentPopup();
 					file_dialog_text_buffer[0] = '\0';
 				}
@@ -441,6 +444,40 @@ void Editor::DropCallback(int count, std::vector<std::string> files)
 {
 	Editor::Get()->drop_callback_strings = files;
 	Editor::Get()->are_files_dropped = true;
+}
+
+void Editor::SceneScriptOptions()
+{
+	auto& world = Application::GetWorld();
+	bool has_script = world.HasSceneScript();
+	const SceneProxy& scene = world.GetCurrentSceneProxy();
+	std::string temp_path = FileManager::Get()->GetTempFilePath(FileManager::Get()->GetPathHash(scene.scene_path) + ".lua");
+	bool temp_file_exist = std::filesystem::exists(temp_path);
+	if (ImGui::MenuItem(has_script ? "Edit scene script" : "Create scene script")) {
+		std::ofstream file(temp_path);
+		if (!file.is_open()) throw std::runtime_error("File " + temp_path + " doesn't exist");
+		if (has_script) {
+			file << FileManager::Get()->GetFileSection(FileManager::Get()->GetPath(scene.scene_path),"Script");
+		}
+		else {
+			file << "function OnUpdate(delta_time) \n\nend\n";
+		}
+		file.close();
+		Application::Get()->GetOsApi()->OpenFileInDefaultApp(temp_path);
+	}
+	if (temp_file_exist && ImGui::MenuItem("Apply scene script")) {
+		std::string scene_string = FileManager::Get()->OpenFileRaw(scene.scene_path);
+		std::string new_script = FileManager::Get()->OpenFileRaw(FileManager::Get()->GetRelativeFilePath(temp_path));
+		FileManager::Get()->InsertOrReplaceSection(scene_string, new_script, "Script");
+		std::ofstream file(FileManager::Get()->GetPath(scene.scene_path));
+		if (!file.is_open()) throw std::runtime_error("File " + FileManager::Get()->GetPath(scene.scene_path) + " doesn't exist");
+		file << scene_string;
+		file.close();
+		Application::GetWorld().ResetLuaEngine();
+		Application::GetWorld().scene_lua_engine.RunString(new_script);
+	}
+
+
 }
 
 Editor::Editor() : viewport(new Viewport), scene_graph(new SceneGraphViewer), properties_panel(new PropertiesPanel), explorer(new FileExplorer), prefab_editor(new PrefabEditor), material_editor(new MaterialEditor), error_messages()
