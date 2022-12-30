@@ -8,7 +8,6 @@
 
 void OpenGLSetVertexBufferCommand::Execute()
 {
-	PROFILE("Set Vertex Buffer");
 	OpenGLRenderBufferResource* gl_buffer = static_cast<OpenGLRenderBufferResource*>(buffer.get());
 	if (buffer->GetBufferDescriptor().usage != RenderBufferUsage::VERTEX_BUFFER) {
 		throw std::runtime_error("The Buffer must be initialized as an vertex buffer");

@@ -5,13 +5,11 @@
 
 void OpenGLSetRenderTargetCommand::Execute()
 {
-	PROFILE("SetRenderTarget");
 	glBindFramebuffer(GL_FRAMEBUFFER, static_cast<OpenGLRenderFrameBufferResource*>(framebuffer.get())->GetRenderId());
 }
 
 void OpenGLSetDefaultRenderTargetCommand::Execute()
 {
-	PROFILE("SetDefaultFramebuffer");
 	if (frame_buffer) {
 		glBindFramebuffer(GL_FRAMEBUFFER, static_cast<OpenGLRenderFrameBufferResource*>(frame_buffer.get())->GetRenderId());
 	}

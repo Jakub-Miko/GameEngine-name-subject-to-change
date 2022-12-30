@@ -235,6 +235,16 @@ void Octree::VisualizeBoxes()
 	auto& cam = Application::GetWorld().GetComponent<CameraComponent>(ent);
 	auto& trans = Application::GetWorld().GetComponent<TransformComponent>(ent);
 
+	for (auto ent : entity_list) {
+		auto& bounding_var = BoundingVolumeComponent::GetBoundingVolume(ent);
+		auto& transform = Application::GetWorld().GetComponent<TransformComponent>(ent);
+		if (std::holds_alternative<BoundingBox>(bounding_var)) {
+			BoundingBox box = std::get<BoundingBox>(bounding_var);
+			Render_Box(box.GetAdjustedBox(transform.TransformMatrix), glm::mat4(1), cam, trans.TransformMatrix, PrimitivePolygonRenderMode::WIREFRAME, glm::vec3(1, 0, 0));
+		}
+		
+	}
+
 #ifdef EDITOR
 	if (Editor::Get()->GetSelectedEntity() != Entity() && Application::GetWorld().GetSceneGraph()->GetSceneGraphNode(Editor::Get()->GetSelectedEntity())->spatial_index_node == this) {
 		Render_Box(node_box, glm::mat4(1), cam, trans.TransformMatrix, PrimitivePolygonRenderMode::WIREFRAME, glm::vec3(0.3f,1.0f,0.3f));

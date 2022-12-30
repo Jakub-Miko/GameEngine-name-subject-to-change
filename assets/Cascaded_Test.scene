@@ -1,0 +1,21 @@
+@Section:Root
+{"Entities":[[8,1048591,{"props":{"mode":0},"rotation":{"w":0.7168824076652527,"x":-0.26803141832351685,"y":0.6028545498847961,"z":0.22539804875850677},"size":{"x":1000.0,"y":1000.0,"z":1000.0},"translation":{"x":19.350000381469727,"y":17.07334327697754,"z":3.3688547611236572}},12,{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":-35.82147216796875,"y":6.630000114440918,"z":-113.38846588134766}},6,{"props":{"mode":0},"rotation":{"w":0.8862237930297852,"x":0.06209868937730789,"y":0.4418550133705139,"z":0.12455065548419952},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":15.839475631713867,"y":0.0,"z":-33.20000076293945}},5,{"props":{"mode":0},"rotation":{"w":0.9213449954986572,"x":-0.035757094621658325,"y":-0.37905511260032654,"z":-0.0784669890999794},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":-9.687994956970215,"y":0.09000000357627869,"z":-20.82071304321289}},4,{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":0.0,"y":0.0,"z":-4.179999828338623}},3,{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":71.0,"y":1.0,"z":203.0},"translation":{"x":0.0,"y":-0.9599999785423279,"z":0.0}},1,{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":0.28999999165534973,"y":6.610000133514404,"z":12.079999923706055}},13,{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":-3.4600000381469727,"y":1.7899999618530273,"z":5.860000133514404}}],[0],[0],[8,1048591,{"label":"Directional"},12,{"label":"Physics Cube"},6,{"label":"SubAsset2"},5,{"label":"SubAsset"},4,{"label":"Mesh"},3,{"label":"Ground"},1,{"label":"Camera"},13,{"label":"Falling Pillar"}],[6,12,{"path":"assets/Box.mesh"},6,{"material_path":"assets/Material/MaterialGeometry.mat","path":"assets/Pillar_with_uvs.mesh"},5,{"material_path":"assets/Material/MaterialGeometry.mat","path":"assets/Pillar_with_uvs.mesh"},4,{"material_path":"assets/Material/MaterialGeometry.mat","path":"assets/Pillar_with_uvs.mesh"},3,{"material_path":"assets/GroundMat.mat","path":"assets/Box.mesh"},13,{"path":"assets/Pillar_with_uvs.mesh"}],[1,1,{"aspect_ratio":1.7777777910232544,"fov":45.0,"zFar":200.0,"zNear":0.10000000149011612}],[1,1048591,{"attenuation":{"x":1.0,"y":0.10000000149011612,"z":0.05000000074505806},"color":{"w":1.0,"x":1.0,"y":1.0,"z":1.0},"type":0}],[1,1048591,{"far_plane":500.0,"near_plane":0.10000000149011612,"res_x":800,"res_y":800}],[3,12,{"is_kinematic":false,"mass":1.0,"object_type":0,"shape_type":0},3,{"is_kinematic":true,"mass":0.0,"object_type":0,"shape_type":0},13,{"is_kinematic":false,"mass":1.0,"object_type":0,"shape_type":0}],[0],[0]],"SceneGraph":[{"id":1048591},{"id":12},{"children":[{"id":6},{"id":5}],"id":4},{"id":3},{"id":1},{"id":13}],"primary_entity":{"id":1}}
+@EndSection
+
+@Section:Script
+function OnUpdate(delta_time) 
+
+end
+
+
+
+
+
+
+
+
+
+
+
+
+@EndSection

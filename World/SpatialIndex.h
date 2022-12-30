@@ -8,7 +8,7 @@
 class World;
 
 struct SpatialIndexProperties {
-	BoundingBox world_box = BoundingBox(glm::vec3(100, 100, 100), glm::vec3(0, 0, 0));
+	BoundingBox world_box = BoundingBox(glm::vec3(10000, 10000, 10000), glm::vec3(0, 0, 0));
 	int max_entities_pre_node = 1;
 	int max_depth = 20;
 };

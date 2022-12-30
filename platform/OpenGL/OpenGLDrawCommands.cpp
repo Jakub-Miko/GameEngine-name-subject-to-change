@@ -10,7 +10,6 @@ void OpenGLImplicitDrawCommand::Execute()
 {
 	
 	{
-		PROFILE("Set Vertex Buffer");
 		OpenGLRenderBufferResource* gl_buffer = static_cast<OpenGLRenderBufferResource*>(vertex_buffer.get());
 		if (vertex_buffer->GetBufferDescriptor().usage != RenderBufferUsage::VERTEX_BUFFER) {
 			throw std::runtime_error("The Buffer must be initialized as an vertex buffer");
@@ -53,10 +52,6 @@ void OpenGLImplicitDrawCommand::Execute()
 	}
 	
 	
-	{
-		PROFILE("DrawCall bind index");
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, static_cast<OpenGLRenderBufferResource*>(index_buffer.get())->GetRenderId()); 
-	}
-	PROFILE("DrawCall draw");
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, static_cast<OpenGLRenderBufferResource*>(index_buffer.get())->GetRenderId()); 
 	glDrawElements(GL_TRIANGLES, index_count, use_unsined_short_as_index ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, (void*)index_offset);
 }

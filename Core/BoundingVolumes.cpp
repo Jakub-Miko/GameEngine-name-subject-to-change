@@ -241,15 +241,15 @@ bool BoundingBox::OverlapBoxPlane_internal(const glm::mat4& transform, const Pla
 
 BoundingBox BoundingBox::GetAdjustedBox(const glm::mat4& matrix) const
 {
-	glm::mat3 rotation_scale = matrix;
+	glm::mat3 rotation_scale = glm::transpose(matrix);
 	glm::vec3 translation = glm::vec3(matrix[3]);
 	BoundingBox box_adjusted(glm::vec3(0.0f), translation);
 	for (int x = 0; x < 3; x++) {
 		for (int y = 0; y < 3; y++) {
 			float a = rotation_scale[x][y] * box_min[y];
 			float b = rotation_scale[x][y] * box_max[y];
-			box_adjusted.box_min[y] += a < b ? a : b;
-			box_adjusted.box_max[y] += a < b ? b : a;
+			box_adjusted.box_min[x] += a < b ? a : b;
+			box_adjusted.box_max[x] += a < b ? b : a;
 		}
 	}
 	return box_adjusted;

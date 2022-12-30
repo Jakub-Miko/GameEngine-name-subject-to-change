@@ -11,10 +11,6 @@
 
 void OpenGLSetPipelineCommand::Execute()
 {
-	
-	PROFILE("Set Pipeline");
-
-
 	OpenGLRenderCommandQueue* queue = static_cast<OpenGLRenderCommandQueue*>(Renderer::Get()->GetCommandQueue());
 	const PipelineState& current_state = queue->GetPipelineState();
 	auto shader_ref = current_state.GetShader();

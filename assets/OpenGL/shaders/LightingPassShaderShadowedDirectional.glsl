@@ -16,19 +16,19 @@
 			"material_visible" : true,
 			"ranges" : [
 				{
-					"size" : 4,
+					"size" : 3,
 					"name" : "Textures",
 					"type" : "texture_2D",
 					"individual_names" : [
-						"Color", "Normal", "DepthBuffer", "ShadowMap"
+						"Color", "Normal", "DepthBuffer"
 					]
 				}, 
 				{
 					"size" : 1,
-					"name" : "Cubemaps",
-					"type" : "texture_2D_cubemap",
+					"name" : "Arrays",
+					"type" : "texture_2D_array",
 					"individual_names" : [
-						"ShadowCubeMap"
+						"ShadowMapArray"
 					]
 				}
 			]
@@ -50,14 +50,6 @@
 					{
 						"name" : "pixel_size",
 						"type" : "VEC2"
-					},
-					{
-						"name": "light_far_plane",
-						"type" : "FLOAT"
-					},
-					{
-						"name" : "light_type",
-						"type" : "INT"
 					}
 				]
 			}
@@ -84,16 +76,6 @@
 					"z" : 0.01,
 					"w" : 0.0
 				}
-			},
-			{
-				"name": "light_far_plane",
-				"type" : "SCALAR",
-				"value" : 1.0
-			},
-			{
-				"name": "light_type",
-				"type" : "INT",
-				"value" : 1
 			}
 		]
 	}
@@ -111,18 +93,19 @@ layout(location = 3) in vec2 uv;
 uniform conf{
 	mat4 mvp_matrix;
 	mat4 view_model_matrix;
-	mat4 light_matrix;
 	mat4 inverse_projection;
+	mat4 light_matrix_cascades[15];
 	float depth_constant_a;
 	float depth_constant_b;
+	float camera_near_plane;
+	float camera_far_plane;
+	int cascade_count;
 };
 
 uniform light_props{
 	vec4 Light_Color;
 	vec4 attenuation_constants;
 	vec2 pixel_size;
-	float light_far_plane;
-	int light_type;
 };
 
 out vec3 light_volume_pos;
@@ -130,18 +113,10 @@ out vec3 light_pos;
 out vec3 light_direction_in;
 
 void main() {
-	if (light_type == 0) {
-		gl_Position = vec4(position, 1.0);
-		light_volume_pos = vec3(inverse_projection * vec4(position.xy,-1.0, 1.0));
-		light_pos = vec3(view_model_matrix[3]);
-		light_direction_in = normalize(mat3(view_model_matrix) * vec3(0.0, 0.0, -1.0));
-	}
-	else {
-		gl_Position = mvp_matrix * vec4(position, 1.0);
-		light_volume_pos = vec3(view_model_matrix * vec4(position, 1.0));
-		light_pos = vec3(view_model_matrix[3]);
-		light_direction_in = normalize(mat3(view_model_matrix) * vec3(0.0, 0.0, -1.0));
-	}
+	gl_Position = vec4(position, 1.0);
+	light_volume_pos = vec3(inverse_projection * vec4(position.xy,-1.0, 1.0));
+	light_pos = vec3(view_model_matrix[3]);
+	light_direction_in = normalize(mat3(view_model_matrix) * vec3(0.0, 0.0, -1.0));
 	 
 }
 
@@ -155,24 +130,25 @@ layout(location = 0) out vec4 color_out;
 uniform sampler2D Color;
 uniform sampler2D Normal;
 uniform sampler2D DepthBuffer;
-uniform sampler2D ShadowMap;
-uniform samplerCube ShadowCubeMap;
+uniform sampler2DArray ShadowMapArray;
+
 
 uniform conf {
 	mat4 mvp_matrix;
 	mat4 view_model_matrix;
-	mat4 light_matrix;
 	mat4 inverse_projection;
+	mat4 light_matrix_cascades[15];
 	float depth_constant_a;
 	float depth_constant_b;
+	float camera_near_plane;
+	float camera_far_plane;
+	int cascade_count;
 };
 
 uniform light_props{
 	vec4 Light_Color;
 	vec4 attenuation_constants;
 	vec2 pixel_size;
-	float light_far_plane;
-	int light_type;
 };
 
 in vec3 light_volume_pos;
@@ -181,37 +157,26 @@ in vec3 light_direction_in;
 
 
 float calculate_shadows(vec3 view_space_pos) {
-	if (light_type == 0) {
-		vec4 light_space_pos = light_matrix * vec4(view_space_pos,1.0);
-		vec3 light_space_coords = light_space_pos.xyz / light_space_pos.w;
-		light_space_coords = light_space_coords * 0.5 + 0.5;
-		float shadow_map_depth = texture(ShadowMap, light_space_coords.xy).x;
-		float current_depth = light_space_coords.z;
-		if (current_depth - 0.0005 < shadow_map_depth || shadow_map_depth > 0.99)
-		{
-			return 1.0;
-		}
-		else {
-			return 0.0;
-		}
+	float depth = abs(view_space_pos.z);
+	depth -= camera_near_plane;
+	depth /= camera_far_plane - camera_near_plane;
+	depth *= float(cascade_count);
+	int cascade = int(floor(depth));
 
+	vec4 light_space_pos = light_matrix_cascades[cascade] * vec4(view_space_pos,1.0);
+	vec3 light_space_coords = light_space_pos.xyz / light_space_pos.w;
+	light_space_coords = light_space_coords * 0.5 + 0.5;
+	vec3 shadow_coords = vec3(light_space_coords.xy, cascade);
+	float shadow_map_depth = texture(ShadowMapArray, shadow_coords).x;
+	float current_depth = light_space_coords.z;
+	if (current_depth - 0.0005 < shadow_map_depth || shadow_map_depth > 0.99)
+	{
+		return 1.0;
 	}
-	else if (light_type == 1) {
-		vec4 light_space_pos = light_matrix * vec4(view_space_pos, 1.0);
-		vec3 light_space_coords = normalize(light_space_pos.xyz);
-		float shadow_map = texture(ShadowCubeMap, light_space_coords).x;
-		float shadow_map_depth = shadow_map * light_far_plane;
-		float current_depth = length(light_space_pos);
-		if (current_depth - 0.3 < shadow_map_depth || shadow_map > 0.99)
-		{
-			return 1.0;
-		}
-		else {
-			return 0.0;
-		}
+	else {
+		return 0.0;
 	}
 
-	return 1.0;
 }
 
 vec3 GetFragmentPosition(vec3 coordinates) {
@@ -227,22 +192,13 @@ void main() {
 	vec3 coords = vec3((gl_FragCoord.x * pixel_size.x), (gl_FragCoord.y * pixel_size.y), 0.0);
 	vec3 view_space_pos = GetFragmentPosition(coords);
 	vec3 light_direction;
-	if (light_type == 0) {
-		light_direction = light_direction_in;
-	}
-	else {
-		light_direction = -normalize(light_pos - view_space_pos);
-	}
-
+	light_direction = light_direction_in;
+	
 
 	vec4 color = vec4(texture(Color, coords.xy).xyz, 1.0);
 	vec3 normal = texture(Normal, coords.xy).xyz;
 	float attenuation_factor = 1;
 
-	if (light_type == 1) {
-		float distance = length(light_pos - view_space_pos);
-		attenuation_factor = 1.0 / (attenuation_constants.x + (attenuation_constants.y * distance) + attenuation_constants.z * (distance * distance));
-	}
 	float shadows = calculate_shadows(view_space_pos);
 	color_out = vec4(shadows * color.xyz * Light_Color.xyz * attenuation_factor * Light_Color.w * (0.1 + max(0, dot(normal, -light_direction))),1.0);
 }
