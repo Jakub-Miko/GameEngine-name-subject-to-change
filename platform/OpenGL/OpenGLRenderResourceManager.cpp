@@ -92,6 +92,10 @@ std::shared_ptr<RenderTexture2DResource> OpenGLRenderResourceManager::CreateText
 			glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(sampler.border_color));
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, OpenGLUnitConverter::TextureFilterToGLMinFilter(sampler.filter));
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, OpenGLUnitConverter::TextureFilterToGLMagFilter(sampler.filter));
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, OpenGLUnitConverter::DepthComparisonModeToGLCompareMode(sampler.comparison_mode));
+			if (sampler.comparison_mode != DepthComparisonMode::DISABLED) {
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, OpenGLUnitConverter::DepthComparisonModeToGLCompareFunc(sampler.comparison_mode));
+			}
 
 
 			glBindTexture(GL_TEXTURE_2D, 0);
@@ -190,6 +194,10 @@ std::shared_ptr<RenderTexture2DArrayResource> OpenGLRenderResourceManager::Creat
 			glTexParameterfv(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(sampler.border_color));
 			glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, OpenGLUnitConverter::TextureFilterToGLMinFilter(sampler.filter));
 			glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, OpenGLUnitConverter::TextureFilterToGLMagFilter(sampler.filter));
+			glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_COMPARE_MODE, OpenGLUnitConverter::DepthComparisonModeToGLCompareMode(sampler.comparison_mode));
+			if (sampler.comparison_mode != DepthComparisonMode::DISABLED) {
+				glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_COMPARE_FUNC, OpenGLUnitConverter::DepthComparisonModeToGLCompareFunc(sampler.comparison_mode));
+			}
 
 
 			glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
@@ -326,8 +334,10 @@ std::shared_ptr<RenderTexture2DCubemapResource> OpenGLRenderResourceManager::Cre
 			glTexParameterfv(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(sampler.border_color));
 			glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, OpenGLUnitConverter::TextureFilterToGLMinFilter(sampler.filter));
 			glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, OpenGLUnitConverter::TextureFilterToGLMagFilter(sampler.filter));
-
-
+			glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_COMPARE_MODE, OpenGLUnitConverter::DepthComparisonModeToGLCompareMode(sampler.comparison_mode));
+			if (sampler.comparison_mode != DepthComparisonMode::DISABLED) {
+				glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_COMPARE_FUNC, OpenGLUnitConverter::DepthComparisonModeToGLCompareFunc(sampler.comparison_mode));
+			}
 			glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 
 			static_cast<OpenGLRenderTexture2DCubemapResource*>(ptr.get())->SetRenderId(texture);

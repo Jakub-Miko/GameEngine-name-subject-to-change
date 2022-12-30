@@ -111,6 +111,10 @@ enum class TextureFilter : unsigned char {
 	POINT_MIN_MAG = 0, LINEAR_MIN_MAG = 1, POINT_MIN_MAG_MIP = 2, POINT_MIN_MAG_LINEAR_MIP = 3, LINEAR_MIN_MAG_MIP = 4 , LINEAR_MIN_MAG_POINT_MIP = 5, ANISOTROPIC = 6
 };
 
+enum class DepthComparisonMode : char {
+	DISABLED = 0, NEVER = 1, LESS = 2, EQUAL = 3, LESS_EQUAL = 4, GREATER = 5, NOT_EQUAL = 6, GREATER_EQUAL = 7, ALWAYS = 8
+};
+
 enum class RenderQueueTypes : unsigned char
 {
     DirectQueue = 0, ComputeQueue = 1, CopyQueue = 2

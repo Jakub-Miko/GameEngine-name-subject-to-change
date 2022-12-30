@@ -330,17 +330,18 @@ void ShadowMappingPass::InitShadowMappingPassData()
 	data->pipeline_point = PipelineManager::Get()->CreatePipeline(pipeline_desc);
 
 	TextureSamplerDescritor sample_desc;
-	sample_desc.AddressMode_U = TextureAddressMode::BORDER;
-	sample_desc.AddressMode_V = TextureAddressMode::BORDER;
-	sample_desc.AddressMode_W = TextureAddressMode::BORDER;
-	sample_desc.border_color = glm::vec4(1.0);
-	sample_desc.filter = TextureFilter::LINEAR_MIN_MAG;
-
-	data->depth_sampler_directional = TextureSampler::CreateSampler(sample_desc);
 	sample_desc.AddressMode_U = TextureAddressMode::CLAMP;
 	sample_desc.AddressMode_V = TextureAddressMode::CLAMP;
 	sample_desc.AddressMode_W = TextureAddressMode::CLAMP;
+	sample_desc.border_color = glm::vec4(1.0);
+	sample_desc.filter = TextureFilter::LINEAR_MIN_MAG;
+	sample_desc.comparison_mode = DepthComparisonMode::LESS;
 	data->depth_sampler_point = TextureSampler::CreateSampler(sample_desc);
+
+	sample_desc.AddressMode_U = TextureAddressMode::BORDER;
+	sample_desc.AddressMode_V = TextureAddressMode::BORDER;
+	sample_desc.AddressMode_W = TextureAddressMode::BORDER;
+	data->depth_sampler_directional = TextureSampler::CreateSampler(sample_desc);
 		
 	RenderBufferDescriptor desc(sizeof(glm::mat4) * (HARD_CODE_CASCADES +1), RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
 	data->const_buffer_directional = RenderResourceManager::Get()->CreateBuffer(desc);

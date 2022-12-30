@@ -130,7 +130,7 @@ layout(location = 0) out vec4 color_out;
 uniform sampler2D Color;
 uniform sampler2D Normal;
 uniform sampler2D DepthBuffer;
-uniform sampler2DArray ShadowMapArray;
+uniform sampler2DArrayShadow ShadowMapArray;
 
 
 uniform conf {
@@ -166,17 +166,10 @@ float calculate_shadows(vec3 view_space_pos) {
 	vec4 light_space_pos = light_matrix_cascades[cascade] * vec4(view_space_pos,1.0);
 	vec3 light_space_coords = light_space_pos.xyz / light_space_pos.w;
 	light_space_coords = light_space_coords * 0.5 + 0.5;
-	vec3 shadow_coords = vec3(light_space_coords.xy, cascade);
-	float shadow_map_depth = texture(ShadowMapArray, shadow_coords).x;
 	float current_depth = light_space_coords.z;
-	if (current_depth - 0.0005 < shadow_map_depth || shadow_map_depth > 0.99)
-	{
-		return 1.0;
-	}
-	else {
-		return 0.0;
-	}
-
+	vec4 shadow_coords = vec4(light_space_coords.xy, cascade, current_depth - 0.0005);
+	float shadow_map_depth = texture(ShadowMapArray, shadow_coords);
+	return shadow_map_depth;
 }
 
 vec3 GetFragmentPosition(vec3 coordinates) {

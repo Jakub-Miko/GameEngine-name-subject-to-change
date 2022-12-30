@@ -58,6 +58,38 @@ public:
 		}
 	}
 
+	static GLenum DepthComparisonModeToGLCompareFunc(DepthComparisonMode mode) {
+		switch (mode) {
+		case DepthComparisonMode::ALWAYS:					return GL_ALWAYS;
+		case DepthComparisonMode::EQUAL:					return GL_EQUAL;
+		case DepthComparisonMode::GREATER:				return GL_GREATER;
+		case DepthComparisonMode::GREATER_EQUAL:			return GL_GEQUAL;
+		case DepthComparisonMode::LESS:					return GL_LESS;
+		case DepthComparisonMode::LESS_EQUAL:				return GL_LEQUAL;
+		case DepthComparisonMode::NEVER:					return GL_NEVER;
+		case DepthComparisonMode::NOT_EQUAL:				return GL_NOTEQUAL;
+		case DepthComparisonMode::DISABLED:					return GL_NEVER;
+		default:
+			throw std::runtime_error("Conversion failed");
+		}
+	}
+
+	static GLenum DepthComparisonModeToGLCompareMode(DepthComparisonMode mode) {
+		switch (mode) {
+		case DepthComparisonMode::ALWAYS:					return GL_COMPARE_REF_TO_TEXTURE;
+		case DepthComparisonMode::EQUAL:					return GL_COMPARE_REF_TO_TEXTURE;
+		case DepthComparisonMode::GREATER:					return GL_COMPARE_REF_TO_TEXTURE;
+		case DepthComparisonMode::GREATER_EQUAL:			return GL_COMPARE_REF_TO_TEXTURE;
+		case DepthComparisonMode::LESS:						return GL_COMPARE_REF_TO_TEXTURE;
+		case DepthComparisonMode::LESS_EQUAL:				return GL_COMPARE_REF_TO_TEXTURE;
+		case DepthComparisonMode::NEVER:					return GL_COMPARE_REF_TO_TEXTURE;
+		case DepthComparisonMode::NOT_EQUAL:				return GL_COMPARE_REF_TO_TEXTURE;
+		case DepthComparisonMode::DISABLED:					return GL_NONE;
+		default:
+			throw std::runtime_error("Conversion failed");
+		}
+	}
+
 	static GLenum BlendEquationTOGLenum(BlendEquation type) {
 		switch (type) {
 		case BlendEquation::ADD:				return GL_FUNC_ADD;
