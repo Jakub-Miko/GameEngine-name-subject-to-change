@@ -86,7 +86,7 @@ void Editor::Run()
 	if (enabled) {
 
 		//ImGui::ShowDemoWindow();
-
+		
 		auto save_id = ImGui::GetID("Save Dialog");
 		auto load_id = ImGui::GetID("Load Dialog");
 		auto mat_id = ImGui::GetID("Empty Material Dialog");

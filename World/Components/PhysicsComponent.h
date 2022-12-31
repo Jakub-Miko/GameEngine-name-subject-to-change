@@ -19,6 +19,7 @@ public:
 
 	static void OnDestroy(World& world, Entity entity);
 
+	static constexpr bool can_copy = true;
 
 };
 
@@ -36,6 +37,39 @@ enum class PhysicsObjectState : char {
 struct PhysicsComponent {
 	RUNTIME_TAG("PhysicsComponent");
 	PhysicsComponent() {}
+
+	PhysicsComponent(const PhysicsComponent& other) : mass(other.mass), object_type(other.object_type), shape_type(other.shape_type), is_kinematic(other.is_kinematic), state(PhysicsObjectState::UNINITIALIZED) {}
+	PhysicsComponent(PhysicsComponent&& other) noexcept : mass(other.mass), object_type(other.object_type), shape_type(other.shape_type), is_kinematic(other.is_kinematic), state(other.state), physics_shape(other.physics_shape), physics_object(other.physics_object) 
+	{
+		other.physics_object = nullptr;
+		other.physics_shape = nullptr;
+		other.state = PhysicsObjectState::UNINITIALIZED;
+	}
+
+	PhysicsComponent& operator=(PhysicsComponent&& other) noexcept
+	{
+		mass = other.mass; 
+		object_type = other.object_type;
+		shape_type = other.shape_type;
+		is_kinematic = other.is_kinematic;
+		state = other.state;
+		physics_shape = other.physics_shape; 
+		physics_object = other.physics_object;
+		other.physics_object = nullptr;
+		other.physics_shape = nullptr;
+		other.state = PhysicsObjectState::UNINITIALIZED;
+		return *this;
+	}
+
+	PhysicsComponent& operator=(const PhysicsComponent& other)
+	{
+		mass = other.mass;
+		object_type = other.object_type;
+		shape_type = other.shape_type;
+		is_kinematic = other.is_kinematic;
+		state = PhysicsObjectState::UNINITIALIZED;
+		return *this;
+	}
 
 	float mass = 0.0f;
 	PhysicsObjectType object_type = PhysicsObjectType::RIGID_BODY;

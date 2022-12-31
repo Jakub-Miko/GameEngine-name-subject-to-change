@@ -67,6 +67,10 @@ void SceneGraphViewer::Render()
 		Editor::Get()->SetSelectedEntity(ent);
 	}
 
+	if (ImGui::Button("Duplicate Entity")) {
+		Editor::Get()->SetSelectedEntity(Application::GetWorld().DuplicateEntity(Editor::Get()->GetSelectedEntity()));
+	}
+
 	if (ImGui::Button("Delete Entity") && Editor::Get()->GetSelectedEntity() != Entity()) {
 		Application::GetWorld().RemoveEntity(Editor::Get()->GetSelectedEntity());
 		Editor::Get()->SetSelectedEntity(Entity());

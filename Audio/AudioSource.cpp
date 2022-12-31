@@ -54,7 +54,7 @@ void AudioSource::SetVelocity(const glm::vec3& velocity)
 	alSourcefv(source_id, AL_VELOCITY, glm::value_ptr(velocity));
 }
 
-glm::vec3 AudioSource::GetSourcePosition(const glm::vec3& position)
+glm::vec3 AudioSource::GetSourcePosition()
 {
 	glm::vec3 pos;
 	alGetSourcefv(source_id, AL_POSITION, glm::value_ptr(pos));

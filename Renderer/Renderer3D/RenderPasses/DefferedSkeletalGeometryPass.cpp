@@ -119,6 +119,7 @@ void DefferedSkeletalGeometryPass::Render(RenderPipelineResourceManager& resourc
 	auto default_mat = data->pipeline->GetShader()->GetDefaultMaterial();
 	for(auto& entity : geometry.resources) {
 		auto& mesh = world.GetComponent<SkeletalMeshComponent>(entity);
+		world.UpdateSkeletalMesh(entity);
 		auto& transform = world.GetComponent<TransformComponent>(entity);
 
 		if (mesh.material == nullptr) {

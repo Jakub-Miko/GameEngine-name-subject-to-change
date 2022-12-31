@@ -398,7 +398,6 @@ public:
             ev.x = 5;
             ev.y = 8;
             Application::Get()->SendObservedEvent(&ev);
-            
            /* skeletal_ent = Application::GetWorld().CreateEntity();
             Application::GetWorld().SetEntitySkeletalMesh(skeletal_ent,"asset:dancing_vampire.skel"_path, "asset:dancing_vampire_animations/default.anim"_path);
             Application::GetWorld().SetComponent< SerializableComponent>(skeletal_ent);
@@ -418,11 +417,9 @@ public:
 
 
 
-
             stop = false;
 
         }
-
 
         //RenderPassBuilder builder;
         //builder.AddPass(new TestPass2);

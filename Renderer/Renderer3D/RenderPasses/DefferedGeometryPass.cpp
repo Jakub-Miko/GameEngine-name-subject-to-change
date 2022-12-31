@@ -106,6 +106,7 @@ void DefferedGeometryPass::Render(RenderPipelineResourceManager& resource_manage
 	auto default_mat = data->pipeline->GetShader()->GetDefaultMaterial();
 	for(auto& entity : geometry.resources) {
 		auto& mesh = world.GetComponent<MeshComponent>(entity);
+		world.UpdateMesh(entity);
 		auto& transform = world.GetComponent<TransformComponent>(entity);
 
 		if (mesh.material == nullptr) {

@@ -14,7 +14,11 @@ public:
 
 	virtual bool IsKeyPressed_impl(KeyCode key_code) = 0;
 	virtual bool IsMouseButtonPressed_impl(MouseButtonCode key_code) = 0;
-	virtual glm::vec2 GetMoutePosition_impl() = 0;
+	virtual glm::vec2 GetMousePosition_impl() = 0;
+
+	virtual void Update() = 0;
+
+	virtual glm::vec2 GetMousePositionChange() = 0;
 
 	bool IsKeyPressed(KeyCode key_code) {
 #ifdef EDITOR
@@ -29,13 +33,13 @@ public:
 		return IsMouseButtonPressed_impl(key_code);
 	}
 
-	glm::vec2 GetMoutePosition() {
+	glm::vec2 GetMousePosition() {
 #ifdef EDITOR
 		if (!Editor::Get()->IsViewportFocused()) return last_pos;
-		last_pos = GetMoutePosition_impl();
+		last_pos = GetMousePosition_impl();
 		return last_pos;
 #endif // EDITOR
-		return GetMoutePosition_impl();
+		return GetMousePosition_impl();
 	}
 
 #ifdef EDITOR
@@ -47,7 +51,7 @@ public:
 	}
 
 	glm::vec2 GetMoutePosition_Editor() {
-		return GetMoutePosition_impl();
+		return GetMousePosition_impl();
 	}
 #endif
 

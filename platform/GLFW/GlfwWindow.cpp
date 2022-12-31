@@ -77,6 +77,16 @@ void GlfwWindow::RegistorDragAndDropCallback(void(*callback)(int count, std::vec
     drop_callback = callback;
 }
 
+void GlfwWindow::DisableCursor()
+{
+    glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+}
+
+void GlfwWindow::EnableCursor()
+{
+    glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+}
+
 #ifdef EDITOR
 
 void GlfwWindow::AdjustWidowToDisabledEditor()

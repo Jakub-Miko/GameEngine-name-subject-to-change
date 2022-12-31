@@ -16,6 +16,7 @@ class SkeletalMeshComponent {
 public:
 	SkeletalMeshComponent() : file_path("Unknown"), mesh(nullptr), animation_plaback(), default_animation_path("") {
 		mesh = MeshManager::Get()->GetDefaultSkeletalMesh();
+		compare_status = Mesh_status::READY;
 	}
 	
 	SkeletalMeshComponent(const std::string& filepath,const std::string& default_anim_path = "", int index = 0) : file_path("Unknown"), mesh(nullptr), animation_plaback(), default_animation_path(default_anim_path){
@@ -24,12 +25,13 @@ public:
 			throw std::runtime_error("Skeletal mesh needs to be used in skeletal mesh component");
 		}
 		file_path = FileManager::Get()->GetRelativeFilePath(filepath);
+		compare_status = mesh->GetMeshStatus();
 		if (!default_animation_path.empty()) {
 			SetDefaultAnimationPath(default_anim_path);
 		}
 	}
 
-	SkeletalMeshComponent(const SkeletalMeshComponent& other) : file_path(other.file_path), mesh(other.mesh), animation_plaback(), default_animation_path(other.default_animation_path), material(other.material) {
+	SkeletalMeshComponent(const SkeletalMeshComponent& other) : file_path(other.file_path), mesh(other.mesh), animation_plaback(), default_animation_path(other.default_animation_path), material(other.material), compare_status(other.compare_status) {
 		if (!default_animation_path.empty()) {
 			SetDefaultAnimationPath(default_animation_path);
 		}
@@ -45,6 +47,7 @@ public:
 
 	void ResetMesh() {
 		mesh = MeshManager::Get()->GetDefaultMesh();
+		compare_status = Mesh_status::READY;
 		file_path = "Unknown";
 	}
 
@@ -104,6 +107,14 @@ public:
 
 	std::shared_ptr<Material> material = nullptr;
 private:
+	//Check if the mesh object has changed since last time this component was used
+	bool UpdateState() {
+		if (compare_status != mesh->GetMeshStatus()) {
+			compare_status = mesh->GetMeshStatus();
+			return true;
+		}
+		return false;
+	}
 	//This should only be called from World class since other components can rely on it.
 	void ChangeMesh(const std::string& filepath) {
 		auto import_mesh = MeshManager::Get()->LoadMeshFromFileAsync(filepath);
@@ -114,6 +125,7 @@ private:
 			return;
 		}
 		mesh = import_mesh;
+		compare_status = mesh->GetMeshStatus();
 		file_path = FileManager::Get()->GetRelativeFilePath(filepath);
 	}
 
@@ -124,7 +136,16 @@ private:
 	std::string file_path;
 	std::string default_animation_path;
 	std::shared_ptr<Mesh> mesh;
+	//to check if the resource transitioned into a loaded state and act accordingly
+	Mesh_status compare_status;
 	AnimationPlayback animation_plaback;
+};
+
+template<>
+class ComponentInitProxy<SkeletalMeshComponent> {
+public:
+	static constexpr bool can_copy = true;
+
 };
 
 #pragma region Json_Serialization

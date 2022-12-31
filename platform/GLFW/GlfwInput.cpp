@@ -18,6 +18,9 @@ GlfwInput::~GlfwInput()
 
 GlfwInput::GlfwInput()
 {
+	last_pos[0] = { 0,0 };
+	last_pos[1] = { 0,0 };
+	last_pos_index = 0;
 	glfwSetKeyCallback(reinterpret_cast<GlfwWindow*>(Application::Get()->GetWindow())->GetHandle(), [](GLFWwindow* window, int key, int scancode, int action, int mods) {
 		KeyPressedEvent ev((KeyCode)key, (KeyPressType)action, (KeyModifiers)mods);
 		Application::Get()->SendEvent(&ev);
@@ -41,14 +44,31 @@ bool GlfwInput::IsKeyPressed_impl(KeyCode key_code)
 	return glfwGetKey(reinterpret_cast<GlfwWindow*>(Application::Get()->GetWindow())->GetHandle(),(int)key_code) == GLFW_PRESS;
 }
 
+glm::vec2 GlfwInput::GetMousePositionChange()
+{
+	return last_pos_index ? last_pos[0] - last_pos[1] : last_pos[1] - last_pos[0];
+}
+
 bool GlfwInput::IsMouseButtonPressed_impl(MouseButtonCode key_code)
 {
 	return glfwGetMouseButton(reinterpret_cast<GlfwWindow*>(Application::Get()->GetWindow())->GetHandle(), (int)key_code) == GLFW_PRESS;
 }
 
-glm::vec2 GlfwInput::GetMoutePosition_impl()
+glm::vec2 GlfwInput::GetMousePosition_impl()
 {
 	double x, y;
 	glfwGetCursorPos(reinterpret_cast<GlfwWindow*>(Application::Get()->GetWindow())->GetHandle(), &x, &y);
 	return UnitConverter::ScreenSpaceToNDC(glm::vec2(x, y));
+}
+
+void GlfwInput::Update()
+{
+	if (last_pos_index) {
+		last_pos[1] = GetMousePosition_impl();
+		last_pos_index = 0;
+	}
+	else {
+		last_pos[0] = GetMousePosition_impl();
+		last_pos_index = 1;
+	}
 }

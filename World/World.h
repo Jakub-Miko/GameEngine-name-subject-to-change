@@ -37,6 +37,8 @@ public:
 
 	}
 
+	static constexpr bool can_copy = false;
+
 };
 
 template<typename T, typename = void>
@@ -122,6 +124,14 @@ public:
 	void SetEntitySkeletalMesh(Entity ent, const std::string& mesh, const std::string& default_animation_path = "");
 
 	void ResetEntityPrefab(Entity ent, const std::string& prefab_path);
+
+	//Assure the mesh component is properly synced with the mesh object
+	void UpdateMesh(Entity ent);
+
+	//Assure the mesh component is properly synced with the skeletal mesh object
+	void UpdateSkeletalMesh(Entity ent);
+
+	Entity DuplicateEntity(Entity ent);
 
 	bool EntityIsValid(Entity ent);
 
@@ -303,6 +313,15 @@ private:
 		(RegisterComponentType<Args>(),...);
 	}
 	
+	template<typename T, typename ... Args>
+	void DuplicateComponentRecursive(Entity from, Entity to);
+
+
+	template<typename ... Args>
+	void DuplicateComponentsRecursive(Entity from, Entity to, TypeList<Args...> types) {
+		 DuplicateComponentRecursive<Args...>(from, to);
+	}
+
 	void SerializePrefabChild(Entity child, std::vector<std::pair<std::string, std::string>>& file_structure);
 
 	void LoadSceneSystem();

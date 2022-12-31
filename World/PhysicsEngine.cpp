@@ -162,7 +162,7 @@ void PhysicsEngine::UnRegisterPhysicsComponent(Entity ent)
 	std::lock_guard<std::mutex> lock(deletion_mutex);
 	if (!Application::GetWorld().HasComponent<PhysicsComponent>(ent)) throw std::runtime_error("Entity doesn't have a Physics Component");
 	PhysicsComponent& component = Application::GetWorld().GetComponent<PhysicsComponent>(ent);
-	deletion_queue.push_front(deletion_queue_entry{ component });
+	deletion_queue.push_front(deletion_queue_entry{ std::move(component) });
 	component.physics_object = nullptr; 
 	component.physics_shape = nullptr;
 }
@@ -265,6 +265,7 @@ bool PhysicsEngine::CreatePhysicsObject(Entity entity)
 		physics_comp.physics_shape = box_collision_shape;
 		btRigidBody::btRigidBodyConstructionInfo info(physics_comp.mass, motion_state, box_collision_shape, inertia);
 		btRigidBody* body = new btRigidBody(info);
+		body->setFriction(0.7);
 		body->setUserPointer((void*)entity.id);
 		if (physics_comp.is_kinematic && physics_comp.mass == 0.0f) {
 			body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
@@ -294,6 +295,7 @@ bool PhysicsEngine::CreatePhysicsObject(Entity entity)
 		physics_comp.physics_shape = hull_collision_shape;
 		btRigidBody::btRigidBodyConstructionInfo info(physics_comp.mass, motion_state, hull_collision_shape, inertia);
 		btRigidBody* body = new btRigidBody(info);
+		body->setFriction(0.7);
 		body->setUserPointer((void*)entity.id);
 		if (physics_comp.is_kinematic && physics_comp.mass == 0.0f) {
 			body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
@@ -364,6 +366,7 @@ void PhysicsEngine::ResetSim()
 			body->clearForces();
 			btVector3 vec(0.0f, 0.0f, 0.0f);
 			body->setAngularVelocity(vec);
+			body->activate();
 			body->setLinearVelocity(vec);
 			body->getMotionState()->getWorldTransform(trans);
 			body->setCenterOfMassTransform(trans);

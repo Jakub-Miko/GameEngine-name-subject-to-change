@@ -414,7 +414,6 @@ void PropertiesPanel::AddComponent(Entity entity,const PropertiesPanel_persisten
 				PrefabComponent comp;
 				comp.status = PrefabStatus::UNINITIALIZED;
 				world.SetComponent<PrefabComponent>(entity, comp);
-				world.GetSceneGraph()->GetSceneGraphNode(entity)->state = world.GetSceneGraph()->GetSceneGraphNode(entity)->state | SceneNodeState::PREFAB;
 			}
 			if (has_prefab) {
 				ImGui::EndDisabled();
@@ -424,7 +423,6 @@ void PropertiesPanel::AddComponent(Entity entity,const PropertiesPanel_persisten
 				ImGui::BeginDisabled();
 			}
 			if (ImGui::Button("Remove Prefab Component")) {
-				world.GetSceneGraph()->GetSceneGraphNode(entity)->state = world.GetSceneGraph()->GetSceneGraphNode(entity)->state & ~SceneNodeState::PREFAB;
 				world.RemoveEntity(entity, RemoveEntityAction::REMOVE_PREFABS);
 				data.prefab_path[0] = '\0';
 			}

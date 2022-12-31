@@ -6,7 +6,8 @@
 }
 
 @EndSection
-@Section:Root@Entity 
+@Section:Root
+@Entity 
 {
 "Components": {"LabelComponent":{"label":"Script Prefab"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":0.0,"y":0.0,"z":0.0}}},
 "Children": ["local#Mesh_0"]
@@ -26,6 +27,7 @@ end
 
 
 @Entity:Inline_Script
+
 
 
 
@@ -61,7 +63,7 @@ y = math.sin(norm_scree_pos.y * 3.1415926 / 2),
 z = math.cos(norm_scree_pos.x * 3.1415926) * math.cos(norm_scree_pos.y * 3.1415926/2)
 }
 
-pos_mul = {x = pos.x* distance,y = pos.y* distance,z = pos.z* distance}
+pos_mul = {{-{{}x = pos.x* distance,y = pos.y* distance,z = pos.z* distance}
 
 rot = quat_lookat(-vec3(pos), vec3({0,1,0}) )
 
@@ -70,6 +72,7 @@ SetRotation(rot)
 
 
 end
+
 
 
 

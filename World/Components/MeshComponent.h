@@ -9,18 +9,25 @@
 #include <Editor/Editor.h>
 #endif
 
+template<typename T>
+class ComponentInitProxy;
+
 class MeshComponent {
 	RUNTIME_TAG("MeshComponent")
 public:
 	MeshComponent() : file_path("Unknown"), mesh(nullptr) {
 		mesh = MeshManager::Get()->GetDefaultMesh();
+		compare_status = Mesh_status::READY;
 	}
 	
+	MeshComponent(const MeshComponent& other) : compare_status(other.compare_status), mesh(other.mesh), file_path(other.file_path), material(other.material) {}
+
 	MeshComponent(const std::string& filepath,int index = 0) : file_path("Unknown"), mesh(nullptr){
 		mesh = MeshManager::Get()->LoadMeshFromFileAsync(filepath);
 		if (mesh->IsSkeletal()) {
 			throw std::runtime_error("Cant use skeletal mesh as static mesh");
 		}
+		compare_status = mesh->GetMeshStatus();
 		file_path = FileManager::Get()->GetRelativeFilePath(filepath);
 	}
 
@@ -35,6 +42,7 @@ public:
 	void ResetMesh() {
 		mesh = MeshManager::Get()->GetDefaultMesh();
 		file_path = "Unknown";
+		compare_status = Mesh_status::READY;
 	}
 
 	std::shared_ptr<Mesh> GetMesh() const {
@@ -63,8 +71,17 @@ public:
 		}
 	}
 
+
 	std::shared_ptr<Material> material = nullptr;
 private:
+	//Check if the mesh object has changed since last time this component was used
+	bool UpdateState() {
+		if (compare_status != mesh->GetMeshStatus()) {
+			compare_status = mesh->GetMeshStatus();
+			return true;
+		} 
+		return false;
+	}
 	//This should only be called from World class since other components can rely on it.
 	void ChangeMesh(const std::string& filepath) {
 		auto import_mesh = MeshManager::Get()->LoadMeshFromFileAsync(filepath);
@@ -75,6 +92,7 @@ private:
 			return;
 		}
 		mesh = import_mesh;
+		compare_status = mesh->GetMeshStatus();
 		file_path = FileManager::Get()->GetRelativeFilePath(filepath);
 	}
 
@@ -84,6 +102,15 @@ private:
 	friend inline void from_json(const nlohmann::json& j, MeshComponent& p);
 	std::string file_path;
 	std::shared_ptr<Mesh> mesh;
+	//to check if the resource transitioned into a loaded state and act accordingly
+	Mesh_status compare_status = Mesh_status::UNINITIALIZED;;
+};
+
+template<>
+class ComponentInitProxy<MeshComponent> {
+public:
+	static constexpr bool can_copy = true;
+
 };
 
 class LoadingMeshComponent {

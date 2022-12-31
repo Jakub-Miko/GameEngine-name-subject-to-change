@@ -22,6 +22,7 @@
 #include <World/ScriptModules/TimeModule.h>
 #include <World/ScriptModules/PrefabManipulationModule.h>
 #include <World/ScriptModules/LocalEntityModule.h>
+#include <World/ScriptModules/EventModule.h>
 #include <stdexcept>
 
 ScriptSystemManager* ScriptSystemManager::instance = nullptr;
@@ -262,17 +263,6 @@ void ScriptHandler::BindHandlerFunctions(LuaEngineClass<ScriptHandler>* script_e
 {
     ModuleBindingProperties props;
     script_engine->InitFFI();
-    props.Add_bindings( {
-        //This is where function bindings go
-        //TODO: implement Script modules for code reuse.
-        {"GetPos" ,LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::TestGetPosition>},                                        // LocalProperty Module - use adapter
-        
-        
-        {"EnableKeyPressedEvents", LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::EnableKeyPressedEvents>},                 // Entity ConfigModule - use adapter
-        {"EnableMouseButtonPressedEvents", LuaEngineClass<ScriptHandler>::InvokeClass<&ScriptHandler::EnableMouseButtonPressedEvents>}  // Entity ConfigModule - use adapter
-
-    });
-
 
 
     IOModule().RegisterModule(props);
@@ -304,6 +294,7 @@ void InitializationScriptHandler::BindHandlerFunctions(LuaEngineClass<Initializa
     TimeModule().RegisterModule(props);
     ApplicationDataModule().RegisterModule(props);
     LocalPropertySetModule().RegisterModule(props);
+    EventModule().RegisterModule(props);
 
     script_engine->RegisterModule(props);
 }
@@ -362,15 +353,3 @@ bool ScriptHandler::PropertyExists(std::string name)
     };
     return false;
 }
-
-void ScriptHandler::EnableKeyPressedEvents()
-{
-    Application::GetWorld().SetComponent<KeyPressedScriptComponent>(current_entity);
-}
-
-void ScriptHandler::EnableMouseButtonPressedEvents()
-{
-    Application::GetWorld().SetComponent<MousePressedScriptComponent>(current_entity);
-}
-
-

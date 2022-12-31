@@ -32,6 +32,12 @@ public:
 		
 	}
 
+	CameraComponent(const CameraComponent& other) : fov(other.fov), zNear(other.zNear), zFar(other.zFar), aspect_ratio(other.aspect_ratio), view_frustum(),
+		projection_matrix(glm::perspective(glm::radians(fov), aspect_ratio, zNear, zFar))
+	{
+
+	}
+
 	void UpdateViewFrustum(const glm::mat4& model_matrix) {
 		glm::vec3 up = model_matrix * glm::vec4(0.0f, 1.0f, 0.0f,0.0f);
 		glm::vec3 right = model_matrix * glm::vec4(1.0f, 0.0f, 0.0f,0.0f);

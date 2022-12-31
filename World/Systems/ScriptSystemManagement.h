@@ -141,10 +141,6 @@ public:
 
     bool PropertyExists(std::string name);
 
-    void EnableKeyPressedEvents();
-
-    void EnableMouseButtonPressedEvents();
-
     Entity GetEntity() const {
         return current_entity;
     }

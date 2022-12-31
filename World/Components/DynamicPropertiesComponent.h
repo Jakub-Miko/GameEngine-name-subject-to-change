@@ -5,6 +5,9 @@
 #include <Core/RuntimeTag.h>
 #include <Core/UnitConverter.h>
 
+template<typename T>
+class ComponentInitProxy;
+
 using Script_Variant_type = std::variant<int, float, double, glm::vec2, glm::vec3, glm::vec4, std::string, Entity>;
 
 class DynamicPropertiesComponent {
@@ -30,6 +33,13 @@ public:
 public:
 	//TODO: Implement custom allocator
 	std::unordered_map<std::string, Script_Variant_type> m_Properties;
+};
+
+template<>
+class ComponentInitProxy<DynamicPropertiesComponent> {
+public:
+	static constexpr bool can_copy = true;
+
 };
 
 #pragma region Json_Serialization

@@ -41,6 +41,13 @@ class BoundingBox : public BoundingVolume {
 	RUNTIME_TAG("BoundingBox")
 public:
 	BoundingBox(glm::vec3 box_size = glm::vec3(1.0f), glm::vec3 box_offset = glm::vec3(0.0f)) : box_min(-glm::abs(box_size/2.0f) + box_offset), box_max(glm::abs(box_size / 2.0f) + box_offset) {}
+	BoundingBox(const BoundingBox& other) : box_min(other.box_min), box_max(other.box_max) {}
+	BoundingBox& operator=(const BoundingBox& other) {
+		box_min = other.box_min;
+		box_max = other.box_max;
+		return *this;
+	}
+
 
 	virtual bool OverlapsFrustum(const Frustum& frustum, const glm::mat4& model_matrix) const override;
 	virtual OverlapResult OverlapsPlane(const Plane& plane, const glm::mat4& model_matrix) const override;
@@ -72,6 +79,13 @@ class BoundingSphere : public BoundingVolume {
 	RUNTIME_TAG("BoundingSphere")
 public:
 	BoundingSphere(float sphere_size = 1.0f, glm::vec3 sphere_offset = glm::vec3(0.0f)) : sphere_size(sphere_size), sphere_offset(sphere_offset) {}
+	BoundingSphere(const BoundingSphere& other) : sphere_size(other.sphere_size), sphere_offset(other.sphere_offset) {}
+	BoundingSphere& operator=(const BoundingSphere& other) {
+		sphere_size = other.sphere_size;
+		sphere_offset = other.sphere_offset;
+		return *this;
+	}
+
 
 	virtual bool OverlapsFrustum(const Frustum& frustum, const glm::mat4& model_matrix) const override;
 	virtual OverlapResult OverlapsPlane(const Plane& plane, const glm::mat4& model_matrix) const override;
@@ -104,6 +118,12 @@ class BoundingPointLightSphere : public BoundingVolume {
 	RUNTIME_TAG("BoundingPointLightSphere")
 public:
 	BoundingPointLightSphere(float sphere_size = 1.0f, glm::vec3 sphere_offset = glm::vec3(0.0f)) : sphere_size(sphere_size), sphere_offset(sphere_offset) {}
+	BoundingPointLightSphere(const BoundingPointLightSphere& other) : sphere_size(other.sphere_size), sphere_offset(other.sphere_offset) {}
+	BoundingPointLightSphere& operator=(const BoundingPointLightSphere& other) {
+		sphere_size = other.sphere_size;
+		sphere_offset = other.sphere_offset;
+		return *this;
+	}
 
 	virtual bool OverlapsFrustum(const Frustum& frustum, const glm::mat4& model_matrix) const override;
 	virtual OverlapResult OverlapsPlane(const Plane& plane, const glm::mat4& model_matrix) const override;
@@ -136,6 +156,8 @@ class BoundingInfinity : public BoundingVolume {
 	RUNTIME_TAG("BoundingInfinity")
 public:
 	BoundingInfinity() {}
+	BoundingInfinity(const BoundingInfinity& other) {}
+	BoundingInfinity& operator=(const BoundingInfinity& other) { return *this; }
 
 	virtual bool OverlapsFrustum(const Frustum& frustum, const glm::mat4& model_matrix) const override;
 	virtual OverlapResult OverlapsPlane(const Plane& plane, const glm::mat4& model_matrix) const override;

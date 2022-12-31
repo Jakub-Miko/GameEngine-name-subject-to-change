@@ -8,6 +8,7 @@ class ShadowCasterComponent {
 	RUNTIME_TAG("ShadowCasterComponent")
 public:
 	ShadowCasterComponent(int width = 800, int height = 800, float near_plane = 0.1f, float far_plane = 500.0f);
+	ShadowCasterComponent(const ShadowCasterComponent& other) : res_x(other.res_x), res_y(other.res_y), cascades(other.cascades), near_plane(other.near_plane), far_plane(other.far_plane) {}
 	~ShadowCasterComponent() {
 
 	}
@@ -22,7 +23,7 @@ class ComponentInitProxy<ShadowCasterComponent>{
 public:
 
 	static void OnCreate(World& world, Entity entity);
-
+	static constexpr bool can_copy = true;
 };
 
 JSON_SERIALIZABLE(ShadowCasterComponent, res_x, res_y, near_plane, far_plane);

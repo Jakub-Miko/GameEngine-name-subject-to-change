@@ -103,6 +103,7 @@ void World::SetEntityMesh(Entity ent, const std::string mesh_path)
 	}
 }
 
+
 void World::SetEntitySkeletalMesh(Entity ent, const std::string& mesh_path, const std::string& default_animation_path)
 {
 	std::unique_lock<std::mutex> lock(SyncPool<SkeletalMeshComponent>());
@@ -128,6 +129,70 @@ void World::ResetEntityPrefab(Entity ent, const std::string& prefab_path)
 	if (!HasComponent<PrefabComponent>(ent)) throw std::runtime_error("Attempting to reset entity prefab of an entity which doesn't have a prefab component");
 	GetComponent<PrefabComponent>(ent).file_path = prefab_path;
 	RemoveEntity(ent, RemoveEntityAction::CHANGE_PREFAB);
+}
+
+void World::UpdateSkeletalMesh(Entity ent)
+{
+	if (!HasComponent<SkeletalMeshComponent>(ent)) throw std::runtime_error("Can't update mesh on an entity without one");
+	if (GetComponent<SkeletalMeshComponent>(ent).UpdateState()) {
+		SceneNode* node = GetSceneGraph()->GetSceneGraphNode(ent);
+		if (node->spatial_index_node) {
+			GetSpatialIndex().RemoveEntity(node->entity);
+		}
+		GetSpatialIndex().AddEntity(node->entity);
+	}
+}
+
+Entity World::DuplicateEntity(Entity ent)
+{
+	Entity parent = GetSceneGraph()->GetSceneGraphNode(ent)->parent->entity;
+	Entity new_ent = CreateEntity(parent);
+
+	DuplicateComponentsRecursive(ent, new_ent, Component_Types());
+
+	if (HasComponent<PrefabComponent>(new_ent)) {
+		Application::GetWorld().RemoveEntity(new_ent, RemoveEntityAction::RELOAD_PREFAB);
+	}
+
+	return new_ent;
+}
+
+
+
+template<typename T, typename ...Args>
+void World::DuplicateComponentRecursive(Entity from, Entity to)
+{
+	if constexpr (ComponentInitProxy<T>::can_copy) {
+		if (HasComponent<T>(from)) {
+			if constexpr (std::is_empty_v<T>) {
+				SetComponent<T>(to);
+			}
+			else {
+				SetComponent<T>(to, GetComponent<T>(from));
+			}
+		}
+	}
+
+	if constexpr (sizeof...(Args) <= 0) {
+		return;
+	}
+	else {
+		DuplicateComponentRecursive<Args...>(from, to);
+	}
+}
+
+
+
+void World::UpdateMesh(Entity ent)
+{
+	if (!HasComponent<MeshComponent>(ent)) throw std::runtime_error("Can't update mesh on an entity without one");
+	if (GetComponent<MeshComponent>(ent).UpdateState()) {
+		SceneNode* node = GetSceneGraph()->GetSceneGraphNode(ent);
+		if (node->spatial_index_node) {
+			GetSpatialIndex().RemoveEntity(node->entity);
+		}
+		GetSpatialIndex().AddEntity(node->entity);
+	}
 }
 
 bool World::EntityIsValid(Entity ent)

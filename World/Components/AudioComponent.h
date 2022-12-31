@@ -17,6 +17,13 @@ public:
 
 	AudioComponent(const AudioComponent& other) {
 		audio_source = AudioSystem::Get()->CreateAudioSource();
+		audio_source->SetGain(other.audio_source->GetGain());
+		audio_source->SetLooping(other.audio_source->GetLooping());
+		audio_source->SetMaxDistance(other.audio_source->GetMaxDistance());
+		audio_source->SetPitch(other.audio_source->GetPitch());
+		audio_source->SetRolloffFactor(other.audio_source->GetRolloffFactor());
+		audio_source->SetSourcePosition(other.audio_source->GetSourcePosition());
+		audio_source->SetVelocity(other.audio_source->GetVelocity());
 		default_path = other.default_path;
 		requested_path = other.requested_path;
 		if (other.state == AudioComponentState::PLAYING || other.state == AudioComponentState::PLAY_REQUEST) {
@@ -73,6 +80,13 @@ private:
 	AudioComponentState state = AudioComponentState::STOPPED;
 	std::string requested_path = "";
 	std::string default_path = "";
+};
+
+template<>
+class ComponentInitProxy<AudioComponent> {
+public:
+	static constexpr bool can_copy = true;
+
 };
 
 #pragma region Json_Serialization

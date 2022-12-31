@@ -52,6 +52,13 @@ extern "C" {
 		return *reinterpret_cast<vec3*>(&vec_to_rotate);
 	}
 
+	quat quat_multiply_L(quat quat1, quat quat2) {
+		glm::quat quaternion1 = *reinterpret_cast<glm::quat*>(&quat1);
+		glm::quat quaternion2 = *reinterpret_cast<glm::quat*>(&quat2);
+		glm::quat result = quaternion1 * quaternion2;
+		return *reinterpret_cast<quat*>(&result);
+	}
+
 }
 
 void MathModule::OnRegisterModule(ModuleBindingProperties& props)
@@ -71,6 +78,7 @@ void MathModule::OnRegisterModule(ModuleBindingProperties& props)
 	quat quat_lookat_L(vec3* direction, vec3* up_vector);
 	quat mat3_to_quat_L(mat3 matrix);
 	vec3 rotate_vec3_L(vec3 vec, quat rotation);
+	quat quat_multiply_L(quat quat1, quat quat2);
 	)");
 
 	props.Add_FFI_aliases({
@@ -86,7 +94,8 @@ void MathModule::OnRegisterModule(ModuleBindingProperties& props)
 		{"multiple_mat3_L","multiple_mat3"},
 		{"quat_lookat_L","quat_lookat"},
 		{"mat3_to_quat_L","mat3_to_quat"},
-		{"rotate_vec3_L","rotate_vec3"}
+		{"rotate_vec3_L","rotate_vec3"},
+		{"quat_multiply_L","quat_multiply"}
 		});
 
 	props.Add_init_script(R"(

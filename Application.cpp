@@ -265,6 +265,7 @@ void Application::Update()
         m_Window->PollEvents();
     }
    
+    Input::Get()->Update();
 
     {
 

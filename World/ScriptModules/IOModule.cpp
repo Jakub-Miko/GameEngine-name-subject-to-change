@@ -7,7 +7,13 @@
 extern "C" {
     vec2 GetMousePosition_L()
     {
-        auto pos = Input::Get()->GetMoutePosition();
+        auto pos = Input::Get()->GetMousePosition();
+        return vec2{ pos.x,pos.y };
+    }
+
+    vec2 GetMousePositionChange_L()
+    {
+        auto pos = Input::Get()->GetMousePositionChange();
         return vec2{ pos.x,pos.y };
     }
 
@@ -30,12 +36,14 @@ void IOModule::OnRegisterModule(ModuleBindingProperties& props)
     vec2 GetMousePosition_L();
     bool IsKeyPressed_L(int key_code);
     bool IsMouseButtonPressed_L(int key_code);
+    vec2 GetMousePositionChange_L();
     )");
 
     props.Add_FFI_aliases({
         {"GetMousePosition_L","GetMousePosition"},
         {"IsKeyPressed_L","IsKeyPressed"},
         {"IsMouseButtonPressed_L","IsMouseButtonPressed"},
+        {"GetMousePositionChange_L","GetMousePositionChange"}
         });
 
 }

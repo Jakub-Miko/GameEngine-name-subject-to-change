@@ -18,6 +18,8 @@ public:
 
     virtual void RegistorDragAndDropCallback(void(*callback)(int count, std::vector<std::string> paths)) override;
 
+    virtual void DisableCursor() override;
+    virtual void EnableCursor() override;
 
 #ifdef EDITOR
 

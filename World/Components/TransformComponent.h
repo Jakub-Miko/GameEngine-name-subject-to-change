@@ -6,6 +6,9 @@
 #include <World/SceneGraph.h>
 #include <Core/RuntimeTag.h>
 
+template<typename T>
+class ComponentInitProxy;
+
 struct TransformComponent {
 	RUNTIME_TAG("TransformComponent")
 	TransformComponent(EntityProperties props = EntityProperties()) : TransformMatrix(1.0f), translation(0.0f), size(1.0f), rotation(glm::angleAxis(glm::degrees(0.0f), glm::vec3(0.0f, 1.0f, 0.0f))), props(props) {}
@@ -29,5 +32,13 @@ struct TransformComponent {
 	glm::mat4 TransformMatrix;
 	
 };
+
+template<>
+class ComponentInitProxy<TransformComponent> {
+public:
+	static constexpr bool can_copy = true;
+
+};
+
 
 JSON_SERIALIZABLE(TransformComponent, translation, rotation, size, props)

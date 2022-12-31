@@ -31,6 +31,8 @@ public:
 		}
 	}
 
+	static constexpr bool can_copy = false;
+
 };
 
 

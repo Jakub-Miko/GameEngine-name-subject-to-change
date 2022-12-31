@@ -23,6 +23,9 @@ public:
 
     virtual void SwapBuffers() = 0;
 
+    virtual void DisableCursor() = 0;
+    virtual void EnableCursor() = 0;
+
 #ifdef EDITOR
 
     virtual void AdjustWidowToDisabledEditor() = 0;

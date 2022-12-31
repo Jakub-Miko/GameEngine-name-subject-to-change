@@ -20,7 +20,7 @@ public:
 	void SetLooping(bool should_loop);
 	void SetVelocity(const glm::vec3& velocity);
 
-	glm::vec3 GetSourcePosition(const glm::vec3& position);
+	glm::vec3 GetSourcePosition();
 	float GetGain();
 	float GetPitch();
 	float GetMaxDistance();
