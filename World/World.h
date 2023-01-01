@@ -133,6 +133,8 @@ public:
 
 	Entity DuplicateEntity(Entity ent);
 
+	Entity DuplicateEntityInPrefab(Entity ent);
+
 	bool EntityIsValid(Entity ent);
 
 	template<typename T>

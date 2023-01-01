@@ -27,15 +27,20 @@ PrefabEditor::~PrefabEditor()
 void PrefabEditor::Render()
 {
 	for (auto& window : open_windows) {
-		RenderWindow(window);
+		if (Application::GetWorld().EntityIsValid(window.entity)) {
+			RenderWindow(window);
+		}
+		else {
+			ClosePrefabEditorWindow(window.entity);
+		}
 	}
 }
 
-void PrefabEditor::OpenPrefabEditorWindow(Entity entity)
+PrefabEditorWindow* PrefabEditor::OpenPrefabEditorWindow(Entity entity)
 {
 	for (auto& window : open_windows) {
 		if (window.entity == entity) {
-			return;
+			return &window;
 		}
 	}
 	PrefabEditorWindow window;
@@ -49,6 +54,17 @@ void PrefabEditor::OpenPrefabEditorWindow(Entity entity)
 	window.material_path[0] = '\0';
 
 	open_windows.push_back(std::move(window));
+	return &open_windows.back();
+}
+
+PrefabEditorWindow* PrefabEditor::GetOpenWindow(Entity ent)
+{
+	for (auto& window : open_windows) {
+		if (window.entity == ent) {
+			return &window;
+		}
+	}
+	return nullptr;
 }
 
 void PrefabEditor::ClosePrefabEditorWindow(Entity entity)
@@ -85,6 +101,10 @@ void PrefabEditor::PrefabSceneGraph(PrefabEditorWindow& window)
 	if (ImGui::Button("Delete Entity") && window.selected_entity != Entity()) {
 		Application::GetWorld().RemoveEntity(window.selected_entity);
 		window.selected_entity = Entity();
+	}
+
+	if (ImGui::Button("Duplicate Entity") && window.selected_entity != Entity()) {
+		window.selected_entity = Application::GetWorld().DuplicateEntityInPrefab(window.selected_entity);
 	}
 
 
@@ -177,6 +197,9 @@ void PrefabEditor::PrefabPropertiesPanel(PrefabEditorWindow& window)
 void PrefabEditor::RenderWindow(PrefabEditorWindow& window)
 {
 	bool opened = true;
+	if (!Application::GetWorld().EntityExists(window.selected_entity)) {
+		window.selected_entity = Entity();
+	}
 	auto& prefab_comp = Application::GetWorld().GetComponent<PrefabComponent>(window.entity);
 	bool is_prefab_valid = prefab_comp.GetFilePath() != "Undefined" && !prefab_comp.GetFilePath().empty();
 	auto save_prefab_popup_id = ImGui::GetID("Save Prefab");

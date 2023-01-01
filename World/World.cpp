@@ -145,8 +145,28 @@ void World::UpdateSkeletalMesh(Entity ent)
 
 Entity World::DuplicateEntity(Entity ent)
 {
+	if (!EntityIsValid(ent)) {
+		return Entity();
+	}
 	Entity parent = GetSceneGraph()->GetSceneGraphNode(ent)->parent->entity;
 	Entity new_ent = CreateEntity(parent);
+
+	DuplicateComponentsRecursive(ent, new_ent, Component_Types());
+
+	if (HasComponent<PrefabComponent>(new_ent)) {
+		Application::GetWorld().RemoveEntity(new_ent, RemoveEntityAction::RELOAD_PREFAB);
+	}
+
+	return new_ent;
+}
+
+Entity World::DuplicateEntityInPrefab(Entity ent)
+{
+	if (!EntityIsValid(ent)) {
+		return Entity();
+	}
+	Entity parent = GetSceneGraph()->GetSceneGraphNode(ent)->parent->entity;
+	Entity new_ent = CreateEntity<PrefabChildEntityType>(parent, true);
 
 	DuplicateComponentsRecursive(ent, new_ent, Component_Types());
 

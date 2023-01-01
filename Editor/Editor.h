@@ -34,6 +34,8 @@ public:
 
 	void ViewportBegin();
 
+	PrefabEditorWindow* GetOpenPrefabWindow(Entity ent);
+
 	void DisableEditor();
 
 	void EnableEditor();

@@ -176,7 +176,7 @@ void ShadowMappingPass::RenderDirectionalShadowCaster(Entity caster, RenderComma
 
 	float cascade_levels[HARD_CODE_CASCADES + 1];
 	for (int i = 0; i < HARD_CODE_CASCADES + 1; i++) {
-		cascade_levels[i] = camera.zNear + (((camera.zFar - camera.zNear) / (HARD_CODE_CASCADES)) * i);
+		cascade_levels[i] = camera.zNear + (((camera.zFar - camera.zNear) / std::pow(HARD_CODE_CASCADES,2)) * std::pow(i,2));
 	}
 	for (int cascade = 0; cascade < HARD_CODE_CASCADES; cascade++) {
 

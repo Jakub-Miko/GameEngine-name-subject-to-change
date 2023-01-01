@@ -6,8 +6,12 @@
 #include <stdexcept>
 
 void ComponentInitProxy<LightComponent>::OnCreate(World& world, Entity entity) {
-	if (world.HasComponentSynced<MeshComponent>(entity) != world.HasComponentSynced<BoundingVolumeComponent>(entity))
-		throw std::runtime_error("Light component can't be assigned to an entity with a mesh component or a predefined bounding volume component");
+	if (world.HasComponentSynced<MeshComponent>(entity))
+		world.RemoveComponent<MeshComponent>(entity);
+
+	if (world.HasComponentSynced<BoundingVolumeComponent>(entity)) 
+		world.RemoveComponent<BoundingVolumeComponent>(entity);
+
 	auto& light_comp = world.GetComponent<LightComponent>(entity);
 	switch (light_comp.type) {
 	case LightType::POINT:

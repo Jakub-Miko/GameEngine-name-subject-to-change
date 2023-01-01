@@ -66,17 +66,24 @@ void Viewport::Render()
         Entity select = Entity(std::get<unsigned int>(data));
         if (Application::GetWorld().EntityIsValid(select)) {
             SceneNode* node = Application::GetWorld().GetSceneGraph()->GetSceneGraphNode(select);
+            SceneNode* parent_node = node;
+            while (!(int)(parent_node->state & SceneNodeState::PREFAB) && parent_node->parent != nullptr)
+            {
+                parent_node = parent_node->parent;
+            }
             if ((int)(node->state & SceneNodeState::PREFAB_CHILD) && select_mode != ViewportSelectMode::PREFAB_CHILDREN) {
-                SceneNode* parent_node = node;
-                while (!(int)(parent_node->state & SceneNodeState::PREFAB) && parent_node->parent != nullptr)
-                {
-                    parent_node = parent_node->parent;
-                }
                 if (!parent_node) throw std::runtime_error("Could not Find the Prefab Parent node of a Prefab Child");
                 Editor::Get()->SetSelectedEntity(parent_node->entity);
             }
             else {
                 Editor::Get()->SetSelectedEntity(select);
+            }
+            if ((int)(node->state & SceneNodeState::PREFAB_CHILD)) {
+                PrefabEditorWindow* window = Editor::Get()->GetOpenPrefabWindow(parent_node->entity);
+                if (window) {
+                    window->selected_entity = select;
+                }
+
             }
             entity_pick_request = Future<read_pixel_data>();
         }

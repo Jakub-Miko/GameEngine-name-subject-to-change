@@ -47,7 +47,9 @@ public:
 
 	void Render();
 
-	void OpenPrefabEditorWindow(Entity entity);
+	PrefabEditorWindow* OpenPrefabEditorWindow(Entity entity);
+
+	PrefabEditorWindow* GetOpenWindow(Entity ent);
 
 	void ClosePrefabEditorWindow(Entity entity);
 

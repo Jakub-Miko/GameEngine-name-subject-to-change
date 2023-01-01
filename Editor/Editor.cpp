@@ -400,6 +400,11 @@ void Editor::ViewportBegin()
 	}
 }
 
+PrefabEditorWindow* Editor::GetOpenPrefabWindow(Entity ent)
+{
+	return prefab_editor->GetOpenWindow(ent);
+}
+
 void Editor::DisableEditor()
 {
 	Application::Get()->GetWindow()->AdjustWidowToDisabledEditor();

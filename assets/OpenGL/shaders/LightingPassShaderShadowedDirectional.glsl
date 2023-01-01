@@ -95,6 +95,7 @@ uniform conf{
 	mat4 view_model_matrix;
 	mat4 inverse_projection;
 	mat4 light_matrix_cascades[15];
+	vec2 shadow_map_pixel_size;
 	float depth_constant_a;
 	float depth_constant_b;
 	float camera_near_plane;
@@ -138,11 +139,13 @@ uniform conf {
 	mat4 view_model_matrix;
 	mat4 inverse_projection;
 	mat4 light_matrix_cascades[15];
+	vec2 shadow_map_pixel_size;
 	float depth_constant_a;
 	float depth_constant_b;
 	float camera_near_plane;
 	float camera_far_plane;
 	int cascade_count;
+
 };
 
 uniform light_props{
@@ -160,6 +163,7 @@ float calculate_shadows(vec3 view_space_pos) {
 	float depth = abs(view_space_pos.z);
 	depth -= camera_near_plane;
 	depth /= camera_far_plane - camera_near_plane;
+	depth = sqrt(depth);
 	depth *= float(cascade_count);
 	int cascade = int(floor(depth));
 
@@ -167,9 +171,17 @@ float calculate_shadows(vec3 view_space_pos) {
 	vec3 light_space_coords = light_space_pos.xyz / light_space_pos.w;
 	light_space_coords = light_space_coords * 0.5 + 0.5;
 	float current_depth = light_space_coords.z;
-	vec4 shadow_coords = vec4(light_space_coords.xy, cascade, current_depth - 0.0005);
-	float shadow_map_depth = texture(ShadowMapArray, shadow_coords);
-	return shadow_map_depth;
+	float accumulate = 0;
+
+	for (int x = -1; x <= 1; x++) {
+		for (int y = -1; y <= 1; y++) {
+			vec4 shadow_coords = vec4(light_space_coords.x + x* shadow_map_pixel_size.x, light_space_coords.y + y * shadow_map_pixel_size.y, cascade, current_depth - 0.0005);
+			accumulate += texture(ShadowMapArray, shadow_coords);
+
+		}
+	}
+
+	return accumulate / 9;
 }
 
 vec3 GetFragmentPosition(vec3 coordinates) {

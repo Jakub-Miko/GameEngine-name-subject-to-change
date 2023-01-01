@@ -118,7 +118,7 @@ void DefferedLightingPass::InitPostProcessingPassData() {
 	RenderBufferDescriptor const_desc_shadowed_point(sizeof(glm::mat4) * 3 + sizeof(float) * 2, RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
 	data->constant_scene_buf_shadowed_point = RenderResourceManager::Get()->CreateBuffer(const_desc_shadowed_point);
 
-	RenderBufferDescriptor const_desc_shadowed_directional(sizeof(glm::mat4) * 18 + sizeof(float) * 4 + sizeof(uint32_t), RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
+	RenderBufferDescriptor const_desc_shadowed_directional(sizeof(glm::mat4) * 18 + sizeof(float) * 4 + sizeof(glm::vec2) + sizeof(uint32_t), RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
 	data->constant_scene_buf_shadowed_directional = RenderResourceManager::Get()->CreateBuffer(const_desc_shadowed_directional);
 
 	data->sphere_mesh = MeshManager::Get()->LoadMeshFromFileAsync("asset:Sphere.mesh"_path);
@@ -362,10 +362,10 @@ void DefferedLightingPass::RenderShadowedLightsDirectional(RenderPipelineResourc
 	float camera_near = camera.zNear;
 	float camera_far = camera.zFar;
 	glm::mat4 inverse_projection = glm::inverse(props.projection);
-	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed_directional, &depth_constant_a, sizeof(float), sizeof(glm::mat4) * 18);
-	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed_directional, &depth_constant_b, sizeof(float), sizeof(glm::mat4) * 18 + sizeof(float));
-	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed_directional, &camera_near, sizeof(float), sizeof(glm::mat4) * 18 + sizeof(float) * 2);
-	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed_directional, &camera_far, sizeof(float), sizeof(glm::mat4) * 18 + sizeof(float) * 3);
+	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed_directional, &depth_constant_a, sizeof(float), sizeof(glm::mat4) * 18 + sizeof(glm::vec2));
+	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed_directional, &depth_constant_b, sizeof(float), sizeof(glm::mat4) * 18 + sizeof(float) + sizeof(glm::vec2));
+	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed_directional, &camera_near, sizeof(float), sizeof(glm::mat4) * 18 + sizeof(float) * 2 + sizeof(glm::vec2));
+	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed_directional, &camera_far, sizeof(float), sizeof(glm::mat4) * 18 + sizeof(float) * 3 + sizeof(glm::vec2));
 	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed_directional, &inverse_projection, sizeof(glm::mat4), sizeof(glm::mat4) * 2);
 	for (auto& entity : geometry->resources) {
 		auto& transform_component = world.GetComponent<TransformComponent>(entity);
@@ -397,7 +397,9 @@ void DefferedLightingPass::RenderShadowedLightsDirectional(RenderPipelineResourc
 		data->mat_shadowed_directional->SetParameter("DepthBuffer", gbuffer->GetBufferDescriptor().GetDepthAttachmentAsTexture());
 		data->mat_shadowed_directional->SetParameter("attenuation", glm::vec4(light.GetAttenuation(), 0.0f));
 		data->mat_shadowed_directional->SetMaterial(list, data->pipeline_shadowed_directional);
-		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed_directional, &shadow.cascades, sizeof(uint32_t), sizeof(glm::mat4) * 18 + sizeof(float) * 4);
+		glm::vec2 shadow_pixel_size = { 1.0f / shadow.res_x, 1.0f / shadow.res_x };
+		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed_directional, &shadow.cascades, sizeof(uint32_t), sizeof(glm::mat4) * 18 + sizeof(float) * 4 + sizeof(glm::vec2));
+		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed_directional, glm::value_ptr(shadow_pixel_size), sizeof(glm::vec2), sizeof(glm::mat4) * 18);
 		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed_directional, glm::value_ptr(mvp), sizeof(glm::mat4), 0);
 		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed_directional, glm::value_ptr(mv_matrix), sizeof(glm::mat4), sizeof(glm::mat4));
 		
