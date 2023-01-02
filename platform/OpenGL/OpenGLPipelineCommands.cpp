@@ -57,6 +57,17 @@ void OpenGLSetPipelineCommand::Execute()
 		queue->SetBlendEquation(pipeline->GetBlendEquation());
 	}
 
+	if (current_state.IsDepthClipEnabled() != pipeline->IsDepthClipEnabled() || (bool)(pipeline->GetPipelineFlags() & PipelineFlags::IS_MULTI_WINDOW)) {
+		if (pipeline->IsDepthClipEnabled()) {
+			glDisable(GL_DEPTH_CLAMP);
+		}
+		else {
+			glEnable(GL_DEPTH_CLAMP);
+		}
+		
+		queue->SetDepthClip(pipeline->IsDepthClipEnabled());
+	}
+
 	if (current_state.GetDepthFunction() != pipeline->GetDepthFunction() || (bool)(pipeline->GetPipelineFlags() & PipelineFlags::IS_MULTI_WINDOW)) {
 		glDepthFunc(OpenGLUnitConverter::DepthFunctionToGLenum(pipeline->GetDepthFunction()));
 		queue->SetDepthFunction(pipeline->GetDepthFunction());

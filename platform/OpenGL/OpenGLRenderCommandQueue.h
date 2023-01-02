@@ -77,6 +77,10 @@ public:
 		current_state.depth_function = depth_function;
 	}
 
+	void SetDepthClip(bool enable_depth_clip) {
+		current_state.enable_depth_clip = enable_depth_clip;
+	}
+
 private:
 	void RenderLoop();
 	ExecutableCommand* FetchList();

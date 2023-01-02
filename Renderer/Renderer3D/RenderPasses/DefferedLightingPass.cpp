@@ -66,6 +66,7 @@ void DefferedLightingPass::InitPostProcessingPassData() {
 	blend_function.srcRGB = BlendFunction::ONE;
 	blend_function.dstRGB = BlendFunction::ONE;
 	pipeline_desc.blend_functions = blend_function;
+	pipeline_desc.enable_depth_clip = false;
 	pipeline_desc.flags = PipelineFlags::ENABLE_BLEND;
 	pipeline_desc.cull_mode = CullMode::FRONT;
 	pipeline_desc.blend_equation = BlendEquation::ADD;

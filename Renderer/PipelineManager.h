@@ -31,7 +31,7 @@ struct PipelineDescriptor {
 	PipelineDescriptor() = default;
 
 	PipelineDescriptor(const PipelineDescriptor& desc) : layout(desc.layout), shader(desc.shader), viewport(desc.viewport), scissor_rect(desc.scissor_rect),
-		flags(desc.flags), polygon_render_mode(desc.polygon_render_mode), blend_functions(desc.blend_functions), blend_equation(desc.blend_equation), cull_mode(desc.cull_mode), depth_function(desc.depth_function)
+		flags(desc.flags), polygon_render_mode(desc.polygon_render_mode), blend_functions(desc.blend_functions), blend_equation(desc.blend_equation), cull_mode(desc.cull_mode), depth_function(desc.depth_function), enable_depth_clip(desc.enable_depth_clip)
 	{
 
 	}
@@ -80,6 +80,9 @@ struct PipelineDescriptor {
 		return depth_function;
 	}
 
+	bool IsDepthClipEnabled() const {
+		return enable_depth_clip;
+	}
 
 public:
 
@@ -93,6 +96,7 @@ public:
 	DepthFunction depth_function = DepthFunction::LESS;
 	CullMode cull_mode = CullMode::NONE;
 	PrimitivePolygonRenderMode polygon_render_mode = PrimitivePolygonRenderMode::DEFAULT;
+	bool enable_depth_clip = true;
 };
 
 using PipelineState = PipelineDescriptor;
@@ -146,14 +150,18 @@ public:
 		return depth_function;
 	}
 
+	bool IsDepthClipEnabled() const {
+		return enable_depth_clip;
+	}
+
 protected:
 	Pipeline(const PipelineDescriptor& desc) : layout(desc.layout), shader(desc.shader), viewport(desc.viewport), scissor_rect(desc.scissor_rect),
-		flags(desc.flags), polygon_render_mode(desc.polygon_render_mode), blend_functions(desc.blend_functions), blend_equation(desc.blend_equation),cull_mode(desc.cull_mode), depth_function(desc.depth_function)
+		flags(desc.flags), polygon_render_mode(desc.polygon_render_mode), blend_functions(desc.blend_functions), blend_equation(desc.blend_equation),cull_mode(desc.cull_mode), depth_function(desc.depth_function), enable_depth_clip(desc.enable_depth_clip)
 	{
 
 	}
 	Pipeline(PipelineDescriptor&& desc) : layout(desc.layout), shader(desc.shader), viewport(desc.viewport), scissor_rect(desc.scissor_rect),
-		flags(desc.flags), polygon_render_mode(desc.polygon_render_mode), blend_equation(desc.blend_equation), blend_functions(desc.blend_functions), cull_mode(desc.cull_mode), depth_function(desc.depth_function)
+		flags(desc.flags), polygon_render_mode(desc.polygon_render_mode), blend_equation(desc.blend_equation), blend_functions(desc.blend_functions), cull_mode(desc.cull_mode), depth_function(desc.depth_function), enable_depth_clip(desc.enable_depth_clip)
 	{
 
 	}
@@ -167,6 +175,7 @@ protected:
 	DepthFunction depth_function = DepthFunction::LESS;
 	CullMode cull_mode = CullMode::NONE;
 	PrimitivePolygonRenderMode polygon_render_mode = PrimitivePolygonRenderMode::DEFAULT;
+	bool enable_depth_clip = true;
 };
 
 
