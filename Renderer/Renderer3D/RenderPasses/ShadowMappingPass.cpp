@@ -4,6 +4,7 @@
 #include <World/Components/ShadowCasterComponent.h>
 #include <World/Components/TransformComponent.h>
 #include <World/Components/MeshComponent.h>
+#include <World/Components/SkeletalMeshComponent.h>
 #include <World/Components/LightComponent.h>
 #include <Renderer/Renderer3D/Renderer3D.h>
 #include <World/World.h>
@@ -17,6 +18,8 @@
 struct ShadowMappingPass::internal_data {
 	std::shared_ptr<Pipeline> pipeline_directional;
 	std::shared_ptr<Pipeline> pipeline_point;
+	std::shared_ptr<Pipeline> pipeline_directional_skeletal;
+	std::shared_ptr<Pipeline> pipeline_point_skeletal;
 	std::shared_ptr<TextureSampler> depth_sampler_directional;
 	std::shared_ptr<TextureSampler> depth_sampler_point;
 	std::shared_ptr<RenderBufferResource> const_buffer_directional;
@@ -41,65 +44,6 @@ void ShadowMappingPass::Setup(RenderPassResourceDefinnition& setup_builder)
 
 void ShadowMappingPass::Render(RenderPipelineResourceManager& resource_manager)
 {
-	/*auto& shadow_caster_entities = resource_manager.GetResource<RenderResourceCollection<Entity>>(input_shadow_casters_directional);
-	auto& world = Application::GetWorld();
-	auto queue = Renderer::Get()->GetCommandQueue();
-	auto list = Renderer::Get()->GetRenderCommandList();
-	list->SetPipeline(data->pipeline);
-	for (auto& caster : shadow_caster_entities.resources) {
-		auto& shadow_comp = world.GetComponent<ShadowCasterComponent>(caster);
-		auto& caster_trans_comp = world.GetComponent<TransformComponent>(caster);
-		auto& caster_light_comp = world.GetComponent<LightComponent>(caster);
-
-		if (shadow_comp.shadow_map == nullptr) {
-			InitShadowComponent(caster, caster_light_comp.type);
-		}
-
-		list->SetRenderTarget(shadow_comp.shadow_map);
-
-
-		glm::vec3 size = caster_trans_comp.size;
-		glm::mat3 rotation_matrix;
-		rotation_matrix[0] = glm::normalize((glm::vec3)caster_trans_comp.TransformMatrix[0]);
-		rotation_matrix[1] = glm::normalize((glm::vec3)caster_trans_comp.TransformMatrix[1]);
-		rotation_matrix[2] = glm::normalize((glm::vec3)caster_trans_comp.TransformMatrix[2]);
-		size.b = shadow_comp.far_plane - shadow_comp.near_plane;
-		glm::vec3 translation = (rotation_matrix * glm::vec3(0.0f, 0.0f, -shadow_comp.near_plane - glm::abs(size.b)/2.0f)) + (glm::vec3)caster_trans_comp.TransformMatrix[3];
-		glm::mat4 projection = glm::ortho(-size.r / 2, size.r / 2, -size.g / 2, size.g / 2, shadow_comp.near_plane, shadow_comp.far_plane);
-
-		list->SetConstantBuffer("mvp", data->const_buffer);
-
-		OrientedBoundingBox culling_box(size, translation, rotation_matrix);
-
-		std::vector<Entity> entities;
-		Application::GetWorld().GetSpatialIndex().BoxCulling(Application::GetWorld(), culling_box, entities);
-
-		list->Clear();
-		glm::mat4 light_view = glm::translate(glm::mat4(1.0), (glm::vec3)caster_trans_comp.TransformMatrix[3]) * (glm::mat4)rotation_matrix;
-		glm::mat4 view_projection = projection * glm::inverse(light_view);
-
-		shadow_comp.light_view_matrix = view_projection;
-
-		list->SetViewport(RenderViewport(glm::vec2(0.0f), glm::vec2(shadow_comp.res_x, shadow_comp.res_y)));
-
-		for (auto& entity : entities) {
-			if (world.HasComponent<MeshComponent>(entity)) {
-				auto& mesh = world.GetComponent<MeshComponent>(entity);
-				auto& trans = world.GetComponent<TransformComponent>(entity);
-				glm::mat4 mvp = view_projection * trans.TransformMatrix;
-				RenderResourceManager::Get()->UploadDataToBuffer(list, data->const_buffer, glm::value_ptr(mvp), sizeof(glm::mat4), 0);
-				
-				list->SetVertexBuffer(mesh.mesh->GetVertexBuffer());
-				list->SetIndexBuffer(mesh.mesh->GetIndexBuffer());
-				list->Draw(mesh.mesh->GetIndexCount());
-
-			}
-		}
-
-
-	}
-	queue->ExecuteRenderCommandList(list);
-	resource_manager.SetResource<DependencyTag>(output_dependency_tag, DependencyTag());*/
 
 	Render_impl<LightType::DIRECTIONAL>(resource_manager);
 	Render_impl<LightType::POINT>(resource_manager);
@@ -166,8 +110,6 @@ void ShadowMappingPass::RenderDirectionalShadowCaster(Entity caster, RenderComma
 	if (shadow_comp.shadow_map == nullptr) {
 		InitShadowComponent(caster, LightType::DIRECTIONAL);
 	}
-
-	list->SetRenderTarget(shadow_comp.shadow_map);
 	glm::mat3 rotation_matrix;
 	rotation_matrix[0] = glm::normalize((glm::vec3)caster_trans_comp.TransformMatrix[0]);
 	rotation_matrix[1] = glm::normalize((glm::vec3)caster_trans_comp.TransformMatrix[1]);
@@ -183,7 +125,7 @@ void ShadowMappingPass::RenderDirectionalShadowCaster(Entity caster, RenderComma
 		float near = cascade_levels[cascade];
 		float far = cascade_levels[cascade + 1];
 
-		glm::mat4 projection = glm::perspective(glm::radians(camera.fov), camera.aspect_ratio, near, far);;
+		glm::mat4 projection = glm::perspective(glm::radians(camera.fov), camera.aspect_ratio, near, far);
 		glm::mat4 camera_inverse_view_projection = glm::inverse(projection * glm::inverse(camera_transform.TransformMatrix));
 
 		glm::vec3 frustum_points[8];
@@ -224,7 +166,6 @@ void ShadowMappingPass::RenderDirectionalShadowCaster(Entity caster, RenderComma
 	glm::vec3 translation = (rotation_matrix * glm::vec3(0.0f, 0.0f, -shadow_comp.near_plane - glm::abs(size.b) / 2.0f)) + (glm::vec3)caster_trans_comp.TransformMatrix[3];
 	glm::mat4 projection = glm::ortho(-size.r / 2, size.r / 2, -size.g / 2, size.g / 2, shadow_comp.near_plane, shadow_comp.far_plane);
 
-	list->SetConstantBuffer("mvp", data->const_buffer_directional);
 	OrientedBoundingBox culling_box(glm::vec3(500000), glm::vec3(0.0f));
 
 	Application::GetWorld().GetSpatialIndex().BoxCulling(Application::GetWorld(), culling_box, entities);
@@ -233,9 +174,14 @@ void ShadowMappingPass::RenderDirectionalShadowCaster(Entity caster, RenderComma
 	view_projection = projection * glm::inverse(light_view);
 
 	shadow_comp.light_view_matrix = view_projection;
-	list->Clear();
+	list->SetPipeline(data->pipeline_directional);
+	list->SetRenderTarget(shadow_comp.shadow_map);
 	list->SetViewport(RenderViewport(glm::vec2(0.0f), glm::vec2(shadow_comp.res_x, shadow_comp.res_y)));
+	list->Clear();
+	list->SetConstantBuffer("mvp", data->const_buffer_directional);
 
+	std::vector<Entity> skeletal_meshes;
+	skeletal_meshes.reserve(30);
 	for (auto& entity : entities) {
 		if (world.HasComponent<MeshComponent>(entity)) {
 			auto& mesh = world.GetComponent<MeshComponent>(entity);
@@ -250,7 +196,32 @@ void ShadowMappingPass::RenderDirectionalShadowCaster(Entity caster, RenderComma
 			list->Draw(mesh.GetMesh()->GetIndexCount());
 
 		}
+		else if (world.HasComponent<SkeletalMeshComponent>(entity)) {
+			skeletal_meshes.push_back(entity);
+		}
 	}
+
+	if (skeletal_meshes.empty()) return;
+	list->SetPipeline(data->pipeline_directional_skeletal);
+	list->SetViewport(RenderViewport(glm::vec2(0.0f), glm::vec2(shadow_comp.res_x, shadow_comp.res_y)));
+	for (auto& entity : skeletal_meshes) {
+		auto& mesh = world.GetComponent<SkeletalMeshComponent>(entity);
+		world.UpdateSkeletalMesh(entity);
+		mesh.GetAnimation().UpdateAnimation(Application::GetDeltaTime(), list, mesh.GetMesh());
+		list->SetConstantBuffer("bones", mesh.GetAnimation().GetBoneBuffer());
+
+		auto& trans_skeletal = world.GetComponent<TransformComponent>(entity);
+		glm::mat4 trans = trans_skeletal.TransformMatrix;
+		RenderResourceManager::Get()->UploadDataToBuffer(list, data->const_buffer_directional, glm::value_ptr(trans), sizeof(glm::mat4), 0);
+		for (int i = 0; i < HARD_CODE_CASCADES; i++) {
+			RenderResourceManager::Get()->UploadDataToBuffer(list, data->const_buffer_directional, glm::value_ptr(shadow_matricies[i]), sizeof(glm::mat4), sizeof(glm::mat4) * (1 + i));
+		}
+
+		list->SetVertexBuffer(mesh.GetMesh()->GetVertexBuffer());
+		list->SetIndexBuffer(mesh.GetMesh()->GetIndexBuffer());
+		list->Draw(mesh.GetMesh()->GetIndexCount());
+	}
+
 
 }
 
@@ -264,8 +235,6 @@ void ShadowMappingPass::RenderPointShadowCaster(Entity caster, RenderCommandList
 	if (shadow_comp.shadow_map == nullptr) {
 		InitShadowComponent(caster, LightType::POINT);
 	}
-
-	list->SetRenderTarget(shadow_comp.shadow_map);
 	std::vector<Entity> entities;
 	glm::mat4 view_projection;
 
@@ -275,7 +244,6 @@ void ShadowMappingPass::RenderPointShadowCaster(Entity caster, RenderCommandList
 	BoundingSphere culling_sphere(shadow_comp.far_plane, translation);
 
 	Application::GetWorld().GetSpatialIndex().SphereCulling(Application::GetWorld(), culling_sphere, entities);
-	list->SetConstantBuffer("mvp", data->const_buffer_point);
 
 	glm::mat4 light_views[6];
 	light_views[0] = projection * glm::lookAt(translation, translation + glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
@@ -293,8 +261,15 @@ void ShadowMappingPass::RenderPointShadowCaster(Entity caster, RenderCommandList
 
 
 	shadow_comp.light_view_matrix = view_projection;
-	list->Clear();
+
+	list->SetPipeline(data->pipeline_point);
+	list->SetRenderTarget(shadow_comp.shadow_map);
 	list->SetViewport(RenderViewport(glm::vec2(0.0f), glm::vec2(shadow_comp.res_x, shadow_comp.res_y)));
+	list->Clear();
+	list->SetConstantBuffer("mvp", data->const_buffer_point);
+
+	std::vector<Entity> skeletal_meshes;
+	skeletal_meshes.reserve(30);
 
 	for (auto& entity : entities) {
 		if (world.HasComponent<MeshComponent>(entity)) {
@@ -307,8 +282,27 @@ void ShadowMappingPass::RenderPointShadowCaster(Entity caster, RenderCommandList
 			list->Draw(mesh.GetMesh()->GetIndexCount());
 
 		}
+		else if (world.HasComponent<SkeletalMeshComponent>(entity)) {
+			skeletal_meshes.push_back(entity);
+		}
 	}
 
+	if (skeletal_meshes.empty()) return;
+	list->SetPipeline(data->pipeline_point_skeletal);
+	list->SetViewport(RenderViewport(glm::vec2(0.0f), glm::vec2(shadow_comp.res_x, shadow_comp.res_y)));
+	for (auto& entity : skeletal_meshes) {
+		auto& mesh = world.GetComponent<SkeletalMeshComponent>(entity);
+		world.UpdateSkeletalMesh(entity);
+		mesh.GetAnimation().UpdateAnimation(Application::GetDeltaTime(), list, mesh.GetMesh());
+		list->SetConstantBuffer("bones", mesh.GetAnimation().GetBoneBuffer());
+
+		auto& trans = world.GetComponent<TransformComponent>(entity);
+		glm::mat4 model = trans.TransformMatrix;
+		RenderResourceManager::Get()->UploadDataToBuffer(list, data->const_buffer_point, glm::value_ptr(model), sizeof(glm::mat4), 0);
+		list->SetVertexBuffer(mesh.GetMesh()->GetVertexBuffer());
+		list->SetIndexBuffer(mesh.GetMesh()->GetIndexBuffer());
+		list->Draw(mesh.GetMesh()->GetIndexCount());
+	}
 
 }
 
@@ -329,6 +323,17 @@ void ShadowMappingPass::InitShadowMappingPassData()
 
 	data->pipeline_point = PipelineManager::Get()->CreatePipeline(pipeline_desc);
 
+	
+	pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/ShadowMappingShaderDirectionalSkeletal.glsl");
+	pipeline_desc.layout = VertexLayoutFactory<SkeletalGeometryPassPreset>::GetLayout();
+
+	data->pipeline_directional_skeletal = PipelineManager::Get()->CreatePipeline(pipeline_desc);
+
+	pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/ShadowMappingShaderPointSkeletal.glsl");
+
+	data->pipeline_point_skeletal = PipelineManager::Get()->CreatePipeline(pipeline_desc);
+
+
 	TextureSamplerDescritor sample_desc;
 	sample_desc.AddressMode_U = TextureAddressMode::CLAMP;
 	sample_desc.AddressMode_V = TextureAddressMode::CLAMP;
@@ -345,7 +350,6 @@ void ShadowMappingPass::InitShadowMappingPassData()
 		
 	RenderBufferDescriptor desc(sizeof(glm::mat4) * (HARD_CODE_CASCADES +1), RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
 	data->const_buffer_directional = RenderResourceManager::Get()->CreateBuffer(desc);
-
 
 	data->shadow_cascades.resources.reserve(20);
 
@@ -369,13 +373,6 @@ void ShadowMappingPass::Render_impl(RenderPipelineResourceManager& resource_mana
 	auto& world = Application::GetWorld();
 	auto queue = Renderer::Get()->GetCommandQueue();
 	auto list = Renderer::Get()->GetRenderCommandList();
-
-	if constexpr (type == LightType::DIRECTIONAL) {
-		list->SetPipeline(data->pipeline_directional);
-	}
-	else if constexpr (type == LightType::POINT) {
-		list->SetPipeline(data->pipeline_point);
-	}
 	
 	for (auto& caster : shadow_caster_entities->resources) {
 		if constexpr (type == LightType::POINT) {

@@ -4,6 +4,11 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <Renderer/RenderResource.h>
+#ifndef MAX_NUM_OF_BONES
+#define MAX_NUM_OF_BONES 80
+#endif
+
+static const int max_num_of_bones = MAX_NUM_OF_BONES;
 
 class RenderCommandList;
 
@@ -109,9 +114,16 @@ public:
 		return !anim->IsEmpty();
 	}
 
-	bool UpdateAnimation(float delta_time, std::shared_ptr<RenderBufferResource> animation_buffer, RenderCommandList* list, std::shared_ptr<Mesh> skeletal_mesh);
+	std::shared_ptr<RenderBufferResource> GetBoneBuffer() const {
+		return bone_buffer;
+	}
+
+	bool UpdateAnimation(float delta_time, RenderCommandList* list, std::shared_ptr<Mesh> skeletal_mesh);
 private:
 	float current_time = 0.0f;
+	uint32_t last_time_updated = 0;
+	bool was_succesful = false;
 	std::shared_ptr<Animation> anim;
+	std::shared_ptr<RenderBufferResource> bone_buffer = nullptr;
 	AnimationPlaybackState playback_state;
 };

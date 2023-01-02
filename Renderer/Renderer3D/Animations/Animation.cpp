@@ -1,6 +1,7 @@
 #include "Animation.h"
 #include <Renderer/RenderResourceManager.h>
 #include <Renderer/Renderer3D/Animations/AnimationManager.h>
+#include <FrameManager.h>
 
 std::vector<glm::mat4> Animation::GetBoneTransforms(std::shared_ptr<Mesh> skeletal_mesh, float time, AnimationPlaybackState* playback_state) {
 	if (playback_state->bone_playback_states.size() != bone_anim.size()) throw std::runtime_error("Invalid playback state: it doesn't match number or entries with the number of skeleton bones.");
@@ -106,8 +107,15 @@ AnimationPlayback::AnimationPlayback(std::shared_ptr<Animation> animation) : ani
 	}
 }
 
-bool AnimationPlayback::UpdateAnimation(float delta_time, std::shared_ptr<RenderBufferResource> animation_buffer, RenderCommandList* list, std::shared_ptr<Mesh> skeletal_mesh)
+bool AnimationPlayback::UpdateAnimation(float delta_time, RenderCommandList* list, std::shared_ptr<Mesh> skeletal_mesh)
 {
+	if (last_time_updated == FrameManager::Get()->GetCurrentFrameNumber()) return was_succesful;
+	last_time_updated = FrameManager::Get()->GetCurrentFrameNumber();
+	if (!bone_buffer) {
+		RenderBufferDescriptor const_bone_desc(sizeof(glm::mat4) * max_num_of_bones + sizeof(unsigned int), RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
+		bone_buffer = RenderResourceManager::Get()->CreateBuffer(const_bone_desc);
+	}
+	
 	std::vector<glm::mat4> bone_transforms;
 	current_time += delta_time * 0.001 * anim->GetTicksPerSecond();
 	unsigned int value = 1;
@@ -119,15 +127,16 @@ bool AnimationPlayback::UpdateAnimation(float delta_time, std::shared_ptr<Render
 
 	if (skeletal_mesh->GetMeshStatus() == Mesh_status::LOADING) {
 		value = 0;
-		RenderResourceManager::Get()->UploadDataToBuffer(list, animation_buffer, &value, sizeof(unsigned int), 80 * sizeof(glm::mat4));
+		RenderResourceManager::Get()->UploadDataToBuffer(list, bone_buffer, &value, sizeof(unsigned int), 80 * sizeof(glm::mat4));
+		was_succesful = false;
 		return false;
 	}
 
 	auto queue = Renderer::Get()->GetCommandQueue();
 	if (anim->IsEmpty()) {
 		value = 0;
-		RenderResourceManager::Get()->UploadDataToBuffer(list, animation_buffer, &value, sizeof(unsigned int) , 80*sizeof(glm::mat4));
-
+		RenderResourceManager::Get()->UploadDataToBuffer(list, bone_buffer, &value, sizeof(unsigned int) , 80*sizeof(glm::mat4));
+		was_succesful = false;
 		return false;
 	}
 	else {
@@ -141,11 +150,11 @@ bool AnimationPlayback::UpdateAnimation(float delta_time, std::shared_ptr<Render
 		}
 		bone_transforms = std::move(anim->GetBoneTransforms(skeletal_mesh, current_time, &playback_state));
 	}
-	if (animation_buffer->GetBufferDescriptor().buffer_size < sizeof(glm::mat4) * bone_transforms.size() + sizeof(unsigned int)) throw std::runtime_error("Invalid Animation Buffer Size");
+	if (bone_buffer->GetBufferDescriptor().buffer_size < sizeof(glm::mat4) * bone_transforms.size() + sizeof(unsigned int)) throw std::runtime_error("Invalid Animation Buffer Size");
 
-	RenderResourceManager::Get()->UploadDataToBuffer(list, animation_buffer, &value, sizeof(unsigned int), 80 * sizeof(glm::mat4));
-	RenderResourceManager::Get()->UploadDataToBuffer(list,animation_buffer,bone_transforms.data(),sizeof(glm::mat4) * bone_transforms.size(), 0);
-
+	RenderResourceManager::Get()->UploadDataToBuffer(list, bone_buffer, &value, sizeof(unsigned int), 80 * sizeof(glm::mat4));
+	RenderResourceManager::Get()->UploadDataToBuffer(list, bone_buffer,bone_transforms.data(),sizeof(glm::mat4) * bone_transforms.size(), 0);
+	was_succesful = true;
 	return true;
 }
 
