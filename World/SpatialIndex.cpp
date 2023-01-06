@@ -113,6 +113,34 @@ void Octree::SphereCulling(World& world, const BoundingSphere& sphere, std::vect
 	}
 }
 
+void Octree::RayCast(World& world, const Ray& ray, std::vector<RayCastResult>& hit_results)
+{
+	for (auto entity : entity_list) {
+		bool has_bounding_box = world.HasComponent<BoundingVolumeComponent>(entity);
+		auto variant = BoundingVolumeComponent::GetBoundingVolume(entity);
+		if (!std::holds_alternative<NullBoundingVolume>(variant)) {
+			TransformComponent& transform = world.GetComponent<TransformComponent>(entity);
+			std::visit([&](auto& bounding_vol) {
+				std::vector<glm::vec3> hits;
+				if (bounding_vol.IntersectRay(ray, transform.TransformMatrix, hits)) {
+					for (auto& hit : hits) {
+						hit_results.push_back(RayCastResult{ entity, hit });
+					}
+				}
+				}, variant);
+		}
+	}
+
+	if (!active) return;
+
+	for (int index = 0; index < 8; index++) {
+		if (!(active & (1 << index))) continue;
+		std::vector<glm::vec3> null_hit;
+		if (!child_nodes[index].node_box.IntersectRay(ray, glm::mat4(1.0), null_hit)) continue;
+		child_nodes[index].RayCast(world, ray, hit_results);
+	}
+}
+
 void Octree::AddEntity(Entity ent)
 {
 	//IF there are no child nodes add entity into the current node

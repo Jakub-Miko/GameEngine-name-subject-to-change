@@ -165,6 +165,32 @@ bool BoundingBox::OverlapsSphere(const BoundingSphere& sphere, const glm::mat4& 
 	return sphere.OverlapsBox(adjusted_box, glm::mat4(1.0f));
 }
 
+bool BoundingBox::IntersectRay(const Ray& ray, const glm::mat4& model_matrix, std::vector<glm::vec3>& hit_results) const
+{
+	auto adjusted_box = GetAdjustedBox(model_matrix);
+	glm::vec3 tMin = (adjusted_box.box_min - ray.origin) / ray.direction;
+	glm::vec3 tMax = (adjusted_box.box_max - ray.origin) / ray.direction;
+	glm::vec3 t1 = glm::min(tMin, tMax);
+	glm::vec3 t2 = glm::max(tMin, tMax);
+	float tNear = std::max(std::max(t1.x, t1.y), t1.z);
+	float tFar = std::min(std::min(t2.x, t2.y), t2.z);
+	
+	if (tNear > tFar) {
+		return false;
+	}
+
+	if (tNear != std::numeric_limits<float>::max()) {
+		hit_results.push_back(ray.origin + ray.direction * tNear);
+	}
+	
+	if (tFar != std::numeric_limits<float>::max()) {
+		hit_results.push_back(ray.origin + ray.direction * tFar);
+	}
+
+	return true;
+
+}
+
 bool OverlapPointPlane(const glm::vec3& point, const Plane& plane)
 {
 	return (glm::dot(point, plane.normal) - plane.distance) >= 0;
@@ -201,6 +227,11 @@ bool OverlapBoxBox(const BoundingBox& box_1, const BoundingBox& box_2)
 		}
 	}
 	return true;
+}
+
+bool BoundingInfinity::IntersectRay(const Ray& ray, const glm::mat4& model_matrix, std::vector<glm::vec3>& hit_results) const
+{
+	return false;
 }
 
 bool OverlapPointBox(const glm::vec3& point, const BoundingBox& box)
@@ -350,6 +381,36 @@ bool BoundingSphere::OverlapsSphere(const BoundingSphere& sphere, const glm::mat
 	return glm::abs(glm::length(pos - sphere.sphere_offset)) < radius + sphere.sphere_size;
 }
 
+bool BoundingSphere::IntersectRay(const Ray& ray, const glm::mat4& model_matrix, std::vector<glm::vec3>& hit_results) const
+{
+	glm::mat3 matrix = glm::mat3(model_matrix);
+	float len_x = glm::length(matrix[0]);
+	float len_y = glm::length(matrix[1]);
+	float len_z = glm::length(matrix[2]);
+	float radius = std::max(len_x, std::max(len_y, len_z)) * sphere_size;
+
+	glm::vec3 relative_center = (sphere_offset + glm::vec3(model_matrix[3])) - ray.origin;
+	float center_on_line = glm::dot(relative_center, ray.direction);
+	float distance_2 = glm::dot(relative_center, relative_center) - center_on_line * center_on_line;
+	if (distance_2 > radius * radius) return false;
+	float d = std::sqrt(radius * radius - distance_2);
+	float t0 = center_on_line - d;
+	float t1 = center_on_line + d;
+
+	if (t0 > t1) std::swap(t0, t1);
+
+	if (t0 < 0) {
+		if (t1 < 0) return false;
+		hit_results.push_back(ray.origin + ray.direction * t1);
+	}
+	else {
+		hit_results.push_back(ray.origin + ray.direction * t0);
+		hit_results.push_back(ray.origin + ray.direction * t1);
+	}
+
+	return true;
+}
+
 bool BoundingSphere::OverlapSpherePlane(const glm::vec3& position, float radius, const Plane& plane) const
 {
 	return (glm::dot(position, plane.normal) - plane.distance) >= -radius;
@@ -441,6 +502,31 @@ bool BoundingPointLightSphere::OverlapsSphere(const BoundingSphere& sphere, cons
 	glm::vec3 pos = glm::vec4(model_matrix * glm::vec4(sphere_offset, 1.0));
 
 	return glm::abs(glm::length(pos - sphere.GetSphereOffset())) < sphere_size + sphere.GetSphereSize();
+}
+
+bool BoundingPointLightSphere::IntersectRay(const Ray& ray, const glm::mat4& model_matrix, std::vector<glm::vec3>& hit_results) const
+{
+	float radius = sphere_size;
+	glm::vec3 relative_center = (sphere_offset + glm::vec3(model_matrix[3])) - ray.origin;
+	float center_on_line = glm::dot(relative_center, ray.direction);
+	float distance_2 = glm::dot(relative_center, relative_center) - center_on_line * center_on_line;
+	if (distance_2 > radius * radius) return false;
+	float d = std::sqrt(radius * radius - distance_2);
+	float t0 = center_on_line - d;
+	float t1 = center_on_line + d;
+
+	if (t0 > t1) std::swap(t0, t1);
+
+	if (t0 < 0) {
+		if (t1 < 0) return false;
+		hit_results.push_back(ray.origin + ray.direction * t1);
+	}
+	else {
+		hit_results.push_back(ray.origin + ray.direction * t0);
+		hit_results.push_back(ray.origin + ray.direction * t1);
+	}
+
+	return true;
 }
 
 bool BoundingPointLightSphere::OverlapSpherePlane(const glm::vec3& position, float radius, const Plane& plane) const

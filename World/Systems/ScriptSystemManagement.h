@@ -216,6 +216,8 @@ public:
         return curentHandler.GetEntity();
     }
 
+    void RunGarbageCollector();
+
     // For Script Runtime
 
     template<typename R, typename ... Args>

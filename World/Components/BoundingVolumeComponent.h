@@ -17,6 +17,7 @@ public:
 	virtual bool OverlapsBox(const BoundingBox& box, const glm::mat4& model_matrix) const { throw std::runtime_error("This bounding volume type should not be used directly");};
 	virtual bool OverlapsOrientedBox(const OrientedBoundingBox& box, const glm::mat4& model_matrix) const { throw std::runtime_error("This bounding volume type should not be used directly");};
 	virtual bool OverlapsSphere(const BoundingSphere& sphere, const glm::mat4& model_matrix) const { throw std::runtime_error("This bounding volume type should not be used directly");};
+	virtual bool IntersectRay(const Ray& ray, const glm::mat4& model_matrix, std::vector<glm::vec3>& hit_results) const { throw std::runtime_error("This bounding volume type should not be used directly"); };
 };
 
 

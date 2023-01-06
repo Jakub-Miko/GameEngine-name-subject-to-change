@@ -11,6 +11,21 @@ extern "C" {
 		return *reinterpret_cast<vec3*>(&result);
 	}
 
+	float GetVector2Length_L(vec2 in_vector) {
+		glm::vec2 vec = *reinterpret_cast<glm::vec2*>(&in_vector);
+		return glm::length(vec);
+	}
+
+	float GetVector3Length_L(vec3 in_vector) {
+		glm::vec3 vec = *reinterpret_cast<glm::vec3*>(&in_vector);
+		return glm::length(vec);
+	}
+
+	float GetVector4Length_L(vec4 in_vector) {
+		glm::vec4 vec = *reinterpret_cast<glm::vec4*>(&in_vector);
+		return glm::length(vec);
+	}
+
 	vec4 multiply_matrix_vec4_L(mat4* matrix, vec4* vector) {
 		glm::mat4* mat = reinterpret_cast<glm::mat4*>(matrix);
 		glm::vec4* vec = reinterpret_cast<glm::vec4*>(vector);
@@ -79,6 +94,9 @@ void MathModule::OnRegisterModule(ModuleBindingProperties& props)
 	quat mat3_to_quat_L(mat3 matrix);
 	vec3 rotate_vec3_L(vec3 vec, quat rotation);
 	quat quat_multiply_L(quat quat1, quat quat2);
+	float GetVector2Length_L(vec2 in_vector);
+	float GetVector3Length_L(vec3 in_vector);
+	float GetVector4Length_L(vec4 in_vector);
 	)");
 
 	props.Add_FFI_aliases({
@@ -95,7 +113,10 @@ void MathModule::OnRegisterModule(ModuleBindingProperties& props)
 		{"quat_lookat_L","quat_lookat"},
 		{"mat3_to_quat_L","mat3_to_quat"},
 		{"rotate_vec3_L","rotate_vec3"},
-		{"quat_multiply_L","quat_multiply"}
+		{"quat_multiply_L","quat_multiply"},
+		{"GetVector2Length_L","GetVector2Length"},
+		{"GetVector3Length_L","GetVector3Length"},
+		{"GetVector4Length_L","GetVector4Length"}
 		});
 
 	props.Add_init_script(R"(

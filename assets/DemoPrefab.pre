@@ -38,7 +38,8 @@
 }
 
 @EndSection
-@Section:Root@Entity 
+@Section:Root
+@Entity 
 {
 "Components": {"LabelComponent":{"label":"Prefab"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":1.0,"y":0.0,"z":0.0}}},
 "Children": ["local#Skeleton_15","local#Mesh_14","local#Mesh2_0","local#Point_Light_10","local#Audio_11"]
@@ -48,15 +49,33 @@
 
 
 
+
+
+
 function OnStart() 
 	PlayAnimation("Skeleton","asset:default_dance_vampire_animations/DanceMoves.anim")
 	PlaySound("Audio","asset:test_track_mono.wav")
 	print("Start")
+	
 end
+
+function freeNow(arr) 
+print("Heeey")
+FreeArray(arr) 
+
+end
+
+function trash(test_obj) print("TRASH") end
 
 function OnUpdate(delta_time) 
 
+
+	
+	
+	print(collectgarbage("count"))
 end
+
+
 
 
 

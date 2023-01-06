@@ -119,7 +119,7 @@ void DefferedSkeletalGeometryPass::Render(RenderPipelineResourceManager& resourc
 
 
 }
-
+ 
 DefferedSkeletalGeometryPass::~DefferedSkeletalGeometryPass()
 {
 	if (data) {

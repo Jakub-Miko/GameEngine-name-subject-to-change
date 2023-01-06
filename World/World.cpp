@@ -9,6 +9,7 @@
 #include <GameStateMachine.h>
 #include <World/EntityManager.h>
 #include <World/ComponentTypes.h>
+#include <World/Systems/ScriptSystemManagement.h>
 #include <World/ScriptModules/DefferedPropertySetModule.h>
 #include <World/ScriptModules/IOModule.h>
 #include <World/ScriptModules/ApplicationDataModule.h>
@@ -427,11 +428,13 @@ void World::LoadSceneSystem()
 		m_SceneGraph.clear();
 		m_PhysicsEngine.clear();
 		default_camera = Entity();
+		
 		TextureManager::Get()->ClearTextureCache();
 		MaterialManager::Get()->ClearMaterialCache();
 		MeshManager::Get()->ClearMeshCache();
 		AnimationManager::Get()->ClearAnimationCache(); 
 		EntityManager::Get()->ClearPrefabCache();
+		ScriptSystemManager::Get()->ResetAllScriptSystemVMs();
 
 		ResetLuaEngine();
 

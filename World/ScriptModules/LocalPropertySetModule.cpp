@@ -167,7 +167,7 @@ extern "C" {
 
 void LocalPropertySetModule::OnRegisterModule(ModuleBindingProperties& props)
 {
-    LocalEntityModule().OnRegisterModule(props);
+    LocalEntityModule().RegisterModule(props);
 
     props.Add_FFI_declarations(R"(
 	int GetProperty_INT_L(const char * name);

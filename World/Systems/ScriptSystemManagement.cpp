@@ -20,6 +20,7 @@
 #include <World/ScriptModules/ApplicationDataModule.h>
 #include <World/ScriptModules/LocalPropertySetModule.h>
 #include <World/ScriptModules/TimeModule.h>
+#include <World/ScriptModules/RayCastingModule.h>
 #include <World/ScriptModules/PrefabManipulationModule.h>
 #include <World/ScriptModules/LocalEntityModule.h>
 #include <World/ScriptModules/EventModule.h>
@@ -220,6 +221,12 @@ void ScriptSystemVM::SetEngineEntity(Entity ent)
     init_mode = false;
 }
 
+void ScriptSystemVM::RunGarbageCollector()
+{
+    m_LuaEngine.RunGarbageCollector();
+    m_LuaInitializationEngine.RunGarbageCollector();
+}
+
 void ScriptSystemVM::SetEngineInitializationEntity(Entity ent, const std::string& path)
 {
     current_Initialization_handler = InitializationScriptHandler(ent, FileManager::Get()->GetRelativeFilePath(FileManager::Get()->GetPath(path)));
@@ -272,6 +279,7 @@ void ScriptHandler::BindHandlerFunctions(LuaEngineClass<ScriptHandler>* script_e
     LocalEntityModule().RegisterModule(props);
     LocalPropertySetModule().RegisterModule(props);
     PrefabManipulationModule().RegisterModule(props);
+    RayCastingModule().RegisterModule(props);
 
     script_engine->RegisterModule(props);
 }

@@ -1,4 +1,4 @@
-@Section:Camera_1048593
+@Section:Camera_11
 @Entity 
 {
 "Components": {"CameraComponent":{"aspect_ratio":1.7777777910232544,"fov":45.55099868774414,"zFar":1000.0,"zNear":0.10000000149011612},"LabelComponent":{"label":"Camera"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":0.0,"y":0.0,"z":0.0}}},
@@ -6,13 +6,23 @@
 }
 
 @EndSection
+@Section:Sphere_14
+@Entity 
+{
+"Components": {"LabelComponent":{"label":"Sphere"},"MeshComponent":{"path":"/assets/Sphere.mesh"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":0.0,"y":0.0,"z":-9.0}}},
+"Children": []
+}
+
+@EndSection
 @Section:Root
 @Entity 
 {
-"Components": {"TransformComponent":{"props":{"mode":0},"rotation":{"w":0.592252254486084,"x":-0.09380356967449188,"y":0.7904211282730103,"z":0.12519042193889618},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":28.837013244628906,"y":12.914884567260742,"z":21.72262191772461}}},
-"Children": ["local#Camera_1048593"]
+"Components": {"TransformComponent":{"props":{"mode":0},"rotation":{"w":0.961039662361145,"x":-0.27468159794807434,"y":-0.029678693041205406,"z":-0.008482677862048149},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":-2.1308388710021973,"y":14.865335464477539,"z":17.672117233276367}}},
+"Children": ["local#Camera_11","local#Sphere_14"]
 }
 @Entity:Inline_Script
+
+
 
 
 
@@ -23,35 +33,35 @@ CreateProperty_FLOAT("Speed",1.0)
 end
 
 function OnUpdate(delta_time) 
-	speed = GetProperty_FLOAT("Speed")
+	local speed = GetProperty_FLOAT("Speed")
 	if(IsMouseButtonPressed(MouseButtonCode.MOUSE_BUTTON_RIGHT)) then
 	
 		if(IsKeyPressed(KeyCode.KEY_W)) then
-			translation = GetTranslation()
+			local translation = GetTranslation()
 			translation = translation + rotate_vec3(vec3(0,0,-1*speed), GetRotation())
 			SetTranslation(translation)
 		end
 
 		if(IsKeyPressed(KeyCode.KEY_S)) then
-			translation = GetTranslation()
+			local translation = GetTranslation()
 			translation = translation + rotate_vec3(vec3(0,0,1*speed), GetRotation())
 			SetTranslation(translation)
 		end
 
 		if(IsKeyPressed(KeyCode.KEY_A)) then
-			translation = GetTranslation()
+			local translation = GetTranslation()
 			translation = translation + rotate_vec3(vec3(-1*speed,0,0), GetRotation())
 			SetTranslation(translation)
 		end
 
 		if(IsKeyPressed(KeyCode.KEY_D)) then
-			translation = GetTranslation()
+			local translation = GetTranslation()
 			translation = translation + rotate_vec3(vec3(1*speed,0,0), GetRotation())
 			SetTranslation(translation)
 		end
 
-		norm_scree_pos = GetMousePositionChange()
-		offset = vec2({ x = 0.0, y =0.0 })
+		local norm_scree_pos = GetMousePositionChange()
+		local offset = vec2({ x = 0.0, y =0.0 })
 		
 		norm_scree_pos = offset + norm_scree_pos;
 		
@@ -64,14 +74,41 @@ function OnUpdate(delta_time)
 		z = math.cos(norm_scree_pos.x * 3.1415926) * math.cos(norm_scree_pos.y * 3.1415926/2)
 		}
 	
-		pos = rotate_vec3(pos, GetRotation())
+		local pos = rotate_vec3(pos, GetRotation())
 
-		rot = quat_lookat(-vec3(pos), vec3({0,1,0}))
+		local rot = quat_lookat(-vec3(pos), vec3({0,1,0}))
 	
 		SetRotation(rot)
+
+		local test = RayCast(GetTranslation(), rotate_vec3(vec3(0,0,-1), GetRotation()))
+
+		local min = 5000
+		local trans = 0
+		local ent = 0
+		for val in test() do
+			if val.hit_ent.id ~= GetEntityByName("Sphere").id then
+			if GetVector3Length(val.hit_pos - GetTranslation()) < min then
+				min = GetVector3Length(val.hit_pos - GetTranslation()) 
+				trans = val.hit_pos
+				ent = val.hit_ent
+			end
+			end
+		end
+		print("Entity: ")
+		print(ent.id)
+		trans = trans - GetTranslation()
+		print(trans.x)
+		print(trans.y)
+		print(trans.z)
+		SetChildTranslation("Sphere", vec3(0,0,-GetVector3Length(trans)))
+
 	end
 
 end
+
+
+
+
 
 
 

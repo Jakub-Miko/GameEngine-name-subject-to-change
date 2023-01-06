@@ -32,6 +32,10 @@ static Entity GetEntityByName(const char* name) {
 
 extern "C" {
 	
+	entity GetEntityByName_L(const char* name) {
+		Entity ent = GetEntityByName(name);
+		return entity{ ent.id };
+	}
 
 	void SetChildTranslation_L(const char * name,vec3 translation) {
 		Entity ent = GetEntityByName(name);
@@ -71,8 +75,8 @@ extern "C" {
 
 void PrefabManipulationModule::OnRegisterModule(ModuleBindingProperties& props)
 {
-	LocalEntityModule().OnRegisterModule(props);
-	LocalPropertySetModule().OnRegisterModule(props);
+	LocalEntityModule().RegisterModule(props);
+	LocalPropertySetModule().RegisterModule(props);
 
 	props.Add_FFI_declarations(R"(
 	void SetChildTranslation_L(const char * name,vec3 translation);
@@ -80,6 +84,7 @@ void PrefabManipulationModule::OnRegisterModule(ModuleBindingProperties& props)
 	void SetChildRotation_L(const char* name, quat rot);
 	void PlayAnimation_L(const char* name, const char* path);
 	void PlaySound_L(const char* name, const char* path);
+	entity GetEntityByName_L(const char* name);
 	)");
 
 	props.Add_FFI_aliases({
@@ -87,6 +92,7 @@ void PrefabManipulationModule::OnRegisterModule(ModuleBindingProperties& props)
 		{"SetChildScale_L","SetChildScale"},
 		{"SetChildRotation_L","SetChildRotation"},
 		{"PlayAnimation_L","PlayAnimation"},
-		{"PlaySound_L","PlaySound"}
+		{"PlaySound_L","PlaySound"},
+		{"GetEntityByName_L","GetEntityByName"}
 		});
 }
