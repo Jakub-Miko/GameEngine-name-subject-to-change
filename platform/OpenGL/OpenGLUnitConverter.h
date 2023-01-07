@@ -53,6 +53,7 @@ public:
 		case TextureFormat::RGB_32FLOAT:					return GL_RGBA32F;
 		case TextureFormat::RGBA_32FLOAT:					return GL_RGBA32F;
 		case TextureFormat::R_UNSIGNED_INT:					return GL_R32UI;
+		case TextureFormat::R_UNSIGNED_CHAR:                return GL_RED;
 		default:
 			throw std::runtime_error("Conversion failed");
 		}
@@ -119,6 +120,7 @@ public:
 		case TextureFormat::RGB_32FLOAT:					return GL_RGB;
 		case TextureFormat::RGBA_32FLOAT:					return GL_RGBA;
 		case TextureFormat::R_UNSIGNED_INT:					return GL_RED_INTEGER;
+		case TextureFormat::R_UNSIGNED_CHAR:                return GL_RED;
 		default:
 			throw std::runtime_error("Conversion failed");
 		}
@@ -132,6 +134,7 @@ public:
 		case TextureFormat::RGB_32FLOAT:					return GL_FLOAT;
 		case TextureFormat::RGBA_32FLOAT:					return GL_FLOAT;
 		case TextureFormat::R_UNSIGNED_INT:					return GL_UNSIGNED_INT;
+		case TextureFormat::R_UNSIGNED_CHAR:                return GL_UNSIGNED_BYTE;
 		default:
 			throw std::runtime_error("Conversion failed");
 		}
@@ -145,6 +148,7 @@ public:
 		case TextureFormat::RGB_32FLOAT:					return 3*sizeof(float);
 		case TextureFormat::RGBA_32FLOAT:					return 4*sizeof(float);
 		case TextureFormat::R_UNSIGNED_INT:					return sizeof(uint32_t);
+		case TextureFormat::R_UNSIGNED_CHAR:                return sizeof(char);
 		default:
 			throw std::runtime_error("Conversion failed");
 		}

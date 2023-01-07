@@ -1,6 +1,7 @@
        
 #pragma once
 #include "Layer.h"
+#include <Renderer/TextRenderer.h>
 #include <Core/Debug.h>
 #include <Renderer/Renderer3D/Animations/AnimationManager.h>
 #include "Application.h"
@@ -415,12 +416,16 @@ public:
 
 #pragma endregion
 
-
+            auto font = TextRenderer::Get()->GetFontObject("asset:arial.ttf"_path);
 
             stop = false;
 
         }
 
+        auto font = TextRenderer::Get()->GetFontObject("asset:arial.ttf"_path);
+        if (font->GetStatus() == FontObject::Font_status::LOADED) {
+            std::cout << "loaded\n";
+        }
         //RenderPassBuilder builder;
         //builder.AddPass(new TestPass2);
         //builder.AddPass(new TestPass1);

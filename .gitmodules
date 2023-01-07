@@ -29,3 +29,6 @@
 [submodule "dependencies/ImGuizmo"]
 	path = dependencies/ImGuizmo
 	url = https://github.com/CedricGuillemet/ImGuizmo.git
+[submodule "dependencies/FreeType"]
+	path = .dependencies/FreeType
+	url = https://gitlab.freedesktop.org/freetype/freetype.git

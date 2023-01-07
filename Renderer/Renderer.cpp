@@ -1,4 +1,5 @@
 #include "Renderer.h"
+#include <Renderer/TextRenderer.h>
 #include <Renderer/Renderer3D/Renderer3D.h>
 #include <platform/OpenGL/OpenGLRenderCommandList.h>
 #include <Renderer/RenderContext.h>
@@ -65,6 +66,7 @@ void Renderer::Init(int max_allocators) {
 void Renderer::PostInit()
 {
     Renderer3D::Init();
+    TextRenderer::Init();
 }
 
 
@@ -80,6 +82,7 @@ RenderFence* Renderer::GetFence()
 
 void Renderer::Shutdown()
 {
+    TextRenderer::Shutdown();
     Renderer3D::PreShutdown();
     std::unique_lock<std::mutex> lock(instance->default_frame_buffer_mutex);
     if (instance->default_frame_buffer) {
@@ -123,6 +126,7 @@ void Renderer::Create()
 void Renderer::Update(float delta_time)
 {
     Renderer3D::Get()->Update(delta_time);
+    TextRenderer::Get()->UpdateLoadedFonts();
 }
 
 void Renderer::ReuseAllocator(RenderCommandAllocator* alloc)

@@ -28,6 +28,7 @@ file(GLOB SRCS
 
 add_executable(PseudoTest ${SRCS})
 
+
 set_target_properties(PseudoTest PROPERTIES ENABLE_EXPORTS true WINDOWS_EXPORT_ALL_SYMBOLS true)
 
 
@@ -36,6 +37,10 @@ file(GLOB OPENGL_SRC
 "./platform/OpenGL/*/*.cpp" "./platform/OpenGL/*/*.h"
 "./platform/GLFW/*.cpp" "./platform/GLFW/*.h" )
 
+set(FT_DISABLE_ZLIB on CACHE BOOL "" FORCE)
+set(BUILD_SHARED_LIBS on)
+add_subdirectory("./dependencies/FreeType")
+set(BUILD_SHARED_LIBS off)
 add_subdirectory("./dependencies/glfw")
 
 add_subdirectory("./dependencies/EnTT")
@@ -65,7 +70,7 @@ target_include_directories(glew_s PUBLIC "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR
 
 target_link_libraries(PseudoTest PRIVATE glfw glew_s glm Profiler MemoryManagement 
 TaskSystem LuaEngine RuntimeTypeIdentifier ThreadManager FileManager ConfigManager EnTT::EnTT RuntimeTypeIdentifier JsonParser STB_Image assimp OpenAL ImGuizmo
-Bullet)
+Bullet freetype)
 
 if(EDITOR)
 
