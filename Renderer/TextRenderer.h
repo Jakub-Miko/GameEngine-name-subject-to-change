@@ -41,12 +41,17 @@ public:
 		return glypth_data[index];
 	}
 
+	const std::string& GetFilePath() const {
+		return path;
+	}
+
 private:
 	friend class TextRenderer;
 	std::string path;
 	Font_status status = Font_status::UNINITIALIZED;
 	std::shared_ptr<RenderTexture2DResource> font_atlas;
 	std::vector<GlyphData> glypth_data;
+	int max_size = 0;
 };
 
 class TextRenderer {

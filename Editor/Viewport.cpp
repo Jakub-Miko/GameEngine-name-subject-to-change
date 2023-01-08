@@ -3,6 +3,7 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_internal.h"
 #include <World/Components/CameraComponent.h>
+#include <World/Components/UITextComponent.h>
 #include <Renderer/Renderer.h>
 #include <Renderer/Renderer3D/Renderer3D.h>
 #include <Renderer/RenderResourceManager.h>
@@ -251,7 +252,19 @@ void Viewport::Render()
 
         if (Editor::Get()->IsEditorEnabled()) {
 
-            ImGuizmo::Manipulate(glm::value_ptr(camera_transform), glm::value_ptr(projection), op, md, glm::value_ptr(transform), glm::value_ptr(delta));
+            if (Application::GetWorld().HasComponent<UITextComponent>(selected)) {
+                glm::mat4 camera = glm::mat4(1.0f);
+                int res_x = Application::Get()->GetWindow()->GetProperties().resolution_x;
+                int res_y = Application::Get()->GetWindow()->GetProperties().resolution_y;
+                ImGuizmo::SetOrthographic(true);
+                glm::mat4 projection_ui = glm::ortho(0.0f, (float)res_x / (float)res_y, 0.0f, 1.0f);
+                transform[3][2] = 0.0f;
+                ImGuizmo::Manipulate(glm::value_ptr(camera), glm::value_ptr(projection_ui), op, md, glm::value_ptr(transform), glm::value_ptr(delta));
+            }
+            else {
+                ImGuizmo::SetOrthographic(false);
+                ImGuizmo::Manipulate(glm::value_ptr(camera_transform), glm::value_ptr(projection), op, md, glm::value_ptr(transform), glm::value_ptr(delta));
+            }
 
             if (ImGuizmo::IsUsing()) {
                 glm::mat3 rot = delta;

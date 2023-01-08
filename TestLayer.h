@@ -417,20 +417,8 @@ public:
 
 #pragma endregion
 
-            auto font = TextRenderer::Get()->GetFontObject("asset:arial.ttf"_path);
-            Entity ent = Application::GetWorld().CreateEntity();
-            UITextComponent text("Hello World !", font);
-            text.SetSize({ 2,2 });
-            text.SetOffset({ 0,0.5});
-            Application::GetWorld().SetComponent<UITextComponent>(ent, text);
-
             stop = false;
 
-        }
-
-        auto font = TextRenderer::Get()->GetFontObject("asset:arial.ttf"_path);
-        if (font->GetStatus() == FontObject::Font_status::LOADED) {
-            std::cout << "loaded\n";
         }
         //RenderPassBuilder builder;
         //builder.AddPass(new TestPass2);

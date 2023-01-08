@@ -1,4 +1,5 @@
 #pragma once
+#include <FileManager.h>
 #include <Renderer/TextRenderer.h>
 #include <string>
 #include <Core/UnitConverter.h>
@@ -16,7 +17,7 @@ public:
 		}
 	}
 
-	UITextComponent(const UITextComponent& other) : font(other.font), text(other.text), size(other.size), offset(other.offset), text_quads(nullptr) {
+	UITextComponent(const UITextComponent& other) : font(other.font), text(other.text), text_quads(nullptr) {
 
 	}
 
@@ -29,22 +30,6 @@ public:
 		dirty = true;
 	}
 
-	const glm::vec2 GetOffset() const {
-		return offset;
-	}
-
-	const glm::vec2 GetSize() const {
-		return size;
-	}
-
-	void SetOffset(const glm::vec2 in_offset) {
-		offset = in_offset;
-	}
-
-	void SetSize(const glm::vec2 in_size) {
-		size = in_size;
-	}
-
 	const std::shared_ptr<FontObject> GetFontObject() const {
 		return font;
 	}
@@ -54,14 +39,21 @@ public:
 		dirty = true;
 	}
 
+	float GetFontSize() const {
+		return font_size;
+	}
+
+	void SetFontSize(float in_font_size) {
+		font_size = in_font_size;
+	}
 
 private:
+	friend void from_json(const nlohmann::json& j, UITextComponent& p);
 	friend class TextRenderer;
 	std::string text = "Text";
 	std::shared_ptr<FontObject> font;
 	std::shared_ptr<RenderBufferResource> text_quads = nullptr;
-	glm::vec2 size = {-1,-1};
-	glm::vec2 offset = {0,0};
+	float font_size = 12.0f;
 	bool dirty = false;
 };
 
@@ -75,3 +67,25 @@ public:
 	static constexpr bool can_copy = true;
 
 };
+
+#pragma region Json_Serialization
+
+inline void to_json(nlohmann::json& j, const UITextComponent& p) {
+	j["text"] = p.GetText();
+	if (p.GetFontObject()) {
+		j["font"] = p.GetFontObject()->GetFilePath();
+	}
+	j["font_size"] = p.GetFontSize();
+
+}
+
+inline void from_json(const nlohmann::json& j, UITextComponent& p) {
+	if (j.contains("font")) {
+		p.font = TextRenderer::Get()->GetFontObject(FileManager::Get()->GetPath(j["font"].get<std::string>()));
+	}
+	p.text = j["text"].get<std::string>();
+	p.font_size = j["font_size"].get<int>();
+	p.dirty = true;
+}
+
+#pragma endregion

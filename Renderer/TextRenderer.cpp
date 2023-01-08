@@ -111,26 +111,29 @@ void TextRenderer::TextRenderSystem()
     for (auto entity : ui_view) {
         Entity ent = Entity((uint32_t)entity);
         auto& component = Application::GetWorld().GetComponent<UITextComponent>(ent);
+        auto& transform = Application::GetWorld().GetComponent<TransformComponent>(ent);
         if (!component.font || component.font->GetStatus() != FontObject::Font_status::LOADED) continue;
+        int max_size = component.font->max_size;
         if ((!component.text_quads) || component.dirty) {
             int width = std::ceil(std::sqrt(LOAD_FONT_SYMBOLS_COUNT));
             int height = std::ceil(LOAD_FONT_SYMBOLS_COUNT / width) + 1;
-            int x_pos = component.offset.x;
-            int y_pos = component.offset.y;
+            float x_pos = 0;
+            float scale = component.font_size / max_size / 96;
+            float y_pos = 0;
             int buffer_offset = 0;
             TextVertex* data_buffer = new TextVertex[component.text.size() * 6];
             for (char character : component.text) {
                 const FontObject::GlyphData& ch = component.font->GetGlyphData(character);
-                float xpos = x_pos + ch.offset_x;
-                float ypos = y_pos - (ch.height - ch.offset_y);
+                float xpos = x_pos + ch.offset_x * scale;
+                float ypos = y_pos - (ch.height * scale - ch.offset_y * scale);
 
                 float uv_x_min = (float)ch.x / (float)width;
-                float uv_x_max = (float)uv_x_min + (float)ch.width / (float)LOAD_FONT_SYMBOLS_HEIGHT / (float)width;
+                float uv_x_max = (float)uv_x_min + (float)ch.width / (float)max_size / (float)width;
                 float uv_y_min = (float)ch.y / (float)height;
-                float uv_y_max = (float)uv_y_min + (float)ch.height / (float)LOAD_FONT_SYMBOLS_HEIGHT / (float)height;
+                float uv_y_max = (float)uv_y_min + (float)ch.height / (float)max_size / (float)height;
 
-                float w = ch.width;
-                float h = ch.height;
+                float w = ch.width * scale;
+                float h = ch.height * scale;
                 TextVertex tile_vertex[6] = {
                     { {xpos, ypos + h},     {uv_x_min, uv_y_min}},
                     { {xpos, ypos},         {uv_x_min, uv_y_max}},
@@ -141,7 +144,7 @@ void TextRenderer::TextRenderSystem()
                 };
                 memcpy(data_buffer + buffer_offset, tile_vertex, sizeof(tile_vertex));
                 buffer_offset += 6;
-                x_pos += ch.advance;
+                x_pos += (float)ch.advance * scale;
             }
             RenderBufferDescriptor text_buf(sizeof(TextVertex) * component.text.size() * 6, RenderBufferType::DEFAULT, RenderBufferUsage::VERTEX_BUFFER);
             component.text_quads = RenderResourceManager::Get()->CreateBuffer(text_buf);
@@ -154,8 +157,10 @@ void TextRenderer::TextRenderSystem()
         list->SetTexture2D("font_atlas", component.font->font_atlas);
         int res_x = Application::Get()->GetWindow()->GetProperties().resolution_x;
         int res_y = Application::Get()->GetWindow()->GetProperties().resolution_y;
-        glm::mat4 text_matrix = glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(component.size,1.0f)), glm::vec3(component.offset.x* res_x * 0.5, component.offset.y * res_y * 0.5,1.0f));
-        glm::mat4 projection = glm::ortho(0.0f, (float)res_x, 0.0f, (float)res_y);
+
+
+        glm::mat4 text_matrix = transform.TransformMatrix;
+        glm::mat4 projection = glm::ortho(0.0f, (float)res_x / (float)res_y, 0.0f, 1.0f);
         text_matrix = projection * text_matrix;
         RenderResourceManager::Get()->UploadDataToBuffer(list, m_Internal_data->const_buf, glm::value_ptr(text_matrix), sizeof(glm::mat4), 0);
         list->SetVertexBuffer(component.text_quads);
@@ -221,6 +226,7 @@ void TextRenderer::UpdateLoadedFonts()
                 loaded_font.font->font_atlas = loaded_obj.object.font_atlas;
                 loaded_font.font->glypth_data = std::move(loaded_obj.object.glypth_data);
                 loaded_font.fence = loaded_obj.texture_atlas_fence;
+                loaded_font.font->max_size = loaded_obj.object.max_size;
             }
             if (loaded_font.fence->GetValue() == 1) {
                 loaded_font.font->status = FontObject::Font_status::LOADED;
@@ -246,6 +252,23 @@ void TextRenderer::UpdateLoadedFonts()
 
 TextRenderer::font_load_future_payload TextRenderer::LoadFontFromFileImpl(const std::string& file_path)
 {
+    FT_Face face;
+    auto error = FT_New_Face(m_Internal_data->ft_lib, file_path.c_str(), 0, &face);
+    int num_of_glyphs = std::min((int)face->num_glyphs, (int)LOAD_FONT_SYMBOLS_COUNT);
+    int max_size = LOAD_FONT_SYMBOLS_HEIGHT;
+    FT_Set_Pixel_Sizes(face, LOAD_FONT_SYMBOLS_HEIGHT, LOAD_FONT_SYMBOLS_HEIGHT);
+    for (int i = 0; i < num_of_glyphs; i++) {
+        error = FT_Load_Glyph(face, FT_Get_Char_Index(face, i), FT_LOAD_BITMAP_METRICS_ONLY);
+        if (face->glyph->bitmap.rows > max_size) {
+            max_size = face->glyph->bitmap.rows;
+        }
+        else if(face->glyph->bitmap.width > max_size) {
+            max_size = face->glyph->bitmap.width;
+        }
+
+    }
+
+
     font_load_future_payload payload;
     payload.object = FontObject();
     payload.texture_atlas_fence = std::shared_ptr<RenderFence>(Renderer::Get()->GetFence());
@@ -256,40 +279,37 @@ TextRenderer::font_load_future_payload TextRenderer::LoadFontFromFileImpl(const 
     texture_desc.sampler = m_Internal_data->sampler;
     int width = std::ceil(std::sqrt(LOAD_FONT_SYMBOLS_COUNT));
     int height = std::ceil(LOAD_FONT_SYMBOLS_COUNT / width) +1;
-    texture_desc.height = height * LOAD_FONT_SYMBOLS_HEIGHT;
-    texture_desc.width = width * LOAD_FONT_SYMBOLS_HEIGHT;
+    texture_desc.height = height * max_size;
+    texture_desc.width = width * max_size;
     payload.object.font_atlas = RenderResourceManager::Get()->CreateTexture(texture_desc);
-    FT_Face face;
-    auto error = FT_New_Face(m_Internal_data->ft_lib, file_path.c_str(), 0, &face);
     if (error) {
         throw std::runtime_error("Could not opne font file: " + file_path);
     }
-    int num_of_glyphs = std::min((int)face->num_glyphs, (int)LOAD_FONT_SYMBOLS_COUNT);
 
     int offset_x = 0;
     int offset_y = 0;
     auto list = Renderer::Get()->GetRenderCommandList();
     auto queue = Renderer::Get()->GetCommandQueue();
     for (int i = 0; i < num_of_glyphs; i++) {
-        FT_Set_Pixel_Sizes(face, 0, LOAD_FONT_SYMBOLS_HEIGHT);
         error = FT_Load_Glyph(face, FT_Get_Char_Index(face, i), FT_LOAD_RENDER);
         
         if (error) {
             throw std::runtime_error("Character could not be loaded");
         }
-        if (offset_x + LOAD_FONT_SYMBOLS_HEIGHT > texture_desc.width) {
+        if (offset_x + max_size > texture_desc.width) {
             offset_x = 0;
-            offset_y += LOAD_FONT_SYMBOLS_HEIGHT;
+            offset_y += max_size;
         }
         if (face->glyph->bitmap.buffer) {
             RenderResourceManager::Get()->UploadDataToTexture2D(list, payload.object.font_atlas, (void*)face->glyph->bitmap.buffer, face->glyph->bitmap.width, face->glyph->bitmap.rows, offset_x, offset_y, 0);
         }
 
-        payload.object.glypth_data.push_back(FontObject::GlyphData{ (char)i,offset_x / LOAD_FONT_SYMBOLS_HEIGHT,offset_y / LOAD_FONT_SYMBOLS_HEIGHT,face->glyph->advance.x >> 6,face->glyph->bitmap_left,
+        payload.object.glypth_data.push_back(FontObject::GlyphData{ (char)i,offset_x / max_size,offset_y / max_size,face->glyph->advance.x >> 6,face->glyph->bitmap_left,
             face->glyph->bitmap_top, (int)face->glyph->bitmap.width ,(int)face->glyph->bitmap.rows });
 
-        offset_x += LOAD_FONT_SYMBOLS_HEIGHT;
+        offset_x += max_size;
     }
+    payload.object.max_size = max_size;
     queue->ExecuteRenderCommandList(list);
     queue->Signal(payload.texture_atlas_fence, 1);
 
