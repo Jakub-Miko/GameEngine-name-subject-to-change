@@ -127,6 +127,7 @@ void Renderer::Update(float delta_time)
 {
     Renderer3D::Get()->Update(delta_time);
     TextRenderer::Get()->UpdateLoadedFonts();
+    TextRenderer::Get()->TextRenderSystem();
 }
 
 void Renderer::ReuseAllocator(RenderCommandAllocator* alloc)

@@ -20,3 +20,14 @@ private:
 	int index_offset;
 	uint32_t index_count;
 };
+
+class OpenGLImplicitDrawArraysCommand : public OpenGLRenderCommand {
+public:
+	OpenGLImplicitDrawArraysCommand(std::shared_ptr<Pipeline> pipeline, std::shared_ptr<RenderBufferResource> vertex_buffer, uint32_t vertex_count)
+		: vertex_count(vertex_count), vertex_buffer(vertex_buffer), pipeline(pipeline) {};
+	virtual void Execute() override;
+private:
+	std::shared_ptr<RenderBufferResource> vertex_buffer;
+	std::shared_ptr<Pipeline> pipeline;
+	uint32_t vertex_count;
+};

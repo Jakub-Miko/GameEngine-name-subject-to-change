@@ -7,6 +7,7 @@
 #include "Application.h"
 #include <iostream>
 #include <World/Components/SerializableComponent.h>
+#include <World/Components/UITextComponent.h>
 #include <World/Components/SkeletalMeshComponent.h>
 #include <World/Components/AudioComponent.h>
 #include <Input/Input.h>
@@ -417,6 +418,11 @@ public:
 #pragma endregion
 
             auto font = TextRenderer::Get()->GetFontObject("asset:arial.ttf"_path);
+            Entity ent = Application::GetWorld().CreateEntity();
+            UITextComponent text("Hello World !", font);
+            text.SetSize({ 2,2 });
+            text.SetOffset({ 0,0.5});
+            Application::GetWorld().SetComponent<UITextComponent>(ent, text);
 
             stop = false;
 

@@ -187,6 +187,11 @@ void OpenGLRenderCommandList::Draw(uint32_t index_count, bool use_unsined_short_
     PushCommand<OpenGLImplicitDrawCommand>(current_pipeline,index_buffer,vertex_buffer, index_count, use_unsined_short_as_index, index_offset);
 }
 
+void OpenGLRenderCommandList::DrawArray(uint32_t vertex_count)
+{
+    PushCommand<OpenGLImplicitDrawArraysCommand>(current_pipeline, vertex_buffer, vertex_count);
+}
+
 void OpenGLRenderCommandList::BindOpenGLContext()
 {
     PushCommand<OpenGLBindOpenGLContextCommand>();

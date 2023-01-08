@@ -9,7 +9,7 @@
 #include <mutex>
 
 #define LOAD_FONT_SYMBOLS_COUNT 128
-#define LOAD_FONT_SYMBOLS_HEIGHT 48
+#define LOAD_FONT_SYMBOLS_HEIGHT 96
 
 class FontObject {
 public:
@@ -63,12 +63,13 @@ public:
 
 	static TextRenderer* Get();
 
+	void TextRenderSystem();
+
 	void UpdateLoadedFonts();
 
 	static void Shutdown();
 	
 private:
-
 	struct Internal_data;
 	
 	struct font_load_future_payload {

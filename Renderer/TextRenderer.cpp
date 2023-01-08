@@ -4,18 +4,86 @@
 #include <filesystem>
 #include <FileManager.h>
 #include <Renderer/Renderer.h>
+#include <Renderer/PipelineManager.h>
 #include <Renderer/TextureManager.h>
 #include <Renderer/RenderResourceManager.h>
+#include <World/World.h>
+#include <World/Components/UITextComponent.h>
 #include <Application.h>
+#include <Window.h>
+#include <Renderer/RootSignature.h>
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
 
 TextRenderer* TextRenderer::instance = nullptr; 
 
+
+struct TextPreset {};
+
+template<>
+struct VertexLayoutFactory<TextPreset> {
+
+    static VertexLayout* GetLayout() {
+        static std::unique_ptr<VertexLayout> layout = nullptr;
+        if (!layout) {
+            VertexLayout* layout_new = new VertexLayout({
+                VertexLayoutElement(RenderPrimitiveType::FLOAT,2, "position"),
+                VertexLayoutElement(RenderPrimitiveType::FLOAT,2, "uv0")
+                });
+
+
+            layout = std::unique_ptr<VertexLayout>(layout_new);
+        }
+        return layout.get();
+    }
+
+};
+
 struct TextRenderer::Internal_data {
     FT_Library ft_lib;
     std::shared_ptr<TextureSampler> sampler;
+
+    std::shared_ptr<RenderBufferResource> const_buf;
+    std::shared_ptr<Pipeline> pipeline;
+
+};
+
+
+TextRenderer::TextRenderer() : m_Internal_data(new Internal_data), m_font_object_map(), m_font_object_map_mutex()
+{
+    m_Internal_data->ft_lib = FT_Library();
+    auto error = FT_Init_FreeType(&m_Internal_data->ft_lib);
+    if (error) {
+        throw std::runtime_error("FreeType could not be initialized");
+    }
+    TextureSamplerDescritor sampler_desc;
+    m_Internal_data->sampler = TextureSampler::CreateSampler(sampler_desc);
+    PipelineDescriptor pipeline_desc;
+    pipeline_desc.blend_equation = BlendEquation::ADD;
+    pipeline_desc.blend_functions = PipelineBlendFunctions{BlendFunction::SRC_ALPHA, BlendFunction::ONE_MINUS_SRC_ALPHA, BlendFunction::ONE , BlendFunction::ZERO};
+    pipeline_desc.cull_mode = CullMode::NONE;
+    pipeline_desc.depth_function = DepthFunction::ALWAYS;
+    pipeline_desc.enable_depth_clip = false;
+    pipeline_desc.flags = PipelineFlags::ENABLE_BLEND;
+    pipeline_desc.layout = VertexLayoutFactory<TextPreset>::GetLayout();
+    pipeline_desc.polygon_render_mode = PrimitivePolygonRenderMode::DEFAULT;
+    pipeline_desc.scissor_rect = RenderScissorRect();
+    pipeline_desc.viewport = RenderViewport();
+    pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/TextShader.glsl");
+
+    m_Internal_data->pipeline = PipelineManager::Get()->CreatePipeline(pipeline_desc);
+
+    RenderBufferDescriptor const_buf_desc(sizeof(glm::mat4), RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
+    m_Internal_data->const_buf = RenderResourceManager::Get()->CreateBuffer(const_buf_desc);
+
+
+
+}
+
+struct TextVertex {
+    glm::vec2 position;
+    glm::vec2 uvs;
 };
 
 
@@ -31,6 +99,73 @@ TextRenderer* TextRenderer::Get()
 	return instance;
 }
 
+void TextRenderer::TextRenderSystem()
+{
+    auto ui_view = Application::GetWorld().GetRegistry().view<UITextComponent>();
+    auto list = Renderer::Get()->GetRenderCommandList();
+    auto queue = Renderer::Get()->GetCommandQueue();
+    list->SetPipeline(m_Internal_data->pipeline);
+    list->SetConstantBuffer("conf", m_Internal_data->const_buf);
+    list->SetDefaultRenderTarget();
+
+    for (auto entity : ui_view) {
+        Entity ent = Entity((uint32_t)entity);
+        auto& component = Application::GetWorld().GetComponent<UITextComponent>(ent);
+        if (!component.font || component.font->GetStatus() != FontObject::Font_status::LOADED) continue;
+        if ((!component.text_quads) || component.dirty) {
+            int width = std::ceil(std::sqrt(LOAD_FONT_SYMBOLS_COUNT));
+            int height = std::ceil(LOAD_FONT_SYMBOLS_COUNT / width) + 1;
+            int x_pos = component.offset.x;
+            int y_pos = component.offset.y;
+            int buffer_offset = 0;
+            TextVertex* data_buffer = new TextVertex[component.text.size() * 6];
+            for (char character : component.text) {
+                const FontObject::GlyphData& ch = component.font->GetGlyphData(character);
+                float xpos = x_pos + ch.offset_x;
+                float ypos = y_pos - (ch.height - ch.offset_y);
+
+                float uv_x_min = (float)ch.x / (float)width;
+                float uv_x_max = (float)uv_x_min + (float)ch.width / (float)LOAD_FONT_SYMBOLS_HEIGHT / (float)width;
+                float uv_y_min = (float)ch.y / (float)height;
+                float uv_y_max = (float)uv_y_min + (float)ch.height / (float)LOAD_FONT_SYMBOLS_HEIGHT / (float)height;
+
+                float w = ch.width;
+                float h = ch.height;
+                TextVertex tile_vertex[6] = {
+                    { {xpos, ypos + h},     {uv_x_min, uv_y_min}},
+                    { {xpos, ypos},         {uv_x_min, uv_y_max}},
+                    { {xpos + w, ypos},     {uv_x_max, uv_y_max}},
+                    { {xpos, ypos + h},     {uv_x_min, uv_y_min}},
+                    { {xpos + w, ypos},     {uv_x_max, uv_y_max}},
+                    { {xpos + w, ypos + h}, {uv_x_max, uv_y_min}}
+                };
+                memcpy(data_buffer + buffer_offset, tile_vertex, sizeof(tile_vertex));
+                buffer_offset += 6;
+                x_pos += ch.advance;
+            }
+            RenderBufferDescriptor text_buf(sizeof(TextVertex) * component.text.size() * 6, RenderBufferType::DEFAULT, RenderBufferUsage::VERTEX_BUFFER);
+            component.text_quads = RenderResourceManager::Get()->CreateBuffer(text_buf);
+            RenderResourceManager::Get()->UploadDataToBuffer(list, component.text_quads, data_buffer, sizeof(TextVertex) * component.text.size() * 6, 0);
+
+
+            delete[] data_buffer;
+            component.dirty = false;
+        }
+        list->SetTexture2D("font_atlas", component.font->font_atlas);
+        int res_x = Application::Get()->GetWindow()->GetProperties().resolution_x;
+        int res_y = Application::Get()->GetWindow()->GetProperties().resolution_y;
+        glm::mat4 text_matrix = glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(component.size,1.0f)), glm::vec3(component.offset.x* res_x * 0.5, component.offset.y * res_y * 0.5,1.0f));
+        glm::mat4 projection = glm::ortho(0.0f, (float)res_x, 0.0f, (float)res_y);
+        text_matrix = projection * text_matrix;
+        RenderResourceManager::Get()->UploadDataToBuffer(list, m_Internal_data->const_buf, glm::value_ptr(text_matrix), sizeof(glm::mat4), 0);
+        list->SetVertexBuffer(component.text_quads);
+        list->DrawArray(6 * component.text.size());
+
+
+    }
+
+    queue->ExecuteRenderCommandList(list);
+}
 
 std::shared_ptr<FontObject> TextRenderer::GetFontObject(const std::string& in_path)
 {
@@ -150,7 +285,7 @@ TextRenderer::font_load_future_payload TextRenderer::LoadFontFromFileImpl(const 
             RenderResourceManager::Get()->UploadDataToTexture2D(list, payload.object.font_atlas, (void*)face->glyph->bitmap.buffer, face->glyph->bitmap.width, face->glyph->bitmap.rows, offset_x, offset_y, 0);
         }
 
-        payload.object.glypth_data.push_back(FontObject::GlyphData{ (char)i,offset_x,offset_y,face->glyph->advance.x >> 6,face->glyph->bitmap_left,
+        payload.object.glypth_data.push_back(FontObject::GlyphData{ (char)i,offset_x / LOAD_FONT_SYMBOLS_HEIGHT,offset_y / LOAD_FONT_SYMBOLS_HEIGHT,face->glyph->advance.x >> 6,face->glyph->bitmap_left,
             face->glyph->bitmap_top, (int)face->glyph->bitmap.width ,(int)face->glyph->bitmap.rows });
 
         offset_x += LOAD_FONT_SYMBOLS_HEIGHT;
@@ -172,18 +307,6 @@ std::shared_ptr<FontObject> TextRenderer::RegisterFontObject(std::shared_ptr<Fon
 {
     auto font_final = m_font_object_map.insert(std::make_pair(name, object));
     return font_final.first->second;
-}
-
-TextRenderer::TextRenderer() : m_Internal_data(new Internal_data), m_font_object_map(), m_font_object_map_mutex()
-{
-    m_Internal_data->ft_lib = FT_Library();
-    auto error = FT_Init_FreeType(&m_Internal_data->ft_lib);
-    if (error) {
-        throw std::runtime_error("FreeType could not be initialized");
-    }
-    TextureSamplerDescritor sampler_desc;
-    m_Internal_data->sampler = TextureSampler::CreateSampler(sampler_desc);
-        
 }
 
 TextRenderer::~TextRenderer()

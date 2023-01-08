@@ -14,6 +14,7 @@
 #include <World/Components/PrefabComponent.h>
 #include <World/Components/ScriptComponent.h>
 #include <World/Components/SerializableComponent.h>
+#include <World/Components/UITextComponent.h>
 #include <World/Components/SquareComponent.h>
 #include <World/Components/PhysicsComponent.h>
 #include <World/Components/ShadowCasterComponent.h>
@@ -24,4 +25,4 @@
 
 using Component_Types = typename TypeList<BoundingVolumeComponent, CameraComponent, ConstructionComponent, DefferedUpdateComponent, DynamicPropertiesComponent, InitializationComponent
 	,KeyPressedScriptComponent, LabelComponent, LightComponent, LoadedComponent, MeshComponent, MousePressedScriptComponent, PrefabComponent, ScriptComponent, SerializableComponent, SquareComponent,
-	TransformComponent, ShadowCasterComponent, PhysicsComponent, SkeletalMeshComponent, AudioComponent>;
+	TransformComponent, ShadowCasterComponent, PhysicsComponent, SkeletalMeshComponent, AudioComponent, UITextComponent>;
