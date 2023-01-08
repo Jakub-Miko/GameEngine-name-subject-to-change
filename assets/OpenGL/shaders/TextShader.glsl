@@ -23,11 +23,12 @@ layout(location = 1) in vec2 uv0;
 out vec2 uvs;
 uniform conf{
 	mat4 mvp;
+	float font_size;
 };
 
 
 void main() {
-	gl_Position = mvp * vec4(position, -1.0f, 1.0f);
+	gl_Position = mvp * vec4(position * font_size, -1.0f, 1.0f);
 	uvs = uv0;
 }
 

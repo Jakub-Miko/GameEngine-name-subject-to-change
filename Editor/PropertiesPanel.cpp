@@ -15,6 +15,7 @@
 #include <Editor/PropertiesPanelEntries/AudioPropertiesPanelEntry.h>
 #include <Editor/PropertiesPanelEntries/SkeletalMeshPropertiesPanelEntry.h>
 #include <Editor/PropertiesPanelEntries/DynamicPropertiesPanelEntry.h>
+#include <Editor/PropertiesPanelEntries/UITextPropertiesPanelEntry.h>
 #include <FileManager.h>
 
 PropertiesPanel::PropertiesPanel()
@@ -30,6 +31,7 @@ PropertiesPanel::PropertiesPanel()
 	RegisterPanelEntry(SkeletalMeshPropertiesPanelEntry());
 	RegisterPanelEntry(DynamicPropertiesPanelEntry());
 	RegisterPanelEntry(AudioPropertiesPanelEntry());
+	RegisterPanelEntry(UITextPropertiesPanelEntry());
 }
 
 PropertiesPanel::~PropertiesPanel()

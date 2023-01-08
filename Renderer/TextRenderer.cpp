@@ -74,7 +74,7 @@ TextRenderer::TextRenderer() : m_Internal_data(new Internal_data), m_font_object
 
     m_Internal_data->pipeline = PipelineManager::Get()->CreatePipeline(pipeline_desc);
 
-    RenderBufferDescriptor const_buf_desc(sizeof(glm::mat4), RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
+    RenderBufferDescriptor const_buf_desc(sizeof(glm::mat4) + sizeof(float), RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
     m_Internal_data->const_buf = RenderResourceManager::Get()->CreateBuffer(const_buf_desc);
 
 
@@ -118,7 +118,7 @@ void TextRenderer::TextRenderSystem()
             int width = std::ceil(std::sqrt(LOAD_FONT_SYMBOLS_COUNT));
             int height = std::ceil(LOAD_FONT_SYMBOLS_COUNT / width) + 1;
             float x_pos = 0;
-            float scale = component.font_size / max_size / 96;
+            float scale = 1.0f / max_size / 96;
             float y_pos = 0;
             int buffer_offset = 0;
             TextVertex* data_buffer = new TextVertex[component.text.size() * 6];
@@ -162,7 +162,9 @@ void TextRenderer::TextRenderSystem()
         glm::mat4 text_matrix = transform.TransformMatrix;
         glm::mat4 projection = glm::ortho(0.0f, (float)res_x / (float)res_y, 0.0f, 1.0f);
         text_matrix = projection * text_matrix;
+        float font_size = component.GetFontSize();
         RenderResourceManager::Get()->UploadDataToBuffer(list, m_Internal_data->const_buf, glm::value_ptr(text_matrix), sizeof(glm::mat4), 0);
+        RenderResourceManager::Get()->UploadDataToBuffer(list, m_Internal_data->const_buf, &font_size, sizeof(float), sizeof(glm::mat4));
         list->SetVertexBuffer(component.text_quads);
         list->DrawArray(6 * component.text.size());
 
