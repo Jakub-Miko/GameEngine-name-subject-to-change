@@ -52,9 +52,7 @@ public:
 		return enabled;
 	}
 
-	Entity GetSelectedEntity() const {
-		return selected_entity;
-	}
+	Entity GetSelectedEntity() const;
 
 	std::string GetSelectedFilePath() const {
 		return explorer->GetSelectedFilePath();

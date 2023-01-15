@@ -224,8 +224,8 @@ void PrefabEditor::RenderWindow(PrefabEditorWindow& window)
 		if (ImGui::Button("Save and Reload") || enter_pressed) {
 			Application::GetWorld().SerializePrefab(window.entity, FileManager::Get()->GetPath(actual_path));
 			auto& prefab = Application::GetWorld().GetComponent<PrefabComponent>(window.entity);
+			prefab.file_path = actual_path;
 			if (prefab.status == PrefabStatus::UNINITIALIZED) {
-				//Application::GetWorld().ResetEntityPrefab(window.entity, actual_path); TODO: Why was this here again ????  investigate
 				prefab.status = PrefabStatus::OK;
 				Editor::Get()->Refresh();
 			}

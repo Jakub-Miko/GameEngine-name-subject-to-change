@@ -115,7 +115,10 @@ void ShadowMappingPass::RenderDirectionalShadowCaster(Entity caster, RenderComma
 	rotation_matrix[1] = glm::normalize((glm::vec3)caster_trans_comp.TransformMatrix[1]);
 	rotation_matrix[2] = glm::normalize((glm::vec3)caster_trans_comp.TransformMatrix[2]);
 	glm::mat4 shadow_matricies[HARD_CODE_CASCADES];
-
+	glm::vec3 total_min = glm::vec3(std::numeric_limits<float>::max());
+	glm::vec3 total_max = glm::vec3(std::numeric_limits<float>::lowest());
+	glm::vec3 total_min_light_space = glm::vec3(std::numeric_limits<float>::max());
+	glm::vec3 total_max_light_space = glm::vec3(std::numeric_limits<float>::lowest());
 	float cascade_levels[HARD_CODE_CASCADES + 1];
 	for (int i = 0; i < HARD_CODE_CASCADES + 1; i++) {
 		cascade_levels[i] = camera.zNear + (((camera.zFar - camera.zNear) / std::pow(HARD_CODE_CASCADES,2)) * std::pow(i,2));
@@ -149,8 +152,17 @@ void ShadowMappingPass::RenderDirectionalShadowCaster(Entity caster, RenderComma
 		for (auto& corner : frustum_points) {
 			glm::vec4 transformed_corner = shadow_matrix_view * glm::vec4(corner, 1.0f);
 			for (int i = 0; i < 3; i++) {
-				min[i] = std::min(min[i], transformed_corner[i]);
-				max[i] = std::max(max[i], transformed_corner[i]);
+				if (transformed_corner[i] < min[i]) {
+					min[i] = transformed_corner[i];
+					total_min[i] = glm::vec4(corner, 1.0f)[i];
+					total_min_light_space[i] = transformed_corner[i];
+				}
+				if (transformed_corner[i] > max[i]) {
+					max[i] = transformed_corner[i];
+					total_max[i] = glm::vec4(corner, 1.0f)[i];
+					total_max_light_space[i] = transformed_corner[i];
+				}
+
 			}
 		}
 		glm::mat4 shadow_projection = glm::ortho(min.x, max.x, min.y, max.y, -max.z - shadow_comp.far_plane, -min.z);
@@ -159,21 +171,15 @@ void ShadowMappingPass::RenderDirectionalShadowCaster(Entity caster, RenderComma
 	}
 
 	std::vector<Entity> entities;
-	glm::mat4 view_projection;
 
-	glm::vec3 size = caster_trans_comp.size;
-	size.b = shadow_comp.far_plane - shadow_comp.near_plane;
-	glm::vec3 translation = (rotation_matrix * glm::vec3(0.0f, 0.0f, -shadow_comp.near_plane - glm::abs(size.b) / 2.0f)) + (glm::vec3)caster_trans_comp.TransformMatrix[3];
-	glm::mat4 projection = glm::ortho(-size.r / 2, size.r / 2, -size.g / 2, size.g / 2, shadow_comp.near_plane, shadow_comp.far_plane);
+	glm::vec3 size = glm::abs(total_max_light_space - total_min_light_space);
+	glm::vec3 center = (total_max_light_space + total_min_light_space) * 0.5f;
 
-	OrientedBoundingBox culling_box(glm::vec3(500000), glm::vec3(0.0f));
+	OrientedBoundingBox culling_box(size,center,glm::toMat3(caster_trans_comp.rotation));
 
 	Application::GetWorld().GetSpatialIndex().BoxCulling(Application::GetWorld(), culling_box, entities);
 
-	glm::mat4 light_view = glm::translate(glm::mat4(1.0), (glm::vec3)caster_trans_comp.TransformMatrix[3]) * (glm::mat4)rotation_matrix;
-	view_projection = projection * glm::inverse(light_view);
 
-	shadow_comp.light_view_matrix = view_projection;
 	list->SetPipeline(data->pipeline_directional);
 	list->SetRenderTarget(shadow_comp.shadow_map);
 	list->SetViewport(RenderViewport(glm::vec2(0.0f), glm::vec2(shadow_comp.res_x, shadow_comp.res_y)));
@@ -186,7 +192,6 @@ void ShadowMappingPass::RenderDirectionalShadowCaster(Entity caster, RenderComma
 		if (world.HasComponent<MeshComponent>(entity)) {
 			auto& mesh = world.GetComponent<MeshComponent>(entity);
 			auto& trans = world.GetComponent<TransformComponent>(entity);
-			glm::mat4 mvp = view_projection * trans.TransformMatrix;
 			RenderResourceManager::Get()->UploadDataToBuffer(list, data->const_buffer_directional, glm::value_ptr(trans.TransformMatrix), sizeof(glm::mat4), 0);
 			for (int i = 0; i < HARD_CODE_CASCADES; i++) {
 				RenderResourceManager::Get()->UploadDataToBuffer(list, data->const_buffer_directional, glm::value_ptr(shadow_matricies[i]), sizeof(glm::mat4), sizeof(glm::mat4) * (1+i));

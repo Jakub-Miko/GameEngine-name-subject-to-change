@@ -12,7 +12,7 @@ class ComponentInitProxy;
 
 struct PrefabComponent {
 	RUNTIME_TAG("PrefabComponent");
-	PrefabComponent(const std::string& file_path = "Undefined", Entity first_child = Entity()) : file_path(file_path) {}
+	PrefabComponent(const std::string& file_path = "", Entity first_child = Entity()) : file_path(file_path) {}
 	Entity first_child = Entity();
 	PrefabStatus status = PrefabStatus::OK;
 
@@ -24,6 +24,10 @@ struct PrefabComponent {
 
 private:
 	friend class World;
+#ifdef EDITOR
+	friend class PrefabEditor;
+#endif
+
 	friend void from_json(const nlohmann::json& nlohmann_json_j, PrefabComponent& nlohmann_json_t);
 	std::string file_path;
 };

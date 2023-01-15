@@ -146,7 +146,7 @@ void Octree::AddEntity(Entity ent)
 	//IF there are no child nodes add entity into the current node
 	
 	SceneNode* node = Application::GetWorld().GetSceneGraph()->GetSceneGraphNode(ent);
-
+	if (node->ShouldSpatialIndexIgnore()) return;
 	if (node->spatial_index_node) {
 		throw std::runtime_error("Entity was already in the SpatialIndex");
 	}
@@ -233,6 +233,7 @@ void Octree::Init(Octree* parent, const BoundingBox& node_box, const std::vector
 		for (auto entity : entities) {
 			SceneNode* node = world.GetSceneGraph()->GetSceneGraphNode(entity);
 			if (node) {
+				if (node->ShouldSpatialIndexIgnore()) continue;
 				entity_list.push_back(entity);
 				node->spatial_index_node = this;
 				node->octree_index = entity_list.size() - 1;
@@ -318,10 +319,11 @@ void Octree::ProcessEntity(World& world, std::array<std::vector<Entity>, 8>& lis
 {
 	
 	char index = -1;
+	SceneNode* node = world.GetSceneGraph()->GetSceneGraphNode(entity);
+	if (node->ShouldSpatialIndexIgnore()) return;
 	if (ProcessEntity(world, index, entity)) {
 		// If the node borders multiple cells it doesnt fit into any child and will be assigned into the current cell
 		if (index == -1) {
-			SceneNode* node = world.GetSceneGraph()->GetSceneGraphNode(entity);
 			entity_list.push_back(entity);
 			node->spatial_index_node = this;
 			node->octree_index = entity_list.size() - 1;

@@ -1,0 +1,109 @@
+@Section:Camera_4194311
+@Entity 
+{
+"Components": {"CameraComponent":{"aspect_ratio":1.7777777910232544,"fov":45.0,"zFar":1000.0,"zNear":0.10000000149011612},"LabelComponent":{"label":"Camera"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":0.8624976873397827,"x":-0.3229936957359314,"y":-0.3648369610309601,"z":-0.1366264969110489},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":-10.821661949157715,"y":15.137109756469727,"z":10.502762794494629}}},
+"Children": []
+}
+
+@EndSection
+@Section:CollisionBox_4194310
+@Entity 
+{
+"Components": {"LabelComponent":{"label":"CollisionBox"},"MeshComponent":{"path":"/assets/Box.mesh"},"PhysicsComponent":{"is_kinematic":false,"mass":1.0,"object_type":0,"shape_type":0},"TransformComponent":{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":0.0,"y":5.0,"z":0.0}}},
+"Children": ["local#Camera_4194311"]
+}
+
+@EndSection
+@Section:Root
+@Entity 
+{
+"Components": {"LabelComponent":{"label":"PhysicsTest"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":0.0,"y":0.0,"z":0.0}}},
+"Children": ["local#CollisionBox_4194310"]
+}
+@Entity:Inline_Script
+
+
+function OnStart()
+	SetAngularFactor("CollisionBox",vec3(0.0,0.0,0.0))
+	CreateProperty_FLOAT("Speed",1.0)
+	CreateProperty_FLOAT("JumpForce",1.0)
+	CreateProperty_FLOAT("Friction",1.0)
+	CreateProperty_FLOAT("MaxVel",1.0)
+	local friction = GetProperty_FLOAT("Friction")
+	SetFriction("CollisionBox",friction)
+end
+
+function OnUpdate(delta_time) 
+	local speed = GetProperty_FLOAT("Speed")
+	local jump_force = GetProperty_FLOAT("JumpForce")
+	local max_velocity = GetProperty_FLOAT("MaxVel")
+	local current_rot = GetChildRotation("Camera")
+	if(IsMouseButtonPressed(MouseButtonCode.MOUSE_BUTTON_RIGHT)) then
+	
+		local move = false;	
+		if(IsKeyPressed(KeyCode.KEY_W)) then
+			
+			local translation =  rotate_vec3(vec3(0,0,-1*speed), current_rot)
+			ApplyForce("CollisionBox",translation)
+			move = true;
+		end
+
+		if(IsKeyPressed(KeyCode.KEY_S)) then
+			
+			local translation =  rotate_vec3(vec3(0,0,1*speed), current_rot)
+			ApplyForce("CollisionBox",translation)
+			move = true;
+
+		end
+
+		if(IsKeyPressed(KeyCode.KEY_A)) then
+			
+			local translation =  rotate_vec3(vec3(-1*speed,0,0), current_rot)
+			ApplyForce("CollisionBox",translation)
+			move = true;
+		end
+
+		if(IsKeyPressed(KeyCode.KEY_D)) then
+			local translation =  rotate_vec3(vec3(1*speed,0,0), current_rot)
+
+			ApplyForce("CollisionBox",translation)
+			move = true;
+		end
+
+		if(IsKeyPressed(KeyCode.KEY_SPACE)) then
+
+			ApplyForce("CollisionBox",vec3(0.0,1.0*jump_force,0.0))
+			move = true;
+		end
+
+		local norm_scree_pos = GetMousePositionChange()
+		local offset = vec2({ x = 0.0, y =0.0 })
+	
+		norm_scree_pos = offset + norm_scree_pos;
+	
+		norm_scree_pos = norm_scree_pos * vec2({-1,-1});
+		norm_scree_pos.y = math.min(math.max(-0.8, norm_scree_pos.y),0.8)
+	
+		local pos = vec3(math.sin(norm_scree_pos.x * 3.1415926) * math.cos(norm_scree_pos.y * 3.1415926/2) ,math.sin(norm_scree_pos.y * 3.1415926 / 2),math.cos(norm_scree_pos.x * 3.1415926) * math.cos(norm_scree_pos.y * 3.1415926/2))
+	
+		pos = rotate_vec3(-pos, GetChildRotation("Camera"))
+
+		local rot = quat_lookat(vec3(pos), vec3({0,1,0}))
+	
+		SetChildTranslation("Camera", -vec3(pos)*vec3(20.0,20.0,20.0) + vec3(0,2,0))
+		SetChildRotation("Camera", rot)
+	end
+
+	local velocity = GetLinearVelocity("CollisionBox")
+	if(GetVector3Length(velocity) >= max_velocity) then
+		local vel_scale = max_velocity / GetVector3Length(velocity)
+		velocity = velocity * vec3(vel_scale,vel_scale,vel_scale)
+		SetLinearVelocity("CollisionBox",velocity)
+	
+	end
+
+end
+
+
+
+@EndSection

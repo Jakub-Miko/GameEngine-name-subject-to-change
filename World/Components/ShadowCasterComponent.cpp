@@ -1,8 +1,8 @@
 #include "ShadowCasterComponent.h"
 #include "LightComponent.h"
 
-ShadowCasterComponent::ShadowCasterComponent(int width, int height, float near_plane, float far_plane)
-	: res_x(width), res_y(height), shadow_map(nullptr), near_plane(near_plane), far_plane(far_plane){
+ShadowCasterComponent::ShadowCasterComponent(int width, int height, float near_plane, float far_plane, float shadow_bias)
+	: res_x(width), res_y(height), shadow_map(nullptr), near_plane(near_plane), far_plane(far_plane), shadow_bias(shadow_bias){
 
 }
 

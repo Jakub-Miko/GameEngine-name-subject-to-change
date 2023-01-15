@@ -214,6 +214,7 @@ static void SerializeNode(const SceneNode& node, nlohmann::json& base_object, Wo
 	json& current_json_node = base_object.back();
 	//Serialize here
 	current_json_node["id"] = node.entity.id;
+	current_json_node["state"] = (char)node.state;
 
 	SceneNode* current_node = node.first_child;
 	while (current_node) {
@@ -260,15 +261,23 @@ void SceneGraph::RecalculateDownstream(SceneNode* node, SceneNode* upstream)
 	else {
 		node->state = node->state & ~(SceneNodeState::DIRTY_TRANSFORM);
 	}
-	
 
-	transform.TransformMatrix = upstream_transform * transform.TransformMatrix;
 
-	//Update entry in spatial index
-	if (node->spatial_index_node) {
-		m_world->GetSpatialIndex().RemoveEntity(node->entity);
+	if (!node->IsUIEntity()) {
+
+		transform.TransformMatrix = upstream_transform * transform.TransformMatrix;
+
+		//Update entry in spatial index
+		if (node->spatial_index_node) {
+			m_world->GetSpatialIndex().RemoveEntity(node->entity);
+		}
+		m_world->GetSpatialIndex().AddEntity(node->entity);
 	}
-	m_world->GetSpatialIndex().AddEntity(node->entity);
+	else {
+		if (upstream->IsUIEntity()) {
+			transform.TransformMatrix = upstream_transform * transform.TransformMatrix;
+		}
+	}
 
 	SceneNode* children = node->first_child;
 	while (children != nullptr) {
@@ -315,6 +324,10 @@ static void DeserializeNode(const nlohmann::json& json, SceneNode* parent, World
 	world->SetComponent<SerializableComponent>(entity);
 	if (world->HasComponent<PrefabComponent>(entity)) {
 		world->SetComponent<ConstructionComponent>(entity, world->GetComponent<PrefabComponent>(entity).GetFilePath(), parent->entity);
+	}
+
+	if (json.contains("state")) {
+		node->state = (SceneNodeState)json["state"].get<char>();
 	}
 
 	if (json.find("children") != json.end()) {

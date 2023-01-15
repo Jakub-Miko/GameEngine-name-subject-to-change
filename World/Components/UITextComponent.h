@@ -66,6 +66,10 @@ class ComponentInitProxy<UITextComponent> {
 public:
 	static constexpr bool can_copy = true;
 
+	static void OnCreate(World& world, Entity entity);
+
+	static void OnDestroy(World& world, Entity entity);
+
 };
 
 #pragma region Json_Serialization

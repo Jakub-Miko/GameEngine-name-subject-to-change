@@ -192,6 +192,7 @@ void PropertiesPanel::RenderProperties(Entity entity, const PropertiesPanel_pers
 		int original = (int)world.GetComponent<LightComponent>(selected).type;
 		int type = original;
 		ImGui::Combo("Light Type", &type, light_types, 2);
+
 		if (original != type) {
 			LightComponent::ChangeType((LightType)type, selected);
 		}
@@ -231,7 +232,7 @@ void PropertiesPanel::RenderProperties(Entity entity, const PropertiesPanel_pers
 			shadow.res_y = res[1];
 			shadow.shadow_map.reset();
 		}
-
+		ImGui::DragFloat("Shadow bias", &shadow.shadow_bias);
 		ImGui::DragFloat("Shadow Map Near Plane", &shadow.near_plane);
 		ImGui::DragFloat("Shadow Map Far Plane", &shadow.far_plane);
 		

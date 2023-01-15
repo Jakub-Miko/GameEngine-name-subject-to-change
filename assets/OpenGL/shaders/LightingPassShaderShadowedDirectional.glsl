@@ -100,6 +100,7 @@ uniform conf{
 	float depth_constant_b;
 	float camera_near_plane;
 	float camera_far_plane;
+	float shadow_bias;
 	int cascade_count;
 };
 
@@ -144,6 +145,7 @@ uniform conf {
 	float depth_constant_b;
 	float camera_near_plane;
 	float camera_far_plane;
+	float shadow_bias;
 	int cascade_count;
 
 };
@@ -159,13 +161,15 @@ in vec3 light_pos;
 in vec3 light_direction_in;
 
 
-float calculate_shadows(vec3 view_space_pos) {
+float calculate_shadows(vec3 view_space_pos, vec3 coords) {
 	float depth = abs(view_space_pos.z);
 	depth -= camera_near_plane;
 	depth /= camera_far_plane - camera_near_plane;
 	depth = sqrt(depth);
 	depth *= float(cascade_count);
 	int cascade = int(floor(depth));
+
+	view_space_pos += texture(Normal, coords.xy).xyz * shadow_bias * (cascade+1);
 
 	vec4 light_space_pos = light_matrix_cascades[cascade] * vec4(view_space_pos,1.0);
 	vec3 light_space_coords = light_space_pos.xyz / light_space_pos.w;
@@ -175,7 +179,7 @@ float calculate_shadows(vec3 view_space_pos) {
 
 	for (int x = -1; x <= 1; x++) {
 		for (int y = -1; y <= 1; y++) {
-			vec4 shadow_coords = vec4(light_space_coords.x + x* shadow_map_pixel_size.x, light_space_coords.y + y * shadow_map_pixel_size.y, cascade, current_depth - 0.0005);
+			vec4 shadow_coords = vec4(light_space_coords.x + x* shadow_map_pixel_size.x, light_space_coords.y + y * shadow_map_pixel_size.y, cascade, current_depth);
 			accumulate += texture(ShadowMapArray, shadow_coords);
 
 		}
@@ -204,7 +208,7 @@ void main() {
 	vec3 normal = texture(Normal, coords.xy).xyz;
 	float attenuation_factor = 1;
 
-	float shadows = calculate_shadows(view_space_pos);
+	float shadows = calculate_shadows(view_space_pos, coords);
 	color_out = vec4(shadows * color.xyz * Light_Color.xyz * attenuation_factor * Light_Color.w * (0.1 + max(0, dot(normal, -light_direction))),1.0);
 }
 

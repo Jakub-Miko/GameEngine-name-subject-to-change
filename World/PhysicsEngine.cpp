@@ -41,6 +41,7 @@ public:
 
 	TransformMotionState(Entity owning_entity, const glm::vec3& offset = glm::vec3(0.0f)) : owning_entity(owning_entity), stored_size(1.0f) , shape_offset(offset) {}
 
+	//Not thread-safe
 	virtual void getWorldTransform(btTransform& worldTrans) const override {
 		glm::mat4 transform = Application::GetWorld().GetComponentSync<TransformComponent>(owning_entity).TransformMatrix;
 		transform = glm::translate(transform, shape_offset);
@@ -83,6 +84,7 @@ public:
 		worldTrans.setFromOpenGLMatrix(glm::value_ptr(transform));
 	}
 
+	//Not thread-safe
 	virtual void setWorldTransform(const btTransform& worldTrans) override {
 		glm::mat4 transform;
 		worldTrans.getOpenGLMatrix(glm::value_ptr(transform));
@@ -91,6 +93,7 @@ public:
 	}
 private:
 
+	//Not thread-safe
 	void SetBoundingBoxShapeSize(glm::vec3 size, btCollisionShape* shape, btRigidBody* body) const {
 		btVector3 btsize = *(btVector3*)(&size);
 		shape->setLocalScaling(btsize);
@@ -103,6 +106,7 @@ private:
 		//TODO: Update inertia;
 	}
 
+	//Not thread-safe
 	void SetConvexHullShapeSize(glm::vec3 size, btCollisionShape* shape, btRigidBody* body) const {
 		btVector3 btsize = *(btVector3*)(&size);
 		shape->setLocalScaling(btsize);
@@ -143,20 +147,23 @@ PhysicsEngine::PhysicsEngine(const PhysicsEngineProps& props) : bullet_data(new 
 	Application::Get()->RegisterObserver<MeshChangedEvent>(mesh_change_observer.get());
 }
 
+//Not thread-safe
 void PhysicsEngine::UpdatePhysics(float delta_time)
 {
 	DeletionPhase();
 	CreationPhase();
 	if (!running) return;
-	bullet_data->world->stepSimulation(delta_time);
+	bullet_data->world->stepSimulation(delta_time *0.003f,3);
 }
 
+//thread-safe
 void PhysicsEngine::RegisterPhysicsComponent(Entity ent)
 {
 	std::lock_guard<std::mutex> lock(creation_mutex);
 	creation_queue.push_front(creation_queue_entry{ ent });
 }
 
+//thread-safe
 void PhysicsEngine::UnRegisterPhysicsComponent(Entity ent)
 {
 	std::lock_guard<std::mutex> lock(deletion_mutex);
@@ -184,6 +191,7 @@ void PhysicsEngine::clear()
 	bullet_data->world->setGravity(btVector3(0.0f, -9.8f, 0.0f));
 }
 
+//Not thread-safe
 void PhysicsEngine::destroy()
 {
 	CreationPhase();
@@ -202,6 +210,7 @@ void PhysicsEngine::destroy()
 	delete bullet_data;
 }
 
+//thread-safe
 void PhysicsEngine::CreationPhase()
 {
 	std::lock_guard<std::mutex> lock(creation_mutex);
@@ -214,7 +223,7 @@ void PhysicsEngine::CreationPhase()
 	}
 
 }
-
+//thread-safe
 void PhysicsEngine::DeletionPhase()
 {
 	std::lock_guard<std::mutex> lock(deletion_mutex);
@@ -224,6 +233,7 @@ void PhysicsEngine::DeletionPhase()
 	deletion_queue.clear();
 }
 
+//Not thread-safe
 bool PhysicsEngine::CreatePhysicsObject(Entity entity)
 {
 	World& world = Application::GetWorld();
@@ -251,7 +261,7 @@ bool PhysicsEngine::CreatePhysicsObject(Entity entity)
 		throw std::runtime_error("Can't assign Physics component to an entity without a static or skeletal mesh");
 	}
 
-
+	btRigidBody* body =nullptr;
 	switch (physics_comp.shape_type) {
 	case PhysicsShapeType::BOUNDING_BOX:
 	{
@@ -264,8 +274,7 @@ bool PhysicsEngine::CreatePhysicsObject(Entity entity)
 		btMotionState* motion_state = new TransformMotionState(entity,bounding_box.GetBoxOffset());
 		physics_comp.physics_shape = box_collision_shape;
 		btRigidBody::btRigidBodyConstructionInfo info(physics_comp.mass, motion_state, box_collision_shape, inertia);
-		btRigidBody* body = new btRigidBody(info);
-		body->setFriction(0.7);
+		body = new btRigidBody(info);
 		body->setUserPointer((void*)entity.id);
 		if (physics_comp.is_kinematic && physics_comp.mass == 0.0f) {
 			body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
@@ -294,15 +303,12 @@ bool PhysicsEngine::CreatePhysicsObject(Entity entity)
 		btMotionState* motion_state = new TransformMotionState(entity);
 		physics_comp.physics_shape = hull_collision_shape;
 		btRigidBody::btRigidBodyConstructionInfo info(physics_comp.mass, motion_state, hull_collision_shape, inertia);
-		btRigidBody* body = new btRigidBody(info);
-		body->setFriction(0.7);
+		body = new btRigidBody(info);
 		body->setUserPointer((void*)entity.id);
 		if (physics_comp.is_kinematic && physics_comp.mass == 0.0f) {
 			body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
 			body->setActivationState(DISABLE_DEACTIVATION);
 		}
-
-		bullet_data->world->addRigidBody(body);
 
 
 		bullet_data->world->addRigidBody(body);
@@ -321,11 +327,25 @@ bool PhysicsEngine::CreatePhysicsObject(Entity entity)
 	default:
 		throw std::runtime_error("This Collision type is not supported");
 	}
+	physics_comp.state = PhysicsObjectState::INITIALIZED;
 
+	if (physics_comp.auxilary_props) {
+		SetAngularFactor(entity, physics_comp.auxilary_props->angular_factor);
+		SetLinearFactor(entity, physics_comp.auxilary_props->linear_factor);
+		SetFriction(entity, physics_comp.auxilary_props->friction);
+		if (physics_comp.auxilary_props->mass == 0.0f) {
+			SetMass(entity, physics_comp.mass);
+		}
+		else {
+			SetMass(entity, physics_comp.auxilary_props->mass);
+		}
+		physics_comp.auxilary_props.reset();
+	}
 	return true;
 
 }
 
+//Not thread-safe
 void PhysicsEngine::DestroyPhysicsObject(const PhysicsComponent& physics_comp)
 {
 	if (physics_comp.physics_object.get() == nullptr) return;
@@ -337,16 +357,19 @@ void PhysicsEngine::DestroyPhysicsObject(const PhysicsComponent& physics_comp)
 	delete state;
 }
 
+//Not thread-safe
 void PhysicsEngine::StopSim()
 {
 	running = false;
 }
 
+//Not thread-safe
 void PhysicsEngine::StartSim()
 {
 	running = true;
 }
 
+//Not thread-safe
 void PhysicsEngine::ResetSim()
 {
 	for (int i = 0; i < bullet_data->world->getCollisionObjectArray().size(); i++)
@@ -375,24 +398,173 @@ void PhysicsEngine::ResetSim()
 	}
 }
 
+//Not thread-safe
 void PhysicsEngine::PassiveMode()
 {
 	StopSim();
 	ResetSim();
 }
 
+//Not thread-safe
 void PhysicsEngine::ActiveMode()
 {
 	ResetSim();
 	StartSim();
 }
 
+//thread-safe
+void PhysicsEngine::ApplyForce(Entity ent, const glm::vec3& direction)
+{
+	auto& world = Application::GetWorld();
+	if (!world.HasComponent<PhysicsComponent>(ent)) throw std::runtime_error("An entity requires a physics component to use Apply force");
+	auto& phys_comp = world.GetComponent<PhysicsComponent>(ent);
+	if (phys_comp.state == PhysicsObjectState::UNINITIALIZED) {
+		return;
+	}
+	btRigidBody* body = btRigidBody::upcast(phys_comp.physics_object.get());
+	btVector3 force = btVector3(direction.x, direction.y, direction.z);
+	body->applyCentralForce(force);
+}
+
+//thread-safe
+void PhysicsEngine::SetMass(Entity ent, float mass)
+{
+	auto& world = Application::GetWorld();
+	if (!world.HasComponent<PhysicsComponent>(ent)) throw std::runtime_error("An entity requires a physics component to use Set mass");
+	auto& phys_comp = world.GetComponent<PhysicsComponent>(ent);
+	if (phys_comp.state == PhysicsObjectState::UNINITIALIZED) {
+		if (!phys_comp.auxilary_props) {
+			phys_comp.auxilary_props.reset(new AuxilaryPhysicsProps);
+		}
+		phys_comp.auxilary_props->mass = mass;
+	}
+	else {
+		btRigidBody* body = btRigidBody::upcast(phys_comp.physics_object.get());
+		btVector3 inertia;
+		body->getCollisionShape()->calculateLocalInertia(mass, inertia);
+		body->setMassProps(mass, inertia);
+		phys_comp.mass = mass;
+	}
+}
+
+//thread-safe
+void PhysicsEngine::SetFriction(Entity ent, float friction)
+{
+	auto& world = Application::GetWorld();
+	if (!world.HasComponent<PhysicsComponent>(ent)) throw std::runtime_error("An entity requires a physics component to use Set friction");
+	auto& phys_comp = world.GetComponent<PhysicsComponent>(ent);
+	if (phys_comp.state == PhysicsObjectState::UNINITIALIZED) {
+		if (!phys_comp.auxilary_props) {
+			phys_comp.auxilary_props.reset(new AuxilaryPhysicsProps);
+		}
+		phys_comp.auxilary_props->friction = friction;
+	}
+	else {
+		btRigidBody* body = btRigidBody::upcast(phys_comp.physics_object.get());
+		body->setFriction(friction);
+	}
+}
+
+//thread-safe
+void PhysicsEngine::SetLinearFactor(Entity ent, const glm::vec3& linear_factor)
+{
+	auto& world = Application::GetWorld();
+	if (!world.HasComponent<PhysicsComponent>(ent)) throw std::runtime_error("An entity requires a physics component to use Set linear factor");
+	auto& phys_comp = world.GetComponent<PhysicsComponent>(ent);
+	if (phys_comp.state == PhysicsObjectState::UNINITIALIZED) {
+		if (!phys_comp.auxilary_props) {
+			phys_comp.auxilary_props.reset(new AuxilaryPhysicsProps);
+		}
+		phys_comp.auxilary_props->linear_factor = linear_factor;
+	}
+	else {
+		btRigidBody* body = btRigidBody::upcast(phys_comp.physics_object.get());
+		btVector3 factor = btVector3(linear_factor.x, linear_factor.y, linear_factor.z);
+		body->setLinearFactor(factor);
+	}
+}
+
+//thread-safe
+void PhysicsEngine::SetAngularFactor(Entity ent, const glm::vec3& angular_factor)
+{
+	auto& world = Application::GetWorld();
+	if (!world.HasComponent<PhysicsComponent>(ent)) throw std::runtime_error("An entity requires a physics component to use Set angular factor");
+	auto& phys_comp = world.GetComponent<PhysicsComponent>(ent);
+	if (phys_comp.state == PhysicsObjectState::UNINITIALIZED) {
+		if (!phys_comp.auxilary_props) {
+			phys_comp.auxilary_props.reset(new AuxilaryPhysicsProps);
+		}
+		phys_comp.auxilary_props->angular_factor = angular_factor;
+	}
+	else {
+		btRigidBody* body = btRigidBody::upcast(phys_comp.physics_object.get());
+		btVector3 factor = btVector3(angular_factor.x, angular_factor.y, angular_factor.z);
+		body->setAngularFactor(factor);
+	}
+}
+
+//thread-safe
+void PhysicsEngine::SetLinearVelocity(Entity ent, const glm::vec3& linear_velocity)
+{
+	auto& world = Application::GetWorld();
+	if (!world.HasComponent<PhysicsComponent>(ent)) throw std::runtime_error("An entity requires a physics component to use Set linear velocity");
+	auto& phys_comp = world.GetComponent<PhysicsComponent>(ent);
+	if (phys_comp.state == PhysicsObjectState::UNINITIALIZED) {
+		return;
+	}
+	btRigidBody* body = btRigidBody::upcast(phys_comp.physics_object.get());
+	btVector3 velocity = btVector3(linear_velocity.x, linear_velocity.y, linear_velocity.z);
+	body->setLinearVelocity(velocity);
+}
+
+//thread-safe
+void PhysicsEngine::SetAngularVelocity(Entity ent, const glm::vec3& angular_velocity)
+{
+	auto& world = Application::GetWorld();
+	if (!world.HasComponent<PhysicsComponent>(ent)) throw std::runtime_error("An entity requires a physics component to use Set angular velocity");
+	auto& phys_comp = world.GetComponent<PhysicsComponent>(ent);
+	if (phys_comp.state == PhysicsObjectState::UNINITIALIZED) {
+		return;
+	}
+	btRigidBody* body = btRigidBody::upcast(phys_comp.physics_object.get());
+	btVector3 velocity = btVector3(angular_velocity.x, angular_velocity.y, angular_velocity.z);
+	body->setAngularVelocity(velocity);
+}
+
+glm::vec3 PhysicsEngine::GetAngularVelocity(Entity ent)
+{
+	auto& world = Application::GetWorld();
+	if (!world.HasComponent<PhysicsComponent>(ent)) throw std::runtime_error("An entity requires a physics component to use Get angular velocity");
+	auto& phys_comp = world.GetComponent<PhysicsComponent>(ent);
+	if (phys_comp.state == PhysicsObjectState::UNINITIALIZED) {
+		return glm::vec3(0.0f);
+	}
+	btRigidBody* body = btRigidBody::upcast(phys_comp.physics_object.get());
+	btVector3 velocity = body->getAngularVelocity();
+	return glm::vec3(velocity.x(), velocity.y(), velocity.z());
+}
+
+glm::vec3 PhysicsEngine::GetLinearVelocity(Entity ent)
+{
+	auto& world = Application::GetWorld();
+	if (!world.HasComponent<PhysicsComponent>(ent)) throw std::runtime_error("An entity requires a physics component to use Get linear velocity");
+	auto& phys_comp = world.GetComponent<PhysicsComponent>(ent);
+	if (phys_comp.state == PhysicsObjectState::UNINITIALIZED) {
+		return glm::vec3(0.0f);
+	}
+	btRigidBody* body = btRigidBody::upcast(phys_comp.physics_object.get());
+	btVector3 velocity = body->getLinearVelocity();
+	return glm::vec3(velocity.x(), velocity.y(), velocity.z());
+}
+
+//Not thread-safe
 void PhysicsEngine::RefreshObject(Entity ent)
 {
 	UnRegisterPhysicsComponent(ent);
 	RegisterPhysicsComponent(ent);
 }
 
+//thread-safe
 std::shared_ptr<btConvexHullShape> PhysicsEngine_BulletData::GetHullShape(const std::string& mesh_path)
 {
 	std::lock_guard<std::mutex> lock(convex_hull_shape_mutex);
@@ -437,7 +609,7 @@ std::shared_ptr<btConvexHullShape> PhysicsEngine_BulletData::GetHullShape(const 
 	}
 
 }
-
+//thread-safe
 void PhysicsEngine_BulletData::SaveHullShape(const std::string& save_absolute_path, btConvexHullShape* hull)
 {
 	std::ofstream file(save_absolute_path, std::ios_base::binary | std::ios_base::out);
@@ -450,7 +622,7 @@ void PhysicsEngine_BulletData::SaveHullShape(const std::string& save_absolute_pa
 
 	file.close();
 }
-
+//thread-safe
 btConvexHullShape* PhysicsEngine_BulletData::LoadHullShape(const std::string& save_absolute_path)
 {
 	std::ifstream file(save_absolute_path, std::ios_base::binary | std::ios_base::in);

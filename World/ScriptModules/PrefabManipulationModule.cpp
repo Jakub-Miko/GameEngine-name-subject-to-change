@@ -37,6 +37,59 @@ extern "C" {
 		return entity{ ent.id };
 	}
 
+	void ApplyForce_L(const char* name, vec3 direction) {
+		Entity ent = GetEntityByName(name);
+		glm::vec3 dir = *reinterpret_cast<glm::vec3*>(&direction);
+		Application::GetWorld().GetPhysicsEngine().ApplyForce(ent, dir);
+	}
+
+	void SetLinearVelocity_L(const char* name, vec3 velocity) {
+		Entity ent = GetEntityByName(name);
+		glm::vec3 vel = *reinterpret_cast<glm::vec3*>(&velocity);
+		Application::GetWorld().GetPhysicsEngine().SetLinearVelocity(ent, vel);
+	}
+
+	void SetAngularVelocity_L(const char* name, vec3 velocity) {
+		Entity ent = GetEntityByName(name);
+		glm::vec3 vel = *reinterpret_cast<glm::vec3*>(&velocity);
+		Application::GetWorld().GetPhysicsEngine().SetAngularVelocity(ent, vel);
+	}
+
+	vec3 GetLinearVelocity_L(const char* name) {
+		Entity ent = GetEntityByName(name);
+		glm::vec3 vel = Application::GetWorld().GetPhysicsEngine().GetLinearVelocity(ent);
+		return *reinterpret_cast<vec3*>(&vel);
+	}
+
+	vec3 GetAngularVelocity_L(const char* name) {
+		Entity ent = GetEntityByName(name);
+		glm::vec3 vel = Application::GetWorld().GetPhysicsEngine().GetAngularVelocity(ent);
+		return *reinterpret_cast<vec3*>(&vel);
+	}
+
+
+	void SetLinearFactor_L(const char* name, vec3 factor) {
+		Entity ent = GetEntityByName(name);
+		glm::vec3 fact = *reinterpret_cast<glm::vec3*>(&factor);
+		Application::GetWorld().GetPhysicsEngine().SetLinearFactor(ent, fact);
+	}
+
+	void SetAngularFactor_L(const char* name, vec3 factor) {
+		Entity ent = GetEntityByName(name);
+		glm::vec3 fact = *reinterpret_cast<glm::vec3*>(&factor);
+		Application::GetWorld().GetPhysicsEngine().SetAngularFactor(ent, fact);
+	}
+
+	void SetMass_L(const char* name, float mass) {
+		Entity ent = GetEntityByName(name);
+		Application::GetWorld().GetPhysicsEngine().SetMass(ent, mass);
+	}
+
+	void SetFriction_L(const char* name, float friction) {
+		Entity ent = GetEntityByName(name);
+		Application::GetWorld().GetPhysicsEngine().SetFriction(ent, friction);
+	}
+
 	void SetChildTranslation_L(const char * name,vec3 translation) {
 		Entity ent = GetEntityByName(name);
 		glm::vec3* trans = reinterpret_cast<glm::vec3*>(&translation);
@@ -53,6 +106,24 @@ extern "C" {
 		Entity ent = GetEntityByName(name);
 		glm::quat* rt = reinterpret_cast<glm::quat*>(&rot);
 		Application::GetWorld().SetEntityRotation(ent, *rt);
+	}
+
+	vec3 GetChildTranslation_L(const char* name) {
+		Entity ent = GetEntityByName(name);
+		glm::vec3 trans = Application::GetWorld().GetComponent<TransformComponent>(ent).translation;
+		return *reinterpret_cast<vec3*>(&trans);
+	}
+
+	vec3 GetChildScale_L(const char* name) {
+		Entity ent = GetEntityByName(name);
+		glm::vec3 scale = Application::GetWorld().GetComponent<TransformComponent>(ent).size;
+		return *reinterpret_cast<vec3*>(&scale);
+	}
+
+	quat GetChildRotation_L(const char* name) {
+		Entity ent = GetEntityByName(name);
+		glm::quat rot = Application::GetWorld().GetComponent<TransformComponent>(ent).rotation;
+		return *reinterpret_cast<quat*>(&rot);
 	}
 
 	void PlayAnimation_L(const char* name, const char* path) {
@@ -85,6 +156,19 @@ void PrefabManipulationModule::OnRegisterModule(ModuleBindingProperties& props)
 	void PlayAnimation_L(const char* name, const char* path);
 	void PlaySound_L(const char* name, const char* path);
 	entity GetEntityByName_L(const char* name);
+	void ApplyForce_L(const char* name, vec3 direction);
+	void SetLinearVelocity_L(const char* name, vec3 velocity);
+	void SetAngularVelocity_L(const char* name, vec3 velocity);
+	void SetLinearFactor_L(const char* name, vec3 factor);
+	void SetAngularFactor_L(const char* name, vec3 factor);
+	void SetMass_L(const char* name, float mass);
+	void SetFriction_L(const char* name, float friction);
+	vec3 GetLinearVelocity_L(const char* name);
+	vec3 GetAngularVelocity_L(const char* name); 
+	vec3 GetChildTranslation_L(const char* name);
+	vec3 GetChildScale_L(const char* name);
+	quat GetChildRotation_L(const char* name); 
+
 	)");
 
 	props.Add_FFI_aliases({
@@ -93,6 +177,19 @@ void PrefabManipulationModule::OnRegisterModule(ModuleBindingProperties& props)
 		{"SetChildRotation_L","SetChildRotation"},
 		{"PlayAnimation_L","PlayAnimation"},
 		{"PlaySound_L","PlaySound"},
-		{"GetEntityByName_L","GetEntityByName"}
+		{"GetEntityByName_L","GetEntityByName"},
+		{"ApplyForce_L","ApplyForce"},
+		{"SetLinearVelocity_L","SetLinearVelocity"},
+		{"SetAngularVelocity_L","SetAngularVelocity"},
+		{"SetLinearFactor_L","SetLinearFactor"},
+		{"SetAngularFactor_L","SetAngularFactor"},
+		{"SetMass_L","SetMass"},
+		{"SetFriction_L","SetFriction"},
+		{"GetLinearVelocity_L","GetLinearVelocity"},
+		{"GetAngularVelocity_L","GetAngularVelocity"},
+		{"GetChildTranslation_L","GetChildTranslation"},
+		{"GetChildScale_L","GetChildScale"},
+		{"GetChildRotation_L","GetChildRotation"}
+
 		});
 }

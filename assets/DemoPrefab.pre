@@ -25,7 +25,7 @@
 @Section:Point_Light_10
 @Entity 
 {
-"Components": {"LabelComponent":{"label":"Point Light"},"LightComponent":{"attenuation":{"x":1.0,"y":0.10000000149011612,"z":0.05000000074505806},"color":{"w":5.929999828338623,"x":0.0,"y":0.7063829898834229,"z":1.0},"type":1},"ShadowCasterComponent":{"far_plane":500.0,"near_plane":0.10000000149011612,"res_x":800,"res_y":800},"TransformComponent":{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":0.0,"y":4.0,"z":11.0}}},
+"Components": {"LabelComponent":{"label":"Point Light"},"LightComponent":{"attenuation":{"x":1.0,"y":0.10000000149011612,"z":0.05000000074505806},"color":{"w":5.929999828338623,"x":0.0,"y":0.7063829898834229,"z":1.0},"type":1},"ShadowCasterComponent":{"far_plane":500.0,"shadow_bias": 0.005,"near_plane":0.10000000149011612,"res_x":800,"res_y":800},"TransformComponent":{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":0.0,"y":4.0,"z":11.0}}},
 "Children": []
 }
 
@@ -69,10 +69,6 @@ function trash(test_obj) print("TRASH") end
 
 function OnUpdate(delta_time) 
 
-
-	
-	
-	print(collectgarbage("count"))
 end
 
 

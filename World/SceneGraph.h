@@ -10,7 +10,7 @@ class World;
 class Octree;
 
 enum class SceneNodeState : char {
-	DIRTY = 1, PREFAB = 2, DIRTY_TRANSFORM = 4, PREFAB_CHILD = 8
+	DIRTY = 1, PREFAB = 2, DIRTY_TRANSFORM = 4, PREFAB_CHILD = 8, UI_ENTITY = 16
 };
 
 inline SceneNodeState operator|(const SceneNodeState& first, const SceneNodeState& second) {
@@ -40,6 +40,12 @@ struct SceneNode {
 	}
 	bool IsPrefab() const {
 		return (char)state & (char)SceneNodeState::PREFAB;
+	}
+	bool IsUIEntity() const {
+		return (char)state & (char)SceneNodeState::UI_ENTITY;
+	}
+	bool ShouldSpatialIndexIgnore() const {
+		return IsUIEntity();
 	}
 
 };

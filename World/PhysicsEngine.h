@@ -31,6 +31,21 @@ public:
 
 	void ActiveMode();
 
+	void ApplyForce(Entity ent, const glm::vec3& direction);
+
+	void SetMass(Entity ent, float mass);
+
+	void SetFriction(Entity ent, float friction);
+
+	void SetLinearFactor(Entity ent, const glm::vec3& linear_factor);
+	void SetAngularFactor(Entity ent, const glm::vec3& angular_factor);
+
+	void SetLinearVelocity(Entity ent, const glm::vec3& linear_velocity);
+	
+	void SetAngularVelocity(Entity ent, const glm::vec3& angular_velocity);
+
+	glm::vec3 GetAngularVelocity(Entity ent);
+	glm::vec3 GetLinearVelocity(Entity ent);
 
 	void RefreshObject(Entity ent);
 

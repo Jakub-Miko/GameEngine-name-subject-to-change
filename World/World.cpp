@@ -144,12 +144,14 @@ void World::UpdateSkeletalMesh(Entity ent)
 	}
 }
 
-Entity World::DuplicateEntity(Entity ent)
+Entity World::DuplicateEntity(Entity ent, Entity parent)
 {
 	if (!EntityIsValid(ent)) {
 		return Entity();
 	}
-	Entity parent = GetSceneGraph()->GetSceneGraphNode(ent)->parent->entity;
+	if (parent == Entity()) {
+		parent = GetSceneGraph()->GetSceneGraphNode(ent)->parent->entity;
+	}
 	Entity new_ent = CreateEntity(parent);
 
 	DuplicateComponentsRecursive(ent, new_ent, Component_Types());
@@ -158,21 +160,41 @@ Entity World::DuplicateEntity(Entity ent)
 		Application::GetWorld().RemoveEntity(new_ent, RemoveEntityAction::RELOAD_PREFAB);
 	}
 
+	SceneNode* node = m_SceneGraph.GetSceneGraphNode(ent);
+	if (node && node->first_child) {
+		SceneNode* node_iter = node->first_child;
+		while (node_iter) {
+			DuplicateEntity(node_iter->entity,new_ent);
+			node_iter = node_iter->next;
+		}
+	}
+
 	return new_ent;
 }
 
-Entity World::DuplicateEntityInPrefab(Entity ent)
+Entity World::DuplicateEntityInPrefab(Entity ent, Entity parent )
 {
 	if (!EntityIsValid(ent)) {
 		return Entity();
 	}
-	Entity parent = GetSceneGraph()->GetSceneGraphNode(ent)->parent->entity;
+	if (parent == Entity()) {
+		parent = GetSceneGraph()->GetSceneGraphNode(ent)->parent->entity;
+	}
 	Entity new_ent = CreateEntity<PrefabChildEntityType>(parent, true);
 
 	DuplicateComponentsRecursive(ent, new_ent, Component_Types());
 
 	if (HasComponent<PrefabComponent>(new_ent)) {
 		Application::GetWorld().RemoveEntity(new_ent, RemoveEntityAction::RELOAD_PREFAB);
+	}
+
+	SceneNode* node = m_SceneGraph.GetSceneGraphNode(ent);
+	if (node && node->first_child) {
+		SceneNode* node_iter = node->first_child;
+		while (node_iter) {
+			DuplicateEntity(node_iter->entity, new_ent);
+			node_iter = node_iter->next;
+		}
 	}
 
 	return new_ent;
@@ -342,8 +364,9 @@ void World::SerializePrefab(Entity entity, const std::string& path)
 void World::CheckCamera()
 {
 	if (!m_ECS.valid((entt::entity)primary_entity.id)) {
-		if (default_camera != Entity()) {
-			set_primary_entity = default_camera;
+		if (default_camera != Entity() && EntityExists(default_camera)) {
+			set_primary_entity = Entity();
+			primary_entity = default_camera;
 		}
 		else {
 			auto ent = CreateEntity();

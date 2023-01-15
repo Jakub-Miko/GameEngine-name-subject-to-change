@@ -1,5 +1,7 @@
 #include "Renderer.h"
 #include <Renderer/TextRenderer.h>
+#include <Application.h>
+#include <World/Components/CameraComponent.h>
 #include <Renderer/Renderer3D/Renderer3D.h>
 #include <platform/OpenGL/OpenGLRenderCommandList.h>
 #include <Renderer/RenderContext.h>
@@ -125,6 +127,19 @@ void Renderer::Create()
 
 void Renderer::Update(float delta_time)
 {
+    auto primary = Application::GetWorld().GetPrimaryEntity();
+    if (primary == Entity() || !Application::GetWorld().EntityExists(primary) || !Application::GetWorld().HasComponent<CameraComponent>(primary)) {
+        Application::GetWorld().SetPrimaryEntity(Entity());
+        Application::GetWorld().CheckCamera();
+        primary = Application::GetWorld().GetPrimaryEntity();
+    } 
+        
+    glm::mat4 view_matrix = Application::GetWorld().GetComponent<TransformComponent>(primary).TransformMatrix;
+    view_matrix[0] /= glm::length(view_matrix[0]);
+    view_matrix[1] /= glm::length(view_matrix[1]);
+    view_matrix[1] /= glm::length(view_matrix[2]);
+    Application::GetWorld().GetComponent<TransformComponent>(primary).TransformMatrix = view_matrix;
+    
     Renderer3D::Get()->Update(delta_time);
     TextRenderer::Get()->UpdateLoadedFonts();
     TextRenderer::Get()->TextRenderSystem();

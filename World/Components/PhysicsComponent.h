@@ -34,6 +34,13 @@ enum class PhysicsObjectState : char {
 	UNINITIALIZED = 0, INITIALIZED = 1
 };
 
+struct AuxilaryPhysicsProps {
+	float friction = 0.7f;
+	float mass = 0.0f;
+	glm::vec3 angular_factor = glm::vec3(1.0f);
+	glm::vec3 linear_factor = glm::vec3(1.0f);
+};
+
 struct PhysicsComponent {
 	RUNTIME_TAG("PhysicsComponent");
 	PhysicsComponent() {}
@@ -70,7 +77,7 @@ struct PhysicsComponent {
 		state = PhysicsObjectState::UNINITIALIZED;
 		return *this;
 	}
-
+	std::unique_ptr<AuxilaryPhysicsProps> auxilary_props = nullptr;
 	float mass = 0.0f;
 	PhysicsObjectType object_type = PhysicsObjectType::RIGID_BODY;
 	PhysicsShapeType shape_type = PhysicsShapeType::BOUNDING_BOX;

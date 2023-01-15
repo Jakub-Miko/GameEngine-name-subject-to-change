@@ -131,9 +131,9 @@ public:
 	//Assure the mesh component is properly synced with the skeletal mesh object
 	void UpdateSkeletalMesh(Entity ent);
 
-	Entity DuplicateEntity(Entity ent);
+	Entity DuplicateEntity(Entity ent, Entity parent = Entity());
 
-	Entity DuplicateEntityInPrefab(Entity ent);
+	Entity DuplicateEntityInPrefab(Entity ent, Entity parent = Entity());
 
 	bool EntityIsValid(Entity ent);
 

@@ -417,6 +417,16 @@ void Editor::EnableEditor()
 	enabled = true;
 }
 
+Entity Editor::GetSelectedEntity() const
+{
+	if (Application::GetWorld().EntityExists(selected_entity)) {
+		return selected_entity;
+	}
+	else {
+		return Entity();
+	}
+}
+
 void Editor::ViewportEnd()
 {
 	if (enabled) {
