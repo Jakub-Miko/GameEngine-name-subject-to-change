@@ -114,6 +114,12 @@ extern "C" {
 		return *reinterpret_cast<vec3*>(&trans);
 	}
 
+	vec3 GetChildWorldTranslation_L(const char* name) {
+		Entity ent = GetEntityByName(name);
+		glm::vec3 trans = Application::GetWorld().GetComponent<TransformComponent>(ent).TransformMatrix[3];
+		return *reinterpret_cast<vec3*>(&trans);
+	}
+
 	vec3 GetChildScale_L(const char* name) {
 		Entity ent = GetEntityByName(name);
 		glm::vec3 scale = Application::GetWorld().GetComponent<TransformComponent>(ent).size;
@@ -166,6 +172,7 @@ void PrefabManipulationModule::OnRegisterModule(ModuleBindingProperties& props)
 	vec3 GetLinearVelocity_L(const char* name);
 	vec3 GetAngularVelocity_L(const char* name); 
 	vec3 GetChildTranslation_L(const char* name);
+	vec3 GetChildWorldTranslation_L(const char* name);
 	vec3 GetChildScale_L(const char* name);
 	quat GetChildRotation_L(const char* name); 
 
@@ -188,6 +195,7 @@ void PrefabManipulationModule::OnRegisterModule(ModuleBindingProperties& props)
 		{"GetLinearVelocity_L","GetLinearVelocity"},
 		{"GetAngularVelocity_L","GetAngularVelocity"},
 		{"GetChildTranslation_L","GetChildTranslation"},
+		{"GetChildWorldTranslation_L","GetChildWorldTranslation"},
 		{"GetChildScale_L","GetChildScale"},
 		{"GetChildRotation_L","GetChildRotation"}
 

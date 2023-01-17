@@ -465,6 +465,55 @@ void PhysicsEngine::SetFriction(Entity ent, float friction)
 	}
 }
 
+bool PhysicsEngine::RayCast(const glm::vec3& from_in, const glm::vec3& to_in, PhysicsRayTestResultArray& results)
+{
+	btVector3 from = btVector3(from_in.x, from_in.y, from_in.z);
+	btVector3 to = btVector3(to_in.x, to_in.y, to_in.z);
+
+	btCollisionWorld::AllHitsRayResultCallback result(from, to);
+	bullet_data->world->rayTest(from, to, result);
+	if (!result.hasHit()) return false;
+	for (int i = 0; i < result.m_collisionObjects.size();i++) {
+		auto object = result.m_collisionObjects[i];
+		if (object->getUserPointer()) {
+			Entity ent = Entity((uint32_t)object->getUserPointer());
+			if (Application::GetWorld().EntityExists(ent)) {
+				PhysicsRayTestResult res;
+				res.ent = ent;
+				btVector3 convert = result.m_hitPointWorld[i];
+				res.position = glm::vec3(convert.x(), convert.y(), convert.z());
+				convert = result.m_hitNormalWorld[i];
+				res.normal = glm::vec3(convert.x(), convert.y(), convert.z());
+				results.push_back(res);
+			}
+		}
+
+	}
+	return true;
+}
+
+bool PhysicsEngine::RayCastSingle(const glm::vec3& from_in, const glm::vec3& to_in, PhysicsRayTestResult& in_result)
+{
+	btVector3 from = btVector3(from_in.x, from_in.y, from_in.z);
+	btVector3 to = btVector3(to_in.x, to_in.y, to_in.z);
+
+	btCollisionWorld::ClosestRayResultCallback result(from, to);
+	bullet_data->world->rayTest(from, to, result);
+	if (!result.hasHit()) return false;
+	auto object = result.m_collisionObject;
+	if (object->getUserPointer()) {
+		Entity ent = Entity((uint32_t)object->getUserPointer());
+		if (Application::GetWorld().EntityExists(ent)) {
+			in_result.ent = ent;
+			btVector3 convert = result.m_hitPointWorld;
+			in_result.position = glm::vec3(convert.x(), convert.y(), convert.z());
+			convert = result.m_hitNormalWorld;
+			in_result.normal = glm::vec3(convert.x(), convert.y(), convert.z());
+		}
+	}
+	return true;
+}
+
 //thread-safe
 void PhysicsEngine::SetLinearFactor(Entity ent, const glm::vec3& linear_factor)
 {

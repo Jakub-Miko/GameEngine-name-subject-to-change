@@ -4,6 +4,7 @@
 #include <deque>
 #include <mutex>
 #include <World/Components/PhysicsComponent.h>
+#include <vector>
 
 struct PhysicsComponent;
 struct PhysicsEngine_BulletData;
@@ -12,7 +13,13 @@ struct PhysicsEngineProps {
 
 };
 
+struct PhysicsRayTestResult {
+	glm::vec3 position;
+	glm::vec3 normal;
+	Entity ent = Entity();
+};
 
+using PhysicsRayTestResultArray = typename std::template vector<PhysicsRayTestResult>;
 
 class PhysicsEngine {
 public:
@@ -36,6 +43,9 @@ public:
 	void SetMass(Entity ent, float mass);
 
 	void SetFriction(Entity ent, float friction);
+
+	bool RayCast(const glm::vec3& from, const glm::vec3& to, PhysicsRayTestResultArray& results);
+	bool RayCastSingle(const glm::vec3& from, const glm::vec3& to, PhysicsRayTestResult& results);
 
 	void SetLinearFactor(Entity ent, const glm::vec3& linear_factor);
 	void SetAngularFactor(Entity ent, const glm::vec3& angular_factor);

@@ -1,15 +1,15 @@
-@Section:Camera_11
+@Section:Sphere_1048594
 @Entity 
 {
-"Components": {"CameraComponent":{"aspect_ratio":1.7777777910232544,"fov":45.55099868774414,"zFar":1000.0,"zNear":0.10000000149011612},"LabelComponent":{"label":"Camera"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":0.0,"y":0.0,"z":0.0}}},
+"Components": {"LabelComponent":{"label":"Sphere"},"MeshComponent":{"path":"/assets/Sphere.mesh"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":0.0,"y":0.0,"z":-9.0}}},
 "Children": []
 }
 
 @EndSection
-@Section:Sphere_14
+@Section:Camera_1048593
 @Entity 
 {
-"Components": {"LabelComponent":{"label":"Sphere"},"MeshComponent":{"path":"/assets/Sphere.mesh"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":0.0,"y":0.0,"z":-9.0}}},
+"Components": {"CameraComponent":{"aspect_ratio":1.7777777910232544,"fov":45.55099868774414,"zFar":1000.0,"zNear":0.10000000149011612},"LabelComponent":{"label":"Camera"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":0.0,"y":0.0,"z":0.0}}},
 "Children": []
 }
 
@@ -18,9 +18,10 @@
 @Entity 
 {
 "Components": {"TransformComponent":{"props":{"mode":0},"rotation":{"w":0.961039662361145,"x":-0.27468159794807434,"y":-0.029678693041205406,"z":-0.008482677862048149},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":-2.1308388710021973,"y":14.865335464477539,"z":17.672117233276367}}},
-"Children": ["local#Camera_11","local#Sphere_14"]
+"Children": ["local#Sphere_1048594","local#Camera_1048593"]
 }
 @Entity:Inline_Script
+
 
 
 
@@ -80,7 +81,7 @@ function OnUpdate(delta_time)
 	
 		SetRotation(rot)
 
-		local test = RayCast(GetTranslation(), rotate_vec3(vec3(0,0,-1), GetRotation()))
+		local test = RayCastPhysics(GetTranslation(), GetTranslation() + rotate_vec3(vec3(0,0,-1), GetRotation()) * vec3(500,500,500))
 
 		local min = 5000
 		local trans = 0
@@ -94,17 +95,14 @@ function OnUpdate(delta_time)
 			end
 			end
 		end
-		print("Entity: ")
-		print(ent.id)
-		trans = trans - GetTranslation()
-		print(trans.x)
-		print(trans.y)
-		print(trans.z)
-		SetChildTranslation("Sphere", vec3(0,0,-GetVector3Length(trans)))
-
+		if(test.size ~= 0) then
+			trans = trans - GetTranslation()
+			SetChildTranslation("Sphere", vec3(0,0,-GetVector3Length(trans)))
+		end
 	end
 
 end
+
 
 
 
