@@ -242,9 +242,9 @@ void PropertiesPanel::RenderProperties(Entity entity, const PropertiesPanel_pers
 	if (world.HasComponent<PhysicsComponent>(selected) && ImGui::TreeNode("Physics")) {
 		auto& phys_comp = world.GetComponent<PhysicsComponent>(selected);
 
-		const char* shapes[2] = { "BOUNDING BOX","CONVEX HULL" };
+		const char* shapes[4] = { "BOUNDING BOX","CONVEX HULL", "CAPSULE OUTER", "CAPSULE INNER" };
 		int current_shape = (int)phys_comp.shape_type;
-		if (ImGui::Combo("Collision Shape", &current_shape, shapes, 2) && current_shape != (int)phys_comp.shape_type) {
+		if (ImGui::Combo("Collision Shape", &current_shape, shapes, 4) && current_shape != (int)phys_comp.shape_type) {
 			phys_comp.shape_type = (PhysicsShapeType)current_shape;
 			Application::GetWorld().GetPhysicsEngine().RefreshObject(selected);
 		}

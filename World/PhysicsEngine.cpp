@@ -36,6 +36,65 @@ struct PhysicsEngine_BulletData {
 
 };
 
+class CustomInnnerCapsule : public btCapsuleShape {
+public:
+	CustomInnnerCapsule() : btCapsuleShape() {
+
+	}
+
+	CustomInnnerCapsule(btScalar radius, btScalar height) : btCapsuleShape(radius, height) {
+		original_size = { radius * 2, height + radius * 2 , radius * 2 };
+	}
+
+	virtual void setLocalScaling(const btVector3& scaling) override
+	{
+		btVector3 scaled_bounds = original_size * scaling;
+		float min = std::min(std::min(scaled_bounds.x(), scaled_bounds.y()), scaled_bounds.z());
+		scaled_bounds[0] = min;
+		scaled_bounds[2] = min;
+		scaled_bounds[1] = scaled_bounds[1] - min;
+		scaled_bounds = scaled_bounds / btVector3(2.0f, 2.0f, 2.0f);
+
+		btConvexInternalShape::setLocalScaling(scaling);
+		m_implicitShapeDimensions = (scaled_bounds);
+		//update m_collisionMargin, since entire radius==margin
+		int radiusAxis = (m_upAxis + 2) % 3;
+		m_collisionMargin = m_implicitShapeDimensions[radiusAxis];
+	} 
+private:
+	btVector3 original_size = { 2,2,2 };
+};
+
+class CustomOuterCapsule : public btCapsuleShape {
+public:
+	CustomOuterCapsule() : btCapsuleShape() {
+
+	}
+
+	CustomOuterCapsule(btScalar radius, btScalar height) : btCapsuleShape(radius, height) {
+		original_size = {2* radius , height  , 2*radius };
+	}
+
+	virtual void setLocalScaling(const btVector3& scaling) override
+	{
+		btVector3 scaled_bounds = original_size * scaling;
+		float radius = std::max(scaled_bounds.x(), scaled_bounds.z());
+		scaled_bounds[0] = radius;
+		scaled_bounds[2] = radius;
+		scaled_bounds[1] = scaled_bounds[1] ;
+		scaled_bounds = scaled_bounds / btVector3(2.0f, 2.0f, 2.0f);
+
+		btConvexInternalShape::setLocalScaling(scaling);
+		m_implicitShapeDimensions = (scaled_bounds);
+		//update m_collisionMargin, since entire radius==margin
+		int radiusAxis = (m_upAxis + 2) % 3;
+		m_collisionMargin = m_implicitShapeDimensions[radiusAxis];
+	}
+private:
+	btVector3 original_size = { 2,2,2 };
+};
+
+
 class TransformMotionState : public btMotionState {
 public:
 
@@ -59,6 +118,13 @@ public:
 			case PhysicsShapeType::CONVEX_HULL:
 				SetConvexHullShapeSize(stored_size, phys_comp.physics_shape, phys_comp.physics_object ? btRigidBody::upcast(phys_comp.physics_object.get()) : nullptr);
 				break;
+			case PhysicsShapeType::CAPSULE_INNER:
+				SetCapsuleInnerShapeSize(stored_size, phys_comp.physics_shape, phys_comp.physics_object ? btRigidBody::upcast(phys_comp.physics_object.get()) : nullptr);
+				break;
+			case PhysicsShapeType::CAPSULE_OUTER:
+				SetCapsuleOuterShapeSize(stored_size, phys_comp.physics_shape, phys_comp.physics_object ? btRigidBody::upcast(phys_comp.physics_object.get()) : nullptr);
+				break;
+
 			default:
 				throw std::runtime_error("Scaling of this shape_type isn't supported");
 			}
@@ -108,6 +174,32 @@ private:
 
 	//Not thread-safe
 	void SetConvexHullShapeSize(glm::vec3 size, btCollisionShape* shape, btRigidBody* body) const {
+		btVector3 btsize = *(btVector3*)(&size);
+		shape->setLocalScaling(btsize);
+		btVector3 inertia;
+		if (body) {
+			shape->calculateLocalInertia(body->getMass(), inertia);
+			Application::GetWorld().GetPhysicsEngine().bullet_data->world->removeRigidBody(body);
+			Application::GetWorld().GetPhysicsEngine().bullet_data->world->addRigidBody(body);
+		}
+		//TODO: Update inertia;
+	}
+
+	//Not thread-safe
+	void SetCapsuleOuterShapeSize(glm::vec3 size, btCollisionShape* shape, btRigidBody* body) const {
+		btVector3 btsize = *(btVector3*)(&size);
+		shape->setLocalScaling(btsize);
+		btVector3 inertia;
+		if (body) {
+			shape->calculateLocalInertia(body->getMass(), inertia);
+			Application::GetWorld().GetPhysicsEngine().bullet_data->world->removeRigidBody(body);
+			Application::GetWorld().GetPhysicsEngine().bullet_data->world->addRigidBody(body);
+		}
+		//TODO: Update inertia;
+	}
+
+	//Not thread-safe
+	void SetCapsuleInnerShapeSize(glm::vec3 size, btCollisionShape* shape, btRigidBody* body) const {;
 		btVector3 btsize = *(btVector3*)(&size);
 		shape->setLocalScaling(btsize);
 		btVector3 inertia;
@@ -321,6 +413,74 @@ bool PhysicsEngine::CreatePhysicsObject(Entity entity)
 			delete shape;
 		}
 
+		physics_comp.physics_object.reset((btCollisionObject*)body);
+		break;
+	}
+	case PhysicsShapeType::CAPSULE_INNER:
+	{
+		if (status != Mesh_status::READY) return false;
+		glm::vec3 box_size = bounding_box.GetBoxSize() / 2.0f;
+		float radius;
+		float height;
+		radius = std::min(std::min(box_size.x, box_size.y), box_size.z);
+		height = 2 * box_size.y - radius*2.0f;
+
+		CustomInnnerCapsule* capsule_collision_shape = new CustomInnnerCapsule(radius, height);
+		btVector3 inertia;
+		capsule_collision_shape->calculateLocalInertia(physics_comp.mass, inertia);
+		btMotionState* motion_state = new TransformMotionState(entity, bounding_box.GetBoxOffset());
+		physics_comp.physics_shape = capsule_collision_shape;
+		btRigidBody::btRigidBodyConstructionInfo info(physics_comp.mass, motion_state, capsule_collision_shape, inertia);
+		body = new btRigidBody(info);
+		body->setUserPointer((void*)entity.id);
+		if (physics_comp.is_kinematic && physics_comp.mass == 0.0f) {
+			body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
+			body->setActivationState(DISABLE_DEACTIVATION);
+		}
+
+		bullet_data->world->addRigidBody(body);
+		if (physics_comp.physics_object) {
+			btRigidBody* redundant_body = btRigidBody::upcast(physics_comp.physics_object.get());
+			btMotionState* state = redundant_body->getMotionState();
+			btCollisionShape* shape = redundant_body->getCollisionShape();
+			bullet_data->world->removeRigidBody(redundant_body);
+			delete state;
+			delete shape;
+		}
+		physics_comp.physics_object.reset((btCollisionObject*)body);
+		break;
+	}
+	case PhysicsShapeType::CAPSULE_OUTER:
+	{
+		if (status != Mesh_status::READY) return false;
+		glm::vec3 box_size = bounding_box.GetBoxSize() / 2.0f;
+		float radius;
+		float height;
+		radius = std::sqrtf(std::pow(box_size.x,2)+ std::pow(box_size.z, 2));
+		height = 2*box_size.y;
+
+		CustomOuterCapsule* capsule_collision_shape = new CustomOuterCapsule(radius, height);
+		btVector3 inertia;
+		capsule_collision_shape->calculateLocalInertia(physics_comp.mass, inertia);
+		btMotionState* motion_state = new TransformMotionState(entity, bounding_box.GetBoxOffset());
+		physics_comp.physics_shape = capsule_collision_shape;
+		btRigidBody::btRigidBodyConstructionInfo info(physics_comp.mass, motion_state, capsule_collision_shape, inertia);
+		body = new btRigidBody(info);
+		body->setUserPointer((void*)entity.id);
+		if (physics_comp.is_kinematic && physics_comp.mass == 0.0f) {
+			body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
+			body->setActivationState(DISABLE_DEACTIVATION);
+		}
+
+		bullet_data->world->addRigidBody(body);
+		if (physics_comp.physics_object) {
+			btRigidBody* redundant_body = btRigidBody::upcast(physics_comp.physics_object.get());
+			btMotionState* state = redundant_body->getMotionState();
+			btCollisionShape* shape = redundant_body->getCollisionShape();
+			bullet_data->world->removeRigidBody(redundant_body);
+			delete state;
+			delete shape;
+		}
 		physics_comp.physics_object.reset((btCollisionObject*)body);
 		break;
 	}
