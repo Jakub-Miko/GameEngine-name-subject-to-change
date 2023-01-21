@@ -22,6 +22,39 @@ static void SetEntityProperty(Entity entity, std::string name, T value) {
 }
 
 extern "C" {
+    
+    typedef struct entity_call_parameters_L {
+        void* parameter_list = nullptr; //Type erased
+    } entity_call_parameters_L;
+    
+    entity_call_parameters_L CreateCallParameters_Unmanaged() {
+        return entity_call_parameters_L{ new std::vector<Script_Variant_type> };
+    }
+
+    void Free_entity_call_parameters_L(entity_call_parameters_L params) {
+        if (params.parameter_list) {
+            delete static_cast<std::vector<Script_Variant_type>*>(params.parameter_list);
+        }
+    };
+
+    void AddCallParameterInt_L(entity_call_parameters_L params, int value) {
+        static_cast<std::vector<Script_Variant_type>*>(params.parameter_list)->push_back(value);
+    }
+
+    void AddCallParameterFloat_L(entity_call_parameters_L params, float value) {
+        static_cast<std::vector<Script_Variant_type>*>(params.parameter_list)->push_back(value);
+    }
+    void AddCallParameterDouble_L(entity_call_parameters_L params, double value) {
+        static_cast<std::vector<Script_Variant_type>*>(params.parameter_list)->push_back(value);
+    }
+    void AddCallParameterString_L(entity_call_parameters_L params, const char* value) {
+        static_cast<std::vector<Script_Variant_type>*>(params.parameter_list)->push_back((std::string)value);
+    }
+    void AddCallParameterEntity_L(entity_call_parameters_L params, entity value) {
+        static_cast<std::vector<Script_Variant_type>*>(params.parameter_list)->push_back(Entity(value.id));
+    }
+
+
     entity CreateEntity_L(const char* path, int parent)
     {
         return entity{ EntityManager::Get()->CreateEntity(FileManager::Get()->GetPath(path), Entity(parent)).id };
@@ -70,6 +103,13 @@ extern "C" {
         SetEntityProperty(Entity(ent.id), name, value);
     }
 
+    void CallEntityFunction_L(entity ent, const char* name) {
+        ScriptSystemManager::Get()->AddDefferedCall(Entity(ent.id), Deffered_Call{ std::string(name), std::vector< Script_Variant_type >() });
+    }
+
+    void CallEntityFunctionWithArguments_L(entity ent, const char* name, entity_call_parameters_L args) {
+        ScriptSystemManager::Get()->AddDefferedCall(Entity(ent.id), Deffered_Call{ std::string(name), *static_cast<std::vector<Script_Variant_type>*>(args.parameter_list) });
+    }
 }
 
 void DefferedPropertySetModule::OnRegisterModule(ModuleBindingProperties& props)
@@ -88,6 +128,21 @@ void DefferedPropertySetModule::OnRegisterModule(ModuleBindingProperties& props)
     void SetEntityProperty_VEC3_L(entity ent, const char* name, vec3 value);
     void SetEntityProperty_VEC4_L(entity ent, const char* name, vec4 value);
     void SetEntityProperty_STRING_L(entity ent, const char* name, const char* value);
+    void CallEntityFunction_L(entity ent, const char* name);
+
+    typedef struct entity_call_parameters_L {
+        void* parameter_list; 
+    } entity_call_parameters_L;
+    entity_call_parameters_L CreateCallParameters_Unmanaged();
+    void Free_entity_call_parameters_L(entity_call_parameters_L params);
+
+    void AddCallParameterInt_L(entity_call_parameters_L params, int value);
+    void AddCallParameterFloat_L(entity_call_parameters_L params, float value);
+    void AddCallParameterDouble_L(entity_call_parameters_L params, double value); 
+    void AddCallParameterString_L(entity_call_parameters_L params, const char* value); 
+    void AddCallParameterEntity_L(entity_call_parameters_L params, entity value); 
+    void CallEntityFunctionWithArguments_L(entity ent, const char* name, entity_call_parameters_L args);
+
     )");
 
     props.Add_FFI_aliases({
@@ -101,6 +156,24 @@ void DefferedPropertySetModule::OnRegisterModule(ModuleBindingProperties& props)
         {"SetEntityProperty_VEC3_L","SetEntityProperty_VEC3"}, 
         {"SetEntityProperty_VEC4_L","SetEntityProperty_VEC4"},
         {"SetEntityProperty_STRING_L","SetEntityProperty_STRING"},
+        {"CallEntityFunction_L" ,"CallEntityFunction"},
+        {"CreateCallParameters_Unmanaged","CreateCallParameters_Unmanaged"},
+        {"Free_entity_call_parameters_L", "Free_entity_call_parameters"},
+        {"struct entity_call_parameters_L", "entity_call_parameters"},
+        {"AddCallParameterInt_L", "AddCallParameterInt"},
+        {"AddCallParameterFloat_L", "AddCallParameterFloat"},
+        {"AddCallParameterDouble_L", "AddCallParameterDouble"},
+        {"AddCallParameterString_L", "AddCallParameterString"},
+        {"AddCallParameterEntity_L", "AddCallParameterEntity"},
+        {"CallEntityFunctionWithArguments_L", "CallEntityFunctionWithArguments"}
+
         });
+
+    props.Add_init_script(R"(
+        function CreateCallParameters() 
+			return ffi.gc(CreateCallParameters_Unmanaged(), Free_entity_call_parameters)
+		end
+
+    )");
 
 }

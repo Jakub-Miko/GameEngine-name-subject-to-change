@@ -27,10 +27,16 @@
 
 
 
+
+
 function OnStart()
 
 CreateProperty_FLOAT("Speed",1.0)
 
+end
+
+function Recieve(message) 
+	print("message recieved:" .. message)
 end
 
 function OnUpdate(delta_time) 
@@ -81,7 +87,7 @@ function OnUpdate(delta_time)
 	
 		SetRotation(rot)
 
-		local test = RayCastPhysics(GetTranslation(), GetTranslation() + rotate_vec3(vec3(0,0,-1), GetRotation()) * vec3(500,500,500))
+		local test = RayCast(GetTranslation(), rotate_vec3(vec3(0,0,-1), GetRotation()))
 
 		local min = 5000
 		local trans = 0
@@ -97,11 +103,17 @@ function OnUpdate(delta_time)
 		end
 		if(test.size ~= 0) then
 			trans = trans - GetTranslation()
+			local params = CreateCallParameters()
+			AddCallParameterString(params,"Yo!!!")
+			AddCallParameterEntity(params,GetCurrentEntity())
+			CallEntityFunctionWithArguments(ent, "Print_hello", params)
 			SetChildTranslation("Sphere", vec3(0,0,-GetVector3Length(trans)))
 		end
 	end
 
 end
+
+
 
 
 

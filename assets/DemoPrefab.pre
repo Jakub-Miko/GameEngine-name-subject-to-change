@@ -52,6 +52,8 @@
 
 
 
+
+
 function OnStart() 
 	PlayAnimation("Skeleton","asset:default_dance_vampire_animations/DanceMoves.anim")
 	PlaySound("Audio","asset:test_track_mono.wav")
@@ -61,15 +63,26 @@ end
 
 function freeNow(arr) 
 print("Heeey")
+
 FreeArray(arr) 
 
 end
+
+function Print_hello(message,entity) 
+print("Hello World" .. message)
+print("Sending message to: " .. entity.id)
+local params = CreateCallParameters()
+AddCallParameterString(params,"Yo!!!")
+CallEntityFunctionWithArguments(entity, "Recieve", params)
+end 
 
 function trash(test_obj) print("TRASH") end
 
 function OnUpdate(delta_time) 
 
 end
+
+
 
 
 

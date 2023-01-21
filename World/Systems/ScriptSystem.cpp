@@ -51,3 +51,38 @@ void ScriptSystemDefferedSet(World& world)
     world.GetRegistry().clear<DefferedUpdateComponent>();
     ScriptSystemManager::Get()->ClearEntityChanges();
 }
+
+void ScriptSystemDefferedCall(World& world)
+{
+    ScriptSystemManager::Get()->SwapDefferedCallCycle();
+    auto* current_entities = &ScriptSystemManager::Get()->GetPendingDefferedCallEntities();
+    auto* current_calls = &ScriptSystemManager::Get()->GetDefferedCalls();
+    
+    auto func_deffered = [&world](ComponentCollection compcol, const std::vector<Entity>& comps) {
+        auto script_vm = ScriptSystemManager::Get()->TryGetScriptSystemVM();
+        if (!script_vm) {
+            ScriptSystemManager::Get()->InitializeScriptSystemVM();
+            script_vm = ScriptSystemManager::Get()->TryGetScriptSystemVM();
+        }
+
+        for (auto iter = comps.begin() + compcol.start_index; iter != comps.begin() + compcol.start_index + compcol.size; iter++) {
+            auto& changes = ScriptSystemManager::Get()->GetDefferedCallsForEntity(*iter);
+            auto& script_comp = world.GetComponent<ScriptComponent>(*iter);
+            for (auto& change : changes) {
+                script_vm->TryCallFunctionRuntime(nullptr, script_comp.script_path, change.func_name, change.arguments);
+            }
+        }
+
+
+
+    };
+    while (!current_entities->empty()) {
+        RunSystemSimpleVector(world, *current_entities, func_deffered);
+        current_calls->clear();
+        current_entities->clear();
+        ScriptSystemManager::Get()->SwapDefferedCallCycle();
+        current_entities = &ScriptSystemManager::Get()->GetPendingDefferedCallEntities();
+        current_calls = &ScriptSystemManager::Get()->GetDefferedCalls();
+    }
+
+}

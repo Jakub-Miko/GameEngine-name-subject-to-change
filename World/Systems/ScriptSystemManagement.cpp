@@ -103,7 +103,66 @@ void ScriptSystemManager::SetEntityAsDirty(Entity ent)
 {
     Application::GetWorld().SetComponent<DefferedUpdateComponent>(ent);
 }
+
+Deffered_Call_Map& ScriptSystemManager::GetDefferedCalls()
+{
+    return m_Deffered_call_maps[deffered_call_cycle ? 1 : 0];
+}
+
+std::vector<Deffered_Call>& ScriptSystemManager::GetDefferedCallsForEntity(Entity ent)
+{
+    auto fnd = GetDefferedCalls().find(ent.id);
+    if (fnd != GetDefferedCalls().end()) {
+        return fnd->second;
+    }
+    else {
+        throw std::runtime_error("This entity should't be called");
+    }
+}
+
+std::vector<Entity>& ScriptSystemManager::GetPendingDefferedCallEntities()
+{
+    return m_Pending_Deffered_call_vectors[deffered_call_cycle ? 1 : 0];
+}
+
+void ScriptSystemManager::AddDefferedCall(Entity ent, const Deffered_Call& call_info)
+{
+    if (!Application::GetWorld().HasComponentSynced<ScriptComponent>(ent)) {
+        SceneNode* node = Application::GetWorld().GetSceneGraph()->GetSceneGraphNode(ent);
+        if (node && (bool)(node->state & SceneNodeState::PREFAB_CHILD)) {
+            while (!(bool)(node->state & SceneNodeState::PREFAB))
+            {
+                if (!node) return;
+                node = node->parent;
+            }
+            ent = node->entity;
+            if (!Application::GetWorld().HasComponentSynced<ScriptComponent>(ent)) return;
+        }
+        else {
+            return;
+        }
+    }
+
+
+    std::lock_guard<std::mutex> lock(Deffered_call_maps_mutex);
+    auto& call_map = m_Deffered_call_maps[deffered_call_cycle ? 0 : 1];
+    auto& call_entities = m_Pending_Deffered_call_vectors[deffered_call_cycle ? 0 : 1];
+    auto fnd = call_map.find(ent.id);
+    if (fnd != call_map.end()) {
+        fnd->second.push_back(call_info);
+    }
+    else {
+        call_entities.push_back(ent);
+        auto new_entry = call_map.insert(std::make_pair(ent.id, std::vector<Deffered_Call>()));
+        new_entry.first->second.push_back(call_info);
+    }
+}
  
+void ScriptSystemManager::SwapDefferedCallCycle()
+{
+    deffered_call_cycle = !deffered_call_cycle;
+}
+
 void ScriptSystemManager::InvalidateInlineScript(const std::string& script_path)
 {
     auto hash = LuaEngineUtilities::ScriptHash(script_path, false);
@@ -186,8 +245,12 @@ ScriptSystemManager::~ScriptSystemManager()
     }
 }
 
-ScriptSystemManager::ScriptSystemManager() : sync_mutex(), m_DefferedSetMaps(), DefferedSetMaps_mutex(), m_ScriptCache()
+ScriptSystemManager::ScriptSystemManager() : sync_mutex(), m_DefferedSetMaps(), DefferedSetMaps_mutex(), m_ScriptCache(), m_Deffered_call_maps(), Deffered_call_maps_mutex(), m_Pending_Deffered_call_vectors()
 {
+    m_Deffered_call_maps.emplace_back();
+    m_Deffered_call_maps.emplace_back();
+    m_Pending_Deffered_call_vectors.emplace_back();
+    m_Pending_Deffered_call_vectors.emplace_back();
     m_DefferedSetMaps.reserve(ThreadManager::Get()->GetMaxThreadCount());
 }
 

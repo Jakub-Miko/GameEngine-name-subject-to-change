@@ -60,6 +60,7 @@ void GameLayer::OnUpdate(float delta_time) {
     world.UpdateSceneScript(delta_time);
     InitializationSystem(world);
     ScriptSystemUpdate(world, delta_time);
+    ScriptSystemDefferedCall(world);
     world.SetPrimaryEntitySystem();
     MeshManager::Get()->UpdateLoadedMeshes(); // MultiThread
     AudioSystem::Get()->UpdateLoadedSounds();

@@ -7,6 +7,18 @@ extern "C" {
 
 }
 
+template<>
+class LuaEngineObjectDelegate<entity> {
+public:
+
+	static void SetObject(LuaEngineProxy proxy, const entity& value) {
+		proxy.SetTableItem((int)value.id, "id");
+	}
+
+	static entity GetObject(LuaEngineProxy proxy, int index = -1) {
+		return entity{ (unsigned int)proxy.GetTableField<int>("id", index) };
+	}
+};
 
 class GlobalEntityModule : public ScriptModule {
 public:

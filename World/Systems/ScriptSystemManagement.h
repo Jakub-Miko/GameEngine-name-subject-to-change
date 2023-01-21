@@ -21,6 +21,13 @@ struct Script_Variant_Key_Value {
 
 using Deffered_Set_Map = std::unordered_map<uint32_t, std::vector<Script_Variant_Key_Value>>;
 
+struct Deffered_Call {
+    std::string func_name;
+    std::vector<Script_Variant_type> arguments;
+};
+
+using Deffered_Call_Map = std::unordered_map<uint32_t, std::vector<Deffered_Call>>;
+
 class ScriptObject {
 public:
     ScriptObject(const std::string& ref) : script(ref) {}
@@ -50,6 +57,12 @@ public:
     void UploadConstructionScript(const std::string& path, const std::string& script);
 
     void SetEntityAsDirty(Entity ent);
+
+    Deffered_Call_Map& GetDefferedCalls();
+    std::vector<Deffered_Call>& GetDefferedCallsForEntity(Entity ent);
+    std::vector<Entity>& GetPendingDefferedCallEntities();
+    void AddDefferedCall(Entity ent, const Deffered_Call& call_info);
+    void SwapDefferedCallCycle();
 
     //This is not ThreadSafe, use only in synchronized contexts.
     void InvalidateInlineScript(const std::string& script_path);
@@ -85,6 +98,13 @@ private:
 
     std::mutex DefferedSetMaps_mutex;
     std::vector<Deffered_Set_Map> m_DefferedSetMaps;
+
+    //Deffered calls have different cycles one used for reads and one for writes, they swap in the next cycle
+    std::mutex Deffered_call_maps_mutex;
+    bool deffered_call_cycle = false;
+    std::vector<Deffered_Call_Map> m_Deffered_call_maps;
+    std::vector<std::vector<Entity>> m_Pending_Deffered_call_vectors;
+
 };
 
 #pragma region ScriptHandler
@@ -243,6 +263,28 @@ public:
     }
 
     template<typename R, typename ... Args>
+    auto CallFunctionRuntime(const std::string& path, const std::string& function_name, const std::vector<std::variant<Args...>>& args)
+        -> std::enable_if_t<(!std::is_void_v<R>), R>
+    {
+        R out;
+        if (m_BoundScripts.find(LuaEngineUtilities::ScriptHash(path)) != m_BoundScripts.end()) {
+            bool success = m_LuaEngine.TryCallObjectRuntime<void>(nullptr, LuaEngineUtilities::ScriptHash(path), function_name, args);
+            if (success) {
+                return out;
+            }
+            else {
+                throw std::runtime_error("An error occured in a ScriptVM lua function execution");
+            }
+        }
+        else {
+            std::string script = ScriptSystemManager::Get()->GetScript(path);
+            m_LuaEngine.RunString(script);
+            m_BoundScripts.insert(LuaEngineUtilities::ScriptHash(path));
+            return CallFunctionRuntime<R>(path, function_name, args);
+        }
+    }
+
+    template<typename R, typename ... Args>
     auto TryCallFunction(R* out,const std::string& path, const std::string& function_name, Args ... args)
         -> std::enable_if_t<(!std::is_void_v<R>), bool>
     {
@@ -260,6 +302,27 @@ public:
             m_LuaEngine.RunString(script);
             m_BoundScripts.insert(LuaEngineUtilities::ScriptHash(path));
             return TryCallFunction(out, path, function_name, args...);
+        }
+    }
+
+    template<typename R, typename ... Args>
+    auto TryCallFunctionRuntime(R* out, const std::string& path, const std::string& function_name, const std::vector<std::variant<Args...>>& args)
+        -> std::enable_if_t<(!std::is_void_v<R>), bool>
+    {
+        if (m_BoundScripts.find(LuaEngineUtilities::ScriptHash(path)) != m_BoundScripts.end()) {
+            bool success = m_LuaEngine.TryCallObjectRuntime<void>(out, LuaEngineUtilities::ScriptHash(path), function_name, args);
+            if (success) {
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+        else {
+            std::string script = ScriptSystemManager::Get()->GetScript(path);
+            m_LuaEngine.RunString(script);
+            m_BoundScripts.insert(LuaEngineUtilities::ScriptHash(path));
+            return TryCallFunctionRuntime(out, path, function_name, args);
         }
     }
 
@@ -286,6 +349,28 @@ public:
     }
 
     template<typename ... Args>
+    void CallFunctionRuntime(const std::string& path, const std::string& function_name, const std::vector<std::variant<Args...>>& args) {
+        if (m_BoundScripts.find(LuaEngineUtilities::ScriptHash(path)) != m_BoundScripts.end()) {
+            bool success;
+            {
+                success = m_LuaEngine.TryCallObjectRuntime<void>(nullptr, LuaEngineUtilities::ScriptHash(path).c_str(), function_name.c_str(), args);
+            }
+            if (success) {
+                return;
+            }
+            else {
+                throw std::runtime_error("An error occured in a ScriptVM lua function execution");
+            }
+        }
+        else {
+            std::string script = ScriptSystemManager::Get()->GetScript(path);
+            m_LuaEngine.RunString(script);
+            m_BoundScripts.insert(LuaEngineUtilities::ScriptHash(path));
+            CallFunctionRuntime(path, function_name, args);
+        }
+    }
+
+    template<typename ... Args>
     bool TryCallFunction(void* null,const std::string& path, const std::string& function_name, Args ... args) {
         if (m_BoundScripts.find(LuaEngineUtilities::ScriptHash(path)) != m_BoundScripts.end()) {
             bool success;
@@ -304,6 +389,28 @@ public:
             m_LuaEngine.RunString(script);
             m_BoundScripts.insert(LuaEngineUtilities::ScriptHash(path));
             return TryCallFunction(nullptr, path, function_name, args...);
+        }
+    }
+
+    template<typename ... Args>
+    bool TryCallFunctionRuntime(void* null, const std::string& path, const std::string& function_name, const std::vector<std::variant<Args...>>& args) {
+        if (m_BoundScripts.find(LuaEngineUtilities::ScriptHash(path)) != m_BoundScripts.end()) {
+            bool success;
+            {
+                success = m_LuaEngine.TryCallObjectRuntime<void>(nullptr, LuaEngineUtilities::ScriptHash(path).c_str(), function_name.c_str(), args);
+            }
+            if (success) {
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+        else {
+            std::string script = ScriptSystemManager::Get()->GetScript(path);
+            m_LuaEngine.RunString(script);
+            m_BoundScripts.insert(LuaEngineUtilities::ScriptHash(path));
+            return TryCallFunctionRuntime(nullptr, path, function_name, args);
         }
     }
 
