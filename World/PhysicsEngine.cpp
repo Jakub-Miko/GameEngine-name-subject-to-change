@@ -1,4 +1,5 @@
 #include "PhysicsEngine.h"
+#include <Events/CollisionEvent.h>
 #include <Events/MeshChangedEvent.h>
 #include <World/Components/PhysicsComponent.h>
 #include <btBulletDynamicsCommon.h>
@@ -246,6 +247,7 @@ void PhysicsEngine::UpdatePhysics(float delta_time)
 	CreationPhase();
 	if (!running) return;
 	bullet_data->world->stepSimulation(delta_time *0.003f,3);
+	PhysicsCollisionCallbackPhase();
 }
 
 //thread-safe
@@ -325,6 +327,46 @@ void PhysicsEngine::DeletionPhase()
 	deletion_queue.clear();
 }
 
+void PhysicsEngine::PhysicsCollisionCallbackPhase()
+{
+	int num_manifolds = bullet_data->world->getDispatcher()->getNumManifolds();
+	for (int i = 0; i < num_manifolds; i++) {
+		auto manifold = bullet_data->world->getDispatcher()->getManifoldByIndexInternal(i);
+		auto phys_info_a_ent = ((PhysicsObjectInfo*)manifold->getBody0()->getUserPointer())->entity;
+		auto phys_info_b_ent = ((PhysicsObjectInfo*)manifold->getBody1()->getUserPointer())->entity;
+		auto phys_info_a = Application::GetWorld().GetComponent<PhysicsComponent>(phys_info_a_ent).props;
+		auto phys_info_b = Application::GetWorld().GetComponent<PhysicsComponent>(phys_info_b_ent).props;
+
+
+		if ((bool)(phys_info_a & PhysicsObjectProperties::RECIEVE_COLLISION_EVENTS)) {
+			CollisionEvent* col_event = new CollisionEvent;
+			col_event->collision_point_number = std::min(4, manifold->getNumContacts());
+			for (int x = 0; x < col_event->collision_point_number; x++) {
+				btVector3 pos = manifold->getContactPoint(x).getPositionWorldOnA();
+				col_event->collision_points[x] = {pos.x(), pos.y(),pos.z()};
+			}
+			col_event->reciever = phys_info_a_ent;
+			col_event->other = phys_info_b_ent;
+			Application::Get()->SendObservedEvent<CollisionEvent>(col_event);
+			delete col_event;
+		}
+
+		if ((bool)(phys_info_b & PhysicsObjectProperties::RECIEVE_COLLISION_EVENTS)) {
+			CollisionEvent* col_event = new CollisionEvent;
+			col_event->collision_point_number = std::min(4, manifold->getNumContacts());
+			for (int x = 0; x < col_event->collision_point_number; x++) {
+				btVector3 pos = manifold->getContactPoint(x).getPositionWorldOnB();
+				col_event->collision_points[x] = { pos.x(), pos.y(),pos.z() };
+			}
+			col_event->other = phys_info_a_ent;
+			col_event->reciever = phys_info_b_ent;
+			Application::Get()->SendObservedEvent<CollisionEvent>(col_event);
+			delete col_event;
+		}
+
+	}
+}
+
 //Not thread-safe
 bool PhysicsEngine::CreatePhysicsObject(Entity entity)
 {
@@ -367,7 +409,7 @@ bool PhysicsEngine::CreatePhysicsObject(Entity entity)
 		physics_comp.physics_shape = box_collision_shape;
 		btRigidBody::btRigidBodyConstructionInfo info(physics_comp.mass, motion_state, box_collision_shape, inertia);
 		body = new btRigidBody(info);
-		body->setUserPointer((void*)entity.id);
+		body->setUserPointer(new PhysicsObjectInfo{ entity });
 		if (physics_comp.is_kinematic && physics_comp.mass == 0.0f) {
 			body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
 			body->setActivationState(DISABLE_DEACTIVATION);
@@ -379,6 +421,9 @@ bool PhysicsEngine::CreatePhysicsObject(Entity entity)
 			btMotionState* state = redundant_body->getMotionState();
 			btCollisionShape* shape = redundant_body->getCollisionShape();
 			bullet_data->world->removeRigidBody(redundant_body);
+			if (redundant_body->getUserPointer()) {
+				delete redundant_body->getUserPointer();
+			}
 			delete state;
 			delete shape;
 		}
@@ -396,7 +441,7 @@ bool PhysicsEngine::CreatePhysicsObject(Entity entity)
 		physics_comp.physics_shape = hull_collision_shape;
 		btRigidBody::btRigidBodyConstructionInfo info(physics_comp.mass, motion_state, hull_collision_shape, inertia);
 		body = new btRigidBody(info);
-		body->setUserPointer((void*)entity.id);
+		body->setUserPointer(new PhysicsObjectInfo{ entity });
 		if (physics_comp.is_kinematic && physics_comp.mass == 0.0f) {
 			body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
 			body->setActivationState(DISABLE_DEACTIVATION);
@@ -409,6 +454,9 @@ bool PhysicsEngine::CreatePhysicsObject(Entity entity)
 			btMotionState* state = redundant_body->getMotionState();
 			btCollisionShape* shape = redundant_body->getCollisionShape();
 			bullet_data->world->removeRigidBody(redundant_body);
+			if (redundant_body->getUserPointer()) {
+				delete redundant_body->getUserPointer();
+			}
 			delete state;
 			delete shape;
 		}
@@ -432,7 +480,7 @@ bool PhysicsEngine::CreatePhysicsObject(Entity entity)
 		physics_comp.physics_shape = capsule_collision_shape;
 		btRigidBody::btRigidBodyConstructionInfo info(physics_comp.mass, motion_state, capsule_collision_shape, inertia);
 		body = new btRigidBody(info);
-		body->setUserPointer((void*)entity.id);
+		body->setUserPointer(new PhysicsObjectInfo{ entity });
 		if (physics_comp.is_kinematic && physics_comp.mass == 0.0f) {
 			body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
 			body->setActivationState(DISABLE_DEACTIVATION);
@@ -444,6 +492,9 @@ bool PhysicsEngine::CreatePhysicsObject(Entity entity)
 			btMotionState* state = redundant_body->getMotionState();
 			btCollisionShape* shape = redundant_body->getCollisionShape();
 			bullet_data->world->removeRigidBody(redundant_body);
+			if (redundant_body->getUserPointer()) {
+				delete redundant_body->getUserPointer();
+			}
 			delete state;
 			delete shape;
 		}
@@ -466,7 +517,7 @@ bool PhysicsEngine::CreatePhysicsObject(Entity entity)
 		physics_comp.physics_shape = capsule_collision_shape;
 		btRigidBody::btRigidBodyConstructionInfo info(physics_comp.mass, motion_state, capsule_collision_shape, inertia);
 		body = new btRigidBody(info);
-		body->setUserPointer((void*)entity.id);
+		body->setUserPointer(new PhysicsObjectInfo{entity});
 		if (physics_comp.is_kinematic && physics_comp.mass == 0.0f) {
 			body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
 			body->setActivationState(DISABLE_DEACTIVATION);
@@ -478,6 +529,9 @@ bool PhysicsEngine::CreatePhysicsObject(Entity entity)
 			btMotionState* state = redundant_body->getMotionState();
 			btCollisionShape* shape = redundant_body->getCollisionShape();
 			bullet_data->world->removeRigidBody(redundant_body);
+			if (redundant_body->getUserPointer()) {
+				delete redundant_body->getUserPointer();
+			}
 			delete state;
 			delete shape;
 		}
@@ -500,6 +554,7 @@ bool PhysicsEngine::CreatePhysicsObject(Entity entity)
 			SetMass(entity, physics_comp.auxilary_props->mass);
 		}
 		physics_comp.auxilary_props.reset();
+
 	}
 	return true;
 
@@ -513,6 +568,9 @@ void PhysicsEngine::DestroyPhysicsObject(const PhysicsComponent& physics_comp)
 	btCollisionShape* shape = body->getCollisionShape();
 	btMotionState* state = body->getMotionState();
 	bullet_data->world->removeRigidBody(body);
+	if (body->getUserPointer()) {
+		delete body->getUserPointer();
+	}
 	delete shape;
 	delete state;
 }
@@ -535,7 +593,7 @@ void PhysicsEngine::ResetSim()
 	for (int i = 0; i < bullet_data->world->getCollisionObjectArray().size(); i++)
 	{
 		btCollisionObject* colObj = bullet_data->world->getCollisionObjectArray()[i];
-		Entity ent = Entity((uint32_t)colObj->getUserPointer());
+		Entity ent = ((PhysicsObjectInfo*)colObj->getUserPointer())->entity;
 		Application::GetWorld().MarkEntityDirty(ent);
 	}
 	Application::GetWorld().GetSceneGraph()->CalculateMatricies();
@@ -625,6 +683,33 @@ void PhysicsEngine::SetFriction(Entity ent, float friction)
 	}
 }
 
+bool PhysicsEngine::IsObjectRecievingCollisions(Entity ent)
+{
+	auto& world = Application::GetWorld();
+	if (!world.HasComponent<PhysicsComponent>(ent)) throw std::runtime_error("An entity requires a physics component to use IsObjectRecievingCollisions");
+	auto& phys_comp = world.GetComponent<PhysicsComponent>(ent);
+	return (bool)(phys_comp.props & PhysicsObjectProperties::RECIEVE_COLLISION_EVENTS);
+	return false;
+}
+
+void PhysicsEngine::SetRecieveCollision(Entity ent, bool enable)
+{
+	auto& world = Application::GetWorld();
+	if (!world.HasComponent<PhysicsComponent>(ent)) throw std::runtime_error("An entity requires a physics component to use IsObjectRecievingCollisions");
+	auto& phys_comp = world.GetComponent<PhysicsComponent>(ent);
+	if (phys_comp.state == PhysicsObjectState::UNINITIALIZED) {
+		return;
+	}
+	else {
+		if (enable) {
+			phys_comp.props = phys_comp.props | PhysicsObjectProperties::RECIEVE_COLLISION_EVENTS;
+		}
+		else {
+			phys_comp.props = phys_comp.props & (~PhysicsObjectProperties::RECIEVE_COLLISION_EVENTS);
+		}
+	}
+}
+
 bool PhysicsEngine::RayCast(const glm::vec3& from_in, const glm::vec3& to_in, PhysicsRayTestResultArray& results)
 {
 	btVector3 from = btVector3(from_in.x, from_in.y, from_in.z);
@@ -636,7 +721,7 @@ bool PhysicsEngine::RayCast(const glm::vec3& from_in, const glm::vec3& to_in, Ph
 	for (int i = 0; i < result.m_collisionObjects.size();i++) {
 		auto object = result.m_collisionObjects[i];
 		if (object->getUserPointer()) {
-			Entity ent = Entity((uint32_t)object->getUserPointer());
+			Entity ent = ((PhysicsObjectInfo*)object->getUserPointer())->entity;
 			if (Application::GetWorld().EntityExists(ent)) {
 				PhysicsRayTestResult res;
 				res.ent = ent;
@@ -662,7 +747,7 @@ bool PhysicsEngine::RayCastSingle(const glm::vec3& from_in, const glm::vec3& to_
 	if (!result.hasHit()) return false;
 	auto object = result.m_collisionObject;
 	if (object->getUserPointer()) {
-		Entity ent = Entity((uint32_t)object->getUserPointer());
+		Entity ent = ((PhysicsObjectInfo*)object->getUserPointer())->entity;
 		if (Application::GetWorld().EntityExists(ent)) {
 			in_result.ent = ent;
 			btVector3 convert = result.m_hitPointWorld;

@@ -66,6 +66,7 @@ void GameLayer::OnUpdate(float delta_time) {
     AudioSystem::Get()->UpdateLoadedSounds();
     AnimationManager::Get()->UpdateLoadedAnimations(); // MultiThread
     world.GetPhysicsEngine().UpdatePhysics(delta_time);
+    ScriptSystemCollisionCallback(world);
     world.UpdateTransformMatricies();
     AudioUpdateSystem(world);
     world.DeletionSystem();

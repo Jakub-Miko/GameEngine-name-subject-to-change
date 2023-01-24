@@ -1,16 +1,19 @@
 #pragma once
 #include <Application.h>
+#include <Events/SubjectObserver.h>
 #include <World/Components/ScriptComponent.h>
 #include <unordered_map>
 #include <LuaEngineUtilities.h>
 #include <World/System.h>
 #include <World/Entity.h>
 #include <World/Components/DynamicPropertiesComponent.h>
+#include <World/ScriptModules/CollisionModule.h>
 #include <unordered_set>
 #include <LuaEngine.h>
 
 class ScriptSystemVM;
 class ScriptHandler;
+class CollisionEvent;
 
 struct Script_Variant_Key_Value {
     Script_Variant_Key_Value(const Script_Variant_type& value,const std::string& name) : value(value), name(name) {}
@@ -77,10 +80,23 @@ public:
 
     ScriptSystemVM* TryGetScriptSystemVM();
 
+    void OnCollision(CollisionEvent* col_event);
+
     void InitializeScriptSystemVM();
     
     //Only call from main thread when vms aren't used, this call is NOT thread-safe
     void ResetAllScriptSystemVMs();
+
+    std::vector<Entity>& GetCollidedEntities() {
+        return collided_entities;
+    }
+
+    std::unordered_map<uint32_t, std::vector<CollisionEvent_L>>& GetEntityCollisions() {
+        return entity_collisions;
+    }
+
+    std::vector<CollisionEvent_L>& GetEntityCollisions(Entity ent);
+
 
 private:
     static ScriptSystemManager* instance;
@@ -104,6 +120,10 @@ private:
     bool deffered_call_cycle = false;
     std::vector<Deffered_Call_Map> m_Deffered_call_maps;
     std::vector<std::vector<Entity>> m_Pending_Deffered_call_vectors;
+
+    std::vector<Entity> collided_entities;
+    std::unordered_map<uint32_t, std::vector<CollisionEvent_L>> entity_collisions;
+    std::unique_ptr<EventObserverBase> collision_observer;
 
 };
 

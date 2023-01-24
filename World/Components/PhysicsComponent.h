@@ -23,6 +23,22 @@ public:
 
 };
 
+enum class PhysicsObjectProperties : char {
+	NONE = 0, RECIEVE_COLLISION_EVENTS = 1
+};
+
+inline PhysicsObjectProperties operator|(const PhysicsObjectProperties& first, const PhysicsObjectProperties& second) {
+	return PhysicsObjectProperties((char)first | (char)second);
+}
+
+inline PhysicsObjectProperties operator&(const PhysicsObjectProperties& first, const PhysicsObjectProperties& second) {
+	return PhysicsObjectProperties((char)first & (char)second);
+}
+
+inline PhysicsObjectProperties operator~(const PhysicsObjectProperties& first) {
+	return PhysicsObjectProperties(~(char)first);
+}
+
 enum class PhysicsObjectType : char {
 	RIGID_BODY = 0
 };
@@ -45,8 +61,10 @@ struct PhysicsComponent {
 	RUNTIME_TAG("PhysicsComponent");
 	PhysicsComponent() {}
 
-	PhysicsComponent(const PhysicsComponent& other) : mass(other.mass), object_type(other.object_type), shape_type(other.shape_type), is_kinematic(other.is_kinematic), state(PhysicsObjectState::UNINITIALIZED) {}
-	PhysicsComponent(PhysicsComponent&& other) noexcept : mass(other.mass), object_type(other.object_type), shape_type(other.shape_type), is_kinematic(other.is_kinematic), state(other.state), physics_shape(other.physics_shape), physics_object(other.physics_object) 
+	PhysicsComponent(const PhysicsComponent& other) : mass(other.mass), object_type(other.object_type), 
+		shape_type(other.shape_type), is_kinematic(other.is_kinematic), state(PhysicsObjectState::UNINITIALIZED), props(other.props) {}
+	PhysicsComponent(PhysicsComponent&& other) noexcept : mass(other.mass), object_type(other.object_type), 
+		shape_type(other.shape_type), is_kinematic(other.is_kinematic), state(other.state), physics_shape(other.physics_shape), physics_object(other.physics_object), props(other.props)
 	{
 		other.physics_object = nullptr;
 		other.physics_shape = nullptr;
@@ -62,6 +80,7 @@ struct PhysicsComponent {
 		state = other.state;
 		physics_shape = other.physics_shape; 
 		physics_object = other.physics_object;
+		props = other.props;
 		other.physics_object = nullptr;
 		other.physics_shape = nullptr;
 		other.state = PhysicsObjectState::UNINITIALIZED;
@@ -73,6 +92,7 @@ struct PhysicsComponent {
 		mass = other.mass;
 		object_type = other.object_type;
 		shape_type = other.shape_type;
+		props = other.props;
 		is_kinematic = other.is_kinematic;
 		state = PhysicsObjectState::UNINITIALIZED;
 		return *this;
@@ -81,6 +101,7 @@ struct PhysicsComponent {
 	float mass = 0.0f;
 	PhysicsObjectType object_type = PhysicsObjectType::RIGID_BODY;
 	PhysicsShapeType shape_type = PhysicsShapeType::BOUNDING_BOX;
+	PhysicsObjectProperties props = PhysicsObjectProperties(0);
 	bool is_kinematic = false;
 	PhysicsObjectState state = PhysicsObjectState::UNINITIALIZED;
 private:
@@ -90,4 +111,4 @@ private:
 	btCollisionShape* physics_shape = nullptr;
 };
 
-JSON_SERIALIZABLE(PhysicsComponent, mass, object_type, shape_type, is_kinematic);
+JSON_SERIALIZABLE(PhysicsComponent, mass, object_type, shape_type, is_kinematic, props);

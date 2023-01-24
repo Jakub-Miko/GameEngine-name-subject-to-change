@@ -13,6 +13,10 @@ struct PhysicsEngineProps {
 
 };
 
+struct PhysicsObjectInfo {
+	Entity entity;
+};
+
 struct PhysicsRayTestResult {
 	glm::vec3 position;
 	glm::vec3 normal;
@@ -43,6 +47,10 @@ public:
 	void SetMass(Entity ent, float mass);
 
 	void SetFriction(Entity ent, float friction);
+
+	bool IsObjectRecievingCollisions(Entity ent);
+
+	void SetRecieveCollision(Entity ent, bool enable);
 
 	bool RayCast(const glm::vec3& from, const glm::vec3& to, PhysicsRayTestResultArray& results);
 	bool RayCastSingle(const glm::vec3& from, const glm::vec3& to, PhysicsRayTestResult& results);
@@ -83,6 +91,8 @@ private:
 
 	void CreationPhase();
 	void DeletionPhase();
+
+	void PhysicsCollisionCallbackPhase();
 
 	bool CreatePhysicsObject(Entity entity);
 	void DestroyPhysicsObject(const PhysicsComponent& physics_comp);

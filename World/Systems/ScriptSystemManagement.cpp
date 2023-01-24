@@ -15,9 +15,11 @@
 #include <Application.h>
 #include <fstream>
 #include <ThreadManager.h>
+#include <Events/CollisionEvent.h>
 #include <World/ScriptModules/IOModule.h>
 #include <World/ScriptModules/DefferedPropertySetModule.h>
 #include <World/ScriptModules/ApplicationDataModule.h>
+#include <World/ScriptModules/CollisionModule.h>
 #include <World/ScriptModules/LocalPropertySetModule.h>
 #include <World/ScriptModules/TimeModule.h>
 #include <World/ScriptModules/RayCastingModule.h>
@@ -120,6 +122,17 @@ std::vector<Deffered_Call>& ScriptSystemManager::GetDefferedCallsForEntity(Entit
     }
 }
 
+std::vector<CollisionEvent_L>& ScriptSystemManager::GetEntityCollisions(Entity ent)
+{
+    auto fnd = entity_collisions.find(ent.id);
+    if (fnd != entity_collisions.end()) {
+        return fnd->second;
+    }
+    else {
+        throw std::runtime_error("This entity doesn't have a collision registered");
+    }
+}
+
 std::vector<Entity>& ScriptSystemManager::GetPendingDefferedCallEntities()
 {
     return m_Pending_Deffered_call_vectors[deffered_call_cycle ? 1 : 0];
@@ -218,6 +231,41 @@ ScriptSystemVM* ScriptSystemManager::TryGetScriptSystemVM()
     return nullptr;
 }
 
+void ScriptSystemManager::OnCollision(CollisionEvent* col_event)
+{
+    Entity ent = col_event->reciever;
+    
+    if (!Application::GetWorld().HasComponentSynced<ScriptComponent>(ent)) {
+        SceneNode* node = Application::GetWorld().GetSceneGraph()->GetSceneGraphNode(ent);
+        if (node && (bool)(node->state & SceneNodeState::PREFAB_CHILD)) {
+            while (!(bool)(node->state & SceneNodeState::PREFAB))
+            {
+                if (!node) return;
+                node = node->parent;
+            }
+            ent = node->entity;
+            if (!Application::GetWorld().HasComponentSynced<ScriptComponent>(ent)) return;
+        }
+        else {
+            return;
+        }
+    }
+
+    auto fnd = entity_collisions.find(ent.id);
+    if (fnd == entity_collisions.end()) {
+        collided_entities.push_back(ent);
+        fnd = entity_collisions.insert(std::make_pair(ent.id, std::vector<CollisionEvent_L>())).first;
+    } 
+
+    CollisionEvent_L cl;
+    cl.collider = entity{ col_event->other.id };
+    cl.num_collision_points = col_event->collision_point_number;
+    for (int i = 0; i < cl.num_collision_points; i++) {
+        cl.collision_points[i] = *reinterpret_cast<vec3*>(& col_event->collision_points[i]);
+    }
+    fnd->second.push_back(cl);
+}
+
 void ScriptSystemManager::InitializeScriptSystemVM()
 {
     if (ThreadManager::IsValidThreadContext()) {
@@ -245,13 +293,20 @@ ScriptSystemManager::~ScriptSystemManager()
     }
 }
 
-ScriptSystemManager::ScriptSystemManager() : sync_mutex(), m_DefferedSetMaps(), DefferedSetMaps_mutex(), m_ScriptCache(), m_Deffered_call_maps(), Deffered_call_maps_mutex(), m_Pending_Deffered_call_vectors()
+ScriptSystemManager::ScriptSystemManager() : sync_mutex(), m_DefferedSetMaps(), DefferedSetMaps_mutex(), m_ScriptCache(), m_Deffered_call_maps(), Deffered_call_maps_mutex(), m_Pending_Deffered_call_vectors(),
+    collision_observer(nullptr)
 {
     m_Deffered_call_maps.emplace_back();
     m_Deffered_call_maps.emplace_back();
     m_Pending_Deffered_call_vectors.emplace_back();
     m_Pending_Deffered_call_vectors.emplace_back();
     m_DefferedSetMaps.reserve(ThreadManager::Get()->GetMaxThreadCount());
+    collision_observer.reset(MakeEventObserver<CollisionEvent>([this](CollisionEvent* collision) {
+        OnCollision(collision);
+        return false;
+        }));
+    Application::Get()->RegisterObserver<CollisionEvent>(collision_observer.get());
+
 }
 
 Deffered_Set_Map* ScriptSystemManager::GetDefferedSetMap()
@@ -343,6 +398,7 @@ void ScriptHandler::BindHandlerFunctions(LuaEngineClass<ScriptHandler>* script_e
     LocalPropertySetModule().RegisterModule(props);
     PrefabManipulationModule().RegisterModule(props);
     RayCastingModule().RegisterModule(props);
+    CollisionModule().RegisterModule(props);
 
     script_engine->RegisterModule(props);
 }

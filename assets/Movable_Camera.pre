@@ -90,7 +90,7 @@ function OnUpdate(delta_time)
 		local test = RayCast(GetTranslation(), rotate_vec3(vec3(0,0,-1), GetRotation()))
 
 		local min = 5000
-		local trans = 0
+		local trans = vec3(0,0,0)
 		local ent = 0
 		for val in test() do
 			if val.hit_ent.id ~= GetEntityByName("Sphere").id then
@@ -101,7 +101,7 @@ function OnUpdate(delta_time)
 			end
 			end
 		end
-		if(test.size ~= 0) then
+		if(test.size >2) then
 			trans = trans - GetTranslation()
 			local params = CreateCallParameters()
 			AddCallParameterString(params,"Yo!!!")

@@ -86,3 +86,30 @@ void ScriptSystemDefferedCall(World& world)
     }
 
 }
+
+void ScriptSystemCollisionCallback(World& world) {
+    auto* current_entities = &ScriptSystemManager::Get()->GetCollidedEntities();
+    auto* current_collisions = &ScriptSystemManager::Get()->GetEntityCollisions();
+
+    auto func_deffered = [&world](ComponentCollection compcol, const std::vector<Entity>& comps) {
+        auto script_vm = ScriptSystemManager::Get()->TryGetScriptSystemVM();
+        if (!script_vm) {
+            ScriptSystemManager::Get()->InitializeScriptSystemVM();
+            script_vm = ScriptSystemManager::Get()->TryGetScriptSystemVM();
+        }
+
+        for (auto iter = comps.begin() + compcol.start_index; iter != comps.begin() + compcol.start_index + compcol.size; iter++) {
+            auto& col = ScriptSystemManager::Get()->GetEntityCollisions(*iter);
+            auto& script_comp = world.GetComponent<ScriptComponent>(*iter);
+            for (auto& collision : col) {
+                script_vm->TryCallFunction(nullptr, script_comp.script_path, "OnCollision", collision);
+            }
+        }
+
+
+
+    };
+    RunSystemSimpleVector(world, *current_entities, func_deffered);
+    current_collisions->clear();
+    current_entities->clear();
+}

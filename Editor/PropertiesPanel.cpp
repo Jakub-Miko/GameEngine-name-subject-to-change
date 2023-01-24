@@ -258,6 +258,20 @@ void PropertiesPanel::RenderProperties(Entity entity, const PropertiesPanel_pers
 			}
 			Application::GetWorld().GetPhysicsEngine().RefreshObject(selected);
 		}
+
+		bool collision_callback = (bool)(phys_comp.props & PhysicsObjectProperties::RECIEVE_COLLISION_EVENTS);
+		bool collision_callback_toggle = collision_callback;
+		ImGui::Checkbox("SendCollisionEvents", &collision_callback_toggle);
+		if (collision_callback != collision_callback_toggle) {
+			if (collision_callback_toggle) {
+				phys_comp.props = phys_comp.props | PhysicsObjectProperties::RECIEVE_COLLISION_EVENTS;
+			}
+			else {
+				phys_comp.props = phys_comp.props & (~PhysicsObjectProperties::RECIEVE_COLLISION_EVENTS);
+			}
+		}
+
+
 		float mass_input = phys_comp.mass;
 		if (ImGui::DragFloat("Mass", &mass_input)) {
 			if (mass_input != 0.0f) {

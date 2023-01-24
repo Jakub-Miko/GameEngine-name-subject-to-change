@@ -118,7 +118,7 @@ void Octree::RayCast(World& world, const Ray& ray, std::vector<RayCastResult>& h
 	for (auto entity : entity_list) {
 		bool has_bounding_box = world.HasComponent<BoundingVolumeComponent>(entity);
 		auto variant = BoundingVolumeComponent::GetBoundingVolume(entity);
-		if (!std::holds_alternative<NullBoundingVolume>(variant)) {
+		if (!std::holds_alternative<NullBoundingVolume>(variant) && !std::holds_alternative<BoundingPointLightSphere>(variant) && !std::holds_alternative<BoundingInfinity>(variant)) {
 			TransformComponent& transform = world.GetComponent<TransformComponent>(entity);
 			std::visit([&](auto& bounding_vol) {
 				std::vector<glm::vec3> hits;
