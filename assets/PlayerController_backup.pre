@@ -1,4 +1,4 @@
-@Section:Camera_6291463
+@Section:Camera_2097158
 @Entity 
 {
 "Components": {"CameraComponent":{"aspect_ratio":1.7777777910232544,"fov":45.0,"zFar":200.0,"zNear":0.10000000149011612},"LabelComponent":{"label":"Camera"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":-0.41016462445259094,"x":0.06856358051300049,"y":0.8969848155975342,"z":0.14994098246097565},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":-14.305237770080566,"y":8.504685401916504,"z":-12.371309280395508}}},
@@ -6,11 +6,11 @@
 }
 
 @EndSection
-@Section:CollisionBox_6291462
+@Section:CollisionBox_2097152
 @Entity 
 {
-"Components": {"LabelComponent":{"label":"CollisionBox"},"MeshComponent":{"path":"/assets/Box.mesh"},"PhysicsComponent":{"is_kinematic":false,"mass":1.0,"object_type":0,"shape_type":0},"TransformComponent":{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":0.0,"y":5.0,"z":0.0}}},
-"Children": ["local#Camera_6291463"]
+"Components": {"LabelComponent":{"label":"CollisionBox"},"MeshComponent":{"path":"/assets/Box.mesh"},"PhysicsComponent":{"is_kinematic":false,"mass":1.0,"object_type":0,"props":1,"shape_type":3},"TransformComponent":{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":0.0,"y":5.0,"z":0.0}}},
+"Children": ["local#Camera_2097158"]
 }
 
 @EndSection
@@ -18,10 +18,19 @@
 @Entity 
 {
 "Components": {"LabelComponent":{"label":"PhysicsTest"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":0.0,"y":0.0,"z":0.0}}},
-"Children": ["local#CollisionBox_6291462"]
+"Children": ["local#CollisionBox_2097152"]
 }
 @Entity:Inline_Script
 
+
+
+
+
+
+function OnCollision(event)
+print(event.collider.id)
+print(event.collision_points.x)
+end
 
 function OnStart()
 	SetAngularFactor("CollisionBox",vec3(0.0,0.0,0.0))
@@ -123,6 +132,16 @@ function OnUpdate(delta_time)
 	end
 
 end
+
+
+
+
+
+
+
+
+
+
 
 
 

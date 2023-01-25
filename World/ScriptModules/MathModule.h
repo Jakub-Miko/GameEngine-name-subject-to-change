@@ -16,10 +16,10 @@ class LuaEngineObjectDelegate<vec4> {
 public:
 
 	static void SetObject(LuaEngineProxy proxy, const vec4& value) {
-		proxy.SetTableItem((int)value.x, "x");
-		proxy.SetTableItem((int)value.y, "y");
-		proxy.SetTableItem((int)value.z, "z");
-		proxy.SetTableItem((int)value.w, "w");
+		proxy.SetTableItem((float)value.x, "x");
+		proxy.SetTableItem((float)value.y, "y");
+		proxy.SetTableItem((float)value.z, "z");
+		proxy.SetTableItem((float)value.w, "w");
 	}
 
 	static vec4 GetObject(LuaEngineProxy proxy, int index = -1) {
@@ -33,9 +33,9 @@ class LuaEngineObjectDelegate<vec3> {
 public:
 
 	static void SetObject(LuaEngineProxy proxy, const vec3& value) {
-		proxy.SetTableItem((int)value.x, "x");
-		proxy.SetTableItem((int)value.y, "y");
-		proxy.SetTableItem((int)value.z, "z");
+		proxy.SetTableItem((float)value.x, "x");
+		proxy.SetTableItem((float)value.y, "y");
+		proxy.SetTableItem((float)value.z, "z");
 	}
 
 	static vec3 GetObject(LuaEngineProxy proxy, int index = -1) {
@@ -49,8 +49,8 @@ class LuaEngineObjectDelegate<vec2> {
 public:
 
 	static void SetObject(LuaEngineProxy proxy, const vec2& value) {
-		proxy.SetTableItem((int)value.x, "x");
-		proxy.SetTableItem((int)value.y, "y");
+		proxy.SetTableItem((float)value.x, "x");
+		proxy.SetTableItem((float)value.y, "y");
 	}
 
 	static vec2 GetObject(LuaEngineProxy proxy, int index = -1) {

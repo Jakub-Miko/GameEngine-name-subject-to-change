@@ -26,9 +26,11 @@
 
 
 
+
+
 function OnCollision(event)
 print(event.collider.id)
-
+print(event.collision_points[1].y)
 end
 
 function OnStart()
@@ -131,6 +133,8 @@ function OnUpdate(delta_time)
 	end
 
 end
+
+
 
 
 
