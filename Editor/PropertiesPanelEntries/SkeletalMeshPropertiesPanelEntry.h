@@ -19,5 +19,5 @@ private:
 	char* mesh_path_buffer = nullptr;
 	char* material_path_buffer = nullptr;
 	char* default_animation_path = nullptr;
-
+	int current_layer = 0;
 };

@@ -95,7 +95,7 @@ uniform mvp{
 };
 
 uniform bones {
-	mat4 bone_matricies[80];
+	mat4 bone_matricies[100];
 	uint valid;
 };
 

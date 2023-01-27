@@ -5,7 +5,7 @@
 #include <glm/gtx/quaternion.hpp>
 #include <Renderer/RenderResource.h>
 #ifndef MAX_NUM_OF_BONES
-#define MAX_NUM_OF_BONES 80
+#define MAX_NUM_OF_BONES 120
 #endif
 
 static const int max_num_of_bones = MAX_NUM_OF_BONES;
@@ -67,7 +67,6 @@ public:
 		UNINITIALIZED = 0, LOADING = 1, READY = 2, ERROR = 3
 	};
 
-	std::vector<glm::mat4> GetBoneTransforms(std::shared_ptr<Mesh> skeletal_mesh, float time, AnimationPlaybackState* playback_state);
 	bool IsEmpty() const {
 		return bone_anim.empty();
 	}
@@ -89,6 +88,7 @@ public:
 
 private:
 	friend class AnimationManager;
+	friend class AnimationPlayback;
 	float duration;
 	int ticks_per_second;
 	animation_status status = animation_status::UNINITIALIZED;
@@ -101,17 +101,41 @@ public:
 	AnimationPlayback(std::shared_ptr<Animation> animation);
 	//returns false if animation was not loaded yet
 
-	Animation::animation_status GetAnimationStatus() const {
-		return anim->GetAnimationStatus();
+	struct AnimationPlaybackLayer {
+		std::shared_ptr<Animation> anim;
+		AnimationPlaybackState playback_state;
+		float weight = 1.0f;
+		float time = 0.0f;
+		bool speed_match = false;
+	};
+
+	glm::mat4 blend_matricies(const glm::mat4& mat1, const glm::mat4& mat2, float blend_factor);
+
+	std::vector<glm::mat4> GetBoneTransforms(std::shared_ptr<Mesh> skeletal_mesh);
+
+	Animation::animation_status GetAnimationStatus(int layer = 0) const {
+		if (layer >= playback_layers.size()) {
+			return Animation::animation_status::UNINITIALIZED;
+		}
+		return playback_layers[layer].anim->GetAnimationStatus();
 	}
 
-	void SetTime(float time) {
-		current_time = time;
-		playback_state.ClearState();
+	void AddLayer(const AnimationPlaybackLayer& layer);
+	void RemoveLayer();
+	AnimationPlaybackLayer& GetLayer(int index);
+	void PromoteLayerToPrimary(int index);
+
+	void SetTime(float time, int layer = 0) {
+		if (layer >= playback_layers.size()) return;
+		playback_layers[layer].time = time;
+		playback_layers[layer].playback_state.ClearState();
 	}
 
-	bool IsValidAnim() const {
-		return !anim->IsEmpty();
+	bool IsValidAnim(int layer = 0) const {
+		if (layer >= playback_layers.size()) {
+			return false;
+		}
+		return !playback_layers[layer].anim->IsEmpty();
 	}
 
 	std::shared_ptr<RenderBufferResource> GetBoneBuffer() const {
@@ -120,10 +144,8 @@ public:
 
 	bool UpdateAnimation(float delta_time, RenderCommandList* list, std::shared_ptr<Mesh> skeletal_mesh);
 private:
-	float current_time = 0.0f;
 	uint32_t last_time_updated = 0;
 	bool was_succesful = false;
-	std::shared_ptr<Animation> anim;
 	std::shared_ptr<RenderBufferResource> bone_buffer = nullptr;
-	AnimationPlaybackState playback_state;
+	std::vector<AnimationPlaybackLayer> playback_layers;
 };

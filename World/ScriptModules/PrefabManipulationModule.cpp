@@ -139,6 +139,46 @@ extern "C" {
 		Application::GetWorld().GetComponent<SkeletalMeshComponent>(ent).SetAnimation(AnimationPlayback(AnimationManager::Get()->LoadAnimationAsync(FileManager::Get()->GetPath(path))));
 	}
 
+	void AddAnimationLayer_L(const char* name, const char* path, float weight) {
+		Entity ent = GetEntityByName(name);
+		if (!Application::GetWorld().HasComponent<SkeletalMeshComponent>(ent)) throw std::runtime_error(std::string("Child with name: ") + name + " of entity: " + std::to_string(GetCurrentEntity_L().id)
+			+ " does not have Skeletal Mesh Component.");
+		AnimationPlayback::AnimationPlaybackLayer layer;
+		layer.anim = AnimationManager::Get()->LoadAnimationAsync(FileManager::Get()->GetPath(path));
+		layer.playback_state = AnimationPlaybackState();
+		layer.time = 0.0f;
+		layer.weight = weight;
+		Application::GetWorld().GetComponent<SkeletalMeshComponent>(ent).GetAnimation().AddLayer(layer);
+	}
+
+	void RemoveAnimationLayer_L(const char* name) {
+		Entity ent = GetEntityByName(name);
+		if (!Application::GetWorld().HasComponent<SkeletalMeshComponent>(ent)) throw std::runtime_error(std::string("Child with name: ") + name + " of entity: " + std::to_string(GetCurrentEntity_L().id)
+			+ " does not have Skeletal Mesh Component.");
+		Application::GetWorld().GetComponent<SkeletalMeshComponent>(ent).GetAnimation().RemoveLayer();
+	}
+
+	void PromoteAnimationLayer_L(const char* name, int index) {
+		Entity ent = GetEntityByName(name);
+		if (!Application::GetWorld().HasComponent<SkeletalMeshComponent>(ent)) throw std::runtime_error(std::string("Child with name: ") + name + " of entity: " + std::to_string(GetCurrentEntity_L().id)
+			+ " does not have Skeletal Mesh Component.");
+		Application::GetWorld().GetComponent<SkeletalMeshComponent>(ent).GetAnimation().PromoteLayerToPrimary(index);
+	}
+
+	void ChangeLayerWeight_L(const char* name, int index, float weight) {
+		Entity ent = GetEntityByName(name);
+		if (!Application::GetWorld().HasComponent<SkeletalMeshComponent>(ent)) throw std::runtime_error(std::string("Child with name: ") + name + " of entity: " + std::to_string(GetCurrentEntity_L().id)
+			+ " does not have Skeletal Mesh Component.");
+		Application::GetWorld().GetComponent<SkeletalMeshComponent>(ent).GetAnimation().GetLayer(index).weight = weight;
+	}
+
+	void SetAnimationSpeedMatch_L(const char* name, int index, bool enable) {
+		Entity ent = GetEntityByName(name);
+		if (!Application::GetWorld().HasComponent<SkeletalMeshComponent>(ent)) throw std::runtime_error(std::string("Child with name: ") + name + " of entity: " + std::to_string(GetCurrentEntity_L().id)
+			+ " does not have Skeletal Mesh Component.");
+		Application::GetWorld().GetComponent<SkeletalMeshComponent>(ent).GetAnimation().GetLayer(index).speed_match = enable;
+	}
+
 	void PlaySound_L(const char* name, const char* path) {
 		Entity ent = GetEntityByName(name);
 		auto& world = Application::GetWorld();
@@ -175,6 +215,11 @@ void PrefabManipulationModule::OnRegisterModule(ModuleBindingProperties& props)
 	vec3 GetChildWorldTranslation_L(const char* name);
 	vec3 GetChildScale_L(const char* name);
 	quat GetChildRotation_L(const char* name); 
+	void AddAnimationLayer_L(const char* name, const char* path, float weight);
+	void RemoveAnimationLayer_L(const char* name);
+	void PromoteAnimationLayer_L(const char* name, int index);
+	void ChangeLayerWeight_L(const char* name, int index, float weight);
+	void SetAnimationSpeedMatch_L(const char* name, int index, bool enable);
 
 	)");
 
@@ -197,7 +242,12 @@ void PrefabManipulationModule::OnRegisterModule(ModuleBindingProperties& props)
 		{"GetChildTranslation_L","GetChildTranslation"},
 		{"GetChildWorldTranslation_L","GetChildWorldTranslation"},
 		{"GetChildScale_L","GetChildScale"},
-		{"GetChildRotation_L","GetChildRotation"}
+		{"GetChildRotation_L","GetChildRotation"},
+		{"AddAnimationLayer_L","AddAnimationLayer"},
+		{"RemoveAnimationLayer_L","RemoveAnimationLayer"},
+		{"PromoteAnimationLayer_L","PromoteAnimationLayer"},
+		{"ChangeLayerWeight_L","ChangeLayerWeight"},
+		{"SetAnimationSpeedMatch_L", "SetAnimationSpeedMatch"}
 
 		});
 }

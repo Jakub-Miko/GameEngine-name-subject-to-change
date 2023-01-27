@@ -3,16 +3,44 @@
 #include <Renderer/Renderer3D/Animations/AnimationManager.h>
 #include <FrameManager.h>
 
-std::vector<glm::mat4> Animation::GetBoneTransforms(std::shared_ptr<Mesh> skeletal_mesh, float time, AnimationPlaybackState* playback_state) {
-	if (playback_state->bone_playback_states.size() != bone_anim.size()) throw std::runtime_error("Invalid playback state: it doesn't match number or entries with the number of skeleton bones.");
-	if (!skeletal_mesh->IsSkeletal()) throw std::runtime_error("Invalid Skeletal Mesh.");
+glm::mat4 AnimationPlayback::blend_matricies(const glm::mat4& mat1,const glm::mat4& mat2, float blend_factor)
+{
+	glm::vec3 scale_1 = { glm::length(mat1[0]),glm::length(mat1[1]),glm::length(mat1[2]) };
+	glm::vec3 scale_2 = { glm::length(mat2[0]),glm::length(mat2[1]),glm::length(mat2[2]) };
+	glm::vec3 scale_3 = glm::mix(scale_1, scale_2, blend_factor);
+
+	glm::quat rot_1 = glm::toQuat(glm::scale(mat1, glm::vec3(1.0f) / scale_1));
+	glm::quat rot_2 = glm::toQuat(glm::scale(mat2, glm::vec3(1.0f) / scale_2));
+	glm::quat rot_3 = glm::slerp(rot_1, rot_2, blend_factor);
+
+	glm::vec3 trans_1 = mat1[3];
+	glm::vec3 trans_2 = mat2[3];
+	glm::vec3 trans_3 = glm::mix(trans_1, trans_2, blend_factor);
+
+	return glm::translate(glm::mat4(1.0f), trans_3) * glm::toMat4(rot_3) * glm::scale(glm::mat4(1.0f), scale_3);
+}
+
+std::vector<glm::mat4> AnimationPlayback::GetBoneTransforms(std::shared_ptr<Mesh> skeletal_mesh) {
 	const Skeleton& skel = skeletal_mesh->GetSkeleton();
-	if (skel.parent_bone_array.size() != bone_anim.size()) throw std::runtime_error("Number of bones of skeletal mesh doesn't match that of the animation.");
+	for (auto& layer : playback_layers) {
+		if (layer.anim->GetAnimationStatus() != Animation::animation_status::READY) continue;
+		if (layer.playback_state.bone_playback_states.size() != layer.anim->bone_anim.size()) throw std::runtime_error("Invalid playback state: it doesn't match number or entries with the number of skeleton bones.");
+		if (skel.parent_bone_array.size() != layer.anim->bone_anim.size()) throw std::runtime_error("Number of bones of skeletal mesh doesn't match that of the animation.");
+	}
+	if (!skeletal_mesh->IsSkeletal()) throw std::runtime_error("Invalid Skeletal Mesh.");
 	std::vector<glm::mat4> bone_transforms;
-	int i = 0;
-	for (auto& anim : bone_anim) {
-		bone_transforms.push_back(anim.GetAnimationMatrix(time, playback_state ? &playback_state->bone_playback_states[i] : nullptr));
-		i++;
+	for (int x = 0; x < skel.parent_bone_array.size();x++) {
+		bone_transforms.push_back(glm::mat4(1.0f));
+	}
+	int layer_num = 0;
+	for (auto& layer : playback_layers) {
+		int i = 0;
+		if (layer.anim->GetAnimationStatus() != Animation::animation_status::READY) continue;
+		for (auto& anim : layer.anim->bone_anim) {
+			bone_transforms[i] = blend_matricies(bone_transforms[i], anim.GetAnimationMatrix(layer.time, &layer.playback_state ? &layer.playback_state.bone_playback_states[i] : nullptr), layer_num == 0 ? 1.0f : layer.weight);
+			i++;
+		}
+		layer_num++;
 	}
 
 	for (int i = 0; i < skel.parent_bone_array.size(); i++) {
@@ -32,10 +60,47 @@ std::vector<glm::mat4> Animation::GetBoneTransforms(std::shared_ptr<Mesh> skelet
 	return bone_transforms;
 }
 
+void AnimationPlayback::AddLayer(const AnimationPlaybackLayer& layer)
+{
+	playback_layers.push_back(layer);
+}
+
+void AnimationPlayback::RemoveLayer()
+{
+	//Change this in the future
+	playback_layers.pop_back();
+	if (playback_layers.empty()) {
+		AnimationPlaybackLayer layer;
+		layer.anim = AnimationManager::Get()->GetDefaultAnimation();
+		layer.playback_state = AnimationPlaybackState();
+		layer.weight = 1.0f;
+		playback_layers.push_back(layer);
+	}
+}
+
+AnimationPlayback::AnimationPlaybackLayer& AnimationPlayback::GetLayer(int index)
+{
+	if (index >= playback_layers.size()) {
+		throw std::runtime_error("Animation Layer " + std::to_string(index) + " doesn't exist");
+	}
+	return playback_layers[index];
+}
+
+void AnimationPlayback::PromoteLayerToPrimary(int index)
+{
+	if (index >= playback_layers.size()) {
+		throw std::runtime_error("Animation Layer " + std::to_string(index) + " doesn't exist");
+	}
+	std::swap(playback_layers[index], playback_layers.front());
+}
+
 glm::vec3 BoneAnimation::GetPosition(float time, BoneAnimationPlaybackState* next_state_hint) const {
 	int begin = next_state_hint ? next_state_hint->last_position_index : 0;
+	if (begin >= position_keyframes.size() - 1) {
+		return position_keyframes[begin].position;
+	}
 	BoneAnimationPositionKeyFrame cur_pos;
-	int index = 0;
+	int index = begin;
 	for (int i = begin; i < position_keyframes.size() - 1; i++) {
 		if (time < position_keyframes[i + 1].time_stamp) {
 			cur_pos = position_keyframes[i];
@@ -53,8 +118,11 @@ glm::vec3 BoneAnimation::GetPosition(float time, BoneAnimationPlaybackState* nex
 
 glm::quat BoneAnimation::GetRotation(float time, BoneAnimationPlaybackState* next_state_hint) const {
 	int begin = next_state_hint ? next_state_hint->last_rotation_index : 0;
+	if (begin >= rotation_keyframes.size() - 1) {
+		return rotation_keyframes[begin].rotation;
+	}
 	BoneAnimationRotationKeyFrame cur_rot;
-	int index = 0;
+	int index = begin;
 	for (int i = begin; i < rotation_keyframes.size() - 1; i++) {
 		if (time < rotation_keyframes[i + 1].time_stamp) {
 			cur_rot = rotation_keyframes[i];
@@ -72,8 +140,11 @@ glm::quat BoneAnimation::GetRotation(float time, BoneAnimationPlaybackState* nex
 
 glm::vec3 BoneAnimation::GetScale(float time, BoneAnimationPlaybackState* next_state_hint) const {
 	int begin = next_state_hint ? next_state_hint->last_scale_index : 0;
+	if (begin >= scale_keyframes.size() - 1) {
+		return scale_keyframes[begin].scale;
+	}
 	BoneAnimationScaleKeyFrame cur_scale;
-	int index = 0;
+	int index = begin;
 	for (int i = begin; i < scale_keyframes.size() - 1; i++) {
 		if (time < scale_keyframes[i + 1].time_stamp) {
 			cur_scale = scale_keyframes[i];
@@ -93,17 +164,26 @@ glm::mat4 BoneAnimation::GetAnimationMatrix(float time, BoneAnimationPlaybackSta
 	return glm::translate(glm::mat4(1.0f), GetPosition(time, next_state_hint)) * glm::toMat4(GetRotation(time, next_state_hint)) * glm::scale(glm::mat4(1.0f), GetScale(time, next_state_hint));
 }
 
-AnimationPlayback::AnimationPlayback() : anim(AnimationManager::Get()->GetDefaultAnimation())
+AnimationPlayback::AnimationPlayback() : playback_layers()
 {
-
+	AnimationPlaybackLayer layer;
+	layer.anim = AnimationManager::Get()->GetDefaultAnimation();
+	layer.playback_state = AnimationPlaybackState();
+	layer.weight = 1.0f;
+	playback_layers.push_back(layer);
 }
 
-AnimationPlayback::AnimationPlayback(std::shared_ptr<Animation> animation) : anim(animation), playback_state()
+AnimationPlayback::AnimationPlayback(std::shared_ptr<Animation> animation) : playback_layers()
 {
-	int num_of_bones = anim->GetAnimationBoneNumber();
-	playback_state.bone_playback_states.reserve(num_of_bones);
+	AnimationPlaybackLayer layer;
+	layer.anim = animation;
+	layer.playback_state = AnimationPlaybackState();
+	layer.weight = 1.0f;
+	playback_layers.push_back(layer);
+	int num_of_bones = animation->GetAnimationBoneNumber();
+	playback_layers[0].playback_state.bone_playback_states.reserve(num_of_bones);
 	for (int i = 0; i < num_of_bones; i++) {
-		playback_state.bone_playback_states.emplace_back();
+		playback_layers[0].playback_state.bone_playback_states.emplace_back();
 	}
 }
 
@@ -116,43 +196,62 @@ bool AnimationPlayback::UpdateAnimation(float delta_time, RenderCommandList* lis
 		bone_buffer = RenderResourceManager::Get()->CreateBuffer(const_bone_desc);
 	}
 	
-	std::vector<glm::mat4> bone_transforms;
-	current_time += delta_time * 0.001 * anim->GetTicksPerSecond();
 	unsigned int value = 1;
-	
-	if (current_time >= anim->GetDuration()) {
-		current_time = 0.0f;
-		playback_state.ClearState();
-	}
+	std::vector<glm::mat4> bone_transforms;
+	for (auto& layer : playback_layers) {
+		if (layer.speed_match) {
+			float base_duration = playback_layers[0].anim->GetDuration();
+			float current_duration = layer.anim->GetDuration();
+			if (base_duration == 0.0f || current_duration == 0.0f) continue;
+			float speedup_ratio = base_duration / current_duration;
+			float slowdown_ratio = current_duration / base_duration;
+			float blended_speedup = (1.0f - layer.weight) * 1.0f + speedup_ratio * layer.weight;
+			float blended_slowdown = (1.0f - layer.weight) * slowdown_ratio + 1.0f * layer.weight;
 
+			layer.time += blended_slowdown * delta_time * 0.001 * layer.anim->GetTicksPerSecond();
+			playback_layers[0].time -= delta_time * 0.001 * playback_layers[0].anim->GetTicksPerSecond();
+			playback_layers[0].time += blended_speedup * delta_time * 0.001 * layer.anim->GetTicksPerSecond();
+		}
+		else {
+			layer.time += delta_time * 0.001 * layer.anim->GetTicksPerSecond();
+
+		}
+		if (layer.time >= layer.anim->GetDuration()) {
+			layer.time = 0.0f;
+			layer.playback_state.ClearState();
+		}
+	}
 	if (skeletal_mesh->GetMeshStatus() == Mesh_status::LOADING) {
 		value = 0;
-		RenderResourceManager::Get()->UploadDataToBuffer(list, bone_buffer, &value, sizeof(unsigned int), 80 * sizeof(glm::mat4));
+		RenderResourceManager::Get()->UploadDataToBuffer(list, bone_buffer, &value, sizeof(unsigned int), 100 * sizeof(glm::mat4));
 		was_succesful = false;
 		return false;
 	}
 
 	auto queue = Renderer::Get()->GetCommandQueue();
-	if (anim->IsEmpty()) {
+	if (playback_layers.empty() || playback_layers[0].anim->IsEmpty()) {
 		value = 0;
-		RenderResourceManager::Get()->UploadDataToBuffer(list, bone_buffer, &value, sizeof(unsigned int) , 80*sizeof(glm::mat4));
+		RenderResourceManager::Get()->UploadDataToBuffer(list, bone_buffer, &value, sizeof(unsigned int) , 100 *sizeof(glm::mat4));
 		was_succesful = false;
 		return false;
 	}
 	else {
-		if (anim->GetAnimationBoneNumber() != playback_state.bone_playback_states.size()) {
-			playback_state.bone_playback_states.clear();
-			int num_of_bones = anim->GetAnimationBoneNumber();
-			playback_state.bone_playback_states.reserve(num_of_bones);
-			for (int i = 0; i < num_of_bones; i++) {
-				playback_state.bone_playback_states.emplace_back();
+		for (auto& layer : playback_layers) {
+			if (layer.anim->GetAnimationStatus() != Animation::animation_status::READY) continue;
+			if (layer.anim->GetAnimationBoneNumber() != layer.playback_state.bone_playback_states.size()) {
+				layer.playback_state.bone_playback_states.clear();
+				int num_of_bones = layer.anim->GetAnimationBoneNumber();
+				layer.playback_state.bone_playback_states.reserve(num_of_bones);
+				for (int i = 0; i < num_of_bones; i++) {
+					layer.playback_state.bone_playback_states.emplace_back();
+				}
 			}
 		}
-		bone_transforms = std::move(anim->GetBoneTransforms(skeletal_mesh, current_time, &playback_state));
+		bone_transforms = std::move(GetBoneTransforms(skeletal_mesh));
 	}
 	if (bone_buffer->GetBufferDescriptor().buffer_size < sizeof(glm::mat4) * bone_transforms.size() + sizeof(unsigned int)) throw std::runtime_error("Invalid Animation Buffer Size");
 
-	RenderResourceManager::Get()->UploadDataToBuffer(list, bone_buffer, &value, sizeof(unsigned int), 80 * sizeof(glm::mat4));
+	RenderResourceManager::Get()->UploadDataToBuffer(list, bone_buffer, &value, sizeof(unsigned int), 100 * sizeof(glm::mat4));
 	RenderResourceManager::Get()->UploadDataToBuffer(list, bone_buffer,bone_transforms.data(),sizeof(glm::mat4) * bone_transforms.size(), 0);
 	was_succesful = true;
 	return true;

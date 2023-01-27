@@ -131,6 +131,9 @@ void AnimationManager::MakeAnimations(Skeleton& reference_skeleton, aiScene* sce
 			if (!reference_skeleton.BoneExists(channel->mNodeName.C_Str())) throw std::runtime_error("Skeleton Incompatible with animation");
 			int index = reference_skeleton.GetBoneEntryByName(channel->mNodeName.C_Str()).array_entry;
 			BoneAnimation& bone = anims[index];
+			bone.position_keyframes.clear();
+			bone.scale_keyframes.clear();
+			bone.rotation_keyframes.clear();
 			for (int pos = 0; pos < channel->mNumPositionKeys; pos++) {
 				auto position = channel->mPositionKeys[pos];
 				bone.position_keyframes.push_back(BoneAnimationPositionKeyFrame{ *(glm::vec3*)&position.mValue,position.mTime });
@@ -192,6 +195,9 @@ Animation AnimationManager::LoadAnimationFromFile_impl(const std::string& path)
 	for (int bone = 0; bone < num_of_bones; bone++) {
 		anim.bone_anim.emplace_back();
 		auto& bone_anim = anim.bone_anim.back();
+		bone_anim.position_keyframes.clear();
+		bone_anim.scale_keyframes.clear();
+		bone_anim.rotation_keyframes.clear();
 		
 		file >> check;
 		if (check != "Pos") throw std::runtime_error("Invalid Animation format");

@@ -1,0 +1,31 @@
+@Section:Skeleton_5
+@Entity 
+{
+"Components": {"LabelComponent":{"label":"Skeleton"},"SkeletalMeshComponent":{"animation_path":"/assets/multi_anim_test/Walking (2)_animations/mixamo.com.anim","material_path":"/assets/vampire_mat.mat","path":"/assets/multi_anim_test/Walking (2).skel"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":0.029999999329447746,"y":0.029999999329447746,"z":0.029999999329447746},"translation":{"x":0.0,"y":0.3134765625,"z":0.0}}},
+"Children": []
+}
+
+@EndSection
+@Section:Root
+@Entity 
+{
+"Components": {"LabelComponent":{"label":"Animation"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":0.0,"y":0.0,"z":-4.928701400756836}}},
+"Children": ["local#Skeleton_5"]
+}
+
+@Entity:Inline_Script
+
+function OnStart()
+CreateProperty_FLOAT("Blend_Amount",1.0)
+AddAnimationLayer("Skeleton","asset:multi_anim_test/Slow Run_animations/mixamo.com.anim",1.0)
+SetAnimationSpeedMatch("Skeleton", 1, true)
+end
+
+function OnUpdate(delta_time) 
+local blend = GetProperty_FLOAT("Blend_Amount")
+ChangeLayerWeight("Skeleton",1,blend)
+
+
+end
+
+@EndSection
