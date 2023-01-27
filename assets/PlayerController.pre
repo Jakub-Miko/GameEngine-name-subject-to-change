@@ -22,15 +22,15 @@
 }
 @Entity:Inline_Script
 
-
-
-
-
-
-
 function OnCollision(event)
-print(event.collider.id)
-print(event.collision_points[1].y)
+if(event.num_collision_points == 0) then return end
+local distance = event.collision_points[1].y - GetChildWorldTranslation("CollisionBox").y + GetChildScale("CollisionBox").y
+if (math.abs(distance)< 0.05) then 
+	SetProperty_INT("Collides_bottom",1)
+else 
+	SetProperty_INT("Collides_bottom",0)
+end
+print("Shit")
 end
 
 function OnStart()
@@ -39,12 +39,16 @@ function OnStart()
 	CreateProperty_FLOAT("JumpForce",1.0)
 	CreateProperty_FLOAT("Friction",1.0)
 	CreateProperty_FLOAT("MaxVel",1.0)
+	CreateProperty_INT("Collides_bottom",0)
 	local friction = GetProperty_FLOAT("Friction")
 	SetFriction("CollisionBox",friction)
 end
 
 function OnUpdate(delta_time) 
 	local speed = GetProperty_FLOAT("Speed")
+	local velocity = GetLinearVelocity("CollisionBox")
+	speed = speed - GetVector3Length(velocity);
+
 	local jump_force = GetProperty_FLOAT("JumpForce")
 	local max_velocity = GetProperty_FLOAT("MaxVel")
 	local current_rot = GetChildRotation("Camera")
@@ -60,12 +64,12 @@ function OnUpdate(delta_time)
 	end
 	end
 
+	is_on_ground = is_on_ground or (GetProperty_INT("Collides_bottom") == 1)
 	if(is_on_ground) then
 		print("Is On Ground")
 	else
 		print("Is Not On Ground")
 	end
-
 	if(IsMouseButtonPressed(MouseButtonCode.MOUSE_BUTTON_RIGHT)) then
 	
 		local move = false;	
@@ -121,18 +125,10 @@ function OnUpdate(delta_time)
 		SetChildTranslation("Camera", -vec3(pos)*vec3(20.0,20.0,20.0) + vec3(0,2,0))
 		SetChildRotation("Camera", rot)
 	end
-	
-	
-
-	local velocity = GetLinearVelocity("CollisionBox")
-	if(GetVector3Length(velocity* vec3(1.0,0.0,1.0)) >= max_velocity) then
-		local vel_scale = max_velocity / GetVector3Length(velocity)
-		velocity = velocity * vec3(vel_scale,1.0,vel_scale)
-		SetLinearVelocity("CollisionBox",velocity)
-	
-	end
+	SetProperty_INT("Collides_bottom",0)
 
 end
+
 
 
 

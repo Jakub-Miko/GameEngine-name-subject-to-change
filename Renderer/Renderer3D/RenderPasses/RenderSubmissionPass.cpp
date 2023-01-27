@@ -52,10 +52,10 @@ void RenderSubmissionPass::Render(RenderPipelineResourceManager& resource_manage
 	std::vector<Entity> visible;
 	world.GetSpatialIndex().FrustumCulling(world, camera_frustum, visible);
 	for (auto ent : visible) {
-		if (world.HasComponent<MeshComponent>(ent)) {
+		if (world.HasComponent<MeshComponent>(ent) && world.GetComponent<MeshComponent>(ent).GetVisibility()) {
 			collection_meshes.resources.push_back(ent);
 		}
-		else if (world.HasComponent<SkeletalMeshComponent>(ent)) {
+		else if (world.HasComponent<SkeletalMeshComponent>(ent) && world.GetComponent<SkeletalMeshComponent>(ent).GetVisibility()) {
 			collection_skeletal_meshes.resources.push_back(ent);
 		}
 		if (world.HasComponent<LightComponent>(ent)) {

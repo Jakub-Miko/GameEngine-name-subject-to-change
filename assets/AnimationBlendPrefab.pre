@@ -16,22 +16,36 @@
 @Entity:Inline_Script
 
 
+
+
 function OnStart()
 CreateProperty_FLOAT("Blend_Amount",1.0)
-CreateProperty_FLOAT("Blend_Amount_2",1.0)
+
+AddAnimationLayer("Skeleton","asset:multi_anim_test/Idle_animations/mixamo.com.anim",1.0)
+AddAnimationLayer("Skeleton","asset:multi_anim_test/Walking (2)_animations/mixamo.com.anim",1.0)
 AddAnimationLayer("Skeleton","asset:multi_anim_test/Slow Run_animations/mixamo.com.anim",1.0)
 AddAnimationLayer("Skeleton","asset:multi_anim_test/Fast Run_animations/mixamo.com.anim",1.0)
 SetAnimationSpeedMatch("Skeleton", 1, true)
 SetAnimationSpeedMatch("Skeleton", 2, true)
+SetAnimationSpeedMatch("Skeleton", 3, true)
+SetAnimationSpeedMatch("Skeleton", 4, true)
 end
 
 function OnUpdate(delta_time) 
 local blend = GetProperty_FLOAT("Blend_Amount")
-local blend2 = GetProperty_FLOAT("Blend_Amount_2")
-ChangeLayerWeight("Skeleton",1,blend)
-ChangeLayerWeight("Skeleton",2,blend2)
+local blend_1_2 = math.min(blend,1)
+local blend_2_3 = math.max(0,blend-1)
+local blend_3_4 = math.max(0,blend-2)
+ChangeLayerWeight("Skeleton",1,1.0)
+ChangeLayerWeight("Skeleton",2,blend_1_2)
+ChangeLayerWeight("Skeleton",3,blend_2_3)
+ChangeLayerWeight("Skeleton",4,blend_3_4)
+
+
 
 end
+
+
 
 
 @EndSection

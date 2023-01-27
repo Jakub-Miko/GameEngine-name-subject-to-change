@@ -189,7 +189,7 @@ void ShadowMappingPass::RenderDirectionalShadowCaster(Entity caster, RenderComma
 	std::vector<Entity> skeletal_meshes;
 	skeletal_meshes.reserve(30);
 	for (auto& entity : entities) {
-		if (world.HasComponent<MeshComponent>(entity)) {
+		if (world.HasComponent<MeshComponent>(entity) && world.GetComponent<MeshComponent>(entity).GetVisibility()) {
 			auto& mesh = world.GetComponent<MeshComponent>(entity);
 			auto& trans = world.GetComponent<TransformComponent>(entity);
 			RenderResourceManager::Get()->UploadDataToBuffer(list, data->const_buffer_directional, glm::value_ptr(trans.TransformMatrix), sizeof(glm::mat4), 0);
@@ -201,7 +201,7 @@ void ShadowMappingPass::RenderDirectionalShadowCaster(Entity caster, RenderComma
 			list->Draw(mesh.GetMesh()->GetIndexCount());
 
 		}
-		else if (world.HasComponent<SkeletalMeshComponent>(entity)) {
+		else if (world.HasComponent<SkeletalMeshComponent>(entity) && world.GetComponent<SkeletalMeshComponent>(entity).GetVisibility()) {
 			skeletal_meshes.push_back(entity);
 		}
 	}
@@ -277,7 +277,7 @@ void ShadowMappingPass::RenderPointShadowCaster(Entity caster, RenderCommandList
 	skeletal_meshes.reserve(30);
 
 	for (auto& entity : entities) {
-		if (world.HasComponent<MeshComponent>(entity)) {
+		if (world.HasComponent<MeshComponent>(entity) && world.GetComponent<MeshComponent>(entity).GetVisibility()) {
 			auto& mesh = world.GetComponent<MeshComponent>(entity);
 			auto& trans = world.GetComponent<TransformComponent>(entity);
 			glm::mat4 model = trans.TransformMatrix;
@@ -287,7 +287,7 @@ void ShadowMappingPass::RenderPointShadowCaster(Entity caster, RenderCommandList
 			list->Draw(mesh.GetMesh()->GetIndexCount());
 
 		}
-		else if (world.HasComponent<SkeletalMeshComponent>(entity)) {
+		else if (world.HasComponent<SkeletalMeshComponent>(entity) && world.GetComponent<SkeletalMeshComponent>(entity).GetVisibility()) {
 			skeletal_meshes.push_back(entity);
 		}
 	}

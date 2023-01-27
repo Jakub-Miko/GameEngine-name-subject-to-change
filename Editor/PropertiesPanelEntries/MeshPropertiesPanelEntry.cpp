@@ -27,6 +27,10 @@ void MeshPropertiesPanelEntry::RenderPanel(Entity ent)
 		mesh_path_buffer[0] = '\0';
 		memcpy(mesh_path_buffer, mesh.GetMeshPath().c_str(), mesh.GetMeshPath().size() + 1);
 	}
+	bool visible = mesh.GetVisibility();
+	ImGui::Checkbox("Visible", &visible);
+	mesh.SetVisibility(visible);
+
 	bool enter = ImGui::InputText("Mesh path", mesh_path_buffer, 200, ImGuiInputTextFlags_EnterReturnsTrue);
 	if (ImGui::Button("Reload") || enter) {
 		try {
@@ -45,6 +49,7 @@ void MeshPropertiesPanelEntry::RenderPanel(Entity ent)
 		mesh_path_buffer[0] = '\0';
 		memcpy(mesh_path_buffer, mesh.GetMeshPath().c_str(), mesh.GetMeshPath().size() + 1);
 	}
+
 	if (ImGui::Button("Set Selected")) {
 		Application::GetWorld().SetEntityMesh(ent, Editor::Get()->GetSelectedFilePath());
 		memcpy(mesh_path_buffer, mesh.GetMeshPath().c_str(), mesh.GetMeshPath().size() + 1);

@@ -26,6 +26,11 @@ void SkeletalMeshPropertiesPanelEntry::RenderPanel(Entity ent)
 {
 	World& world = Application::GetWorld();
 	SkeletalMeshComponent& mesh = world.GetComponent<SkeletalMeshComponent>(ent);
+
+	bool visible = mesh.GetVisibility();
+	ImGui::Checkbox("Visible", &visible);
+	mesh.SetVisibility(visible);
+
 	if (strlen(mesh_path_buffer) == 0) {
 		mesh_path_buffer[0] = '\0';
 		memcpy(mesh_path_buffer, mesh.GetMeshPath().c_str(), mesh.GetMeshPath().size() + 1);
