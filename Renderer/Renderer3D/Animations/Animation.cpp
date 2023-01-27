@@ -34,6 +34,7 @@ std::vector<glm::mat4> AnimationPlayback::GetBoneTransforms(std::shared_ptr<Mesh
 	}
 	int layer_num = 0;
 	for (auto& layer : playback_layers) {
+		if (layer_num != 0 && layer.weight <= 0.0f) continue;
 		int i = 0;
 		if (layer.anim->GetAnimationStatus() != Animation::animation_status::READY) continue;
 		for (auto& anim : layer.anim->bone_anim) {
@@ -198,29 +199,48 @@ bool AnimationPlayback::UpdateAnimation(float delta_time, RenderCommandList* lis
 	
 	unsigned int value = 1;
 	std::vector<glm::mat4> bone_transforms;
+	float target_duration = playback_layers[0].anim->GetDuration();
 	for (auto& layer : playback_layers) {
+		if (layer.anim->GetAnimationStatus() != Animation::animation_status::READY) continue;
+		layer.weight = std::clamp(layer.weight, 0.0f, 1.0f);
 		if (layer.speed_match) {
-			float base_duration = playback_layers[0].anim->GetDuration();
+			target_duration = (1.0f - layer.weight) * target_duration + layer.anim->GetDuration() * layer.weight;
+		}
+	}
+	int layer_num = 0;
+	for (auto& layer : playback_layers) {
+		if (layer_num == 0) {
+			layer_num++;
+			continue;
+		};
+		if (layer.speed_match) {
 			float current_duration = layer.anim->GetDuration();
-			if (base_duration == 0.0f || current_duration == 0.0f) continue;
-			float speedup_ratio = base_duration / current_duration;
-			float slowdown_ratio = current_duration / base_duration;
-			float blended_speedup = (1.0f - layer.weight) * 1.0f + speedup_ratio * layer.weight;
-			float blended_slowdown = (1.0f - layer.weight) * slowdown_ratio + 1.0f * layer.weight;
+			if (current_duration == 0.0f) continue;
+			float slowdown_ratio = current_duration / target_duration;
 
-			layer.time += blended_slowdown * delta_time * 0.001 * layer.anim->GetTicksPerSecond();
-			playback_layers[0].time -= delta_time * 0.001 * playback_layers[0].anim->GetTicksPerSecond();
-			playback_layers[0].time += blended_speedup * delta_time * 0.001 * layer.anim->GetTicksPerSecond();
+			layer.time += slowdown_ratio * delta_time * 0.001 * layer.anim->GetTicksPerSecond();
 		}
 		else {
 			layer.time += delta_time * 0.001 * layer.anim->GetTicksPerSecond();
 
 		}
-		if (layer.time >= layer.anim->GetDuration()) {
-			layer.time = 0.0f;
+		if (layer.time >= layer.anim->GetDuration() && layer.anim->GetDuration() != 0.0f) {
+			layer.time = std::fmod(layer.time, layer.anim->GetDuration());
 			layer.playback_state.ClearState();
 		}
+		layer_num++;
 	}
+	float base_duration = playback_layers[0].anim->GetDuration();
+	if (base_duration != 0.0f && target_duration != 0.0f) {
+		float speedup_ratio = base_duration / target_duration;
+		playback_layers[0].time += speedup_ratio * delta_time * 0.001 * playback_layers[0].anim->GetTicksPerSecond();
+	}
+	if (playback_layers[0].time >= base_duration && base_duration != 0.0f) {
+		playback_layers[0].time = std::fmod(playback_layers[0].time, base_duration);
+		playback_layers[0].playback_state.ClearState();
+	}
+
+
 	if (skeletal_mesh->GetMeshStatus() == Mesh_status::LOADING) {
 		value = 0;
 		RenderResourceManager::Get()->UploadDataToBuffer(list, bone_buffer, &value, sizeof(unsigned int), 100 * sizeof(glm::mat4));
