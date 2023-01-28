@@ -1,16 +1,24 @@
-@Section:Camera_2097158
+@Section:Camera_8
 @Entity 
 {
-"Components": {"CameraComponent":{"aspect_ratio":1.7777777910232544,"fov":45.0,"zFar":200.0,"zNear":0.10000000149011612},"LabelComponent":{"label":"Camera"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":-0.41016462445259094,"x":0.06856358051300049,"y":0.8969848155975342,"z":0.14994098246097565},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":-14.305237770080566,"y":8.504685401916504,"z":-12.371309280395508}}},
+"Components": {"CameraComponent":{"aspect_ratio":1.7777777910232544,"fov":45.0,"zFar":200.0,"zNear":0.10000000149011612},"LabelComponent":{"label":"Camera"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":-0.14284931123256683,"x":0.03873789310455322,"y":0.9545118808746338,"z":0.25884464383125305},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":-5.052970886230469,"y":12.104158401489258,"z":-16.503740310668945}}},
 "Children": []
 }
 
 @EndSection
-@Section:CollisionBox_2097152
+@Section:Skel_7
 @Entity 
 {
-"Components": {"LabelComponent":{"label":"CollisionBox"},"MeshComponent":{"path":"/assets/Box.mesh"},"PhysicsComponent":{"is_kinematic":false,"mass":1.0,"object_type":0,"props":1,"shape_type":3},"TransformComponent":{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":0.0,"y":5.0,"z":0.0}}},
-"Children": ["local#Camera_2097158"]
+"Components": {"LabelComponent":{"label":"Skel"},"SkeletalMeshComponent":{"animation_path":"/assets/multi_anim_test/Idle_animations/mixamo.com.anim","material_path":"/assets/vampire_mat.mat","path":"/assets/multi_anim_test/Fast Run.skel","visible":true},"TransformComponent":{"props":{"mode":0},"rotation":{"w":0.988986074924469,"x":0.0,"y":0.14800859987735748,"z":0.0},"size":{"x":0.029999999329447746,"y":0.029999999329447746,"z":0.029999999329447746},"translation":{"x":0.0,"y":-0.9399999976158142,"z":0.0}}},
+"Children": []
+}
+
+@EndSection
+@Section:CollisionBox_6
+@Entity 
+{
+"Components": {"LabelComponent":{"label":"CollisionBox"},"MeshComponent":{"path":"/assets/Box.mesh","visible":false},"PhysicsComponent":{"is_kinematic":false,"mass":1.0,"object_type":0,"props":1,"shape_type":3},"TransformComponent":{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":0.0,"y":5.0,"z":0.0}}},
+"Children": ["local#Camera_8","local#Skel_7"]
 }
 
 @EndSection
@@ -18,9 +26,12 @@
 @Entity 
 {
 "Components": {"LabelComponent":{"label":"PhysicsTest"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":0.0,"y":0.0,"z":0.0}}},
-"Children": ["local#CollisionBox_2097152"]
+"Children": ["local#CollisionBox_6"]
 }
 @Entity:Inline_Script
+
+
+
 
 function OnCollision(event)
 if(event.num_collision_points == 0) then return end
@@ -30,24 +41,56 @@ if (math.abs(distance)< 0.05) then
 else 
 	SetProperty_INT("Collides_bottom",0)
 end
-print("Shit")
 end
 
 function OnStart()
 	SetAngularFactor("CollisionBox",vec3(0.0,0.0,0.0))
 	CreateProperty_FLOAT("Speed",1.0)
+	CreateProperty_INT("SetPrimaryOnSpawn",0.0)
+	if(GetProperty_INT("SetPrimaryOnSpawn") == 1) then
+		SetPrimaryEntity(GetEntityByName("Camera"))
+	end
 	CreateProperty_FLOAT("JumpForce",1.0)
 	CreateProperty_FLOAT("Friction",1.0)
 	CreateProperty_FLOAT("MaxVel",1.0)
+	CreateProperty_FLOAT("Blend_Amount",1.0)
+	SetProperty_VEC3("Heading",vec3(0.0,0.0,-1.0))
 	CreateProperty_INT("Collides_bottom",0)
 	local friction = GetProperty_FLOAT("Friction")
 	SetFriction("CollisionBox",friction)
+
+	AddAnimationLayer("Skel","asset:multi_anim_test/Idle_animations/mixamo.com.anim",1.0)
+	AddAnimationLayer("Skel","asset:multi_anim_test/Walking (2)_animations/mixamo.com.anim",1.0)
+	AddAnimationLayer("Skel","asset:multi_anim_test/Slow Run_animations/mixamo.com.anim",1.0)
+	AddAnimationLayer("Skel","asset:multi_anim_test/Fast Run_animations/mixamo.com.anim",1.0)
+	SetAnimationSpeedMatch("Skel", 1, true)
+	SetAnimationSpeedMatch("Skel", 2, true)
+	SetAnimationSpeedMatch("Skel", 3, true)
+	SetAnimationSpeedMatch("Skel", 4, true)
+
 end
 
 function OnUpdate(delta_time) 
-	local speed = GetProperty_FLOAT("Speed")
+	local current_speed = GetProperty_FLOAT("Speed")
 	local velocity = GetLinearVelocity("CollisionBox")
-	speed = speed - GetVector3Length(velocity);
+	local speed = current_speed - GetVector3Length(velocity);
+
+	local blend_coefficient =  GetProperty_FLOAT("Blend_Amount")
+	local blend_control = (GetVector3Length(velocity) / current_speed) * 3 * blend_coefficient
+	local blend = blend_control
+	local blend_1_2 = math.min(blend,1)
+	local blend_2_3 = math.max(0,blend-1)
+	local blend_3_4 = math.max(0,blend-2)
+	ChangeLayerWeight("Skel",1,1.0)
+	ChangeLayerWeight("Skel",2,blend_1_2)
+	ChangeLayerWeight("Skel",3,blend_2_3)
+	ChangeLayerWeight("Skel",4,blend_3_4)
+
+	local planar_velocity = vec3(velocity.x, 0.0, velocity.z)
+	local heading_blend = math.max(0,math.min(1,math.abs(GetVector3Length(planar_velocity)*6)-0.05))
+	local current_heading = GetProperty_VEC3("Heading");
+	local player_heading = MixVector3(current_heading, normalizeVector3(planar_velocity), heading_blend)
+	SetProperty_VEC3("Heading",player_heading)
 
 	local jump_force = GetProperty_FLOAT("JumpForce")
 	local max_velocity = GetProperty_FLOAT("MaxVel")
@@ -121,13 +164,17 @@ function OnUpdate(delta_time)
 		pos = rotate_vec3(-pos, GetChildRotation("Camera"))
 
 		local rot = quat_lookat(vec3(pos), vec3({0,1,0}))
-	
+		local rot_skel = quat_lookat(vec3(-player_heading.x,0.0,-player_heading.z), vec3({0,1,0}))
+		SetChildRotation("Skel", rot_skel)
 		SetChildTranslation("Camera", -vec3(pos)*vec3(20.0,20.0,20.0) + vec3(0,2,0))
 		SetChildRotation("Camera", rot)
 	end
 	SetProperty_INT("Collides_bottom",0)
 
 end
+
+
+
 
 
 

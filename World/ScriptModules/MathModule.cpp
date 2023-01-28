@@ -74,6 +74,27 @@ extern "C" {
 		return *reinterpret_cast<quat*>(&result);
 	}
 
+	vec4 MixVector4_L(vec4 first, vec4 second, float blend) {
+		glm::vec4* vec_1 = reinterpret_cast<glm::vec4*>(&first);
+		glm::vec4* vec_2 = reinterpret_cast<glm::vec4*>(&second);
+		glm::vec4 mix = glm::mix(*vec_1, *vec_2, blend);
+		return *reinterpret_cast<vec4*>(&mix);
+	}
+
+	vec3 MixVector3_L(vec3 first, vec3 second, float blend) {
+		glm::vec3* vec_1 = reinterpret_cast<glm::vec3*>(&first);
+		glm::vec3* vec_2 = reinterpret_cast<glm::vec3*>(&second);
+		glm::vec3 mix = glm::mix(*vec_1, *vec_2, blend);
+		return *reinterpret_cast<vec3*>(&mix);
+	}
+
+	vec2 MixVector2_L(vec2 first, vec2 second, float blend) {
+		glm::vec2* vec_1 = reinterpret_cast<glm::vec2*>(&first);
+		glm::vec2* vec_2 = reinterpret_cast<glm::vec2*>(&second);
+		glm::vec2 mix = glm::mix(*vec_1, *vec_2, blend);
+		return *reinterpret_cast<vec2*>(&mix);
+	}
+
 }
 
 void MathModule::OnRegisterModule(ModuleBindingProperties& props)
@@ -97,6 +118,9 @@ void MathModule::OnRegisterModule(ModuleBindingProperties& props)
 	float GetVector2Length_L(vec2 in_vector);
 	float GetVector3Length_L(vec3 in_vector);
 	float GetVector4Length_L(vec4 in_vector);
+	vec4 MixVector4_L(vec4 first, vec4 second, float blend);
+	vec3 MixVector3_L(vec3 first, vec3 second, float blend);
+	vec2 MixVector2_L(vec2 first, vec2 second, float blend);
 	)");
 
 	props.Add_FFI_aliases({
@@ -116,7 +140,10 @@ void MathModule::OnRegisterModule(ModuleBindingProperties& props)
 		{"quat_multiply_L","quat_multiply"},
 		{"GetVector2Length_L","GetVector2Length"},
 		{"GetVector3Length_L","GetVector3Length"},
-		{"GetVector4Length_L","GetVector4Length"}
+		{"GetVector4Length_L","GetVector4Length"},
+		{"MixVector4_L", "MixVector4"},
+		{"MixVector3_L", "MixVector3"},
+		{"MixVector2_L", "MixVector2"}
 		});
 
 	props.Add_init_script(R"(
@@ -179,6 +206,24 @@ void MathModule::OnRegisterModule(ModuleBindingProperties& props)
 
 	function divide_vec2(num1, num2)
 	return vec2({x = num1.x / num2.x,y = num1.y / num2.y}) 
+	end
+
+	function normalizeVector3(num1)
+	local length = GetVector3Length(num1)
+	if(length == 0.0) then return vec3(0.0,0.0,0.0) end
+	return vec3(num1.x/length,num1.y/length,num1.z/length) 
+	end
+
+	function normalizeVector4(num1)
+	local length = GetVector4Length(num1)
+	if(length == 0.0) then return vec4(0.0,0.0,0.0,0.0) end
+	return vec4(num1.x/length,num1.y/length,num1.z/length,num1.w/length) 
+	end
+
+	function normalizeVector2(num1)
+	local length = GetVector2Length(num1)
+	if(length == 0.0) then return vec2(0.0,0.0) end
+	return vec2(num1.x/length,num1.y/length) 
 	end
 
 	

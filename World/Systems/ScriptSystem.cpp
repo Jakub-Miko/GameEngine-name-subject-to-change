@@ -69,6 +69,7 @@ void ScriptSystemDefferedCall(World& world)
             auto& changes = ScriptSystemManager::Get()->GetDefferedCallsForEntity(*iter);
             auto& script_comp = world.GetComponent<ScriptComponent>(*iter);
             for (auto& change : changes) {
+                script_vm->SetEngineEntity(*iter);
                 script_vm->TryCallFunctionRuntime(nullptr, script_comp.script_path, change.func_name, change.arguments);
             }
         }
@@ -102,6 +103,7 @@ void ScriptSystemCollisionCallback(World& world) {
             auto& col = ScriptSystemManager::Get()->GetEntityCollisions(*iter);
             auto& script_comp = world.GetComponent<ScriptComponent>(*iter);
             for (auto& collision : col) {
+                script_vm->SetEngineEntity(*iter);
                 script_vm->TryCallFunction(nullptr, script_comp.script_path, "OnCollision", collision);
             }
         }
