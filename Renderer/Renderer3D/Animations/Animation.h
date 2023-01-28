@@ -111,7 +111,7 @@ public:
 
 	glm::mat4 blend_matricies(const glm::mat4& mat1, const glm::mat4& mat2, float blend_factor);
 
-	std::vector<glm::mat4> GetBoneTransforms(std::shared_ptr<Mesh> skeletal_mesh);
+	std::vector<glm::mat4> GetBoneTransforms(std::shared_ptr<Mesh> skeletal_mesh, int first_significant = 0);
 
 	Animation::animation_status GetAnimationStatus(int layer = 0) const {
 		if (layer >= playback_layers.size()) {
