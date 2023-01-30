@@ -5,6 +5,7 @@
 #include <variant>
 #include <deque>
 #include <AsyncTaskDispatcher.h>
+#include <Core/FrameMultiBufferResource.h>
 
 class Shader;
 
@@ -80,7 +81,7 @@ public:
     };
 
     using material_parameter_type = std::variant<int, float, glm::vec2, glm::vec3, glm::vec4, Texture_type, std::shared_ptr<RenderTexture2DArrayResource>, std::shared_ptr<RenderTexture2DCubemapResource>>;
-    using material_resource_type = std::variant<RenderDescriptorTable,std::shared_ptr<RenderBufferResource>>;
+    using material_resource_type = std::variant<FrameMultiBufferResource<RenderDescriptorTable>,std::shared_ptr<RenderBufferResource>>;
 
     enum class Material_status : char {
         OK = 0, ERROR = 1, UNINITIALIZED = 2

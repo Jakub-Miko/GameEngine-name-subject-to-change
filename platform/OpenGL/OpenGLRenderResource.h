@@ -68,7 +68,7 @@ public:
 
 	}
 
-	~OpenGLRenderTexture2DResource() {}
+	virtual ~OpenGLRenderTexture2DResource() {}
 
 private:
 
@@ -95,7 +95,7 @@ public:
 
 	}
 
-	~OpenGLRenderTexture2DArrayResource() {}
+	virtual ~OpenGLRenderTexture2DArrayResource() {}
 
 private:
 
@@ -145,12 +145,14 @@ public:
 		return render_id;
 	}
 
+	OpenGLRenderFrameBufferResource(const OpenGLRenderFrameBufferResource& other) = delete;
+
 	OpenGLRenderFrameBufferResource(const RenderFrameBufferDescriptor& desc, RenderState initial_state = RenderState::UNINITIALIZED, unsigned int render_id = 0)
 		: RenderFrameBufferResource(desc, initial_state), render_id(render_id) {
 
 	}
 
-	~OpenGLRenderFrameBufferResource() {}
+	virtual ~OpenGLRenderFrameBufferResource() {}
 
 private:
 

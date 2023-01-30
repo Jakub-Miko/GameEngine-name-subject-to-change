@@ -12,6 +12,11 @@ public:
 
 	}
 
+
+	FrameMultiBufferResource(const FrameMultiBufferResource& resource) : resources(resource.resources) {
+
+	}
+
 	FrameMultiBufferResource(FrameMultiBufferResource&& move) : resources(std::move(move.resources)) {
 
 	}
@@ -19,6 +24,12 @@ public:
 	FrameMultiBufferResource& operator=(FrameMultiBufferResource&& move) {
 		resources.clear();
 		resources = std::move(move.resources);
+		return *this;
+	}
+
+	FrameMultiBufferResource& operator=(const FrameMultiBufferResource& move) {
+		resources.clear();
+		resources = move.resources;
 		return *this;
 	}
 

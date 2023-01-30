@@ -215,18 +215,18 @@ void Material::SetMaterial(RenderCommandList* command_list, std::shared_ptr<Pipe
 	auto& sig = material_template->GetRootSignature().GetDescriptor().parameters;
 	for (auto& resource : resources) {
 		if (resource.is_table) {
-			command_list->SetDescriptorTable(sig[resource.index].name, std::get<RenderDescriptorTable>(resource.resource));
+			command_list->SetDescriptorTable(sig[resource.index].name, std::get<FrameMultiBufferResource<RenderDescriptorTable>>(resource.resource).GetResource());
 		}
 		else {
 			command_list->SetConstantBuffer(sig[resource.index].name, std::get<std::shared_ptr<RenderBufferResource>>(resource.resource));
 		}
 	}
 	for (auto& parameter : parameters) {
-		if (parameter.type == MaterialTemplate::MaterialTemplateParameterType::TEXTURE && !parameter.IsDirty()) {
+		if (parameter.type == MaterialTemplate::MaterialTemplateParameterType::TEXTURE && parameter.IsDirty()) {
 			command_list->SetTexture2D(parameter.name, std::get<Texture_type>(parameter.resource).texture);
-		} else if (parameter.type == MaterialTemplate::MaterialTemplateParameterType::TEXTURE_2D_ARRAY && !parameter.IsDirty()) {
+		} else if (parameter.type == MaterialTemplate::MaterialTemplateParameterType::TEXTURE_2D_ARRAY && parameter.IsDirty()) {
 			command_list->SetTexture2DArray(parameter.name, std::get<std::shared_ptr<RenderTexture2DArrayResource>>(parameter.resource));
-		} else if (parameter.type == MaterialTemplate::MaterialTemplateParameterType::TEXTURE_2D_CUBEMAP && !parameter.IsDirty()) {
+		} else if (parameter.type == MaterialTemplate::MaterialTemplateParameterType::TEXTURE_2D_CUBEMAP && parameter.IsDirty()) {
 			command_list->SetTexture2DCubemap(parameter.name, std::get<std::shared_ptr<RenderTexture2DCubemapResource>>(parameter.resource));
 		}
 	}
@@ -236,14 +236,14 @@ void Material::SetMaterial(RenderCommandList* command_list, std::shared_ptr<Pipe
 void Material::UpdateValues(RenderCommandList* command_list)
 {
 	for (auto& parameter : parameters) {
-		if(parameter.IsDirty()) {
+		auto& param_info = material_template->GetMaterialTemplateParameter(parameter.name);
+		if (param_info.descriptor_table_id != -1) {
 			if (parameter.type == MaterialTemplate::TEXTURE) {
-				auto& texture_param_info = material_template->GetMaterialTemplateParameter(parameter.name);
-				if (texture_param_info.descriptor_table_id != -1) {
-					auto res_fnd = std::find_if(resources.begin(), resources.end(), [&texture_param_info](const MaterialResource& res) {return res.index == texture_param_info.descriptor_table_id; });
+				if (param_info.descriptor_table_id != -1) {
+					auto res_fnd = std::find_if(resources.begin(), resources.end(), [&param_info](const MaterialResource& res) {return res.index == param_info.descriptor_table_id; });
 					if (res_fnd != resources.end()) {
-						RenderResourceManager::Get()->CreateTexture2DDescriptor(std::get<RenderDescriptorTable>(res_fnd->resource),
-							texture_param_info.index, std::get<Texture_type>(parameter.resource).texture);
+						RenderResourceManager::Get()->CreateTexture2DDescriptor(std::get<FrameMultiBufferResource<RenderDescriptorTable>>(res_fnd->resource).GetResource(),
+							param_info.index, std::get<Texture_type>(parameter.resource).texture);
 						parameter.flags &= ~MaterialParameter_flags::DIRTY;
 					}
 					else {
@@ -252,12 +252,11 @@ void Material::UpdateValues(RenderCommandList* command_list)
 				}
 			}
 			else if (parameter.type == MaterialTemplate::TEXTURE_2D_ARRAY) {
-				auto& texture_param_info = material_template->GetMaterialTemplateParameter(parameter.name);
-				if (texture_param_info.descriptor_table_id != -1) {
-					auto res_fnd = std::find_if(resources.begin(), resources.end(), [&texture_param_info](const MaterialResource& res) {return res.index == texture_param_info.descriptor_table_id; });
+				if (param_info.descriptor_table_id != -1) {
+					auto res_fnd = std::find_if(resources.begin(), resources.end(), [&param_info](const MaterialResource& res) {return res.index == param_info.descriptor_table_id; });
 					if (res_fnd != resources.end()) {
-						RenderResourceManager::Get()->CreateTexture2DArrayDescriptor(std::get<RenderDescriptorTable>(res_fnd->resource),
-							texture_param_info.index, std::get<std::shared_ptr<RenderTexture2DArrayResource>>(parameter.resource));
+						RenderResourceManager::Get()->CreateTexture2DArrayDescriptor(std::get<FrameMultiBufferResource<RenderDescriptorTable>>(res_fnd->resource).GetResource(),
+							param_info.index, std::get<std::shared_ptr<RenderTexture2DArrayResource>>(parameter.resource));
 						parameter.flags &= ~MaterialParameter_flags::DIRTY;
 					}
 					else {
@@ -266,21 +265,18 @@ void Material::UpdateValues(RenderCommandList* command_list)
 				}
 			}
 			else if (parameter.type == MaterialTemplate::TEXTURE_2D_CUBEMAP) {
-				auto& texture_param_info = material_template->GetMaterialTemplateParameter(parameter.name);
-				if (texture_param_info.descriptor_table_id != -1) {
-					auto res_fnd = std::find_if(resources.begin(), resources.end(), [&texture_param_info](const MaterialResource& res) {return res.index == texture_param_info.descriptor_table_id; });
+				if (param_info.descriptor_table_id != -1) {
+					auto res_fnd = std::find_if(resources.begin(), resources.end(), [&param_info](const MaterialResource& res) {return res.index == param_info.descriptor_table_id; });
 					if (res_fnd != resources.end()) {
-						RenderResourceManager::Get()->CreateTexture2DCubemapDescriptor(std::get<RenderDescriptorTable>(res_fnd->resource),
-							texture_param_info.index, std::get<std::shared_ptr<RenderTexture2DCubemapResource>>(parameter.resource));
+						RenderResourceManager::Get()->CreateTexture2DCubemapDescriptor(std::get<FrameMultiBufferResource<RenderDescriptorTable>>(res_fnd->resource).GetResource(),
+							param_info.index, std::get<std::shared_ptr<RenderTexture2DCubemapResource>>(parameter.resource));
 						parameter.flags &= ~MaterialParameter_flags::DIRTY;
 					}
 					else {
 						throw std::runtime_error("Descriptor table for parameter " + parameter.name + " not found");
 					}
 				}
-			}
-			else {
-				auto& param_info = material_template->GetMaterialTemplateParameter(parameter.name);
+			} else if(parameter.IsDirty()) {
 				auto res_fnd = std::find_if(resources.begin(), resources.end(), [&param_info](const MaterialResource& res) {return res.index == param_info.index; });
 				if(res_fnd != resources.end()) {
 					RenderResourceManager::Get()->UploadDataToBuffer(command_list, std::get<std::shared_ptr<RenderBufferResource>>(res_fnd->resource),
@@ -357,7 +353,7 @@ Material::Material(std::shared_ptr<MaterialTemplate> material_template) : materi
 				MaterialResource res;
 				res.index = param_types.descriptor_table_id;
 				res.is_table = true;
-				res.resource = Renderer3D::Get()->GetDescriptorHeap().Allocate(size);
+				res.resource = FrameMultiBufferResource<RenderDescriptorTable>([size]() {return Renderer3D::Get()->GetDescriptorHeap().Allocate(size); });
 				resources.push_back(res);
 			}
 		}
@@ -412,7 +408,7 @@ MaterialTemplate::MaterialTemplate(std::shared_ptr<Shader> shader_in) : material
 				AddTexture2DParameter(parameter,index);
 				break;
 			case RootParameterType::TEXTURE_2D_ARRAY:
-				throw std::runtime_error("Material visible texture arrays are currently not supported!");
+				AddTexture2DArrayParameter(parameter, index);
 				break;
 			case RootParameterType::TEXTURE_2D_CUBEMAP:
 				throw std::runtime_error("Material visible texture cubemaps are currently not supported!");

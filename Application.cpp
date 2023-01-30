@@ -154,9 +154,9 @@ void Application::InitInstance()
     Renderer::Get()->Init();
     MeshManager::Init();
 
-    Renderer::Get()->PostInit();
-
     FrameManager::Initialize();
+
+    Renderer::Get()->PostInit();
 
     Input::Init();
 
