@@ -411,7 +411,7 @@ MaterialTemplate::MaterialTemplate(std::shared_ptr<Shader> shader_in) : material
 				AddTexture2DArrayParameter(parameter, index);
 				break;
 			case RootParameterType::TEXTURE_2D_CUBEMAP:
-				throw std::runtime_error("Material visible texture cubemaps are currently not supported!");
+				AddTexture2DCubemapParameter(parameter, index);
 				break;
 			case RootParameterType::CONSTANT_BUFFER:
 				AddConstantBufferParameter(parameter, index);

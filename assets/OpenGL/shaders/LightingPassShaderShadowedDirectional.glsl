@@ -11,6 +11,11 @@
 			"material_visible" : true
 		},
 		{
+			"name" : "ShadowMapArray",
+			"type" : "texture_2D_array",
+			"material_visible" : true
+		},
+		{
 			"name" : "G_Buffer",
 			"type" : "descriptor_table",
 			"material_visible" : true,
@@ -21,14 +26,6 @@
 					"type" : "texture_2D",
 					"individual_names" : [
 						"Color", "Normal", "DepthBuffer"
-					]
-				}, 
-				{
-					"size" : 1,
-					"name" : "Arrays",
-					"type" : "texture_2D_array",
-					"individual_names" : [
-						"ShadowMapArray"
 					]
 				}
 			]

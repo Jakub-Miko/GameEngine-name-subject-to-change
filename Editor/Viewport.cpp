@@ -267,9 +267,16 @@ void Viewport::Render()
             }
 
             if (ImGuizmo::IsUsing()) {
-                glm::mat3 rot = delta;
+                glm::mat4 parent = glm::mat4(1.0f);
+                SceneNode* node = Application::GetWorld().GetSceneGraph()->GetSceneGraphNode(selected);
+                if (node && node->parent && Application::GetWorld().EntityExists(node->parent->entity)) {
+                    
+                    parent = Application::GetWorld().GetComponent<TransformComponent>(node->parent->entity).TransformMatrix;
+
+                }
+                transform = glm::inverse(parent) * transform;
+                glm::mat3 rot = transform;
                 glm::vec3 scale = glm::vec3(glm::length(rot[0]), glm::length(rot[1]), glm::length(rot[2]));
-                glm::vec3 trans_scale = glm::vec3(glm::length(transform[0]), glm::length(transform[1]), glm::length(transform[2])) / transform_comp.size;
                 rot[0] = rot[0] / scale.x;
                 rot[1] = rot[1] / scale.y;
                 rot[2] = rot[2] / scale.z;
@@ -278,13 +285,13 @@ void Viewport::Render()
                 switch (gizmo_mode)
                 {
                 case ViewportGizmoMode::TRANSLATION:
-                    Application::GetWorld().SetEntityTranslation(selected, transform_comp.translation + glm::vec3(delta[3])/ trans_scale);
+                    Application::GetWorld().SetEntityTranslation(selected, glm::vec3(transform[3]));
                     break;
                 case ViewportGizmoMode::SCALE:
-                    Application::GetWorld().SetEntityScale(selected, transform_comp.size * scale);
+                    Application::GetWorld().SetEntityScale(selected, scale);
                     break;
                 case ViewportGizmoMode::ROTATION:
-                    Application::GetWorld().SetEntityRotation(selected, rot_quat * transform_comp.rotation);
+                    Application::GetWorld().SetEntityRotation(selected, rot_quat);
                     break;
                 }
 

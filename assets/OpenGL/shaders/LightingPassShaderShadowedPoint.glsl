@@ -11,6 +11,11 @@
 			"material_visible" : true
 		},
 		{
+			"name" : "ShadowCubeMap",
+			"type" : "texture_2D_cubemap",
+			"material_visible" : true
+		},
+		{
 			"name" : "G_Buffer",
 			"type" : "descriptor_table",
 			"material_visible" : true,
@@ -21,14 +26,6 @@
 					"type" : "texture_2D",
 					"individual_names" : [
 						"Color", "Normal", "DepthBuffer"
-					]
-				}, 
-				{
-					"size" : 1,
-					"name" : "Cubemaps",
-					"type" : "texture_2D_cubemap",
-					"individual_names" : [
-						"ShadowCubeMap"
 					]
 				}
 			]
