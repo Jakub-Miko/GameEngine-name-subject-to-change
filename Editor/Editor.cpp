@@ -434,6 +434,26 @@ void Editor::ViewportEnd()
 	}
 }
 
+void Editor::CopyEntity(Entity ent)
+{
+	if (Application::GetWorld().EntityExists(ent)) {
+		entity_clipboard = ent;
+	}
+}
+
+void Editor::PasteEntity(Entity parent)
+{
+	SceneNode* parent_node = Application::GetWorld().GetSceneGraph()->GetSceneGraphNode(parent);
+	if (parent_node && Application::GetWorld().EntityExists(entity_clipboard)) {
+		if ((bool)(parent_node->state & (SceneNodeState::PREFAB_CHILD | SceneNodeState::PREFAB))) {
+			Application::GetWorld().DuplicateEntityInPrefab(entity_clipboard, parent);
+		}
+		else {
+			Application::GetWorld().DuplicateEntity(entity_clipboard, parent);
+		}
+	}
+}
+
 void Editor::Reset()
 {
 	properties_panel.reset(new PropertiesPanel());

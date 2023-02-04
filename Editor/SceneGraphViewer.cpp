@@ -61,6 +61,20 @@ void SceneGraphViewer::Render()
 		Editor::Get()->SetSelectedEntity(Entity());
 	}
 
+	if (ImGui::IsWindowFocused() && Input::Get()->IsKeyPressed_Editor(KeyCode::KEY_C) && Input::Get()->IsKeyPressed_Editor(KeyCode::KEY_LEFT_CONTROL) && Application::GetWorld().EntityExists(Editor::Get()->GetSelectedEntity())) {
+		Editor::Get()->CopyEntity(Editor::Get()->GetSelectedEntity());
+	}
+
+	if(ImGui::IsWindowFocused() && Input::Get()->IsKeyPressed_Editor(KeyCode::KEY_V) && Input::Get()->IsKeyPressed_Editor(KeyCode::KEY_LEFT_CONTROL) && Application::GetWorld().EntityExists(Editor::Get()->GetSelectedEntity())) {
+		if (!is_paste_pressed) {
+			Editor::Get()->PasteEntity(Editor::Get()->GetSelectedEntity());
+			is_paste_pressed = true;
+		}
+	}
+	else {
+		is_paste_pressed = false;
+	}
+
 	if (ImGui::Button("Create Empty Entity")) {
 		Entity ent = Application::GetWorld().CreateEntity(Editor::Get()->GetSelectedEntity());
 		Application::GetWorld().SetComponent<SerializableComponent>(ent);

@@ -8,7 +8,7 @@ public:
 	void Render();
 
 private:
-
+	bool is_paste_pressed = false;
 
 
 };

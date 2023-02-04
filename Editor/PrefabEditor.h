@@ -67,4 +67,5 @@ private:
 	std::vector<PrefabEditorWindow> open_windows;
 	int buffer_size = 200;
 	char* save_prefab_buffer = nullptr;
+	bool is_paste_pressed = false;
 };

@@ -50,5 +50,6 @@ private:
 	ViewportGizmoMode gizmo_mode = ViewportGizmoMode::TRANSLATION;
 	ViewportGizmoSpace gizmo_space = ViewportGizmoSpace::LOCAL;
 	ViewportSelectMode select_mode = ViewportSelectMode::PREFABS;
+	bool is_paste_pressed = false;
 
 };

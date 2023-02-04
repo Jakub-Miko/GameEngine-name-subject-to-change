@@ -251,11 +251,11 @@ void SceneGraph::RecalculateDownstream(SceneNode* node, SceneNode* upstream)
 	node->state = node->state & ~(SceneNodeState::DIRTY);
 	TransformComponent& transform = m_world->GetRegistry().get<TransformComponent>((entt::entity)node->entity.id);
 	glm::mat4 upstream_transform = glm::mat4(1.0f);
-	if (upstream != &root_node) {
-		upstream_transform = m_world->GetRegistry().get<TransformComponent>((entt::entity)upstream->entity.id).TransformMatrix;
-	}
 
 	if (!(bool)(node->state & SceneNodeState::DIRTY_TRANSFORM)) {
+		if (upstream != &root_node) {
+			upstream_transform = m_world->GetRegistry().get<TransformComponent>((entt::entity)upstream->entity.id).TransformMatrix;
+		}
 		transform.TransformMatrix = glm::translate(glm::mat4(1.0f), transform.translation) * glm::toMat4(transform.rotation) * glm::scale(glm::mat4(1.0f), transform.size);
 	}
 	else {
@@ -264,7 +264,6 @@ void SceneGraph::RecalculateDownstream(SceneNode* node, SceneNode* upstream)
 
 
 	if (!node->IsUIEntity()) {
-
 		transform.TransformMatrix = upstream_transform * transform.TransformMatrix;
 
 		//Update entry in spatial index

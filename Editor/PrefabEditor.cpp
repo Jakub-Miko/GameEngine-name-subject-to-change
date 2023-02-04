@@ -98,6 +98,20 @@ void PrefabEditor::PrefabSceneGraph(PrefabEditorWindow& window)
 		window.selected_entity = Entity();
 	}
 
+	if (ImGui::IsWindowFocused() && Input::Get()->IsKeyPressed_Editor(KeyCode::KEY_C) && Input::Get()->IsKeyPressed_Editor(KeyCode::KEY_LEFT_CONTROL) && Application::GetWorld().EntityExists(window.selected_entity)) {
+		Editor::Get()->CopyEntity(window.selected_entity);
+	}
+
+	if (ImGui::IsWindowFocused() && Input::Get()->IsKeyPressed_Editor(KeyCode::KEY_V) && Input::Get()->IsKeyPressed_Editor(KeyCode::KEY_LEFT_CONTROL) && Application::GetWorld().EntityExists(window.selected_entity)) {
+		if (!is_paste_pressed) {
+			Editor::Get()->PasteEntity(window.selected_entity);
+			is_paste_pressed = true;
+		}
+	}
+	else {
+		is_paste_pressed = false;
+	}
+
 	if (ImGui::Button("Delete Entity") && window.selected_entity != Entity()) {
 		Application::GetWorld().RemoveEntity(window.selected_entity);
 		window.selected_entity = Entity();

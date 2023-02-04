@@ -68,6 +68,10 @@ public:
 
 	void ViewportEnd();
 
+	void CopyEntity(Entity ent);
+
+	void PasteEntity(Entity parent);
+
 	void OpenPrefabEditorWindow(Entity entity) {
 		prefab_editor->OpenPrefabEditorWindow(entity);
 	}
@@ -111,6 +115,7 @@ private:
 	friend Viewport;
 
 	Entity selected_entity = Entity();
+	Entity entity_clipboard = Entity();
 
 	bool is_viewport_focused = false;
 
@@ -128,6 +133,7 @@ private:
 	std::unique_ptr<PropertiesPanel> properties_panel;
 	std::unique_ptr<FileExplorer> explorer;
 
+	
 	std::list<std::string> error_messages;
 
 	ImGuiIO* io = nullptr;

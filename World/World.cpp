@@ -164,7 +164,9 @@ Entity World::DuplicateEntity(Entity ent, Entity parent)
 	if (node && node->first_child) {
 		SceneNode* node_iter = node->first_child;
 		while (node_iter) {
-			DuplicateEntity(node_iter->entity,new_ent);
+			if (node_iter->entity != new_ent) {
+				DuplicateEntity(node_iter->entity, new_ent);
+			}
 			node_iter = node_iter->next;
 		}
 	}
@@ -192,7 +194,9 @@ Entity World::DuplicateEntityInPrefab(Entity ent, Entity parent )
 	if (node && node->first_child) {
 		SceneNode* node_iter = node->first_child;
 		while (node_iter) {
-			DuplicateEntity(node_iter->entity, new_ent);
+			if (node_iter->entity != new_ent) {
+				DuplicateEntityInPrefab(node_iter->entity, new_ent);
+			}
 			node_iter = node_iter->next;
 		}
 	}
