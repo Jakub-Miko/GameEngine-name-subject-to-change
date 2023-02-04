@@ -137,7 +137,11 @@ void Renderer::Update(float delta_time)
     glm::mat4 view_matrix = Application::GetWorld().GetComponent<TransformComponent>(primary).TransformMatrix;
     view_matrix[0] /= glm::length(view_matrix[0]);
     view_matrix[1] /= glm::length(view_matrix[1]);
-    view_matrix[1] /= glm::length(view_matrix[2]);
+    view_matrix[2] /= glm::length(view_matrix[2]);
+    view_matrix[0] = glm::vec4(glm::normalize(glm::cross((glm::vec3)view_matrix[1], (glm::vec3)view_matrix[2])),0.0f);
+    view_matrix[1] = glm::vec4(glm::normalize(glm::cross((glm::vec3)view_matrix[2], (glm::vec3)view_matrix[0])), 0.0f);
+    glm::vec3 lengths = glm::vec3{ glm::length(view_matrix[0]) , glm::length(view_matrix[1]) , glm::length(view_matrix[2]) };
+
     Application::GetWorld().GetComponent<TransformComponent>(primary).TransformMatrix = view_matrix;
     
     Renderer3D::Get()->Update(delta_time);

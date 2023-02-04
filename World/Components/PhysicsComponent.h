@@ -24,7 +24,7 @@ public:
 };
 
 enum class PhysicsObjectProperties : char {
-	NONE = 0, RECIEVE_COLLISION_EVENTS = 1
+	NONE = 0, RECIEVE_COLLISION_EVENTS = 1, DISABLE_COLLISION_RESPONSE = 2
 };
 
 inline PhysicsObjectProperties operator|(const PhysicsObjectProperties& first, const PhysicsObjectProperties& second) {

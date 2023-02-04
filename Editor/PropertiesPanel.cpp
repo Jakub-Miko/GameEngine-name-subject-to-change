@@ -259,6 +259,19 @@ void PropertiesPanel::RenderProperties(Entity entity, const PropertiesPanel_pers
 			Application::GetWorld().GetPhysicsEngine().RefreshObject(selected);
 		}
 
+		bool no_response_checked = (bool)(phys_comp.props & PhysicsObjectProperties::DISABLE_COLLISION_RESPONSE);
+		bool no_response_ref = no_response_checked;
+		ImGui::Checkbox("Disable Collisions", &no_response_checked);
+		if (no_response_checked != no_response_ref) {
+			if (no_response_checked) {
+				phys_comp.props = phys_comp.props | PhysicsObjectProperties::DISABLE_COLLISION_RESPONSE;
+			}
+			else {
+				phys_comp.props = phys_comp.props & ~PhysicsObjectProperties::DISABLE_COLLISION_RESPONSE;
+			}
+			Application::GetWorld().GetPhysicsEngine().RefreshObject(selected);
+		}
+
 		bool collision_callback = (bool)(phys_comp.props & PhysicsObjectProperties::RECIEVE_COLLISION_EVENTS);
 		bool collision_callback_toggle = collision_callback;
 		ImGui::Checkbox("SendCollisionEvents", &collision_callback_toggle);

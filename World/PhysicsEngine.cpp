@@ -343,11 +343,11 @@ void PhysicsEngine::PhysicsCollisionCallbackPhase()
 			col_event->collision_point_number = std::min(4, manifold->getNumContacts());
 			for (int x = 0; x < col_event->collision_point_number; x++) {
 				btVector3 pos = manifold->getContactPoint(x).getPositionWorldOnA();
-				col_event->collision_points[x] = {pos.x(), pos.y(),pos.z()};
+				col_event->collision_points[x] = { pos.x(), pos.y(),pos.z() };
 			}
 			col_event->reciever = phys_info_a_ent;
 			col_event->other = phys_info_b_ent;
-			Application::Get()->SendObservedEvent<CollisionEvent>(col_event);
+			;	   			Application::Get()->SendObservedEvent<CollisionEvent>(col_event);
 			delete col_event;
 		}
 
@@ -415,6 +415,8 @@ bool PhysicsEngine::CreatePhysicsObject(Entity entity)
 			body->setActivationState(DISABLE_DEACTIVATION);
 		}
 
+		physics_comp.state = PhysicsObjectState::INITIALIZED;
+
 		bullet_data->world->addRigidBody(body);
 		if (physics_comp.physics_object) {
 			btRigidBody* redundant_body = btRigidBody::upcast(physics_comp.physics_object.get());
@@ -446,7 +448,6 @@ bool PhysicsEngine::CreatePhysicsObject(Entity entity)
 			body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
 			body->setActivationState(DISABLE_DEACTIVATION);
 		}
-
 
 		bullet_data->world->addRigidBody(body);
 		if (physics_comp.physics_object) {
@@ -485,7 +486,6 @@ bool PhysicsEngine::CreatePhysicsObject(Entity entity)
 			body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
 			body->setActivationState(DISABLE_DEACTIVATION);
 		}
-
 		bullet_data->world->addRigidBody(body);
 		if (physics_comp.physics_object) {
 			btRigidBody* redundant_body = btRigidBody::upcast(physics_comp.physics_object.get());
@@ -522,7 +522,6 @@ bool PhysicsEngine::CreatePhysicsObject(Entity entity)
 			body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
 			body->setActivationState(DISABLE_DEACTIVATION);
 		}
-
 		bullet_data->world->addRigidBody(body);
 		if (physics_comp.physics_object) {
 			btRigidBody* redundant_body = btRigidBody::upcast(physics_comp.physics_object.get());
@@ -542,6 +541,9 @@ bool PhysicsEngine::CreatePhysicsObject(Entity entity)
 		throw std::runtime_error("This Collision type is not supported");
 	}
 	physics_comp.state = PhysicsObjectState::INITIALIZED;
+	if ((bool)(physics_comp.props & PhysicsObjectProperties::DISABLE_COLLISION_RESPONSE)) {
+		body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_NO_CONTACT_RESPONSE);
+	}
 
 	if (physics_comp.auxilary_props) {
 		SetAngularFactor(entity, physics_comp.auxilary_props->angular_factor);
