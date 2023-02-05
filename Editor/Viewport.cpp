@@ -106,10 +106,16 @@ void Viewport::Render()
         Editor::Get()->CopyEntity(Editor::Get()->GetSelectedEntity());
     }
 
-    if (ImGui::IsWindowFocused() && Input::Get()->IsKeyPressed_Editor(KeyCode::KEY_V) && Input::Get()->IsKeyPressed_Editor(KeyCode::KEY_LEFT_CONTROL) && Application::GetWorld().EntityExists(Editor::Get()->GetSelectedEntity())) {
+    if (ImGui::IsWindowFocused() && Input::Get()->IsKeyPressed_Editor(KeyCode::KEY_V) && Input::Get()->IsKeyPressed_Editor(KeyCode::KEY_LEFT_CONTROL)) {
         if (!is_paste_pressed) {
-            Editor::Get()->PasteEntity(Editor::Get()->GetSelectedEntity());
-            is_paste_pressed = true;
+            if (Application::GetWorld().EntityExists(Editor::Get()->GetSelectedEntity())) {
+                Editor::Get()->PasteEntity(Editor::Get()->GetSelectedEntity());
+                is_paste_pressed = true;
+            }
+            else if (Editor::Get()->GetSelectedEntity() == Entity()) {
+                Editor::Get()->PasteEntity(Application::GetWorld().GetSceneGraph()->GetRootNode()->entity);
+                is_paste_pressed = true;
+            }
         }
     }
     else {
@@ -210,7 +216,12 @@ void Viewport::Render()
     }
     select_mode = sel_md;
 
-
+    ImGui::PushItemWidth(ImGui::GetFontSize()*4);
+    ImGui::InputFloat("Translation Snap", &translation_snap);
+    ImGui::InputFloat("Scale Snap", &scale_snap);
+    ImGui::InputFloat("Rotation Snap", &rotation_snap);
+    ImGui::Checkbox("Enable Snap", &snap_enabled);
+    ImGui::PopItemWidth();
 
     ImGui::SetCursorPos((ImGui::GetWindowSize() + ImVec2{ 0,ImGui::GetCurrentWindow()->TitleBarHeight() } - ImVec2{ viewport_size.x,viewport_size.y }) * 0.5f); 
 
@@ -265,7 +276,19 @@ void Viewport::Render()
         }
 
         if (Editor::Get()->IsEditorEnabled()) {
-
+            glm::vec3 snap = glm::vec3(0.0f);
+            switch (gizmo_mode)
+            {
+            case ViewportGizmoMode::TRANSLATION:
+                snap = glm::vec3(translation_snap);
+                break;
+            case ViewportGizmoMode::SCALE:
+                snap = glm::vec3(scale_snap);
+                break;
+            case ViewportGizmoMode::ROTATION:
+                snap = glm::vec3(rotation_snap);
+                break;
+            }
             if (Application::GetWorld().HasComponent<UITextComponent>(selected)) {
                 glm::mat4 camera = glm::mat4(1.0f);
                 int res_x = Application::Get()->GetWindow()->GetProperties().resolution_x;
@@ -273,11 +296,13 @@ void Viewport::Render()
                 ImGuizmo::SetOrthographic(true);
                 glm::mat4 projection_ui = glm::ortho(0.0f, (float)res_x / (float)res_y, 0.0f, 1.0f);
                 transform[3][2] = 0.0f;
-                ImGuizmo::Manipulate(glm::value_ptr(camera), glm::value_ptr(projection_ui), op, md, glm::value_ptr(transform), glm::value_ptr(delta));
+                ImGuizmo::Manipulate(glm::value_ptr(camera), glm::value_ptr(projection_ui), op, md, glm::value_ptr(transform), glm::value_ptr(delta),
+                    snap_enabled ? glm::value_ptr(snap) : nullptr);
             }
             else {
                 ImGuizmo::SetOrthographic(false);
-                ImGuizmo::Manipulate(glm::value_ptr(camera_transform), glm::value_ptr(projection), op, md, glm::value_ptr(transform), glm::value_ptr(delta));
+                ImGuizmo::Manipulate(glm::value_ptr(camera_transform), glm::value_ptr(projection), op, md, glm::value_ptr(transform), glm::value_ptr(delta),
+                    snap_enabled ? glm::value_ptr(snap) : nullptr);
             }
 
             if (ImGuizmo::IsUsing()) {

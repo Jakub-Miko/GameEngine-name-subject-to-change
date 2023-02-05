@@ -452,6 +452,9 @@ void Editor::PasteEntity(Entity parent)
 			Application::GetWorld().DuplicateEntity(entity_clipboard, parent);
 		}
 	}
+	else if (parent == Entity()) {
+		Application::GetWorld().DuplicateEntity(entity_clipboard, Entity());
+	}
 }
 
 void Editor::Reset()

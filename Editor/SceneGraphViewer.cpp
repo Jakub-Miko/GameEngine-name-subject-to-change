@@ -65,10 +65,16 @@ void SceneGraphViewer::Render()
 		Editor::Get()->CopyEntity(Editor::Get()->GetSelectedEntity());
 	}
 
-	if(ImGui::IsWindowFocused() && Input::Get()->IsKeyPressed_Editor(KeyCode::KEY_V) && Input::Get()->IsKeyPressed_Editor(KeyCode::KEY_LEFT_CONTROL) && Application::GetWorld().EntityExists(Editor::Get()->GetSelectedEntity())) {
+	if (ImGui::IsWindowFocused() && Input::Get()->IsKeyPressed_Editor(KeyCode::KEY_V) && Input::Get()->IsKeyPressed_Editor(KeyCode::KEY_LEFT_CONTROL)) {
 		if (!is_paste_pressed) {
-			Editor::Get()->PasteEntity(Editor::Get()->GetSelectedEntity());
-			is_paste_pressed = true;
+			if (Application::GetWorld().EntityExists(Editor::Get()->GetSelectedEntity())) {
+				Editor::Get()->PasteEntity(Editor::Get()->GetSelectedEntity());
+				is_paste_pressed = true;
+			}
+			else if (Editor::Get()->GetSelectedEntity() == Entity()) {
+				Editor::Get()->PasteEntity(Application::GetWorld().GetSceneGraph()->GetRootNode()->entity);
+				is_paste_pressed = true;
+			}
 		}
 	}
 	else {
@@ -82,7 +88,12 @@ void SceneGraphViewer::Render()
 	}
 
 	if (ImGui::Button("Duplicate Entity")) {
-		Editor::Get()->SetSelectedEntity(Application::GetWorld().DuplicateEntity(Editor::Get()->GetSelectedEntity()));
+		Entity parent = Entity();
+		SceneNode* node = Application::GetWorld().GetSceneGraph()->GetSceneGraphNode(Editor::Get()->GetSelectedEntity());
+		if (node && node->parent) {
+			parent = node->parent->entity;
+		}
+		Editor::Get()->SetSelectedEntity(Application::GetWorld().DuplicateEntity(Editor::Get()->GetSelectedEntity(), parent));
 	}
 
 	if (ImGui::Button("Delete Entity") && Editor::Get()->GetSelectedEntity() != Entity()) {

@@ -70,7 +70,7 @@ public:
 
 	void CopyEntity(Entity ent);
 
-	void PasteEntity(Entity parent);
+	void PasteEntity(Entity parent = Entity());
 
 	void OpenPrefabEditorWindow(Entity entity) {
 		prefab_editor->OpenPrefabEditorWindow(entity);

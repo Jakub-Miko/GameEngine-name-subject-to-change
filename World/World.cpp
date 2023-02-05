@@ -146,11 +146,8 @@ void World::UpdateSkeletalMesh(Entity ent)
 
 Entity World::DuplicateEntity(Entity ent, Entity parent)
 {
-	if (!EntityIsValid(ent)) {
+	if(!EntityIsValid(ent) && parent != Entity()) {
 		return Entity();
-	}
-	if (parent == Entity()) {
-		parent = GetSceneGraph()->GetSceneGraphNode(ent)->parent->entity;
 	}
 	Entity new_ent = CreateEntity(parent);
 

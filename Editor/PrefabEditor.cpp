@@ -102,10 +102,16 @@ void PrefabEditor::PrefabSceneGraph(PrefabEditorWindow& window)
 		Editor::Get()->CopyEntity(window.selected_entity);
 	}
 
-	if (ImGui::IsWindowFocused() && Input::Get()->IsKeyPressed_Editor(KeyCode::KEY_V) && Input::Get()->IsKeyPressed_Editor(KeyCode::KEY_LEFT_CONTROL) && Application::GetWorld().EntityExists(window.selected_entity)) {
+	if (ImGui::IsWindowFocused() && Input::Get()->IsKeyPressed_Editor(KeyCode::KEY_V) && Input::Get()->IsKeyPressed_Editor(KeyCode::KEY_LEFT_CONTROL)) {
 		if (!is_paste_pressed) {
-			Editor::Get()->PasteEntity(window.selected_entity);
-			is_paste_pressed = true;
+			if (Application::GetWorld().EntityExists(window.selected_entity)) {
+				Editor::Get()->PasteEntity(window.selected_entity);
+				is_paste_pressed = true;
+			}
+			else if (window.selected_entity == Entity()) {
+				Editor::Get()->PasteEntity(window.entity);
+				is_paste_pressed = true;
+			}
 		}
 	}
 	else {
@@ -117,10 +123,14 @@ void PrefabEditor::PrefabSceneGraph(PrefabEditorWindow& window)
 		window.selected_entity = Entity();
 	}
 
-	if (ImGui::Button("Duplicate Entity") && window.selected_entity != Entity()) {
-		window.selected_entity = Application::GetWorld().DuplicateEntityInPrefab(window.selected_entity);
+	if (ImGui::Button("Duplicate Entity")) {
+		Entity parent = Entity();
+		SceneNode* node = Application::GetWorld().GetSceneGraph()->GetSceneGraphNode(window.selected_entity);
+		if (node && node->parent) {
+			parent = node->parent->entity;
+		}
+		window.selected_entity = Application::GetWorld().DuplicateEntityInPrefab(window.selected_entity, parent);
 	}
-
 
 	ImGui::Separator();
 	
