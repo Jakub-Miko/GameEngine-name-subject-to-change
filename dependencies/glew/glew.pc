@@ -1,6 +1,6 @@
-prefix=C:/Users/mainm/Desktop/GameEngine/PseudoCode/out/install/x64-Debug-OpenGL
+prefix=C:/Users/mainm/Desktop/GameEngine/GameEngine-name-subject-to-change/out/install/x64-Debug
 exec_prefix=${prefix}
-libdir=C:/Users/mainm/Desktop/GameEngine/PseudoCode/out/install/x64-Debug-OpenGL/lib
+libdir=C:/Users/mainm/Desktop/GameEngine/GameEngine-name-subject-to-change/out/install/x64-Debug/lib
 includedir=${prefix}/include
 
 Name: glew

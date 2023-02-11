@@ -178,14 +178,19 @@ struct Render_Box_data {
     std::shared_ptr<RenderBufferResource> constant_buffer;
 };
 
-inline Render_Box_data& Get_Render_Box_data() {
-    static Render_Box_data* data = new Render_Box_data(CameraComponent(45.0f, 0.1f, 1000.0f, 1.0f), glm::lookAt(glm::vec3(1.0f, 1.5f, -5.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
-    return *data;
+inline Render_Box_data* Get_Render_Box_data(bool shutdown = false) {
+    
+    static Render_Box_data* data = shutdown ? nullptr : new Render_Box_data(CameraComponent(45.0f, 0.1f, 1000.0f, 1.0f),
+        glm::lookAt(glm::vec3(1.0f, 1.5f, -5.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
+    return data;
 }
 
 inline void Delete_Render_Box_data() {
-    Get_Render_Box_data().clear();
-    delete &Get_Render_Box_data();
+    Render_Box_data* ptr = Get_Render_Box_data(true);
+    if (ptr) {
+        ptr->clear();
+        delete ptr;
+    }
 }
 
 inline void Render_Box(const BoundingBox& box, const glm::mat4& model_matrix,const CameraComponent& camera, const glm::mat4& camera_transform, 
@@ -193,7 +198,7 @@ inline void Render_Box(const BoundingBox& box, const glm::mat4& model_matrix,con
     auto command_list = Renderer::Get()->GetRenderCommandList();
     auto command_queue = Renderer::Get()->GetCommandQueue();
 	
-    Render_Box_data& data = Get_Render_Box_data();
+    Render_Box_data& data = *Get_Render_Box_data();
     Render_Box_data::Constant_buffer_type buffer = {
          camera.GetProjectionMatrix() * glm::inverse(camera_transform) * model_matrix * glm::translate(glm::mat4(1.0f), box.GetBoxOffset()) * glm::scale(glm::mat4(1.0f),box.GetBoxSize()),
          model_matrix,

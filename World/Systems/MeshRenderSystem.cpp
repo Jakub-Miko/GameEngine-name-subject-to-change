@@ -31,7 +31,7 @@ static void RenderMesh(MeshComponent& component, Entity ent) {
     auto command_list = Renderer::Get()->GetRenderCommandList();
     auto command_queue = Renderer::Get()->GetCommandQueue();
 
-    Render_Box_data& data = Get_Render_Box_data();
+    Render_Box_data& data = *Get_Render_Box_data();
 
     const_buf_type buffer = {
          (camera.GetProjectionMatrix() * glm::inverse(trans.TransformMatrix)) * mesh_transform.TransformMatrix,
