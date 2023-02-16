@@ -302,7 +302,8 @@ void OpenGLRenderCommandList::UpdateTexture2DArrayResource(std::shared_ptr<Rende
 
 void OpenGLRenderCommandList::CopyFrameBufferDepthAttachment(std::shared_ptr<RenderFrameBufferResource> source_frame_buffer, std::shared_ptr<RenderFrameBufferResource> destination_frame_buffer)
 {
-    if (source_frame_buffer->GetBufferDescriptor().depth_stencil_attachment->GetResourceType() != RenderResourceType::RenderTexture2DResource ||
+    if (!source_frame_buffer->GetBufferDescriptor().depth_stencil_attachment ||
+        source_frame_buffer->GetBufferDescriptor().depth_stencil_attachment->GetResourceType() != RenderResourceType::RenderTexture2DResource ||
         destination_frame_buffer->GetBufferDescriptor().depth_stencil_attachment->GetResourceType() != RenderResourceType::RenderTexture2DResource) {
         throw std::runtime_error("Currently copy operations are only supported on RenderTexture2D attachments");
     };

@@ -254,6 +254,7 @@ public:
 	virtual ~RenderFrameBufferResource() {};
 
 protected:
+	friend class RenderResourceManager;
 	RenderFrameBufferDescriptor descriptor;
 };
 

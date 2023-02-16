@@ -1,10 +1,22 @@
 #include "TextureManager.h"
 #include "TextureManager.h"
+#include <Renderer/MeshManager.h>
 #include <Renderer/RenderResourceManager.h>
 #include <dependencies/stb_image/stb_image.h>
 #include <Application.h>
 #include <fstream>
 #include <FileManager.h>
+#include <Renderer/PipelineManager.h>
+
+
+
+struct TextureManager_internal {
+    std::shared_ptr<Pipeline> reflection_convert_pipeline;
+    std::shared_ptr<RenderBufferResource> const_buffer;
+    std::shared_ptr<RenderFrameBufferResource> framebuffer;
+    std::shared_ptr<RenderTexture2DCubemapResource> default_cubemap;
+};
+
 
 TextureManager* TextureManager::instance = nullptr;
 
@@ -237,6 +249,58 @@ void TextureManager::ReleaseTexture(const std::string& file_path_in)
 
 }
 
+std::shared_ptr<ReflectionMap> TextureManager::GetReflectionMap(const std::string& path_in)
+{
+    auto path = FileManager::Get()->GetPath(path_in);
+    std::unique_lock<std::mutex> lock(reflection_maps_mutex);
+    auto fnd = reflection_maps.find(path);
+    if (fnd != reflection_maps.end()) {
+        return fnd->second;
+    }
+    lock.unlock();
+
+    auto base_texture = LoadTextureFromFile(path_in);
+
+    RenderTexture2DCubemapDescriptor cb_desc;
+    cb_desc.format = TextureFormat::RGB_32FLOAT;
+    cb_desc.res = REFLECTION_RES;
+    cb_desc.sampler = data->default_cubemap->GetBufferDescriptor().sampler;
+
+
+    std::shared_ptr<RenderTexture2DCubemapResource> converted_cubemap = RenderResourceManager::Get()->CreateTextureCubemap(cb_desc);
+
+
+    auto list = Renderer::Get()->GetRenderCommandList();
+    auto queue = Renderer::Get()->GetCommandQueue();
+    auto cube_mesh = MeshManager::Get()->LoadMeshFromFileAsync("asset:Box.mesh"_path);
+    
+    glm::mat4 light_views[6];
+    glm::mat4 projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.01f, 1000.0f);
+    light_views[0] = projection * glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f) + glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+    light_views[1] = projection * glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f) + glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+    light_views[2] = projection * glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f) + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    light_views[3] = projection * glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f) + glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f));
+    light_views[4] = projection * glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f) + glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+    light_views[5] = projection * glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f) + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+    RenderResourceManager::Get()->UploadDataToBuffer(list, data->const_buffer, glm::value_ptr(light_views[0]), sizeof(glm::mat4) * 6, 0);
+    RenderResourceManager::Get()->SetFrameBufferColorAttachment(data->framebuffer, converted_cubemap);
+    list->SetPipeline(data->reflection_convert_pipeline);
+    list->SetRenderTarget(data->framebuffer);
+    list->SetViewport(RenderViewport(glm::vec2(0.0f), glm::vec2(800, 800)));
+    list->SetConstantBuffer("mvp", data->const_buffer);
+    list->SetTexture2D("in_tex", base_texture);
+    list->SetVertexBuffer(cube_mesh->GetVertexBuffer());
+    list->SetIndexBuffer(cube_mesh->GetIndexBuffer());
+    list->Draw(cube_mesh->GetIndexCount());
+
+    queue->ExecuteRenderCommandList(list);
+
+    auto result = std::make_shared<ReflectionMap>();
+    result->specular_maps.push_back(std::make_pair(0.0f,converted_cubemap));
+    
+    return result;
+}
+
 void TextureManager::Init()
 {
     if (!instance) {
@@ -252,11 +316,12 @@ TextureManager* TextureManager::Get()
 void TextureManager::Shutdown()
 {
     if (instance) {
+        delete instance->data;
         delete instance;
     }
 }
 
-TextureManager::TextureManager() : texture_Map(), texture_Map_mutex(), sampler_cache(), sampler_cache_mutex()
+TextureManager::TextureManager() : texture_Map(), texture_Map_mutex(), sampler_cache(), sampler_cache_mutex(), reflection_maps(), reflection_maps_mutex(), data(new TextureManager_internal)
 {
     RenderTexture2DDescriptor tex_desc;
     tex_desc.format = TextureFormat::RGBA_UNSIGNED_CHAR;
@@ -301,6 +366,31 @@ TextureManager::TextureManager() : texture_Map(), texture_Map_mutex(), sampler_c
     default_normal_texture = def_normal_tex;
     default_texture_array = def_tex_arr;
     default_texture_cubemap = def_tex_cbm;
+
+    PipelineDescriptor pipeline_desc;
+    pipeline_desc.cull_mode = CullMode::NONE;
+    pipeline_desc.enable_depth_clip = false;
+    pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/ReflectionMapConversion.glsl");
+    pipeline_desc.layout = VertexLayoutFactory<MeshPreset>::GetLayout();
+
+    data->reflection_convert_pipeline = PipelineManager::Get()->CreatePipeline(pipeline_desc);
+
+    RenderBufferDescriptor const_reflection_buffer_desc(sizeof(glm::mat4)*6,RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
+
+    data->const_buffer = RenderResourceManager::Get()->CreateBuffer(const_reflection_buffer_desc);
+
+    RenderTexture2DCubemapDescriptor default_cubemap;
+    default_cubemap.format = TextureFormat::RGB_32FLOAT;
+    default_cubemap.res = REFLECTION_RES;
+    default_cubemap.sampler = TextureSampler::CreateSampler(TextureSamplerDescritor());
+    
+
+
+    RenderFrameBufferDescriptor frame_desc;
+    data->default_cubemap = RenderResourceManager::Get()->CreateTextureCubemap(default_cubemap);
+    frame_desc.color_attachments.push_back(data->default_cubemap);
+    data->framebuffer = RenderResourceManager::Get()->CreateFrameBuffer(frame_desc);
+
 }
 
 void TextureManager::ClearTextureCache()

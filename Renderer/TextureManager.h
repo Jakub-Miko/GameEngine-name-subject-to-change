@@ -6,6 +6,11 @@
 #include <AsyncTaskDispatcher.h>
 #include <mutex>
 #include <memory>
+#include <Renderer/ReflectionMap.h>
+
+#ifndef REFLECTION_RES
+#define REFLECTION_RES 800
+#endif
 
 enum class Texture_status : char {
 	UNINITIALIZED = 0, LOADING = 1, READY = 2
@@ -20,6 +25,8 @@ struct texture_data {
 	}
 
 };
+
+struct TextureManager_internal;
 
 class TextureManager {
 public:
@@ -58,6 +65,8 @@ public:
 
 	void ReleaseTexture(const std::string& file_path);
 
+	std::shared_ptr<ReflectionMap> GetReflectionMap(const std::string& path);
+
 	static void Init();
 
 	static TextureManager* Get();
@@ -75,9 +84,11 @@ private:
 	std::shared_ptr<RenderTexture2DResource> default_normal_texture;
 	std::mutex texture_Map_mutex;
 	std::unordered_map<std::string, std::shared_ptr<RenderTexture2DResource>> texture_Map;
+	std::mutex reflection_maps_mutex;
+	std::unordered_map<std::string, std::shared_ptr<ReflectionMap>> reflection_maps;
 	std::mutex sampler_cache_mutex;
 	std::unordered_map<TextureSamplerDescritor, std::shared_ptr<TextureSampler>> sampler_cache;
-
+	TextureManager_internal* data = nullptr;
 
 	static TextureManager* instance;
 };

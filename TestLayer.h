@@ -11,7 +11,7 @@
 #include <World/Components/SkeletalMeshComponent.h>
 #include <World/Components/AudioComponent.h>
 #include <Input/Input.h>
-
+#include <Renderer/TextureManager.h>
 #include <Audio/AudioSystem.h>
 #include <AL/al.h>
 
@@ -416,6 +416,10 @@ public:
 
 
 #pragma endregion
+
+            auto cubemap = TextureManager::Get()->GetReflectionMap("asset:HDR_texture.tex");
+
+
 
             stop = false;
 

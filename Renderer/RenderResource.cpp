@@ -29,21 +29,24 @@ std::shared_ptr<RenderTexture2DCubemapResource> RenderFrameBufferDescriptor::Get
 
 std::shared_ptr<RenderTexture2DResource> RenderFrameBufferDescriptor::GetDepthAttachmentAsTexture()
 {
-	if (depth_stencil_attachment->GetResourceType() == RenderResourceType::RenderTexture2DResource) {
+	if (depth_stencil_attachment && depth_stencil_attachment->GetResourceType() == RenderResourceType::RenderTexture2DResource) {
 		return std::static_pointer_cast<RenderTexture2DResource>(depth_stencil_attachment);
 	}
+	return nullptr;
 }
 
 std::shared_ptr<RenderTexture2DArrayResource> RenderFrameBufferDescriptor::GetDepthAttachmentAsTextureArray()
 {
-	if (depth_stencil_attachment->GetResourceType() == RenderResourceType::RenderTexture2DArrayResource) {
+	if (depth_stencil_attachment && depth_stencil_attachment->GetResourceType() == RenderResourceType::RenderTexture2DArrayResource) {
 		return std::static_pointer_cast<RenderTexture2DArrayResource>(depth_stencil_attachment);
 	}
+	return nullptr;
 }
 
 std::shared_ptr<RenderTexture2DCubemapResource> RenderFrameBufferDescriptor::GetDepthAttachmentAsTextureCubemap() 
 {
-	if (depth_stencil_attachment->GetResourceType() == RenderResourceType::RenderTexture2DCubemapResource) {
+	if (depth_stencil_attachment && depth_stencil_attachment->GetResourceType() == RenderResourceType::RenderTexture2DCubemapResource) {
 		return std::static_pointer_cast<RenderTexture2DCubemapResource>(depth_stencil_attachment);
 	}
+	return nullptr;
 }
