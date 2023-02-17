@@ -9,6 +9,7 @@
 #include <World/Components/SerializableComponent.h>
 #include <World/Components/UITextComponent.h>
 #include <World/Components/SkeletalMeshComponent.h>
+#include <World/Components/SkylightComponent.h>
 #include <World/Components/AudioComponent.h>
 #include <Input/Input.h>
 #include <Renderer/TextureManager.h>
@@ -418,7 +419,6 @@ public:
 #pragma endregion
 
             auto cubemap = TextureManager::Get()->GetReflectionMap("asset:HDR_texture.tex");
-
 
 
             stop = false;

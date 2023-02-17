@@ -10,6 +10,7 @@
 #include <Renderer/Renderer3D/RenderResourceCollection.h>
 #include <Renderer/MeshManager.h>
 #include <World/Components/CameraComponent.h>
+#include <World/Components/SkylightComponent.h>
 #include <World/Components/ShadowCasterComponent.h>
 #include <World/Components/MeshComponent.h>
 #include <World/Components/LightComponent.h>
@@ -42,15 +43,18 @@ struct VertexLayoutFactory<LightingPassPreset> {
 
 struct DefferedLightingPass::internal_data {
 	std::shared_ptr<Pipeline> pipeline;
+	std::shared_ptr<Pipeline> pipeline_skylight;
 	std::shared_ptr<Pipeline> pipeline_shadowed_point;
 	std::shared_ptr<Pipeline> pipeline_shadowed_directional;
 	std::shared_ptr<RenderFrameBufferResource> output_buffer_resource;
 	std::shared_ptr<Mesh> sphere_mesh;
 	std::shared_ptr<Mesh> card_mesh;
 	std::shared_ptr<Material> mat;
+	std::shared_ptr<Material> mat_skylight;
 	std::shared_ptr<Material> mat_shadowed_point;
 	std::shared_ptr<Material> mat_shadowed_directional;
 	std::shared_ptr<RenderBufferResource> constant_scene_buf;
+	std::shared_ptr<RenderBufferResource> constant_scene_buf_skylight;
 	std::shared_ptr<RenderBufferResource> constant_scene_buf_shadowed_point;
 	std::shared_ptr<RenderBufferResource> constant_scene_buf_shadowed_directional;
 	bool initialized = false;
@@ -74,6 +78,9 @@ void DefferedLightingPass::InitPostProcessingPassData() {
 	pipeline_desc.polygon_render_mode = PrimitivePolygonRenderMode::DEFAULT;
 	pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/LightingPassShader.glsl");
 	data->pipeline = PipelineManager::Get()->CreatePipeline(pipeline_desc);
+
+	pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/LightingPassShaderSkylight.glsl");
+	data->pipeline_skylight = PipelineManager::Get()->CreatePipeline(pipeline_desc);
 
 	pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/LightingPassShaderShadowedPoint.glsl");
 	data->pipeline_shadowed_point = PipelineManager::Get()->CreatePipeline(pipeline_desc);
@@ -122,10 +129,14 @@ void DefferedLightingPass::InitPostProcessingPassData() {
 	RenderBufferDescriptor const_desc_shadowed_directional(sizeof(glm::mat4) * 18 + sizeof(float) * 5 + sizeof(glm::vec2) + sizeof(uint32_t), RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
 	data->constant_scene_buf_shadowed_directional = RenderResourceManager::Get()->CreateBuffer(const_desc_shadowed_directional);
 
+	RenderBufferDescriptor const_desc_skylight(sizeof(glm::mat4) * 2 + sizeof(float) * 2, RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
+	data->constant_scene_buf_skylight = RenderResourceManager::Get()->CreateBuffer(const_desc_skylight);
+
 	data->sphere_mesh = MeshManager::Get()->LoadMeshFromFileAsync("asset:Sphere.mesh"_path);
 	data->mat = MaterialManager::Get()->CreateMaterial("shaders/LightingPassShader.glsl");
 	data->mat_shadowed_point = MaterialManager::Get()->CreateMaterial("shaders/LightingPassShaderShadowedPoint.glsl");
 	data->mat_shadowed_directional = MaterialManager::Get()->CreateMaterial("shaders/LightingPassShaderShadowedDirectional.glsl");
+	data->mat_skylight = MaterialManager::Get()->CreateMaterial("shaders/LightingPassShaderSkylight.glsl");
 
 	struct Vertex {
 		Vertex(glm::vec3 pos, glm::vec3 normal = glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3 tangent = glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3 uv = glm::vec3(0.0f))
@@ -206,7 +217,7 @@ void DefferedLightingPass::Render(RenderPipelineResourceManager& resource_manage
 	RenderLights(resource_manager, list, camera, props);
 	RenderShadowedLightsDirectional(resource_manager, list, camera, props);
 	RenderShadowedLightsPoint(resource_manager, list, camera, props);
-
+	RenderSkylights(resource_manager, list, camera, props);
 
 	queue->ExecuteRenderCommandList(list);
 
@@ -411,6 +422,66 @@ void DefferedLightingPass::RenderShadowedLightsDirectional(RenderPipelineResourc
 		}
 		
 		
+		list->Draw(index_count);
+
+
+	}
+}
+
+void DefferedLightingPass::RenderSkylights(RenderPipelineResourceManager& resource_manager, RenderCommandList* list, const CameraComponent& camera, const render_props& props)
+{
+	const RenderResourceCollection<Entity>* geometry;
+	auto skylight_view = Application::GetWorld().GetRegistry().view<SkylightComponent>();
+
+	auto& gbuffer = resource_manager.GetResource<std::shared_ptr<RenderFrameBufferResource>>(input_gbuffer);
+	auto& world = Application::GetWorld();
+	auto ViewProjection = props.projection * props.view;
+	auto view_matrix = props.view;
+	auto inverse_view = glm::inverse(view_matrix);
+	list->SetPipeline(data->pipeline_skylight);
+	list->SetRenderTarget(data->output_buffer_resource);
+	list->SetConstantBuffer("conf", data->constant_scene_buf_skylight);
+	float depth_constant_a = props.depth_constant_a;
+	float depth_constant_b = props.depth_constant_b;
+	glm::mat4 inverse_projection = glm::inverse(props.projection);
+	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_skylight, &depth_constant_a, sizeof(float), sizeof(glm::mat4) * 2);
+	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_skylight, &depth_constant_b, sizeof(float), sizeof(glm::mat4) * 2 + sizeof(float));
+	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_skylight, &inverse_projection, sizeof(glm::mat4), sizeof(glm::mat4));
+	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_skylight, &inverse_view, sizeof(glm::mat4), 0);
+	for (auto& ent : skylight_view) {
+		Entity entity = Entity((uint32_t)ent);
+		auto& transform_component = world.GetComponent<TransformComponent>(entity);
+		auto transform = transform_component.TransformMatrix;
+		auto& light = world.GetComponent<SkylightComponent>(entity);
+		if (!light.GetReflectionMap() || light.GetReflectionMap()->GetStatus() != ReflectionMapStatus::LOADED) {
+			continue;
+		}
+		size_t index_count = 0;
+		glm::mat4 mvp;
+		glm::mat4 mv_matrix;
+
+		mvp = glm::mat4(1.0f);
+		mv_matrix = view_matrix * transform;
+		list->SetVertexBuffer(data->card_mesh->GetVertexBuffer());
+		list->SetIndexBuffer(data->card_mesh->GetIndexBuffer());
+		index_count = data->card_mesh->GetIndexCount();
+
+
+		auto inverse_view = Application::GetWorld().GetComponent<TransformComponent>(Application::GetWorld().GetPrimaryEntity()).TransformMatrix;
+
+		glm::vec2 pixel_size = { 1.0f / Application::Get()->GetWindow()->GetProperties().resolution_x,
+			1.0f / Application::Get()->GetWindow()->GetProperties().resolution_y };
+
+		list->SetTexture2DCubemap("Diffuse", light.GetReflectionMap()->GetDiffuseMap());
+
+		data->mat_skylight->SetParameter("pixel_size", pixel_size);
+		data->mat_skylight->SetParameter("Light_Color", light.GetLightColor());
+		data->mat_skylight->SetParameter("Color", gbuffer->GetBufferDescriptor().GetColorAttachmentAsTexture(0));
+		data->mat_skylight->SetParameter("Normal", gbuffer->GetBufferDescriptor().GetColorAttachmentAsTexture(1));
+		data->mat_skylight->SetParameter("DepthBuffer", gbuffer->GetBufferDescriptor().GetDepthAttachmentAsTexture());
+		data->mat_skylight->SetMaterial(list, data->pipeline_skylight);
+
+
 		list->Draw(index_count);
 
 

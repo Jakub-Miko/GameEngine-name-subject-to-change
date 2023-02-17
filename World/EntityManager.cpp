@@ -16,6 +16,7 @@
 #include <World/Components/CameraComponent.h>
 #include <World/Components/PrefabComponent.h>
 #include <World/Components/ShadowCasterComponent.h>
+#include <World/Components/SkylightComponent.h>
 #include <World/Components/UITextComponent.h>
 #include <World/Components/LightComponent.h>
 #include <World/Components/SerializableComponent.h>
@@ -385,7 +386,7 @@ std::string EntityManager::SerializeComponentsToJson(Entity entity)
 {
 	nlohmann::json json_object;
 
-	SerializeComponentToJson<TransformComponent, LabelComponent, MeshComponent, CameraComponent, LightComponent, ShadowCasterComponent, PhysicsComponent, SkeletalMeshComponent, AudioComponent, UITextComponent>(entity, json_object);
+	SerializeComponentToJson<TransformComponent, LabelComponent, MeshComponent, CameraComponent, LightComponent, ShadowCasterComponent, PhysicsComponent, SkeletalMeshComponent, AudioComponent, UITextComponent, SkylightComponent>(entity, json_object);
 	return json_object.dump();
 }
 
@@ -404,7 +405,7 @@ void EntityManager::DeserializeComponentsToTemplate(Entity target_entity, const 
 {
 	nlohmann::json json_object = nlohmann::json::parse(json_string);
 
-	DeserializeComponentToTemplate<TransformComponent, LabelComponent, MeshComponent, CameraComponent, LightComponent, ShadowCasterComponent, PhysicsComponent, SkeletalMeshComponent, AudioComponent, UITextComponent>(auxilary_registry, target_entity, json_object);
+	DeserializeComponentToTemplate<TransformComponent, LabelComponent, MeshComponent, CameraComponent, LightComponent, ShadowCasterComponent, PhysicsComponent, SkeletalMeshComponent, AudioComponent, UITextComponent, SkylightComponent>(auxilary_registry, target_entity, json_object);
 }
 
 
@@ -426,7 +427,7 @@ void EntityManager::DeserializeComponents(Entity target_entity, const std::strin
 	nlohmann::json json_object = nlohmann::json::parse(json_string);
 		
 	DeserializeComponent<TransformComponent, PrefabComponent, DynamicPropertiesComponent, LabelComponent, MeshComponent, CameraComponent, LightComponent, 
-		ShadowCasterComponent, PhysicsComponent, ScriptComponent, SkeletalMeshComponent, AudioComponent, UITextComponent>(target_entity, json_object);
+		ShadowCasterComponent, PhysicsComponent, ScriptComponent, SkeletalMeshComponent, AudioComponent, UITextComponent, SkylightComponent>(target_entity, json_object);
 }
 
 

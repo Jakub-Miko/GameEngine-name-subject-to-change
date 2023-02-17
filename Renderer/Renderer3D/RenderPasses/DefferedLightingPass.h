@@ -29,6 +29,7 @@ private:
 
 	void RenderShadowedLightsPoint(RenderPipelineResourceManager& resource_manager, RenderCommandList* list, const CameraComponent& camera, const render_props& props);
 	void RenderShadowedLightsDirectional(RenderPipelineResourceManager& resource_manager, RenderCommandList* list, const CameraComponent& camera, const render_props& props);
+	void RenderSkylights(RenderPipelineResourceManager& resource_manager, RenderCommandList* list, const CameraComponent& camera, const render_props& props);
 
 	void InitPostProcessingPassData();
 	std::string input_gbuffer;

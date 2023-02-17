@@ -184,7 +184,7 @@ std::shared_ptr<Mesh> MeshManager::LoadMeshFromFileAsync(const std::string& file
         mesh.skeleton.reset(new Skeleton);
     }
 
-    auto mesh_final = RegisterMesh(std::make_unique<Mesh>(mesh), relative_path);
+    auto mesh_final = RegisterMesh(std::make_shared<Mesh>(mesh), relative_path);
 
 
     auto async_queue = Application::GetAsyncDispather();

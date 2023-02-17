@@ -15,6 +15,7 @@ struct TextureManager_internal {
     std::shared_ptr<RenderBufferResource> const_buffer;
     std::shared_ptr<RenderFrameBufferResource> framebuffer;
     std::shared_ptr<RenderTexture2DCubemapResource> default_cubemap;
+    std::shared_ptr<RenderTexture2DCubemapResource> default_cubemap_diffuse;
 };
 
 
@@ -257,48 +258,75 @@ std::shared_ptr<ReflectionMap> TextureManager::GetReflectionMap(const std::strin
     if (fnd != reflection_maps.end()) {
         return fnd->second;
     }
-    lock.unlock();
-
-    auto base_texture = LoadTextureFromFile(path_in);
-
-    RenderTexture2DCubemapDescriptor cb_desc;
-    cb_desc.format = TextureFormat::RGB_32FLOAT;
-    cb_desc.res = REFLECTION_RES;
-    cb_desc.sampler = data->default_cubemap->GetBufferDescriptor().sampler;
-
-
-    std::shared_ptr<RenderTexture2DCubemapResource> converted_cubemap = RenderResourceManager::Get()->CreateTextureCubemap(cb_desc);
-
-
-    auto list = Renderer::Get()->GetRenderCommandList();
-    auto queue = Renderer::Get()->GetCommandQueue();
-    auto cube_mesh = MeshManager::Get()->LoadMeshFromFileAsync("asset:Box.mesh"_path);
-    
-    glm::mat4 light_views[6];
-    glm::mat4 projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.01f, 1000.0f);
-    light_views[0] = projection * glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f) + glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
-    light_views[1] = projection * glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f) + glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
-    light_views[2] = projection * glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f) + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    light_views[3] = projection * glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f) + glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f));
-    light_views[4] = projection * glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f) + glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f));
-    light_views[5] = projection * glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f) + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f));
-    RenderResourceManager::Get()->UploadDataToBuffer(list, data->const_buffer, glm::value_ptr(light_views[0]), sizeof(glm::mat4) * 6, 0);
-    RenderResourceManager::Get()->SetFrameBufferColorAttachment(data->framebuffer, converted_cubemap);
-    list->SetPipeline(data->reflection_convert_pipeline);
-    list->SetRenderTarget(data->framebuffer);
-    list->SetViewport(RenderViewport(glm::vec2(0.0f), glm::vec2(800, 800)));
-    list->SetConstantBuffer("mvp", data->const_buffer);
-    list->SetTexture2D("in_tex", base_texture);
-    list->SetVertexBuffer(cube_mesh->GetVertexBuffer());
-    list->SetIndexBuffer(cube_mesh->GetIndexBuffer());
-    list->Draw(cube_mesh->GetIndexCount());
-
-    queue->ExecuteRenderCommandList(list);
-
     auto result = std::make_shared<ReflectionMap>();
-    result->specular_maps.push_back(std::make_pair(0.0f,converted_cubemap));
-    
+    result->status = ReflectionMapStatus::LOADING;
+    reflection_maps.insert(std::make_pair(path, result));
+
+    auto async_queue = Application::GetAsyncDispather();
+    auto cube_mesh = MeshManager::Get()->LoadMeshFromFileAsync("asset:Box.mesh"_path);
+    //CubeMesh is loaded before submitting the task to guarantee the mesh will be ready by the time this task runs.
+    auto task = async_queue->CreateTask<ReflectionMap>([path_in,cube_mesh, this]() -> ReflectionMap {
+        auto base_texture = LoadTextureFromFile(path_in);
+        ReflectionMap result;
+        RenderTexture2DCubemapDescriptor cb_desc;
+        cb_desc.format = TextureFormat::RGB_32FLOAT;
+        cb_desc.res = REFLECTION_RES;
+        cb_desc.sampler = data->default_cubemap->GetBufferDescriptor().sampler;
+
+
+        std::shared_ptr<RenderTexture2DCubemapResource> converted_cubemap = RenderResourceManager::Get()->CreateTextureCubemap(cb_desc);
+        std::shared_ptr<RenderTexture2DCubemapResource> converted_cubemap_diffuse = RenderResourceManager::Get()->CreateTextureCubemap(cb_desc);
+
+
+        auto list = Renderer::Get()->GetRenderCommandList();
+        auto queue = Renderer::Get()->GetCommandQueue();
+
+
+        glm::mat4 light_views[6];
+        glm::mat4 projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.01f, 1000.0f);
+        light_views[0] = projection * glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f) + glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+        light_views[1] = projection * glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f) + glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+        light_views[2] = projection * glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f) + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        light_views[3] = projection * glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f) + glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f));
+        light_views[4] = projection * glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f) + glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+        light_views[5] = projection * glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f) + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+        RenderResourceManager::Get()->UploadDataToBuffer(list, data->const_buffer, glm::value_ptr(light_views[0]), sizeof(glm::mat4) * 6, 0);
+        RenderResourceManager::Get()->SetFrameBufferColorAttachment(data->framebuffer, converted_cubemap);
+        RenderResourceManager::Get()->SetFrameBufferColorAttachment(data->framebuffer, converted_cubemap_diffuse, 1);
+        list->SetPipeline(data->reflection_convert_pipeline);
+        list->SetRenderTarget(data->framebuffer);
+        list->SetViewport(RenderViewport(glm::vec2(0.0f), glm::vec2(800, 800)));
+        list->SetConstantBuffer("mvp", data->const_buffer);
+        list->SetTexture2D("in_tex", base_texture);
+        list->SetVertexBuffer(cube_mesh->GetVertexBuffer());
+        list->SetIndexBuffer(cube_mesh->GetIndexBuffer());
+        list->Draw(cube_mesh->GetIndexCount());
+
+        queue->ExecuteRenderCommandList(list);
+
+        result.specular_maps.push_back(std::make_pair(0.0f, converted_cubemap));
+              
+        result.diffuse_map = converted_cubemap_diffuse;
+              
+        result.status = ReflectionMapStatus::LOADED;
+
+        return result;
+        });
+
+    async_queue->Submit(task);
+
+
+    relection_map_load_future future;
+    future.future = task->GetFuture();
+    future.reflection_map = result;
+    future.path = path;
+
+    std::lock_guard<std::mutex> lock2(reflection_map_Load_queue_mutex);
+    reflection_map_Load_queue.push_back(future);
+
     return result;
+
+    
 }
 
 void TextureManager::Init()
@@ -388,7 +416,9 @@ TextureManager::TextureManager() : texture_Map(), texture_Map_mutex(), sampler_c
 
     RenderFrameBufferDescriptor frame_desc;
     data->default_cubemap = RenderResourceManager::Get()->CreateTextureCubemap(default_cubemap);
+    data->default_cubemap_diffuse = RenderResourceManager::Get()->CreateTextureCubemap(default_cubemap);
     frame_desc.color_attachments.push_back(data->default_cubemap);
+    frame_desc.color_attachments.push_back(data->default_cubemap_diffuse);
     data->framebuffer = RenderResourceManager::Get()->CreateFrameBuffer(frame_desc);
 
 }
@@ -400,4 +430,28 @@ void TextureManager::ClearTextureCache()
 
     texture_Map.clear();
     sampler_cache.clear();
+}
+
+void TextureManager::UpdateLoadedReflectionMaps()
+{
+    std::lock_guard<std::mutex> lock(reflection_map_Load_queue_mutex);
+    for (auto& loaded_reflection_map : reflection_map_Load_queue) {
+        if (!loaded_reflection_map.future.IsAvailable() || loaded_reflection_map.destroyed) continue;
+        try {
+            *(loaded_reflection_map.reflection_map) = std::move(loaded_reflection_map.future.GetValue());
+
+            loaded_reflection_map.destroyed = true;
+        }
+        catch (...) {
+            loaded_reflection_map.reflection_map->status = ReflectionMapStatus::ERROR;
+            std::lock_guard<std::mutex> lock(reflection_maps_mutex);
+            reflection_maps.erase(loaded_reflection_map.path);
+            loaded_reflection_map.destroyed = true;
+        }
+    }
+
+
+    while (!reflection_map_Load_queue.empty() && reflection_map_Load_queue.front().destroyed) {
+        reflection_map_Load_queue.pop_front();
+    }
 }

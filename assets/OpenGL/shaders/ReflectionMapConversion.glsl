@@ -64,8 +64,11 @@ void main() {
 
 uniform sampler2D in_tex;
 
-out vec4 color;
+layout(location = 0) out vec4 specular;
+layout(location = 1) out vec4 diffuse;
 in vec3 pos;
+
+#define PI 3.14159265
 
 vec2 VectorToPolar(vec3 in_vec) {
 	vec2 out_pol = vec2(atan(in_vec.z, in_vec.x), asin(in_vec.y));
@@ -75,7 +78,29 @@ vec2 VectorToPolar(vec3 in_vec) {
 }
 
 void main() {
-	color = vec4(texture(in_tex, VectorToPolar(normalize(pos))).xyz,1.0f);
+	vec3 normal = normalize(pos).xyz;
+	specular = vec4(texture(in_tex, VectorToPolar(normal)).xyz,1.0f);
+	vec3 irradiance = vec3(0.0);
+
+	vec3 up = vec3(0.0, 1.0, 0.0);
+	vec3 right = normalize(cross(up, normal));
+	up = normalize(cross(normal, right));
+
+	float sample_size = 0.1;
+	float sample_count = 0.0;
+	for (float phi = 0.0; phi < 2.0 * PI; phi += sample_size)
+	{
+		for (float theta = 0.0; theta < 0.5 * PI; theta += sample_size)
+		{
+			vec3 tangentSample = vec3(sin(theta) * cos(phi), sin(theta) * sin(phi), cos(theta));
+			vec3 sampleVec = tangentSample.x * right + tangentSample.y * up + tangentSample.z * normal;
+
+			irradiance += clamp(texture(in_tex, VectorToPolar(sampleVec)).rgb,0,1) * cos(theta) * sin(theta);
+			sample_count++;
+		}
+	}
+	irradiance = PI * irradiance * (1.0 / float(sample_count));
+	diffuse = vec4(irradiance,1.0);
 }
 
 #end

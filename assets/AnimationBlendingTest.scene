@@ -1,3 +1,222 @@
-@Section:Root
-{"Entities":[[5,3,{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":97.0,"y":1.0,"z":75.0},"translation":{"x":0.0,"y":-0.6433765888214111,"z":1.4899027347564697}},2,{"props":{"mode":0},"rotation":{"w":0.8440636992454529,"x":-0.45243793725967407,"y":0.2618180811405182,"z":-0.11961974203586578},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":-1.0171279907226563,"y":0.0,"z":0.0}},1,{"props":{"mode":0},"rotation":{"w":0.9790990948677063,"x":-0.20338548719882965,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":0.0,"y":10.0,"z":9.0}},1048576,{"props":{"mode":0},"rotation":{"w":0.8315905928611755,"x":0.0,"y":-0.555389404296875,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":0.0,"y":0.0,"z":-4.928701400756836}},4,{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":-6.412572383880615,"y":3.285698890686035,"z":-12.486501693725586}}],[1,1048576,{"file_path":"/assets/AnimationBlendPrefab.pre"}],[1,1048576,[{"name":"Skeleton","type":"entity","value":{"id":5}},{"name":"Blend_Amount","type":"float","value":1.0}]],[5,3,{"label":"Ground"},2,{"label":"Directional Light"},1,{"label":"Camera"},1048576,{"label":"Animation"},4,{"label":"Test Box"}],[2,3,{"material_path":"/assets/GroundMat.mat","path":"/assets/Box.mesh","visible":true},4,{"path":"/assets/Box.mesh","visible":true}],[1,1,{"aspect_ratio":1.7777777910232544,"fov":45.0,"zFar":934.0,"zNear":0.10000000149011612}],[1,2,{"attenuation":{"x":1.0,"y":0.10000000149011612,"z":0.05000000074505806},"color":{"w":1.0,"x":1.0,"y":1.0,"z":1.0},"type":0}],[1,2,{"far_plane":469.0,"near_plane":0.10000000149011612,"res_x":2000,"res_y":2000,"shadow_bias":0.15000000596046448}],[0],[0],[0],[0]],"SceneGraph":[{"id":4,"state":0},{"id":3,"state":0},{"id":2,"state":0},{"id":1,"state":0},{"id":1048576,"state":2}],"primary_entity":{"id":1}}
-@EndSection
+@Section:Root {
+  "Entities": [
+    [
+      5,
+      3,
+      {
+        "props": { "mode": 0 },
+        "rotation": {
+          "w": 1.0,
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0
+        },
+        "size": {
+          "x": 97.0,
+          "y": 1.0,
+          "z": 75.0
+        },
+        "translation": {
+          "x": 0.0,
+          "y": -0.6433765888214111,
+          "z": 1.4899027347564697
+        }
+      },
+      2,
+      {
+        "props": { "mode": 0 },
+        "rotation": {
+          "w": 0.8440636992454529,
+          "x": -0.45243793725967407,
+          "y": 0.2618180811405182,
+          "z": -0.11961974203586578
+        },
+        "size": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "translation": {
+          "x": -1.0171279907226563,
+          "y": 0.0,
+          "z": 0.0
+        }
+      },
+      1,
+      {
+        "props": { "mode": 0 },
+        "rotation": {
+          "w": 0.9790990948677063,
+          "x": -0.20338548719882965,
+          "y": 0.0,
+          "z": 0.0
+        },
+        "size": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "translation": {
+          "x": 0.0,
+          "y": 10.0,
+          "z": 9.0
+        }
+      },
+      1048576,
+      {
+        "props": { "mode": 0 },
+        "rotation": {
+          "w": 0.8315905928611755,
+          "x": 0.0,
+          "y": -0.555389404296875,
+          "z": 0.0
+        },
+        "size": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "translation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": -4.928701400756836
+        }
+      },
+      4,
+      {
+        "props": { "mode": 0 },
+        "rotation": {
+          "w": 1.0,
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0
+        },
+        "size": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "translation": {
+          "x": -6.412572383880615,
+          "y": 3.285698890686035,
+          "z": -12.486501693725586
+        }
+      }
+    ],
+    [
+      1,
+      1048576,
+      { "file_path": "/assets/AnimationBlendPrefab.pre" }
+    ],
+    [
+      1,
+      1048576,
+      [
+        {
+          "name": "Skeleton",
+          "type": "entity",
+          "value": { "id": 5 }
+        },
+        {
+          "name": "Blend_Amount",
+          "type": "float",
+          "value": 1.0
+        }
+      ]
+    ],
+    [
+      5,
+      3,
+      { "label": "Ground" },
+      2,
+      { "label": "Directional Light" },
+      1,
+      { "label": "Camera" },
+      1048576,
+      { "label": "Animation" },
+      4,
+      { "label": "Test Box" }
+    ],
+    [
+      2,
+      3,
+      {
+        "material_path": "/assets/GroundMat.mat",
+        "path": "/assets/Box.mesh",
+        "visible": true
+      },
+      4,
+      {
+        "path": "/assets/Box.mesh",
+        "visible": true
+      }
+    ],
+    [
+      1,
+      1,
+      {
+        "aspect_ratio": 1.7777777910232544,
+        "fov": 45.0,
+        "zFar": 934.0,
+        "zNear": 0.10000000149011612
+      }
+    ],
+    [
+      1,
+      2,
+      {
+        "attenuation": {
+          "x": 1.0,
+          "y": 0.10000000149011612,
+          "z": 0.05000000074505806
+        },
+        "color": {
+          "w": 1.0,
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "type": 0
+      }
+    ],
+    [
+      1,
+      2,
+      {
+        "far_plane": 469.0,
+        "near_plane": 0.10000000149011612,
+        "res_x": 2000,
+        "res_y": 2000,
+        "shadow_bias": 0.15000000596046448
+      }
+    ],
+    [ 0 ],
+    [ 0 ],
+    [ 0 ],
+    [ 0 ],
+    [ 0 ]
+  ],
+  "SceneGraph": [
+    {
+      "id": 4,
+      "state": 0
+    },
+    {
+      "id": 3,
+      "state": 0
+    },
+    {
+      "id": 2,
+      "state": 0
+    },
+    {
+      "id": 1,
+      "state": 0
+    },
+    {
+      "id": 1048576,
+      "state": 2
+    }
+  ],
+  "primary_entity": { "id": 1 }
+} @EndSection

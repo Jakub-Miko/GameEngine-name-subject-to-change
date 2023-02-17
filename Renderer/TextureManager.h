@@ -65,6 +65,8 @@ public:
 
 	void ReleaseTexture(const std::string& file_path);
 
+	void UpdateLoadedReflectionMaps();
+
 	std::shared_ptr<ReflectionMap> GetReflectionMap(const std::string& path);
 
 	static void Init();
@@ -88,6 +90,18 @@ private:
 	std::unordered_map<std::string, std::shared_ptr<ReflectionMap>> reflection_maps;
 	std::mutex sampler_cache_mutex;
 	std::unordered_map<TextureSamplerDescritor, std::shared_ptr<TextureSampler>> sampler_cache;
+
+	struct relection_map_load_future {
+		std::shared_ptr<ReflectionMap> reflection_map;
+		Future<ReflectionMap> future;
+		bool destroyed = false;
+		std::string path;
+	};
+
+
+	std::mutex reflection_map_Load_queue_mutex;
+	std::deque<relection_map_load_future> reflection_map_Load_queue;
+
 	TextureManager_internal* data = nullptr;
 
 	static TextureManager* instance;
