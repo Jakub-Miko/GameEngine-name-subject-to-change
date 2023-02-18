@@ -1,1 +1,15 @@
-{"parameters":[{"name":"Color","type":"TEXTURE","value":"assets/Vampire_diffuse.tex"},{"name":"Normal","type":"TEXTURE","value":"assets/Vampire_normal.tex"}],"shader":"shaders/GeometryPassShader.glsl"}
+{
+  "parameters": [
+    {
+      "name": "Color",
+      "type": "TEXTURE",
+      "value": "assets/Vampire_diffuse.tex"
+    },
+    {
+      "name": "Normal",
+      "type": "TEXTURE",
+      "value": "assets/Vampire_normal.tex"
+    }
+  ],
+  "shader": "shaders/GeometryPassShader.glsl"
+}

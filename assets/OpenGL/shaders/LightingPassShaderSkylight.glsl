@@ -16,17 +16,21 @@
 			"material_visible" : true,
 			"ranges" : [
 				{
-					"size" : 3,
+					"size" : 4,
 					"name" : "Textures",
 					"type" : "texture_2D",
 					"individual_names" : [
-						"Color", "Normal", "DepthBuffer"
+						"Color", "Normal","Roughness", "DepthBuffer"
 					]
 				}
 			]
 		},
 		{
 			"name" : "Diffuse",
+			"type" : "texture_2D_cubemap"
+		},
+		{
+			"name" : "Specular",
 			"type" : "texture_2D_cubemap"
 		}
 	],
@@ -101,8 +105,10 @@ layout(location = 0) out vec4 color_out;
 
 uniform sampler2D Color;
 uniform sampler2D Normal;
+uniform sampler2D Roughness;
 uniform sampler2D DepthBuffer;
 uniform samplerCube Diffuse;
+uniform samplerCube Specular;
 
 uniform conf{
 	mat4 inverse_view;
@@ -133,10 +139,13 @@ void main() {
 
 
 	vec4 color = vec4(texture(Color, coords.xy).xyz, 1.0);
+	float roughness = texture(Roughness, coords.xy).x;
 	vec3 normal = mat3(inverse_view) * reflect(normalize(vec3(light_volume_pos.xy / abs(light_volume_pos.z), -1.0)) , texture(Normal, coords.xy).xyz);
-	vec3 diffuse_contribution = texture(Diffuse, normalize(normal)).xyz;
 
-	color_out = vec4(color.xyz * Light_Color.xyz * Light_Color.w * diffuse_contribution,1.0);
+	vec3 diffuse_contribution = texture(Diffuse, normalize(normal)).xyz;
+	vec3 specular_contribution = textureLod(Specular, normalize(normal), roughness*4.0).xyz;
+
+	color_out = vec4(color.xyz * Light_Color.xyz * Light_Color.w * (diffuse_contribution + specular_contribution),1.0);
 }
 
 #end

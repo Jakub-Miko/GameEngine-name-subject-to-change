@@ -235,21 +235,21 @@ std::shared_ptr<RenderFrameBufferResource> OpenGLRenderResourceManager::CreateFr
 			std::vector<GLenum> attachments;
 			for (int i = 0; i < desc.color_attachments.size();i++) {
 				unsigned int render_id = 0;
-				switch (desc.color_attachments[i].get()->GetResourceType())
+				switch (desc.color_attachments[i].resource.get()->GetResourceType())
 				{
 				case RenderResourceType::RenderTexture2DResource:
-					render_id = static_cast<OpenGLRenderTexture2DResource*>(desc.color_attachments[i].get())->GetRenderId();
+					render_id = static_cast<OpenGLRenderTexture2DResource*>(desc.color_attachments[i].resource.get())->GetRenderId();
 					break;
 				case RenderResourceType::RenderTexture2DArrayResource:
-					render_id = static_cast<OpenGLRenderTexture2DArrayResource*>(desc.color_attachments[i].get())->GetRenderId();
+					render_id = static_cast<OpenGLRenderTexture2DArrayResource*>(desc.color_attachments[i].resource.get())->GetRenderId();
 					break;
 				case RenderResourceType::RenderTexture2DCubemapResource:
-					render_id = static_cast<OpenGLRenderTexture2DCubemapResource*>(desc.color_attachments[i].get())->GetRenderId();
+					render_id = static_cast<OpenGLRenderTexture2DCubemapResource*>(desc.color_attachments[i].resource.get())->GetRenderId();
 					break;
 				default:
 					throw std::runtime_error("Invalid Framebuffer Texture Type");
 				}
-				glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, render_id,0);
+				glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, render_id, desc.color_attachments[i].level);
 				attachments.push_back(GL_COLOR_ATTACHMENT0 + i);
 			}
 			if(attachments.empty()) {
@@ -261,22 +261,22 @@ std::shared_ptr<RenderFrameBufferResource> OpenGLRenderResourceManager::CreateFr
 			}
 
 			unsigned int render_id = 0;
-			if (desc.depth_stencil_attachment) {
-				switch (desc.depth_stencil_attachment.get()->GetResourceType())
+			if (desc.depth_stencil_attachment.resource) {
+				switch (desc.depth_stencil_attachment.resource.get()->GetResourceType())
 				{
 				case RenderResourceType::RenderTexture2DResource:
-					render_id = static_cast<OpenGLRenderTexture2DResource*>(desc.depth_stencil_attachment.get())->GetRenderId();
+					render_id = static_cast<OpenGLRenderTexture2DResource*>(desc.depth_stencil_attachment.resource.get())->GetRenderId();
 					break;
 				case RenderResourceType::RenderTexture2DArrayResource:
-					render_id = static_cast<OpenGLRenderTexture2DArrayResource*>(desc.depth_stencil_attachment.get())->GetRenderId();
+					render_id = static_cast<OpenGLRenderTexture2DArrayResource*>(desc.depth_stencil_attachment.resource.get())->GetRenderId();
 					break;
 				case RenderResourceType::RenderTexture2DCubemapResource:
-					render_id = static_cast<OpenGLRenderTexture2DCubemapResource*>(desc.depth_stencil_attachment.get())->GetRenderId();
+					render_id = static_cast<OpenGLRenderTexture2DCubemapResource*>(desc.depth_stencil_attachment.resource.get())->GetRenderId();
 					break;
 				default:
 					throw std::runtime_error("Invalid Framebuffer Texture Type");
 				}
-				glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, render_id, 0);
+				glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, render_id, desc.depth_stencil_attachment.level);
 			}
 			if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
 				throw std::runtime_error("FrameBuffer Initialization failed");
@@ -329,7 +329,9 @@ std::shared_ptr<RenderTexture2DCubemapResource> OpenGLRenderResourceManager::Cre
 					ptr->GetBufferDescriptor().res, 0, OpenGLUnitConverter::TextureFormatToGLFormat(ptr->GetBufferDescriptor().format),
 					OpenGLUnitConverter::TextureFormatToGLDataType(ptr->GetBufferDescriptor().format), NULL);
 			}
-
+			if (ptr->GetBufferDescriptor().generate_mips) {
+				glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+			}
 			const TextureSamplerDescritor& sampler = ptr->GetBufferDescriptor().sampler->GetDescriptor();
 
 			glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, OpenGLUnitConverter::TextureAddressModeToGLWrappingMode(sampler.AddressMode_U));
@@ -390,12 +392,12 @@ void OpenGLRenderResourceManager::CreateTexture2DDescriptor(const RenderDescript
 Future<read_pixel_data> OpenGLRenderResourceManager::GetPixelValue(std::shared_ptr<RenderFrameBufferResource> framebuffer, int color_attachment_index, float x, float y)
 {
 	if (framebuffer->GetBufferDescriptor().color_attachments.size() - 1 < color_attachment_index) throw std::runtime_error("Color attachment on a framebuffer doesn't exist");
-	if (framebuffer->GetBufferDescriptor().color_attachments[color_attachment_index]->GetResourceType() != RenderResourceType::RenderTexture2DResource)
+	if (framebuffer->GetBufferDescriptor().color_attachments[color_attachment_index].resource->GetResourceType() != RenderResourceType::RenderTexture2DResource)
 		throw std::runtime_error("Unsupported buffer attachment type")
 		;
 	std::shared_ptr<Promise<read_pixel_data>> data = std::make_shared<Promise<read_pixel_data>>();
 	Future<read_pixel_data> future = data->GetFuture();
-	std::shared_ptr<RenderTexture2DResource> texture = std::dynamic_pointer_cast<RenderTexture2DResource>(framebuffer->GetBufferDescriptor().color_attachments[color_attachment_index]);
+	std::shared_ptr<RenderTexture2DResource> texture = std::dynamic_pointer_cast<RenderTexture2DResource>(framebuffer->GetBufferDescriptor().color_attachments[color_attachment_index].resource);
 	int x_int = x * texture->GetBufferDescriptor().width;
 	int y_int = (1-y) * texture->GetBufferDescriptor().height;
 	OpenGLRenderCommandQueue* queue = static_cast<OpenGLRenderCommandQueue*>(Renderer::Get()->GetCommandQueue());
@@ -470,49 +472,15 @@ void OpenGLRenderResourceManager::CopyFrameBufferDepthAttachment(RenderCommandLi
 	static_cast<OpenGLRenderCommandList*>(list)->CopyFrameBufferDepthAttachment(source_frame_buffer, destination_frame_buffer);
 }
 
-void OpenGLRenderResourceManager::SetFrameBufferColorAttachment(std::shared_ptr<RenderFrameBufferResource> framebuffer, std::shared_ptr<RenderResource> new_attachment, int index)
+void OpenGLRenderResourceManager::SetFrameBufferColorAttachment(RenderCommandList* list, std::shared_ptr<RenderFrameBufferResource> framebuffer, std::shared_ptr<RenderResource> new_attachment, int index, int level)
 {
 	int size = framebuffer->GetBufferDescriptor().color_attachments.size();
 	if (index >= size) {
 		throw std::runtime_error("Color Attachment index out of range.");
 	}
-	GetAdjustableFrameBufferDescriptor(framebuffer).color_attachments[index] = new_attachment;
+	GetAdjustableFrameBufferDescriptor(framebuffer).color_attachments[index] = { level, new_attachment };
 
-	OpenGLRenderCommandQueue* queue = static_cast<OpenGLRenderCommandQueue*>(Renderer::Get()->GetCommandQueue());
-	RenderFrameBufferDescriptor desc = framebuffer->GetBufferDescriptor();
-	queue->ExecuteCustomCommand(new ExecutableCommandAdapter([desc, framebuffer, index] {
-		if (framebuffer->GetRenderState() != RenderState::COMMON) {
-			throw std::runtime_error("FrameBuffer needs to be in common Render State to change Color Attachments");
-		}
-		std::shared_ptr<OpenGLRenderFrameBufferResource> ptr = std::static_pointer_cast<OpenGLRenderFrameBufferResource>(framebuffer);
-		GLint restore_buffer;
-		glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &restore_buffer);
-
-		glBindFramebuffer(GL_FRAMEBUFFER, ptr->GetRenderId());
-		unsigned int render_id;
-		switch (desc.color_attachments[index].get()->GetResourceType())
-		{
-		case RenderResourceType::RenderTexture2DResource:
-			render_id = static_cast<OpenGLRenderTexture2DResource*>(desc.color_attachments[index].get())->GetRenderId();
-			break;
-		case RenderResourceType::RenderTexture2DArrayResource:
-			render_id = static_cast<OpenGLRenderTexture2DArrayResource*>(desc.color_attachments[index].get())->GetRenderId();
-			break;
-		case RenderResourceType::RenderTexture2DCubemapResource:
-			render_id = static_cast<OpenGLRenderTexture2DCubemapResource*>(desc.color_attachments[index].get())->GetRenderId();
-			break;
-		default:
-			throw std::runtime_error("Invalid Framebuffer Texture Type");
-		}
-		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + index, render_id, 0);
-
-		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-			throw std::runtime_error("FrameBuffer Color attachment change failed");
-		}
-
-		glBindFramebuffer(GL_FRAMEBUFFER, restore_buffer);
-	}));
-
+	static_cast<OpenGLRenderCommandList*>(list)->SetFrameBufferColorAttachment(framebuffer, new_attachment, index, level);
 }
 
 OpenGLRenderResourceManager::OpenGLRenderResourceManager() : ResourcePool(std::allocator<void>(),1024), ResourceMutex()

@@ -53,6 +53,9 @@ private:
     void UpdateTexture2DArrayResource(std::shared_ptr<RenderTexture2DArrayResource> resource, int layer, int level, void* data, size_t width, size_t height, size_t offset_x, size_t offset_y);
     void CopyFrameBufferDepthAttachment(std::shared_ptr<RenderFrameBufferResource> source_frame_buffer, std::shared_ptr<RenderFrameBufferResource> destination_frame_buffer);
     void UpdateTexture2DCubemapResource(std::shared_ptr<RenderTexture2DCubemapResource> resource, CubemapFace layer, int level, void* data, size_t width, size_t height, size_t offset_x, size_t offset_y);
+    void SetFrameBufferColorAttachment(std::shared_ptr<RenderFrameBufferResource> framebuffer, std::shared_ptr<RenderResource> new_attachment, int index, int level);
+
+
     virtual void Execute() override;
 
     OpenGLRenderCommand* m_Commands = nullptr;

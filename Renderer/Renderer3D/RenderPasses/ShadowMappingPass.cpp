@@ -80,7 +80,7 @@ void ShadowMappingPass::InitShadowComponent(Entity ent, LightType light_type)
 		//
 		//auto depth_text = RenderResourceManager::Get()->CreateTexture(depth_text_desc);
 
-		framebuffer_desc.depth_stencil_attachment = depth_array;
+		framebuffer_desc.depth_stencil_attachment = { 0,depth_array };
 	}
 	else if(light_type == LightType::POINT){
 		RenderTexture2DCubemapDescriptor depth_text_desc;
@@ -90,7 +90,7 @@ void ShadowMappingPass::InitShadowComponent(Entity ent, LightType light_type)
 		depth_text_desc.sampler = data->depth_sampler_point;
 
 		auto depth_text = RenderResourceManager::Get()->CreateTextureCubemap(depth_text_desc);
-		framebuffer_desc.depth_stencil_attachment = depth_text;
+		framebuffer_desc.depth_stencil_attachment = { 0, depth_text };
 	}
 
 

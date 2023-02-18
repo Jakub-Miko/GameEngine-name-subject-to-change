@@ -16,7 +16,12 @@ struct TextureManager_internal {
     std::shared_ptr<RenderFrameBufferResource> framebuffer;
     std::shared_ptr<RenderTexture2DCubemapResource> default_cubemap;
     std::shared_ptr<RenderTexture2DCubemapResource> default_cubemap_diffuse;
+    
+    std::shared_ptr<Pipeline> specular_generation_pipeline;
+    std::shared_ptr<RenderBufferResource> const_buffer_specular;
+    std::shared_ptr<TextureSampler> reflection_sampler;
 };
+
 
 
 TextureManager* TextureManager::instance = nullptr;
@@ -270,13 +275,15 @@ std::shared_ptr<ReflectionMap> TextureManager::GetReflectionMap(const std::strin
         ReflectionMap result;
         RenderTexture2DCubemapDescriptor cb_desc;
         cb_desc.format = TextureFormat::RGB_32FLOAT;
-        cb_desc.res = REFLECTION_RES;
         cb_desc.sampler = data->default_cubemap->GetBufferDescriptor().sampler;
-
+        cb_desc.res = REFLECTION_RES;
 
         std::shared_ptr<RenderTexture2DCubemapResource> converted_cubemap = RenderResourceManager::Get()->CreateTextureCubemap(cb_desc);
         std::shared_ptr<RenderTexture2DCubemapResource> converted_cubemap_diffuse = RenderResourceManager::Get()->CreateTextureCubemap(cb_desc);
-
+        cb_desc.res = SPECULAR_REFLECTION_RES;
+        cb_desc.generate_mips = true;
+        cb_desc.sampler = data->reflection_sampler;
+        std::shared_ptr<RenderTexture2DCubemapResource> converted_cubemap_specular = RenderResourceManager::Get()->CreateTextureCubemap(cb_desc);
 
         auto list = Renderer::Get()->GetRenderCommandList();
         auto queue = Renderer::Get()->GetCommandQueue();
@@ -291,8 +298,8 @@ std::shared_ptr<ReflectionMap> TextureManager::GetReflectionMap(const std::strin
         light_views[4] = projection * glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f) + glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f));
         light_views[5] = projection * glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f) + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f));
         RenderResourceManager::Get()->UploadDataToBuffer(list, data->const_buffer, glm::value_ptr(light_views[0]), sizeof(glm::mat4) * 6, 0);
-        RenderResourceManager::Get()->SetFrameBufferColorAttachment(data->framebuffer, converted_cubemap);
-        RenderResourceManager::Get()->SetFrameBufferColorAttachment(data->framebuffer, converted_cubemap_diffuse, 1);
+        RenderResourceManager::Get()->SetFrameBufferColorAttachment(list, data->framebuffer, converted_cubemap);
+        RenderResourceManager::Get()->SetFrameBufferColorAttachment(list,data->framebuffer, converted_cubemap_diffuse, 1);
         list->SetPipeline(data->reflection_convert_pipeline);
         list->SetRenderTarget(data->framebuffer);
         list->SetViewport(RenderViewport(glm::vec2(0.0f), glm::vec2(800, 800)));
@@ -301,10 +308,30 @@ std::shared_ptr<ReflectionMap> TextureManager::GetReflectionMap(const std::strin
         list->SetVertexBuffer(cube_mesh->GetVertexBuffer());
         list->SetIndexBuffer(cube_mesh->GetIndexBuffer());
         list->Draw(cube_mesh->GetIndexCount());
+        
+        RenderResourceManager::Get()->UploadDataToBuffer(list, data->const_buffer_specular, glm::value_ptr(light_views[0]), sizeof(glm::mat4) * 6, 0);
+        RenderResourceManager::Get()->SetFrameBufferColorAttachment(list, data->framebuffer, data->default_cubemap_diffuse, 1);
+        int i = 0;
+        for (float roughness = 0.0; roughness <= 1.0; roughness += 0.2f) {
+            RenderResourceManager::Get()->SetFrameBufferColorAttachment(list, data->framebuffer, converted_cubemap_specular, 0,i);
+            RenderResourceManager::Get()->UploadDataToBuffer(list, data->const_buffer_specular, &roughness, sizeof(float), sizeof(glm::mat4) * 6);
+            
+            unsigned int res = SPECULAR_REFLECTION_RES * std::pow(0.5, i);
+            list->SetPipeline(data->specular_generation_pipeline);
+            list->SetRenderTarget(data->framebuffer);
+            list->SetViewport(RenderViewport(glm::vec2(0.0f), glm::vec2(res, res)));
+            list->SetConstantBuffer("mvp", data->const_buffer_specular);
+            list->SetTexture2DCubemap("in_tex", converted_cubemap);
+            list->SetVertexBuffer(cube_mesh->GetVertexBuffer());
+            list->SetIndexBuffer(cube_mesh->GetIndexBuffer());
+            list->Draw(cube_mesh->GetIndexCount());
+            i++;
+        }
+
 
         queue->ExecuteRenderCommandList(list);
 
-        result.specular_maps.push_back(std::make_pair(0.0f, converted_cubemap));
+        result.specular_map = converted_cubemap_specular;
               
         result.diffuse_map = converted_cubemap_diffuse;
               
@@ -403,9 +430,22 @@ TextureManager::TextureManager() : texture_Map(), texture_Map_mutex(), sampler_c
 
     data->reflection_convert_pipeline = PipelineManager::Get()->CreatePipeline(pipeline_desc);
 
+    pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/SpecularMapGeneration.glsl");
+
+    data->specular_generation_pipeline = PipelineManager::Get()->CreatePipeline(pipeline_desc);
+
+    TextureSamplerDescritor reflection_sampler_desc;
+    reflection_sampler_desc.filter = TextureFilter::LINEAR_MIN_MAG_MIP;
+    data->reflection_sampler = TextureSampler::CreateSampler(reflection_sampler_desc);
+
+
     RenderBufferDescriptor const_reflection_buffer_desc(sizeof(glm::mat4)*6,RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
 
     data->const_buffer = RenderResourceManager::Get()->CreateBuffer(const_reflection_buffer_desc);
+
+    RenderBufferDescriptor specular_generation_buffer_desc(sizeof(glm::mat4) * 6 + sizeof(float), RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
+
+    data->const_buffer_specular = RenderResourceManager::Get()->CreateBuffer(specular_generation_buffer_desc);
 
     RenderTexture2DCubemapDescriptor default_cubemap;
     default_cubemap.format = TextureFormat::RGB_32FLOAT;
@@ -417,9 +457,11 @@ TextureManager::TextureManager() : texture_Map(), texture_Map_mutex(), sampler_c
     RenderFrameBufferDescriptor frame_desc;
     data->default_cubemap = RenderResourceManager::Get()->CreateTextureCubemap(default_cubemap);
     data->default_cubemap_diffuse = RenderResourceManager::Get()->CreateTextureCubemap(default_cubemap);
-    frame_desc.color_attachments.push_back(data->default_cubemap);
-    frame_desc.color_attachments.push_back(data->default_cubemap_diffuse);
+    frame_desc.color_attachments.push_back({ 0,data->default_cubemap });
+    frame_desc.color_attachments.push_back({ 0,data->default_cubemap_diffuse });
     data->framebuffer = RenderResourceManager::Get()->CreateFrameBuffer(frame_desc);
+
+
 
 }
 

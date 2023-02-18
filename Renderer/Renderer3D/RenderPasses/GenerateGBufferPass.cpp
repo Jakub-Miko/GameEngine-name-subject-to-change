@@ -43,6 +43,12 @@ void GenerateGBufferPass::InitPostProcessingPassData() {
 	color_normal_desc.width = Application::Get()->GetWindow()->GetProperties().resolution_x;
 	color_normal_desc.sampler = sampler;
 
+	RenderTexture2DDescriptor roughness_texture_desc;
+	roughness_texture_desc.format = TextureFormat::R_8FLOAT;
+	roughness_texture_desc.height = Application::Get()->GetWindow()->GetProperties().resolution_y;
+	roughness_texture_desc.width = Application::Get()->GetWindow()->GetProperties().resolution_x;
+	roughness_texture_desc.sampler = sampler;
+
 	RenderTexture2DDescriptor depth_desc;
 	depth_desc.format = TextureFormat::DEPTH24_STENCIL8_UNSIGNED_CHAR;
 	depth_desc.height = Application::Get()->GetWindow()->GetProperties().resolution_y;
@@ -52,13 +58,13 @@ void GenerateGBufferPass::InitPostProcessingPassData() {
 	auto texture_color_albedo = RenderResourceManager::Get()->CreateTexture(color_texture_desc);
 	auto texture_color_normal = RenderResourceManager::Get()->CreateTexture(color_normal_desc);
 	auto texture_depth_stencil = RenderResourceManager::Get()->CreateTexture(depth_desc);
-
+	auto roughness_texture = RenderResourceManager::Get()->CreateTexture(roughness_texture_desc);
 
 
 
 	RenderFrameBufferDescriptor framebuffer_desc;
-	framebuffer_desc.color_attachments = { texture_color_albedo,texture_color_normal };
-	framebuffer_desc.depth_stencil_attachment = texture_depth_stencil;
+	framebuffer_desc.color_attachments = { {0,texture_color_albedo},{0,texture_color_normal},{0,roughness_texture} };
+	framebuffer_desc.depth_stencil_attachment = { 0,texture_depth_stencil };
 
 #pragma region Render_IDs
 #ifdef EDITOR
@@ -69,7 +75,7 @@ void GenerateGBufferPass::InitPostProcessingPassData() {
 	id_desc.width = Application::Get()->GetWindow()->GetProperties().resolution_x;
 	id_desc.sampler = sampler;
 	auto id_buffer = RenderResourceManager::Get()->CreateTexture(id_desc);
-	framebuffer_desc.color_attachments.push_back(id_buffer);
+	framebuffer_desc.color_attachments.push_back({ 0,id_buffer });
 	data->id_texture = framebuffer_desc.color_attachments.size() - 1;
 #endif
 #pragma endregion

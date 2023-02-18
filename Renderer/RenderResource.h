@@ -202,6 +202,7 @@ protected:
 
 
 struct RenderTexture2DCubemapDescriptor {
+	bool generate_mips = false;
 	int res;
 	TextureFormat format;
 	std::shared_ptr<TextureSampler> sampler = nullptr;
@@ -234,8 +235,16 @@ struct RenderFrameBufferDescriptor {
 	std::shared_ptr<RenderTexture2DArrayResource> GetDepthAttachmentAsTextureArray();
 	std::shared_ptr<RenderTexture2DCubemapResource> GetDepthAttachmentAsTextureCubemap();
 
-	std::vector<std::shared_ptr<RenderResource>> color_attachments;
-	std::shared_ptr<RenderResource> depth_stencil_attachment;
+	int GetColorAttachmentMipLevel(int index);
+	int GetDepthAttachmentMipLevel();
+
+	struct RenderFrameBufferAttachment {
+		int level = 0;
+		std::shared_ptr<RenderResource> resource;
+	};
+
+	std::vector<RenderFrameBufferAttachment> color_attachments;
+	RenderFrameBufferAttachment depth_stencil_attachment;
 };
 
 class RenderFrameBufferResource : public RenderResource {

@@ -115,8 +115,8 @@ void DefferedLightingPass::InitPostProcessingPassData() {
 	auto texture_depth_stencil = RenderResourceManager::Get()->CreateTexture(depth_desc);
 
 	RenderFrameBufferDescriptor framebuffer_desc;
-	framebuffer_desc.color_attachments = { texture_color };
-	framebuffer_desc.depth_stencil_attachment = texture_depth_stencil;
+	framebuffer_desc.color_attachments = { {0,texture_color} };
+	framebuffer_desc.depth_stencil_attachment = { 0,texture_depth_stencil };
 
 	data->output_buffer_resource = RenderResourceManager::Get()->CreateFrameBuffer(framebuffer_desc);
 
@@ -473,11 +473,13 @@ void DefferedLightingPass::RenderSkylights(RenderPipelineResourceManager& resour
 			1.0f / Application::Get()->GetWindow()->GetProperties().resolution_y };
 
 		list->SetTexture2DCubemap("Diffuse", light.GetReflectionMap()->GetDiffuseMap());
+		list->SetTexture2DCubemap("Specular", light.GetReflectionMap()->GetSpecularMap());
 
 		data->mat_skylight->SetParameter("pixel_size", pixel_size);
 		data->mat_skylight->SetParameter("Light_Color", light.GetLightColor());
 		data->mat_skylight->SetParameter("Color", gbuffer->GetBufferDescriptor().GetColorAttachmentAsTexture(0));
 		data->mat_skylight->SetParameter("Normal", gbuffer->GetBufferDescriptor().GetColorAttachmentAsTexture(1));
+		data->mat_skylight->SetParameter("Roughness", gbuffer->GetBufferDescriptor().GetColorAttachmentAsTexture(2));
 		data->mat_skylight->SetParameter("DepthBuffer", gbuffer->GetBufferDescriptor().GetDepthAttachmentAsTexture());
 		data->mat_skylight->SetMaterial(list, data->pipeline_skylight);
 

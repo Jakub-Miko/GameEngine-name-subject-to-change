@@ -12,6 +12,10 @@
 #define REFLECTION_RES 800
 #endif
 
+#ifndef SPECULAR_REFLECTION_RES
+#define SPECULAR_REFLECTION_RES 512
+#endif
+
 enum class Texture_status : char {
 	UNINITIALIZED = 0, LOADING = 1, READY = 2
 };

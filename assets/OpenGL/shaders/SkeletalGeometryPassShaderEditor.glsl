@@ -22,11 +22,11 @@
 			"material_visible" : true,
 			"ranges" : [
 				{
-					"size" : 2,
+					"size" : 3,
 					"name" : "Textures",
 					"type" : "texture_2D",
 					"individual_names" : [
-						"Color", "Normal"
+						"Color", "Normal", "Roughness"
 					]
 				}
 			]
@@ -40,6 +40,14 @@
 					{
 						"name" : "Base_Color",
 						"type" : "VEC4"
+					},
+					{
+						"name" : "roughness_bias",
+						"type" : "FLOAT"
+					},
+					{
+						"name" : "roughness_gain",
+						"type" : "FLOAT"
 					}
 				]
 			}
@@ -58,7 +66,22 @@
 				}
 			},
 			{
+				"name": "roughness_bias",
+				"type" : "SCALAR",
+				"value" : 0.0
+			},
+			{
+				"name": "roughness_gain",
+				"type" : "SCALAR",
+				"value" : 1.0
+			},
+			{
 				"name": "Color",
+				"type" : "TEXTURE",
+				"value" : ""
+			},
+			{
+				"name": "Roughness",
 				"type" : "TEXTURE",
 				"value" : ""
 			},
@@ -101,6 +124,8 @@ uniform bones {
 
 uniform material{
 	vec4 Base_Color;
+	float roughness_bias;
+	float roughness_gain;
 };
 
 void main() {
@@ -147,13 +172,17 @@ in mat3 TBN;
 
 layout(location = 0) out vec4 color_out;
 layout(location = 1) out vec4 normal_out;
-layout(location = 2) out uint ids_out;
+layout(location = 2) out float roughness_out;
+layout(location = 3) out uint ids_out;
 
 uniform sampler2D Color;
 uniform sampler2D Normal;
+uniform sampler2D Roughness;
 
 uniform material{
 	vec4 Base_Color;
+	float roughness_bias;
+	float roughness_gain;
 };
 
 uniform mvp{
@@ -165,6 +194,7 @@ uniform mvp{
 void main() {
 	ids_out = entity_id;
 	color_out = vec4(texture(Color,uv_fragment).xyz,1) * Base_Color;
+	roughness_out = texture(Roughness, uv_fragment).x * roughness_gain + roughness_bias;
 	normal_out = normalize(vec4(TBN * (texture(Normal, uv_fragment).rgb * 2.0 - 1.0),0.0));
 }
 

@@ -16,11 +16,11 @@
 			"material_visible" : true,
 			"ranges" : [
 				{
-					"size" : 3,
+					"size" : 4,
 					"name" : "Textures",
 					"type" : "texture_2D",
 					"individual_names" : [
-						"Color", "Normal", "DepthBuffer"
+						"Color", "Normal", "Roughness", "DepthBuffer"
 					]
 				}
 			]
@@ -135,6 +135,7 @@ layout(location = 0) out vec4 color_out;
 
 uniform sampler2D Color;
 uniform sampler2D Normal;
+uniform sampler2D Roughness;
 uniform sampler2D DepthBuffer;
 
 uniform conf {

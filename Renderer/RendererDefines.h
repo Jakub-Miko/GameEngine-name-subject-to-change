@@ -100,7 +100,7 @@ enum class RenderPrimitiveType : unsigned char
 };
 
 enum class TextureFormat : unsigned char {
-	RGBA_UNSIGNED_CHAR = 0, RGB_UNSIGNED_CHAR = 1, DEPTH24_STENCIL8_UNSIGNED_CHAR = 2, RGB_32FLOAT = 3, RGBA_32FLOAT = 4, R_UNSIGNED_INT = 5, R_UNSIGNED_CHAR = 6
+	RGBA_UNSIGNED_CHAR = 0, RGB_UNSIGNED_CHAR = 1, DEPTH24_STENCIL8_UNSIGNED_CHAR = 2, RGB_32FLOAT = 3, RGBA_32FLOAT = 4, R_UNSIGNED_INT = 5, R_UNSIGNED_CHAR = 6, R_8FLOAT = 7
 };
 
 enum class TextureAddressMode : unsigned char {

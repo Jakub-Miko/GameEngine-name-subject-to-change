@@ -302,9 +302,9 @@ void OpenGLRenderCommandList::UpdateTexture2DArrayResource(std::shared_ptr<Rende
 
 void OpenGLRenderCommandList::CopyFrameBufferDepthAttachment(std::shared_ptr<RenderFrameBufferResource> source_frame_buffer, std::shared_ptr<RenderFrameBufferResource> destination_frame_buffer)
 {
-    if (!source_frame_buffer->GetBufferDescriptor().depth_stencil_attachment ||
-        source_frame_buffer->GetBufferDescriptor().depth_stencil_attachment->GetResourceType() != RenderResourceType::RenderTexture2DResource ||
-        destination_frame_buffer->GetBufferDescriptor().depth_stencil_attachment->GetResourceType() != RenderResourceType::RenderTexture2DResource) {
+    if (!source_frame_buffer->GetBufferDescriptor().depth_stencil_attachment.resource ||
+        source_frame_buffer->GetBufferDescriptor().depth_stencil_attachment.resource->GetResourceType() != RenderResourceType::RenderTexture2DResource ||
+        destination_frame_buffer->GetBufferDescriptor().depth_stencil_attachment.resource->GetResourceType() != RenderResourceType::RenderTexture2DResource) {
         throw std::runtime_error("Currently copy operations are only supported on RenderTexture2D attachments");
     };
     auto command = OpenGLRenderCommandAdapter([source_frame_buffer, destination_frame_buffer,this]() {
@@ -341,6 +341,45 @@ void OpenGLRenderCommandList::UpdateTexture2DCubemapResource(std::shared_ptr<Ren
             delete[] static_cast<char*>(data);
             throw std::runtime_error("Can't update an Uninitialized resource");
         }
+        });
+    PushCommand<decltype(command)>(command);
+}
+
+void OpenGLRenderCommandList::SetFrameBufferColorAttachment(std::shared_ptr<RenderFrameBufferResource> framebuffer, std::shared_ptr<RenderResource> new_attachment, int index, int level)
+{
+    RenderFrameBufferDescriptor desc = framebuffer->GetBufferDescriptor();
+    auto command = OpenGLRenderCommandAdapter([desc, framebuffer, index] {
+        if (framebuffer->GetRenderState() != RenderState::COMMON) {
+            throw std::runtime_error("FrameBuffer needs to be in common Render State to change Color Attachments");
+        }
+        std::shared_ptr<OpenGLRenderFrameBufferResource> ptr = std::static_pointer_cast<OpenGLRenderFrameBufferResource>(framebuffer);
+        GLint restore_buffer;
+        glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &restore_buffer);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, ptr->GetRenderId());
+        unsigned int render_id;
+        switch (desc.color_attachments[index].resource.get()->GetResourceType())
+        {
+        case RenderResourceType::RenderTexture2DResource:
+            render_id = static_cast<OpenGLRenderTexture2DResource*>(desc.color_attachments[index].resource.get())->GetRenderId();
+            break;
+        case RenderResourceType::RenderTexture2DArrayResource:
+            render_id = static_cast<OpenGLRenderTexture2DArrayResource*>(desc.color_attachments[index].resource.get())->GetRenderId();
+            break;
+        case RenderResourceType::RenderTexture2DCubemapResource:
+            render_id = static_cast<OpenGLRenderTexture2DCubemapResource*>(desc.color_attachments[index].resource.get())->GetRenderId();
+            break;
+        default:
+            throw std::runtime_error("Invalid Framebuffer Texture Type");
+        }
+        glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + index, render_id, desc.color_attachments[index].level);
+
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+            auto erro = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+            throw std::runtime_error("FrameBuffer Color attachment change failed");
+        }
+
+        glBindFramebuffer(GL_FRAMEBUFFER, restore_buffer);
         });
     PushCommand<decltype(command)>(command);
 }
