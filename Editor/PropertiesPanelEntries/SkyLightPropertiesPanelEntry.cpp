@@ -48,6 +48,10 @@ void SkyLightPropertiesPanelEntry::RenderPanel(Entity ent)
 		memcpy_s(buffer,200 , comp.GetReflectionMapPath().c_str(), comp.GetReflectionMapPath().size() + 1);
 	}
 
+	bool show_bg = comp.IsBackgroundVisible();
+	if (ImGui::Checkbox("Show Background", &show_bg)) {
+		comp.SetShowBackground(show_bg);
+	}
 
 
 }

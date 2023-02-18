@@ -14,7 +14,7 @@ public:
 		SetReflectionMap(path);
 	
 	}
-	SkylightComponent(const SkylightComponent& other) : color(other.color) {
+	SkylightComponent(const SkylightComponent& other) : color(other.color), show_background(other.show_background) {
 		SetReflectionMap(other.reflection_map_path);
 	}
 	void SetLightColor(glm::vec4 color) {
@@ -33,6 +33,14 @@ public:
 		return reflection_map_path;
 	}
 
+	void SetShowBackground(bool enable) {
+		show_background = enable;
+	}
+
+	bool IsBackgroundVisible() const {
+		return show_background;
+	}
+
 	void SetReflectionMap(const std::string& path) {
 		reflection_map_path = path;
 		reflection_map = TextureManager::Get()->GetReflectionMap(path);
@@ -40,6 +48,7 @@ public:
 
 private:
 	glm::vec4 color;
+	bool show_background = false;
 	std::shared_ptr<ReflectionMap> reflection_map = nullptr;
 	std::string reflection_map_path = "";
 };
@@ -57,12 +66,14 @@ public:
 inline void to_json(nlohmann::json& j, const SkylightComponent& p) {
 	j["reflection_map_path"] = p.GetReflectionMapPath();
 	j["color"] = p.GetLightColor();
+	j["show_background"] = p.IsBackgroundVisible();
 
 }
 
 inline void from_json(const nlohmann::json& j, SkylightComponent& p) {
 	p.SetLightColor(j["color"].get<glm::vec4>());
 	p.SetReflectionMap(j["reflection_map_path"].get<std::string>());
+	p.SetShowBackground(j["show_background"].get<bool>());
 }
 
 #pragma endregion

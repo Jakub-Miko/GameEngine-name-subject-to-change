@@ -46,10 +46,10 @@
       {
         "props": { "mode": 0 },
         "rotation": {
-          "w": 1.0,
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0
+          "w": 0.9134520292282104,
+          "x": -4.078255066986003e-09,
+          "y": -0.15244491398334503,
+          "z": -0.37731415033340454
         },
         "size": {
           "x": 1.0,
@@ -57,9 +57,9 @@
           "z": 1.0
         },
         "translation": {
-          "x": -10.228400230407715,
-          "y": 1.0835931301116943,
-          "z": -1.399999976158142
+          "x": -2.9894680976867676,
+          "y": 12.243279457092285,
+          "z": 7.526573657989502
         }
       },
       9,
@@ -277,27 +277,27 @@
         {
           "name": "Skeleton",
           "type": "entity",
-          "value": { "id": 14 }
+          "value": { "id": 18 }
         },
         {
           "name": "Mesh",
           "type": "entity",
-          "value": { "id": 11 }
+          "value": { "id": 17 }
         },
         {
           "name": "Mesh2",
           "type": "entity",
-          "value": { "id": 10 }
+          "value": { "id": 14 }
         },
         {
           "name": "Point Light",
           "type": "entity",
-          "value": { "id": 2 }
+          "value": { "id": 11 }
         },
         {
           "name": "Audio",
           "type": "entity",
-          "value": { "id": 0 }
+          "value": { "id": 10 }
         }
       ],
       16,
@@ -305,12 +305,12 @@
         {
           "name": "Camera",
           "type": "entity",
-          "value": { "id": 18 }
+          "value": { "id": 0 }
         },
         {
           "name": "Sphere",
           "type": "entity",
-          "value": { "id": 17 }
+          "value": { "id": 2 }
         },
         {
           "name": "Speed",
@@ -346,6 +346,7 @@
       6,
       12,
       {
+        "material_path": "/assets/TestMatt.mat",
         "path": "/assets/Box.mesh",
         "visible": true
       },
@@ -399,10 +400,10 @@
           "z": 0.05000000074505806
         },
         "color": {
-          "w": 1.0,
+          "w": 0.5099999904632568,
           "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
+          "y": 0.5900226831436157,
+          "z": 0.0803213119506836
         },
         "type": 0
       },
@@ -500,11 +501,12 @@
       {
         "color": {
           "w": 1.0,
-          "x": 1.0,
-          "y": 1.0,
+          "x": 0.5341365337371826,
+          "y": 0.7923259139060974,
           "z": 1.0
         },
-        "reflection_map_path": "asset:HDR_texture.tex"
+        "reflection_map_path": "asset:HDR_texture.tex",
+        "show_background": true
       }
     ]
   ],

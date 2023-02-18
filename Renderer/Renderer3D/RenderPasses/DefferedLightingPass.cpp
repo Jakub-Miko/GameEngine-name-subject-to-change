@@ -46,6 +46,7 @@ struct DefferedLightingPass::internal_data {
 	std::shared_ptr<Pipeline> pipeline_skylight;
 	std::shared_ptr<Pipeline> pipeline_shadowed_point;
 	std::shared_ptr<Pipeline> pipeline_shadowed_directional;
+	std::shared_ptr<Pipeline> pipeline_bg;
 	std::shared_ptr<RenderFrameBufferResource> output_buffer_resource;
 	std::shared_ptr<Mesh> sphere_mesh;
 	std::shared_ptr<Mesh> card_mesh;
@@ -57,6 +58,7 @@ struct DefferedLightingPass::internal_data {
 	std::shared_ptr<RenderBufferResource> constant_scene_buf_skylight;
 	std::shared_ptr<RenderBufferResource> constant_scene_buf_shadowed_point;
 	std::shared_ptr<RenderBufferResource> constant_scene_buf_shadowed_directional;
+	std::shared_ptr<RenderBufferResource> constant_scene_buf_bg;
 	bool initialized = false;
 };
 
@@ -86,6 +88,13 @@ void DefferedLightingPass::InitPostProcessingPassData() {
 	data->pipeline_shadowed_point = PipelineManager::Get()->CreatePipeline(pipeline_desc);
 	pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/LightingPassShaderShadowedDirectional.glsl");
 	data->pipeline_shadowed_directional = PipelineManager::Get()->CreatePipeline(pipeline_desc);
+
+	
+	pipeline_desc.flags = PipelineFlags::ENABLE_DEPTH_TEST;
+	pipeline_desc.depth_function = DepthFunction::LESS_EQUAL;
+	pipeline_desc.enable_depth_clip = false;
+	pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/CubeMapRender.glsl");
+	data->pipeline_bg = PipelineManager::Get()->CreatePipeline(pipeline_desc);
 
 	TextureSamplerDescritor sampler_desc;
 	sampler_desc.AddressMode_U = TextureAddressMode::BORDER;
@@ -131,6 +140,9 @@ void DefferedLightingPass::InitPostProcessingPassData() {
 
 	RenderBufferDescriptor const_desc_skylight(sizeof(glm::mat4) * 2 + sizeof(float) * 2, RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
 	data->constant_scene_buf_skylight = RenderResourceManager::Get()->CreateBuffer(const_desc_skylight);
+
+	RenderBufferDescriptor const_desc_bg(sizeof(glm::mat4), RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
+	data->constant_scene_buf_bg = RenderResourceManager::Get()->CreateBuffer(const_desc_bg);
 
 	data->sphere_mesh = MeshManager::Get()->LoadMeshFromFileAsync("asset:Sphere.mesh"_path);
 	data->mat = MaterialManager::Get()->CreateMaterial("shaders/LightingPassShader.glsl");
@@ -448,6 +460,9 @@ void DefferedLightingPass::RenderSkylights(RenderPipelineResourceManager& resour
 	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_skylight, &depth_constant_b, sizeof(float), sizeof(glm::mat4) * 2 + sizeof(float));
 	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_skylight, &inverse_projection, sizeof(glm::mat4), sizeof(glm::mat4));
 	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_skylight, &inverse_view, sizeof(glm::mat4), 0);
+	
+	SkylightComponent* bg_comp = nullptr;
+
 	for (auto& ent : skylight_view) {
 		Entity entity = Entity((uint32_t)ent);
 		auto& transform_component = world.GetComponent<TransformComponent>(entity);
@@ -483,9 +498,24 @@ void DefferedLightingPass::RenderSkylights(RenderPipelineResourceManager& resour
 		data->mat_skylight->SetParameter("DepthBuffer", gbuffer->GetBufferDescriptor().GetDepthAttachmentAsTexture());
 		data->mat_skylight->SetMaterial(list, data->pipeline_skylight);
 
+		if (light.IsBackgroundVisible()) {
+			bg_comp = &light;
+		}
 
 		list->Draw(index_count);
-
-
 	}
+
+	if (bg_comp) {
+		view_matrix[3] = glm::vec4(0.0f);
+		view_matrix[3][3] = 1.0f;
+		glm::mat4 inverse_view_projection = glm::inverse(props.projection * view_matrix);
+		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_bg, &inverse_view_projection, sizeof(glm::mat4), 0);
+		list->SetPipeline(data->pipeline_bg);
+		list->SetTexture2DCubemap("in_tex", bg_comp->GetReflectionMap()->GetSpecularMap());
+		list->SetVertexBuffer(data->card_mesh->GetVertexBuffer());
+		list->SetConstantBuffer("mvp", data->constant_scene_buf_bg);
+		list->SetIndexBuffer(data->card_mesh->GetIndexBuffer());
+		list->Draw(data->card_mesh->GetIndexCount());
+	}
+
 }
