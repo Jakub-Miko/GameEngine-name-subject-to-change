@@ -33,6 +33,7 @@
 
 
 
+
 function OnCollision(event)
 if(event.num_collision_points == 0) then return end
 local distance = event.collision_points[1].y - GetChildWorldTranslation("CollisionBox").y + GetChildScale("CollisionBox").y
@@ -45,15 +46,15 @@ end
 
 function OnStart()
 	SetAngularFactor("CollisionBox",vec3(0.0,0.0,0.0))
-	CreateProperty_FLOAT("Speed",1.0)
+	CreateProperty_FLOAT("Speed",20.0)
 	CreateProperty_INT("SetPrimaryOnSpawn",0.0)
 	if(GetProperty_INT("SetPrimaryOnSpawn") == 1) then
 		SetPrimaryEntity(GetEntityByName("Camera"))
 	end
-	CreateProperty_FLOAT("JumpForce",1.0)
+	CreateProperty_FLOAT("JumpForce",200.0)
 	CreateProperty_FLOAT("Friction",1.0)
-	CreateProperty_FLOAT("MaxVel",1.0)
-	CreateProperty_FLOAT("Blend_Amount",1.0)
+	CreateProperty_FLOAT("MaxVel",10.0)
+	CreateProperty_FLOAT("Blend_Amount",1.4)
 	SetProperty_VEC3("Heading",vec3(0.0,0.0,-1.0))
 	CreateProperty_INT("Collides_bottom",0)
 	local friction = GetProperty_FLOAT("Friction")
@@ -172,6 +173,7 @@ function OnUpdate(delta_time)
 	SetProperty_INT("Collides_bottom",0)
 
 end
+
 
 
 

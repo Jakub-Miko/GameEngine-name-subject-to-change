@@ -29,6 +29,7 @@
 
 
 
+
 function OnStart()
 
 CreateProperty_FLOAT("Speed",1.0)
@@ -86,32 +87,10 @@ function OnUpdate(delta_time)
 		local rot = quat_lookat(-vec3(pos), vec3({0,1,0}))
 	
 		SetRotation(rot)
-
-		local test = RayCast(GetTranslation(), rotate_vec3(vec3(0,0,-1), GetRotation()))
-
-		local min = 5000
-		local trans = vec3(0,0,0)
-		local ent = 0
-		for val in test() do
-			if val.hit_ent.id ~= GetEntityByName("Sphere").id then
-			if GetVector3Length(val.hit_pos - GetTranslation()) < min then
-				min = GetVector3Length(val.hit_pos - GetTranslation()) 
-				trans = val.hit_pos
-				ent = val.hit_ent
-			end
-			end
-		end
-		if(test.size >2) then
-			trans = trans - GetTranslation()
-			local params = CreateCallParameters()
-			AddCallParameterString(params,"Yo!!!")
-			AddCallParameterEntity(params,GetCurrentEntity())
-			CallEntityFunctionWithArguments(ent, "Print_hello", params)
-			SetChildTranslation("Sphere", vec3(0,0,-GetVector3Length(trans)))
-		end
 	end
 
 end
+
 
 
 

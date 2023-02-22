@@ -358,7 +358,7 @@ Material::Material(std::shared_ptr<MaterialTemplate> material_template) : materi
 			}
 		}
 	}
-
+	status = Material_status::OK;
 }
 
 void Material::SetParameterTypeDefault(MaterialParameter& param)

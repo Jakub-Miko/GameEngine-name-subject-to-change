@@ -1,0 +1,1 @@
+{"parameters":[{"name":"roughness_gain","type":"SCALAR","value":0.0}],"shader":"shaders/GeometryPassShader.glsl"}

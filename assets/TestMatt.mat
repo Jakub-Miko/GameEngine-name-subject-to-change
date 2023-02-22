@@ -1,1 +1,1 @@
-{"parameters":[{"name":"roughness_gain","type":"SCALAR","value":0.0}],"shader":"shaders/GeometryPassShader.glsl"}
+{"parameters":[{"name":"Base_Color","type":"VEC4","value":{"w":1.0,"x":0.20000000298023224,"y":0.20000000298023224,"z":0.20000000298023224}},{"name":"roughness_gain","type":"SCALAR","value":0.0}],"shader":"shaders/GeometryPassShader.glsl"}

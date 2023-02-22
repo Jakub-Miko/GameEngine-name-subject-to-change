@@ -312,7 +312,7 @@ void PhysicsEngine::CreationPhase()
 		if(CreatePhysicsObject(ent.entity)) ent.processed = true;
 	}
 
-	while (!creation_queue.empty() && creation_queue.back().processed) {
+	while (!creation_queue.empty() && creation_queue.front().processed) {
 		creation_queue.pop_front();
 	}
 
