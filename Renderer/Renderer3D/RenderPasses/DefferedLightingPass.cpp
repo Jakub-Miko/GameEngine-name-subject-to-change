@@ -141,7 +141,7 @@ void DefferedLightingPass::InitPostProcessingPassData() {
 	RenderBufferDescriptor const_desc_skylight(sizeof(glm::mat4) * 2 + sizeof(float) * 2, RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
 	data->constant_scene_buf_skylight = RenderResourceManager::Get()->CreateBuffer(const_desc_skylight);
 
-	RenderBufferDescriptor const_desc_bg(sizeof(glm::mat4), RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
+	RenderBufferDescriptor const_desc_bg(sizeof(glm::mat4) + sizeof(glm::vec4), RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
 	data->constant_scene_buf_bg = RenderResourceManager::Get()->CreateBuffer(const_desc_bg);
 
 	data->sphere_mesh = MeshManager::Get()->LoadMeshFromFileAsync("asset:Sphere.mesh"_path);
@@ -295,6 +295,7 @@ void DefferedLightingPass::RenderLights(RenderPipelineResourceManager& resource_
 		data->mat->SetParameter("Light_Color", light.GetLightColor());
 		data->mat->SetParameter("Color", gbuffer->GetBufferDescriptor().GetColorAttachmentAsTexture(0));
 		data->mat->SetParameter("Normal", gbuffer->GetBufferDescriptor().GetColorAttachmentAsTexture(1));
+		data->mat->SetParameter("Roughness", gbuffer->GetBufferDescriptor().GetColorAttachmentAsTexture(2));
 		data->mat->SetParameter("DepthBuffer", gbuffer->GetBufferDescriptor().GetDepthAttachmentAsTexture());
 		data->mat->SetParameter("light_type", (int)light.type);
 		data->mat->SetParameter("attenuation", glm::vec4(light.GetAttenuation(), 0.0f));
@@ -353,6 +354,7 @@ void DefferedLightingPass::RenderShadowedLightsPoint(RenderPipelineResourceManag
 		data->mat_shadowed_point->SetParameter("Light_Color", light.GetLightColor());
 		data->mat_shadowed_point->SetParameter("Color", gbuffer->GetBufferDescriptor().GetColorAttachmentAsTexture(0));
 		data->mat_shadowed_point->SetParameter("Normal", gbuffer->GetBufferDescriptor().GetColorAttachmentAsTexture(1));
+		data->mat_shadowed_point->SetParameter("Roughness", gbuffer->GetBufferDescriptor().GetColorAttachmentAsTexture(2));
 		data->mat_shadowed_point->SetParameter("DepthBuffer", gbuffer->GetBufferDescriptor().GetDepthAttachmentAsTexture());
 		data->mat_shadowed_point->SetParameter("attenuation", glm::vec4(light.GetAttenuation(), 0.0f));
 		data->mat_shadowed_point->SetMaterial(list, data->pipeline_shadowed_point);
@@ -417,6 +419,7 @@ void DefferedLightingPass::RenderShadowedLightsDirectional(RenderPipelineResourc
 		data->mat_shadowed_directional->SetParameter("Light_Color", light.GetLightColor());
 		data->mat_shadowed_directional->SetParameter("Color", gbuffer->GetBufferDescriptor().GetColorAttachmentAsTexture(0));
 		data->mat_shadowed_directional->SetParameter("Normal", gbuffer->GetBufferDescriptor().GetColorAttachmentAsTexture(1));
+		data->mat_shadowed_directional->SetParameter("Roughness", gbuffer->GetBufferDescriptor().GetColorAttachmentAsTexture(2));
 		data->mat_shadowed_directional->SetParameter("DepthBuffer", gbuffer->GetBufferDescriptor().GetDepthAttachmentAsTexture());
 		data->mat_shadowed_directional->SetParameter("attenuation", glm::vec4(light.GetAttenuation(), 0.0f));
 		data->mat_shadowed_directional->SetMaterial(list, data->pipeline_shadowed_directional);
@@ -508,8 +511,10 @@ void DefferedLightingPass::RenderSkylights(RenderPipelineResourceManager& resour
 	if (bg_comp) {
 		view_matrix[3] = glm::vec4(0.0f);
 		view_matrix[3][3] = 1.0f;
+		auto color_in = bg_comp->GetLightColor();
 		glm::mat4 inverse_view_projection = glm::inverse(props.projection * view_matrix);
 		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_bg, &inverse_view_projection, sizeof(glm::mat4), 0);
+		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_bg, glm::value_ptr(color_in), sizeof(glm::vec4), sizeof(glm::mat4));
 		list->SetPipeline(data->pipeline_bg);
 		list->SetTexture2DCubemap("in_tex", bg_comp->GetReflectionMap()->GetSpecularMap());
 		list->SetVertexBuffer(data->card_mesh->GetVertexBuffer());

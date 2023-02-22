@@ -25,6 +25,7 @@ out vec3 screen_pos;
 
 uniform mvp{
 	mat4 inverse_view_projection;
+	vec4 color_bias;
 };
 
 
@@ -47,11 +48,12 @@ in vec3 screen_pos;
 
 uniform mvp{
 	mat4 inverse_view_projection;
+	vec4 color_bias;
 };
 
 
 void main() {
-	color = textureLod(in_tex, normalize(screen_pos), 0.0);
+	color = vec4(color_bias.xyz, 1.0)*textureLod(in_tex, normalize(screen_pos), 0.0) * color_bias.w;
 }
 
 #end

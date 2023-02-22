@@ -181,13 +181,20 @@ void main() {
 
 	vec4 color = vec4(texture(Color, coords.xy).xyz, 1.0);
 	vec3 normal = texture(Normal, coords.xy).xyz;
+	float roughness = texture(Roughness, coords.xy).x;
 	float attenuation_factor = 1;
 
 	if (light_type == 1) {
 		float distance = length(light_pos - view_space_pos);
 		attenuation_factor = 1.0 / (attenuation_constants.x + (attenuation_constants.y * distance) + attenuation_constants.z * (distance * distance));
 	}
-	color_out = vec4(color.xyz * Light_Color.xyz * attenuation_factor * Light_Color.w * (0.1 + max(0, dot(normal, -light_direction))), 1.0);
+
+	float diffuse_contribution = 0.5f * (0.1 + max(0, dot(normal, -light_direction)));
+	float specular_contribution = 0.5f * pow(clamp(dot(normal, (-light_direction + vec3(0,0,-1))/2.0 ),0,1), 1+((1-roughness)*32));
+
+	float contribution = diffuse_contribution + specular_contribution;
+
+	color_out = vec4(color.xyz * Light_Color.xyz * attenuation_factor * Light_Color.w * contribution, 1.0);
 }
 
 #end

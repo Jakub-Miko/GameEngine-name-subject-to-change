@@ -204,10 +204,17 @@ void main() {
 
 	vec4 color = vec4(texture(Color, coords.xy).xyz, 1.0);
 	vec3 normal = texture(Normal, coords.xy).xyz;
+	float roughness = texture(Roughness, coords.xy).x;
 	float attenuation_factor = 1;
 
+
+	float diffuse_contribution = 0.5f * (0.1 + max(0, dot(normal, -light_direction)));
+	float specular_contribution = 0.5f * pow(clamp(dot(normal, (-light_direction + vec3(0, 0, 1)) / 2.0), 0, 1), 1 + ((1 - roughness) * 32));
+
+	float contribution = diffuse_contribution + specular_contribution;
+
 	float shadows = calculate_shadows(view_space_pos, coords);
-	color_out = vec4(shadows * color.xyz * Light_Color.xyz * attenuation_factor * Light_Color.w * (0.1 + max(0, dot(normal, -light_direction))),1.0);
+	color_out = vec4(shadows * color.xyz * Light_Color.xyz * attenuation_factor * Light_Color.w * contribution,1.0);
 }
 
 #end
