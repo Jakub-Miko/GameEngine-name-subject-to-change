@@ -16,10 +16,10 @@ It provides these basic features:
   
 ## License
 
-This software is distributed under an MIT license.
+This software is distributed under a MIT license.
 As such I do not guarantee the functionality of this project. I can also not be held liable for any damages caused by the use of this software. 
 
-You are free to use this project as you wish however be aware that it ustilized dependecies using the LGPL licese, for which you need to provide a way for users to link against their own versions of these libraries. Further more any code change to these libraries needs to be made publically available. As long as you don't change the source code of these libraries just making sure that you link them dynamically suffices, which is the default behaviour.
+You are free to use this project as you wish. However be aware that it utilized dependencies using the LGPL license, for which you need to provide a way for users to link against their own versions of these libraries. Furthermore, any code changes to these libraries need to be made publicly available. As long as you don't change the source code of these libraries, making sure to link them dynamically suffices, which is the default behaviour.
 
 These LGPL libraries are:
   * OpenAL-soft
