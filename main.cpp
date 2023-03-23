@@ -17,7 +17,7 @@ int main() {
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
     _CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_DEBUG);
 #endif
-        BEGIN_PROFILING("Profile", "C:/Users/mainm/Desktop/GameEngine/PseudoCode/Profile_Result1.json");
+        BEGIN_PROFILING("Profile", "C:/Users/mainm/Desktop/GameEngine/GameEngine-name-subject-to-change/Profile_Result1.json");
         try {
             Application::Init();
             Application::Get()->SetInitialGameState(std::make_shared<SandboxState>());
