@@ -11,11 +11,11 @@
 #include <Core/FrameMultiBufferResource.h>
 
 
-template<typename ... Ts>
-struct Overload : Ts ... {
+template<typename ... Ts>                             
+struct Overload : Ts ... { 
     using Ts::operator() ...;
 };
-template<class... Ts> Overload(Ts...)->Overload<Ts...>;
+template<class... Ts> Overload(Ts...) -> Overload<Ts...>;
 
 struct Render_Box_data {
     
@@ -233,12 +233,12 @@ inline void BoundingVolumeRender(World& world) {
             BoundingVolumeComponent& box = world.GetComponent<BoundingVolumeComponent>(entity);
             TransformComponent& transform = world.GetComponent<TransformComponent>(entity);
             std::visit(Overload{
-                [&transform,&world](BoundingBox& box) {
+                [&transform,&world](const BoundingBox& box) {
                     CameraComponent& camera_comp = world.GetComponent<CameraComponent>(world.GetPrimaryEntity());
                     TransformComponent& camera_trans = world.GetComponent<TransformComponent>(world.GetPrimaryEntity());
                     Render_Box(box, transform.TransformMatrix, camera_comp, camera_trans.TransformMatrix);
                 },
-                [](auto& everything) {
+                [&transform,&world](const auto& everything) {
 
                 }
 

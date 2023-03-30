@@ -103,16 +103,16 @@ void MaterialEditor::RenderWinow(MaterialEditorWindow& window, int current_index
 				else {
 					window.text_buffers[i] = new char[200];
 					buffer = window.text_buffers[i];
-					strcpy_s(buffer, 200, current_path.c_str());
+					strcpy(buffer, current_path.c_str());
 				}
 				if (enabled != enable_item) {
-					strcpy_s(buffer, 200, current_path.c_str());
+					strcpy(buffer, current_path.c_str());
 				}
 				pressed = ImGui::InputText("value", buffer,200, ImGuiInputTextFlags_EnterReturnsTrue);
 				ImGui::SameLine();
 				if (ImGui::Button("Set Selected")) {
 					std::string file_exp_path = FileManager::Get()->GetRelativeFilePath(Editor::Get()->GetSelectedFilePath());
-					strcpy_s(buffer, 200, file_exp_path.c_str());
+					strcpy(buffer, file_exp_path.c_str());
 					pressed = true;
 				}
 				if (ImGui::Button("Reload") || pressed) {

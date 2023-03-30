@@ -26,8 +26,8 @@ extern "C" {
 	} RayCastingResultPhysicsArray_L;
 
 
-	RayCastingResultArray_L RayCast_L(vec3 or, vec3 dir) {
-		glm::vec3 origin = *reinterpret_cast<glm::vec3*>(&or);
+	RayCastingResultArray_L RayCast_L(vec3 orientation, vec3 dir) {
+		glm::vec3 origin = *reinterpret_cast<glm::vec3*>(&orientation);
 		glm::vec3 direction = *reinterpret_cast<glm::vec3*>(&dir);
 		std::vector<RayCastResult> results;
 		Application::GetWorld().GetSpatialIndex().RayCast(Application::GetWorld(), Ray{ origin, direction }, results);

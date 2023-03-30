@@ -34,7 +34,7 @@ void SkyLightPropertiesPanelEntry::RenderPanel(Entity ent)
 	
 	if (strlen(buffer) == 0) {
 		buffer[0] = '\0';
-		memcpy_s(buffer,200 ,comp.GetReflectionMapPath().c_str(), comp.GetReflectionMapPath().size() + 1);
+		memcpy(buffer,comp.GetReflectionMapPath().c_str(), comp.GetReflectionMapPath().size() + 1);
 	}
 	bool HDR_path = ImGui::InputText("HDR path", buffer, 200, ImGuiInputTextFlags_EnterReturnsTrue);
 	if (ImGui::Button("Reload##hdr") || HDR_path) {
@@ -45,7 +45,7 @@ void SkyLightPropertiesPanelEntry::RenderPanel(Entity ent)
 	ImGui::SameLine();
 	if (ImGui::Button("Set Selected##hdr")) {
 		comp.SetReflectionMap(FileManager::Get()->GetRelativeFilePath(Editor::Get()->GetSelectedFilePath()));
-		memcpy_s(buffer,200 , comp.GetReflectionMapPath().c_str(), comp.GetReflectionMapPath().size() + 1);
+		memcpy(buffer, comp.GetReflectionMapPath().c_str(), comp.GetReflectionMapPath().size() + 1);
 	}
 
 	bool show_bg = comp.IsBackgroundVisible();

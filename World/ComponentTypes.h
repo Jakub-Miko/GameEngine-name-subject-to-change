@@ -24,6 +24,6 @@
 #include <World/Components/AudioComponent.h>
 #include <Core/TypeList.h>
 
-using Component_Types = typename TypeList<BoundingVolumeComponent, CameraComponent, ConstructionComponent, DefferedUpdateComponent, DynamicPropertiesComponent, InitializationComponent
-	,KeyPressedScriptComponent, LabelComponent, LightComponent, LoadedComponent, MeshComponent, MousePressedScriptComponent, PrefabComponent, ScriptComponent, SerializableComponent, SquareComponent,
+using Component_Types = TypeList<BoundingVolumeComponent, CameraComponent, ConstructionComponent, DefferedUpdateComponent, DynamicPropertiesComponent, InitializationComponent,
+	KeyPressedScriptComponent, LabelComponent, LightComponent, LoadedComponent, MeshComponent, MousePressedScriptComponent, PrefabComponent, ScriptComponent, SerializableComponent, SquareComponent,
 	TransformComponent, ShadowCasterComponent, PhysicsComponent, SkeletalMeshComponent, AudioComponent, UITextComponent, SkylightComponent>;

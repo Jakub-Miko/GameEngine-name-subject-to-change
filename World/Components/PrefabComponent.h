@@ -3,6 +3,8 @@
 #include <World/Entity.h>
 #include <FileManager.h>
 
+class World;
+
 enum class PrefabStatus : char {
 	OK = 0, ERROR = 1, UNINITIALIZED = 2
 };

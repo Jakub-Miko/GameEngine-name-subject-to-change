@@ -1,5 +1,5 @@
 #include "TextRenderer.h"
-#include <FreeType/freetype.h>
+#include <freetype/freetype.h>
 #include <AsyncTaskDispatcher.h>
 #include <filesystem>
 #include <FileManager.h>

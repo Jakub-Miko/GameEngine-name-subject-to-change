@@ -67,7 +67,7 @@ public:
 
 	template<typename T>
 	const T& GetPersistentResource(const std::string& name) const {
-		return pipeline->GetPersistentResource<T>(name);
+		return pipeline->template GetPersistentResource<T>(name);
 	}
 
 	template<typename T>
@@ -135,7 +135,7 @@ private:
 		std::any data;
 		RenderPassResourceDescriptor desc;
 	};
-	RenderPipeline::RenderPipeline(std::vector<RenderPassData>&& render_passes, std::unordered_map<std::string, RenderPipelineResourceData_internal>&& resources,
+	RenderPipeline(std::vector<RenderPassData>&& render_passes, std::unordered_map<std::string, RenderPipelineResourceData_internal>&& resources,
 		std::unordered_map<std::string, RenderPipelineResourceData_internal>&& persistent_resources);
 	std::unordered_map<std::string, RenderPipelineResourceData_internal> resources;
 	std::unordered_map<std::string, RenderPipelineResourceData_internal> persistent_resources;

@@ -23,7 +23,7 @@ public:
 
     template<typename T>
     const T& GetPersistentResource(const std::string& name) const {
-        return deffered_pipeline->GetPersistentResource<T>(name);
+        return deffered_pipeline->template GetPersistentResource<T>(name);
     }
 
 private:

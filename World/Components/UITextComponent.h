@@ -8,6 +8,8 @@
 #include <Renderer/MeshManager.h>
 #include <Renderer/RenderResource.h>
 
+class World;
+
 class UITextComponent {
 	RUNTIME_TAG("UITextComponent")
 public:

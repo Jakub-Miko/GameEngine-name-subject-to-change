@@ -1,3 +1,4 @@
+#include <math.h>
 #include "PhysicsEngine.h"
 #include <Events/CollisionEvent.h>
 #include <Events/MeshChangedEvent.h>
@@ -507,7 +508,7 @@ bool PhysicsEngine::CreatePhysicsObject(Entity entity)
 		glm::vec3 box_size = bounding_box.GetBoxSize() / 2.0f;
 		float radius;
 		float height;
-		radius = std::sqrtf(std::pow(box_size.x,2)+ std::pow(box_size.z, 2));
+		radius = sqrtf(std::pow(box_size.x,2)+ std::pow(box_size.z, 2));
 		height = 2*box_size.y;
 
 		CustomOuterCapsule* capsule_collision_shape = new CustomOuterCapsule(radius, height);

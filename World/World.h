@@ -53,27 +53,27 @@ constexpr bool has_ComponentInitProxy_v = has_ComponentInitProxy<T>::value;
 template<typename T>
 struct HasOnCreate
 {
-	template<typename T, T> struct helper;
-	template<typename T> static std::uint8_t check(helper<void(*)(World&,Entity), &T::OnCreate>*); 
-	template<typename T> static std::uint16_t check(...);
+	template<typename U, U> struct helper;
+	template<typename U> static std::uint8_t check(helper<void(*)(World&,Entity), &U::OnCreate>*); 
+	template<typename U> static std::uint16_t check(...);
 	static const bool value = sizeof(check<T>(0)) == sizeof(std::uint8_t);
 };
 
 template<typename T>
 struct HasOnDestroy
 {
-	template<typename T, T> struct helper;
-	template<typename T> static std::uint8_t check(helper<void(*)(World&, Entity), &T::OnDestroy>*);
-	template<typename T> static std::uint16_t check(...);
+	template<typename U, U> struct helper;
+	template<typename U> static std::uint8_t check(helper<void(*)(World&, Entity), &U::OnDestroy>*);
+	template<typename U> static std::uint16_t check(...);
 	static const bool value = sizeof(check<T>(0)) == sizeof(std::uint8_t);
 };
 
 template<typename T>
 struct HasOnUpdate
 {
-	template<typename T, T> struct helper;
-	template<typename T> static std::uint8_t check(helper<void(*)(World&, Entity), &T::OnUpdate>*);
-	template<typename T> static std::uint16_t check(...);
+	template<typename U, U> struct helper;
+	template<typename U> static std::uint8_t check(helper<void(*)(World&, Entity), &U::OnUpdate>*);
+	template<typename U> static std::uint16_t check(...);
 	static const bool value = sizeof(check<T>(0)) == sizeof(std::uint8_t);
 };
 
@@ -146,13 +146,13 @@ public:
 	auto RegisterComponentType() -> std::enable_if_t<has_ComponentInitProxy_v<T>> {
 		m_ECS.storage<T>();
 		if constexpr (HasOnCreate<ComponentInitProxy<T>>::value) {
-			m_ECS.on_construct<T>().connect<&World::ConstructComponent<T, &ComponentInitProxy<T>::OnCreate>>(*this);
+			m_ECS.on_construct<T>().template connect<&World::ConstructComponent<T, &ComponentInitProxy<T>::OnCreate>>(*this);
 		}
 		if constexpr (HasOnDestroy<ComponentInitProxy<T>>::value) {
-			m_ECS.on_destroy<T>().connect<&World::DestroyComponent<T, &ComponentInitProxy<T>::OnDestroy>>(*this);
+			m_ECS.on_destroy<T>().template connect<&World::DestroyComponent<T, &ComponentInitProxy<T>::OnDestroy>>(*this);
 		}
 		if constexpr (HasOnUpdate<ComponentInitProxy<T>>::value) {
-			m_ECS.on_destroy<T>().connect<&World::UpdateComponent<T, &ComponentInitProxy<T>::OnUpdate>>(*this);
+			m_ECS.on_destroy<T>().template connect<&World::UpdateComponent<T, &ComponentInitProxy<T>::OnUpdate>>(*this);
 		}
 	}
 

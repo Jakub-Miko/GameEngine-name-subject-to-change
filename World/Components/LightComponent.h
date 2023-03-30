@@ -3,6 +3,8 @@
 #include <Core/RuntimeTag.h>
 #include <Core/UnitConverter.h>
 
+class World;
+
 template<typename T>
 class ComponentInitProxy;
 

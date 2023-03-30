@@ -265,7 +265,7 @@ void Octree::VisualizeBoxes()
 	auto& trans = Application::GetWorld().GetComponent<TransformComponent>(ent);
 
 	for (auto ent : entity_list) {
-		auto& bounding_var = BoundingVolumeComponent::GetBoundingVolume(ent);
+		auto bounding_var = BoundingVolumeComponent::GetBoundingVolume(ent);
 		auto& transform = Application::GetWorld().GetComponent<TransformComponent>(ent);
 		if (std::holds_alternative<BoundingBox>(bounding_var)) {
 			BoundingBox box = std::get<BoundingBox>(bounding_var);

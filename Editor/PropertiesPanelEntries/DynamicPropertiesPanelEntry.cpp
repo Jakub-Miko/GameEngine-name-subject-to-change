@@ -94,7 +94,7 @@ void DynamicPropertiesPanelEntry::RenderPanel(Entity ent)
 				else if constexpr (std::is_same_v<T, std::string>) {
 					if (ImGui::TreeNode(prop.first.c_str())) {
 						char text[200];
-						strcpy_s(text, value.data());
+						strcpy(text, value.data());
 						bool changed = ImGui::InputText(" Value", text, 200);
 						if (changed && text != value) {
 							props.m_Properties[prop.first] = text;

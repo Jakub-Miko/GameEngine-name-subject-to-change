@@ -7,6 +7,7 @@
 class btCollisionObject;
 class btCollisionShape;
 class PhysicsComponent;
+class World;
 
 template<typename T>
 class ComponentInitProxy;

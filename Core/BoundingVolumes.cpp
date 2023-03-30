@@ -319,7 +319,7 @@ OverlapResult BoundingSphere::OverlapsPlane(const Plane& plane, const glm::mat4&
 		} 
 		return OverlapResult::PARTIAL_OVERLAP;
 	}
-	return OverlapResult::NO_OVERLAP();
+	return OverlapResult::NO_OVERLAP;
 }
 
 bool BoundingSphere::OverlapsBox(const BoundingBox& box, const glm::mat4& model_matrix) const
@@ -461,7 +461,7 @@ OverlapResult BoundingPointLightSphere::OverlapsPlane(const Plane& plane, const 
 		}
 		return OverlapResult::PARTIAL_OVERLAP;
 	}
-	return OverlapResult::NO_OVERLAP();
+	return OverlapResult::NO_OVERLAP;
 }
 
 bool BoundingPointLightSphere::OverlapsBox(const BoundingBox& box, const glm::mat4& model_matrix) const

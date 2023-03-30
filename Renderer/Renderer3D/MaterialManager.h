@@ -117,8 +117,7 @@ public:
     template<typename T>
     void SetParameter(const std::string& name, T value);
 
-    template<>
-    void SetParameter<std::shared_ptr<RenderTexture2DResource>>(const std::string& name, std::shared_ptr<RenderTexture2DResource> value);
+    void SetParameter(const std::string& name, std::shared_ptr<RenderTexture2DResource> value);
 
     void SetParameter(const std::string& name, std::shared_ptr<RenderTexture2DResource> value, const std::string path);
 
@@ -192,8 +191,7 @@ inline void Material::SetParameter(const std::string& name, T value) {
 }
 
 
-template<>
-inline void Material::SetParameter<std::shared_ptr<RenderTexture2DResource>>(const std::string& name, std::shared_ptr<RenderTexture2DResource> value) {
+inline void Material::SetParameter(const std::string& name, std::shared_ptr<RenderTexture2DResource> value) {
     auto& param = parameters[material_template->GetMaterialTemplateParameterIndex(name)];
     param.flags |= MaterialParameter_flags::DIRTY;
     param.flags &= ~MaterialParameter_flags::DEFAULT;
