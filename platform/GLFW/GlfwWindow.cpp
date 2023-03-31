@@ -34,7 +34,8 @@ void GlfwWindow::PreInit()
     if (!glfwInit())
         Application::Get()->Exit();
     
-    glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
+    //this causes issues on linux since it will automatically maximize all undocked windows.
+    //glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
 
 #ifdef EDITOR
     int x, y;
@@ -44,6 +45,7 @@ void GlfwWindow::PreInit()
     y = monitor->height;
 
     m_Window = glfwCreateWindow(x, y, m_Properties.name.c_str(), NULL, NULL);
+    glfwMaximizeWindow(m_Window);
 #else 
     m_Window = glfwCreateWindow(m_Properties.resolution_x, m_Properties.resolution_y, m_Properties.name.c_str(), NULL, NULL);
 #endif
