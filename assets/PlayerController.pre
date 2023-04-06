@@ -34,6 +34,7 @@
 
 
 
+
 function OnCollision(event)
 if(event.num_collision_points == 0) then return end
 local distance = event.collision_points[1].y - GetChildWorldTranslation("CollisionBox").y + GetChildScale("CollisionBox").y
@@ -76,8 +77,11 @@ function OnUpdate(delta_time)
 	local velocity = GetLinearVelocity("CollisionBox")
 	local speed = current_speed - GetVector3Length(velocity);
 
+	if(current_speed < 0.0) then SetProperty_FLOAT("Speed",0.0) end
+
 	local blend_coefficient =  GetProperty_FLOAT("Blend_Amount")
 	local blend_control = (GetVector3Length(velocity) / current_speed) * 3 * blend_coefficient
+	if(current_speed == 0.0) then blend_control = 0.0 end 
 	local blend = blend_control
 	local blend_1_2 = math.min(blend,1)
 	local blend_2_3 = math.max(0,blend-1)
@@ -86,7 +90,6 @@ function OnUpdate(delta_time)
 	ChangeLayerWeight("Skel",2,blend_1_2)
 	ChangeLayerWeight("Skel",3,blend_2_3)
 	ChangeLayerWeight("Skel",4,blend_3_4)
-
 	local planar_velocity = vec3(velocity.x, 0.0, velocity.z)
 	local heading_blend = math.max(0,math.min(1,math.abs(GetVector3Length(planar_velocity)*6)-0.05))
 	local current_heading = GetProperty_VEC3("Heading");
@@ -118,7 +121,7 @@ function OnUpdate(delta_time)
 	
 		local move = false;	
 		if(IsKeyPressed(KeyCode.KEY_W)) then
-			
+			print(speed)
 			local translation =  rotate_vec3(vec3(0,0,-1*speed), current_rot) * vec3(1.0,0.0,1.0)
 			ApplyForce("CollisionBox",translation)
 			move = true;
@@ -173,6 +176,7 @@ function OnUpdate(delta_time)
 	SetProperty_INT("Collides_bottom",0)
 
 end
+
 
 
 

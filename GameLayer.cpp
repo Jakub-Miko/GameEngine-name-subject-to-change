@@ -67,6 +67,7 @@ void GameLayer::OnUpdate(float delta_time) {
     AudioSystem::Get()->UpdateLoadedSounds();
     AnimationManager::Get()->UpdateLoadedAnimations(); // MultiThread
     TextureManager::Get()->UpdateLoadedReflectionMaps();
+    world.UpdateTransformMatricies(); // we need to update transforms before and after physics update, so the physics engine knows current possitions of our objects.
     world.GetPhysicsEngine().UpdatePhysics(delta_time);
     ScriptSystemCollisionCallback(world);
     world.UpdateTransformMatricies();
