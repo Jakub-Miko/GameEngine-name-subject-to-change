@@ -96,7 +96,7 @@ std::shared_ptr<RenderTexture2DResource> OpenGLRenderResourceManager::CreateText
 			if (sampler.comparison_mode != DepthComparisonMode::DISABLED) {
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, OpenGLUnitConverter::DepthComparisonModeToGLCompareFunc(sampler.comparison_mode));
 			}
-			if (ptr->GetBufferDescriptor().format == TextureFormat::R_UNSIGNED_CHAR) {
+			if (ptr->GetBufferDescriptor().format == TextureFormat::R_UNSIGNED_CHAR || ptr->GetBufferDescriptor().format == TextureFormat::R_UNSIGNED_CHAR_NORM) {
 				glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 			}
 

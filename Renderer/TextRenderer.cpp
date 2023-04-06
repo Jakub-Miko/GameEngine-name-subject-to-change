@@ -58,6 +58,14 @@ TextRenderer::TextRenderer() : m_Internal_data(new Internal_data), m_font_object
         throw std::runtime_error("FreeType could not be initialized");
     }
     TextureSamplerDescritor sampler_desc;
+    sampler_desc.AddressMode_U = TextureAddressMode::BORDER;
+    sampler_desc.AddressMode_V = TextureAddressMode::BORDER;
+    sampler_desc.AddressMode_W = TextureAddressMode::BORDER;
+    sampler_desc.border_color = glm::vec4(0.0f);
+    sampler_desc.filter = TextureFilter::LINEAR_MIN_MAG;
+    sampler_desc.comparison_mode = DepthComparisonMode::DISABLED;
+    sampler_desc.max_LOD = 1;
+
     m_Internal_data->sampler = TextureSampler::CreateSampler(sampler_desc);
     PipelineDescriptor pipeline_desc;
     pipeline_desc.blend_equation = BlendEquation::ADD;
@@ -277,7 +285,7 @@ TextRenderer::font_load_future_payload TextRenderer::LoadFontFromFileImpl(const 
     payload.object.glypth_data = std::vector<FontObject::GlyphData>();
     payload.object.glypth_data.reserve(128);
     RenderTexture2DDescriptor texture_desc;
-    texture_desc.format = TextureFormat::R_UNSIGNED_CHAR;
+    texture_desc.format = TextureFormat::R_UNSIGNED_CHAR_NORM;
     texture_desc.sampler = m_Internal_data->sampler;
     int width = std::ceil(std::sqrt(LOAD_FONT_SYMBOLS_COUNT));
     int height = std::ceil(LOAD_FONT_SYMBOLS_COUNT / width) +1;
@@ -311,6 +319,7 @@ TextRenderer::font_load_future_payload TextRenderer::LoadFontFromFileImpl(const 
 
         offset_x += max_size;
     }
+
     payload.object.max_size = max_size;
     queue->ExecuteRenderCommandList(list);
     queue->Signal(payload.texture_atlas_fence, 1);
