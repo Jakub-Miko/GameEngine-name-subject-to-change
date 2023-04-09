@@ -24,8 +24,6 @@ Viewport::Viewport()
     viewport_resolution_x = window_props.resolution_x;
     viewport_resolution_y = window_props.resolution_y;
 
-    viewport_size = glm::vec2(viewport_resolution_x,viewport_resolution_y) / 2.0f;
-
     auto fb_sampler = TextureSampler::CreateSampler(smp_desc);
 
     RenderTexture2DDescriptor color_desc;
@@ -61,7 +59,6 @@ Viewport::~Viewport()
 void Viewport::Render()
 {
 
-
     if (entity_pick_request.IsValid() && entity_pick_request.IsAvailable()) {
         read_pixel_data data = entity_pick_request.GetValue();
         Entity select = Entity(std::get<unsigned int>(data));
@@ -95,34 +92,8 @@ void Viewport::Render()
 
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0,0 });
 
-    ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
-    ImGui::SetWindowSize(ImVec2{ viewport_size.x,viewport_size.y + ImGui::GetCurrentWindow()->TitleBarHeight() });
-    if (ImGui::IsWindowFocused() && Input::Get()->IsKeyPressed_Editor(KeyCode::KEY_DELETE) && Application::GetWorld().EntityExists(Editor::Get()->GetSelectedEntity())) {
-        Application::GetWorld().RemoveEntity(Editor::Get()->GetSelectedEntity());
-        Editor::Get()->SetSelectedEntity(Entity());
-    }
-
-    if (ImGui::IsWindowFocused() && Input::Get()->IsKeyPressed_Editor(KeyCode::KEY_C) && Input::Get()->IsKeyPressed_Editor(KeyCode::KEY_LEFT_CONTROL) && Application::GetWorld().EntityExists(Editor::Get()->GetSelectedEntity())) {
-        Editor::Get()->CopyEntity(Editor::Get()->GetSelectedEntity());
-    }
-
-    if (ImGui::IsWindowFocused() && Input::Get()->IsKeyPressed_Editor(KeyCode::KEY_V) && Input::Get()->IsKeyPressed_Editor(KeyCode::KEY_LEFT_CONTROL)) {
-        if (!is_paste_pressed) {
-            if (Application::GetWorld().EntityExists(Editor::Get()->GetSelectedEntity())) {
-                Editor::Get()->PasteEntity(Editor::Get()->GetSelectedEntity());
-                is_paste_pressed = true;
-            }
-            else if (Editor::Get()->GetSelectedEntity() == Entity()) {
-                Editor::Get()->PasteEntity(Application::GetWorld().GetSceneGraph()->GetRootNode()->entity);
-                is_paste_pressed = true;
-            }
-        }
-    }
-    else {
-        is_paste_pressed = false;
-    }
-
-    Editor::Get()->is_viewport_focused = ImGui::IsWindowFocused();
+    ImGui::Begin("Viewport Settings", nullptr);
+    
 
     bool phys_active = Application::GetWorld().GetPhysicsEngine().IsPhysicsActive();
     if (phys_active) ImGui::BeginDisabled();
@@ -222,6 +193,48 @@ void Viewport::Render()
     ImGui::InputFloat("Rotation Snap", &rotation_snap);
     ImGui::Checkbox("Enable Snap", &snap_enabled);
     ImGui::PopItemWidth();
+
+    ImGui::End();
+    ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_NoCollapse);
+    if (ImGui::IsWindowFocused() && Input::Get()->IsKeyPressed_Editor(KeyCode::KEY_DELETE) && Application::GetWorld().EntityExists(Editor::Get()->GetSelectedEntity())) {
+        Application::GetWorld().RemoveEntity(Editor::Get()->GetSelectedEntity());
+        Editor::Get()->SetSelectedEntity(Entity());
+    }
+
+    if (ImGui::IsWindowFocused() && Input::Get()->IsKeyPressed_Editor(KeyCode::KEY_C) && Input::Get()->IsKeyPressed_Editor(KeyCode::KEY_LEFT_CONTROL) && Application::GetWorld().EntityExists(Editor::Get()->GetSelectedEntity())) {
+        Editor::Get()->CopyEntity(Editor::Get()->GetSelectedEntity());
+    }
+
+    if (ImGui::IsWindowFocused() && Input::Get()->IsKeyPressed_Editor(KeyCode::KEY_V) && Input::Get()->IsKeyPressed_Editor(KeyCode::KEY_LEFT_CONTROL)) {
+        if (!is_paste_pressed) {
+            if (Application::GetWorld().EntityExists(Editor::Get()->GetSelectedEntity())) {
+                Editor::Get()->PasteEntity(Editor::Get()->GetSelectedEntity());
+                is_paste_pressed = true;
+            }
+            else if (Editor::Get()->GetSelectedEntity() == Entity()) {
+                Editor::Get()->PasteEntity(Application::GetWorld().GetSceneGraph()->GetRootNode()->entity);
+                is_paste_pressed = true;
+            }
+        }
+    }
+    else {
+        is_paste_pressed = false;
+    }
+
+    Editor::Get()->is_viewport_focused = ImGui::IsWindowFocused();
+    float height = ImGui::GetWindowHeight() - ImGui::GetCurrentWindow()->TitleBarHeight();
+    float width = ImGui::GetWindowWidth();
+    float window_ratio = width / height;
+    float ratio = (float)viewport_resolution_x / (float)viewport_resolution_y;
+    glm::vec2 viewport_size;
+    if (window_ratio <= ratio) {
+        ratio = (float)viewport_resolution_y / (float)viewport_resolution_x;
+        viewport_size = { width, width * ratio };
+    }
+    else {
+        viewport_size = { height * ratio, height };
+    }
+    ImGui::SetWindowSize(ImVec2{ viewport_size.x,viewport_size.y + ImGui::GetCurrentWindow()->TitleBarHeight()  });
 
     ImGui::SetCursorPos((ImGui::GetWindowSize() + ImVec2{ 0,ImGui::GetCurrentWindow()->TitleBarHeight() } - ImVec2{ viewport_size.x,viewport_size.y }) * 0.5f); 
 
