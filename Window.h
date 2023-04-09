@@ -5,6 +5,7 @@
 struct WindowProperties {
     int resolution_x = -1, resolution_y = -1;
     std::string name = "GameEngine NSTC";
+    bool fullscreen = false;
 };
 
 class Window {

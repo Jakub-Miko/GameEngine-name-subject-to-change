@@ -8,6 +8,7 @@
   "render_api_path": "assets/OpenGL/",
   "engine_asset_path": "assets/",
   "temp_path": "temp/",
-  "resolution_X": 1280,
-  "resolution_Y":  720
+  "resolution_X": 1920,
+  "resolution_Y": 1080,
+  "fullscreen" : 1
 }

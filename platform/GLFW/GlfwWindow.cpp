@@ -13,6 +13,9 @@ GlfwWindow::GlfwWindow(const WindowProperties& props)
     if (props.resolution_x == -1 || props.resolution_y == -1) {
         m_Properties.resolution_x = ConfigManager::Get()->GetInt("resolution_X");
         m_Properties.resolution_y = ConfigManager::Get()->GetInt("resolution_Y");
+        if (ConfigManager::Get()->Exists("fullscreen")) {
+            m_Properties.fullscreen = (bool)ConfigManager::Get()->GetInt("fullscreen");
+        }
     }
 }
 
@@ -47,7 +50,8 @@ void GlfwWindow::PreInit()
     m_Window = glfwCreateWindow(x, y, m_Properties.name.c_str(), NULL, NULL);
     glfwMaximizeWindow(m_Window);
 #else 
-    m_Window = glfwCreateWindow(m_Properties.resolution_x, m_Properties.resolution_y, m_Properties.name.c_str(), NULL, NULL);
+    m_Window = glfwCreateWindow(m_Properties.resolution_x, m_Properties.resolution_y, m_Properties.name.c_str(), m_Properties.fullscreen ? glfwGetPrimaryMonitor() : NULL, NULL);
+    glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 #endif
     
     if (!m_Window)
@@ -99,14 +103,24 @@ void GlfwWindow::AdjustWidowToDisabledEditor()
     glfwSetWindowAttrib(m_Window, GLFW_RESIZABLE, GLFW_FALSE);
     glfwSetWindowPos(m_Window, (monitor->width / 2) - (props.resolution_x / 2), (monitor->height / 2) - (props.resolution_y / 2));
     glfwSetWindowSize(m_Window, props.resolution_x, props.resolution_y);
+    if (props.fullscreen) {
+        glfwSetWindowMonitor(m_Window, glfwGetPrimaryMonitor(), 0, 0, props.resolution_x, props.resolution_y, monitor->refreshRate);
+    }
+    glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 }
 
 void GlfwWindow::AdjustWidowToEnabledEditor()
 {
     const GLFWvidmode* monitor = glfwGetVideoMode(glfwGetPrimaryMonitor());
+    auto& props = Application::Get()->GetWindow()->GetProperties();
     glfwSetWindowSize(m_Window, monitor->width, monitor->height);
+    if (props.fullscreen) {
+        glfwSetWindowMonitor(m_Window, NULL, (monitor->width / 2) - (props.resolution_x / 2), (monitor->height / 2) - (props.resolution_y / 2), monitor->width, monitor->height, monitor->refreshRate);
+    }
     glfwMaximizeWindow(m_Window);
     glfwSetWindowAttrib(m_Window, GLFW_RESIZABLE, GLFW_TRUE);
+    glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+
 }
 
 #endif

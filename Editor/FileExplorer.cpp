@@ -215,7 +215,7 @@ void FileExplorer::Render()
 	ImGui::SetCursorPos({ ImGui::GetStyle().WindowPadding.x ,ImGui::GetFrameHeight() + ImGui::GetStyle().WindowPadding.y });
 
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 5,5 });
-	float file_icon_size = Application::Get()->GetWindow()->GetProperties().resolution_x / 25;
+	float file_icon_size = ImGui::GetFontSize() * 3.5f;
 	bool disabled = current_path + std::string("/") == ""_path;
 	if (disabled) {
 		ImGui::BeginDisabled();
