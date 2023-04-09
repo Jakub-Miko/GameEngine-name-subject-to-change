@@ -99,7 +99,10 @@ void GlfwWindow::AdjustWidowToDisabledEditor()
 {
     const GLFWvidmode* monitor = glfwGetVideoMode(glfwGetPrimaryMonitor());
     auto& props = Application::Get()->GetWindow()->GetProperties();
-    glfwRestoreWindow(m_Window);
+    //Maximize is needed on linux to glfwRestoreWindow after fullscreen; without it the window spans the whole screen and
+    //is covered by desktop panels. 
+    // TODO: implement custom resolution storing and restoration
+    glfwMaximizeWindow(m_Window);
     glfwSetWindowAttrib(m_Window, GLFW_RESIZABLE, GLFW_FALSE);
     glfwSetWindowPos(m_Window, (monitor->width / 2) - (props.resolution_x / 2), (monitor->height / 2) - (props.resolution_y / 2));
     glfwSetWindowSize(m_Window, props.resolution_x, props.resolution_y);
@@ -113,9 +116,12 @@ void GlfwWindow::AdjustWidowToEnabledEditor()
 {
     const GLFWvidmode* monitor = glfwGetVideoMode(glfwGetPrimaryMonitor());
     auto& props = Application::Get()->GetWindow()->GetProperties();
-    glfwSetWindowSize(m_Window, monitor->width, monitor->height);
+    
+    glfwRestoreWindow(m_Window);
     if (props.fullscreen) {
-        glfwSetWindowMonitor(m_Window, NULL, (monitor->width / 2) - (props.resolution_x / 2), (monitor->height / 2) - (props.resolution_y / 2), monitor->width, monitor->height, monitor->refreshRate);
+        int width, height;
+        glfwGetWindowSize(m_Window,&width, &height);
+        glfwSetWindowMonitor(m_Window, NULL, (width / 2) - (props.resolution_x / 2), (height / 2) - (props.resolution_y / 2), width, height, monitor->refreshRate);
     }
     glfwMaximizeWindow(m_Window);
     glfwSetWindowAttrib(m_Window, GLFW_RESIZABLE, GLFW_TRUE);
