@@ -3,9 +3,10 @@
 #include <thread>
 #include <chrono>
 #include <glm/gtc/quaternion.hpp>
+#include <Core/Defines.h>
 
 extern "C" {
-	void wait_milliseconds_L(int miliseconds) {
+	LIBEXP void wait_milliseconds_L(int miliseconds) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(miliseconds));
 	}
 }

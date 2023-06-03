@@ -2,9 +2,10 @@
 #include <LuaEngine.h>
 #include <World/ScriptModules/MathModule.h>
 #include <World/ScriptModules/GlobalEntityModule.h>
+#include <Core/Defines.h>
 
 extern "C" {
-	typedef struct CollisionEvent_L {
+	LIBEXP typedef struct CollisionEvent_L {
 		entity collider;
 		int num_collision_points;
 		vec3 collision_points[4];

@@ -7,15 +7,16 @@
 #include <World/ScriptModules/LocalEntityModule.h>
 #include <World/Components/MousePressedScriptComponent.h>
 #include <World/Components/KeyPressedScriptComponent.h>
+#include <Core/Defines.h>
 
 extern "C" {
 
-    void EnableMouseButtonPressedEvents_L() {
+    LIBEXP void EnableMouseButtonPressedEvents_L() {
         Entity ent = Entity(GetCurrentEntity_L().id);
         Application::GetWorld().SetComponent<MousePressedScriptComponent>(ent);
     }
 
-    void EnableKeyPressedEvents_L() {
+    LIBEXP void EnableKeyPressedEvents_L() {
         Entity ent = Entity(GetCurrentEntity_L().id);
         Application::GetWorld().SetComponent<KeyPressedScriptComponent>(ent);
     }

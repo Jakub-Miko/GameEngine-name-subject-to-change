@@ -15,6 +15,7 @@
 #include <World/ScriptModules/TimeModule.h>
 #include <Events/MouseButtonPressEvent.h>
 #include <World/EntityManager.h>
+#include <FileManager.h>
 
 GameStateMachine* GameStateMachine::instance = nullptr;
 
@@ -158,8 +159,9 @@ void GameStateMachine::ScriptOnDeattach()
 
 void GameStateMachine::BindLuaFunctions()
 {
+	std::vector<std::pair<std::string, std::string>> optional_dlls = { {"Engine",FileManager::Get()->GetLibraryPath("EngineCore")}};
+	m_LuaEngine.InitFFI(optional_dlls);
 	m_LuaEngine.RunString(ScriptKeyBindings);
-	m_LuaEngine.InitFFI();
 
 	ModuleBindingProperties props;
 

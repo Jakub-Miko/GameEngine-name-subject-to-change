@@ -9,38 +9,38 @@
 
 extern "C" {
 
-	entity GetCurrentEntity_L() {
+	LIBEXP entity GetCurrentEntity_L() {
 		return entity{ ThreadManager::Get()->GetThreadLocalData<ScriptSystemVM>()->GetCurrentEntity().id };
 	}
 
-	void SetTranslation_L(vec3 translation) {
+	LIBEXP void SetTranslation_L(vec3 translation) {
 		glm::vec3* trans = reinterpret_cast<glm::vec3*>(&translation);
 		Application::GetWorld().SetEntityTranslation(Entity{ GetCurrentEntity_L().id }, *trans);
 	}
 
-	void SetScale_L(vec3 scale) {
+	LIBEXP void SetScale_L(vec3 scale) {
 		glm::vec3* sc = reinterpret_cast<glm::vec3*>(&scale);
 		Application::GetWorld().SetEntityScale(Entity{ GetCurrentEntity_L().id }, *sc);
 	}
 
-	void SetRotation_L(quat rot) {
+	LIBEXP void SetRotation_L(quat rot) {
 		glm::quat* rt = reinterpret_cast<glm::quat*>(&rot);
 		Application::GetWorld().SetEntityRotation(Entity{ GetCurrentEntity_L().id }, *rt);
 	}
 
-	vec3 GetTranslation_L() {
+	LIBEXP vec3 GetTranslation_L() {
 		glm::vec3 trans = Application::GetWorld().GetComponent<TransformComponent>(Entity{ GetCurrentEntity_L().id }).translation;
 		vec3 translation = vec3{ trans.x, trans.y, trans.z };
 		return translation;
 	}
 
-	vec3 GetScale_L() {
+	LIBEXP vec3 GetScale_L() {
 		glm::vec3 scl = Application::GetWorld().GetComponent<TransformComponent>(Entity{ GetCurrentEntity_L().id }).size;
 		vec3 scale = vec3{ scl.x, scl.y, scl.z };
 		return scale;
 	}
 
-	quat GetRotation_L() {
+	LIBEXP quat GetRotation_L() {
 		glm::quat rot = Application::GetWorld().GetComponent<TransformComponent>(Entity{ GetCurrentEntity_L().id }).rotation;
 		quat rotation = *reinterpret_cast<quat*>(&rot);
 		return rotation;

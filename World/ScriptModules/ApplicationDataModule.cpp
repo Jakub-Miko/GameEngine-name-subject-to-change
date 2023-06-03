@@ -6,23 +6,24 @@
 #include <glm/glm.hpp>
 #include <iostream>
 #include "GlobalEntityModule.h"
+#include <Core/Defines.h>
 
 extern "C" {
 
-    void print_s(const char* string) {
+    LIBEXP void print_s(const char* string) {
         std::cout << "FFI says: " << string << "\n";
     }
 
-    vec2 GetWindowResolution_L() {
+    LIBEXP vec2 GetWindowResolution_L() {
         auto& props = Application::Get()->GetWindow()->GetProperties();
         return vec2{ (float)props.resolution_x, (float)props.resolution_y };
     }
 
-    void SetPrimaryEntity_L(entity ent) {
+    LIBEXP void SetPrimaryEntity_L(entity ent) {
         Application::GetWorld().SetPrimaryEntity(ent.id);
     }
 
-    entity GetPrimaryEntity_L() {
+    LIBEXP entity GetPrimaryEntity_L() {
         return entity{Application::GetWorld().GetPrimaryEntity().id};
     }
 

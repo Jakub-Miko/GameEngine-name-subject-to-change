@@ -1,13 +1,13 @@
 #pragma once 
 #include <LuaEngine.h>
-
+#include <Core/Defines.h>
 extern "C" {
-	typedef struct vec2 { float x, y; } vec2;
-	typedef struct vec3 { float x, y, z; } vec3;
-	typedef struct vec4 { float x, y, z, w; } vec4;
-	typedef struct quat { float w, x, y, z; } quat;
-	typedef struct mat3 { vec3 data[3]; } mat3;
-	typedef struct mat4 { vec4 data[4]; } mat4;
+	LIBEXP typedef struct vec2 { float x, y; } vec2;
+	LIBEXP typedef struct vec3 { float x, y, z; } vec3;
+	LIBEXP typedef struct vec4 { float x, y, z, w; } vec4;
+	LIBEXP typedef struct quat { float w, x, y, z; } quat;
+	LIBEXP typedef struct mat3 { vec3 data[3]; } mat3;
+	LIBEXP typedef struct mat4 { vec4 data[4]; } mat4;
 }
 
 

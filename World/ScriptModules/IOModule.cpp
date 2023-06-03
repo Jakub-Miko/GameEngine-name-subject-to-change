@@ -3,26 +3,27 @@
 #include <Input/Input.h>
 #include <World/Components/ScriptComponent.h>
 #include <World/ScriptModules/MathModule.h>
+#include <Core/Defines.h>
 
 extern "C" {
-    vec2 GetMousePosition_L()
+    LIBEXP vec2 GetMousePosition_L()
     {
         auto pos = Input::Get()->GetMousePosition();
         return vec2{ pos.x,pos.y };
     }
 
-    vec2 GetMousePositionChange_L()
+    LIBEXP vec2 GetMousePositionChange_L()
     {
         auto pos = Input::Get()->GetMousePositionChange();
         return vec2{ pos.x,pos.y };
     }
 
-    bool IsKeyPressed_L(int key_code)
+    LIBEXP bool IsKeyPressed_L(int key_code)
     {
         return Input::Get()->IsKeyPressed((KeyCode)key_code);
     }
 
-    bool IsMouseButtonPressed_L(int key_code)
+    LIBEXP bool IsMouseButtonPressed_L(int key_code)
     {
         return Input::Get()->IsMouseButtonPressed((MouseButtonCode)key_code);
     }

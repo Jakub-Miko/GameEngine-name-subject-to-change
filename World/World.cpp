@@ -383,8 +383,9 @@ void World::CheckCamera()
 void World::BindLuaFunctions()
 {
 
+	std::vector<std::pair<std::string, std::string>> optional_dlls = { {"Engine",FileManager::Get()->GetLibraryPath("EngineCore")} };
+	scene_lua_engine.InitFFI(optional_dlls);
 	scene_lua_engine.RunString(ScriptKeyBindings);
-	scene_lua_engine.InitFFI();
 
 	ModuleBindingProperties props;
 

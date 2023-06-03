@@ -1,10 +1,11 @@
 #include "GlobalEntityModule.h"
 #include <ThreadManager.h>
 #include <World/Systems/ScriptSystemManagement.h>
+#include <Core/Defines.h>
 
 extern "C" {
 
-	bool IsEntityValid_L(entity ent) {
+	LIBEXP bool IsEntityValid_L(entity ent) {
 		return Entity(ent.id) != Entity() && Application::Get()->GetWorld().EntityIsValid(Entity(ent.id));
 	}
 

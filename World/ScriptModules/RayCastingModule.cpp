@@ -1,32 +1,33 @@
 #include "RayCastingModule.h"
 #include "LocalEntityModule.h"
 #include "MathModule.h"
+#include <Core/Defines.h>
 
 extern "C" {
 
-	typedef struct RayCastingResult_L {
+	LIBEXP typedef struct RayCastingResult_L {
 		entity hit_ent;
 		vec3 hit_pos;
 	} RayCastingResult_L;
 
-	typedef struct RayCastingResultArray_L {
+	LIBEXP typedef struct RayCastingResultArray_L {
 		int size;
 		RayCastingResult_L* hit_points;
 	} RayCastingResultArray_L;
 	
-	typedef struct RayCastingResultPhysics_L {
+	LIBEXP typedef struct RayCastingResultPhysics_L {
 		entity hit_ent;
 		vec3 hit_pos;
 		vec3 hit_normal;
 	} RayCastingResultPhysics_L;
 
-	typedef struct RayCastingResultPhysicsArray_L {
+	LIBEXP typedef struct RayCastingResultPhysicsArray_L {
 		int size;
 		RayCastingResultPhysics_L* hit_points;
 	} RayCastingResultPhysicsArray_L;
 
 
-	RayCastingResultArray_L RayCast_L(vec3 orientation, vec3 dir) {
+	LIBEXP RayCastingResultArray_L RayCast_L(vec3 orientation, vec3 dir) {
 		glm::vec3 origin = *reinterpret_cast<glm::vec3*>(&orientation);
 		glm::vec3 direction = *reinterpret_cast<glm::vec3*>(&dir);
 		std::vector<RayCastResult> results;
@@ -40,7 +41,7 @@ extern "C" {
 		return RayCastingResultArray_L{ (int)results.size(), arr };
 	}
 
-	RayCastingResultPhysicsArray_L RayCastPhysics_L(vec3 start_in , vec3 end_in) {
+	LIBEXP RayCastingResultPhysicsArray_L RayCastPhysics_L(vec3 start_in , vec3 end_in) {
 		glm::vec3 start = *reinterpret_cast<glm::vec3*>(&start_in);
 		glm::vec3 end = *reinterpret_cast<glm::vec3*>(&end_in);
 		PhysicsRayTestResultArray results;
@@ -55,7 +56,7 @@ extern "C" {
 		return RayCastingResultPhysicsArray_L{ (int)results.size(), arr };
 	}
 
-	RayCastingResultPhysics_L RayCastPhysicsClosest_L(vec3 start_in, vec3 end_in) {
+	LIBEXP RayCastingResultPhysics_L RayCastPhysicsClosest_L(vec3 start_in, vec3 end_in) {
 		glm::vec3 start = *reinterpret_cast<glm::vec3*>(&start_in);
 		glm::vec3 end = *reinterpret_cast<glm::vec3*>(&end_in);
 		PhysicsRayTestResult result;
@@ -70,10 +71,10 @@ extern "C" {
 		}
 	}
 
-	void FreeArray_L(RayCastingResultArray_L arr) {
+	LIBEXP void FreeArray_L(RayCastingResultArray_L arr) {
  		delete[] arr.hit_points;
 	}
-	void FreeArrayPhysics_L(RayCastingResultPhysicsArray_L arr) {
+	LIBEXP void FreeArrayPhysics_L(RayCastingResultPhysicsArray_L arr) {
 		delete[] arr.hit_points;
 	}
 }

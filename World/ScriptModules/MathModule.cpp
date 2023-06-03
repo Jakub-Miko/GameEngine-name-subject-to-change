@@ -2,93 +2,95 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include <Core/Defines.h>
+
 
 extern "C" {
-	vec3 multiply_matrix_vec3_L(mat3* matrix, vec3* vector) {
+	LIBEXP vec3 multiply_matrix_vec3_L(mat3* matrix, vec3* vector) {
 		glm::mat3* mat = reinterpret_cast<glm::mat3*>(matrix);
 		glm::vec3* vec = reinterpret_cast<glm::vec3*>(vector);
 		glm::vec3 result = *mat * *vec;
 		return *reinterpret_cast<vec3*>(&result);
 	}
 
-	float GetVector2Length_L(vec2 in_vector) {
+	LIBEXP float GetVector2Length_L(vec2 in_vector) {
 		glm::vec2 vec = *reinterpret_cast<glm::vec2*>(&in_vector);
 		return glm::length(vec);
 	}
 
-	float GetVector3Length_L(vec3 in_vector) {
+	LIBEXP float GetVector3Length_L(vec3 in_vector) {
 		glm::vec3 vec = *reinterpret_cast<glm::vec3*>(&in_vector);
 		return glm::length(vec);
 	}
 
-	float GetVector4Length_L(vec4 in_vector) {
+	LIBEXP float GetVector4Length_L(vec4 in_vector) {
 		glm::vec4 vec = *reinterpret_cast<glm::vec4*>(&in_vector);
 		return glm::length(vec);
 	}
 
-	vec4 multiply_matrix_vec4_L(mat4* matrix, vec4* vector) {
+	LIBEXP vec4 multiply_matrix_vec4_L(mat4* matrix, vec4* vector) {
 		glm::mat4* mat = reinterpret_cast<glm::mat4*>(matrix);
 		glm::vec4* vec = reinterpret_cast<glm::vec4*>(vector);
 		glm::vec4 result = *mat * *vec;
 		return *reinterpret_cast<vec4*>(&result);
 	}
 
-	quat mat3_to_quat_L(mat3* matrix) {
+	LIBEXP quat mat3_to_quat_L(mat3* matrix) {
 		glm::mat3* mat = reinterpret_cast<glm::mat3*>(matrix);
 		glm::quat quaternion = glm::quat_cast(*mat);
 		return *reinterpret_cast<quat*>(&quaternion);
 	}
 
-	mat3 multiple_mat3_L(mat3* first, mat3* second) {
+	LIBEXP mat3 multiple_mat3_L(mat3* first, mat3* second) {
 		glm::mat3* fr = reinterpret_cast<glm::mat3*>(first);
 		glm::mat3* sc = reinterpret_cast<glm::mat3*>(second);
 		glm::mat3 result = *fr * *sc;
 		return *reinterpret_cast<mat3*>(&result);
 	}
 
-	quat quat_lookat_L(vec3* direction, vec3* up_vector) {
+	LIBEXP quat quat_lookat_L(vec3* direction, vec3* up_vector) {
 		glm::vec3* direction_v = reinterpret_cast<glm::vec3*>(direction);
 		glm::vec3* up_vector_v = reinterpret_cast<glm::vec3*>(up_vector);
 		glm::quat result = glm::quatLookAt(glm::normalize(*direction_v), *up_vector_v);
 		return *reinterpret_cast<quat*>(&result);
 	}
 
-	mat4 multiple_mat4_L(mat4* first, mat4* second) {
+	LIBEXP mat4 multiple_mat4_L(mat4* first, mat4* second) {
 		glm::mat4* fr = reinterpret_cast<glm::mat4*>(first);
 		glm::mat4* sc = reinterpret_cast<glm::mat4*>(second);
 		glm::mat4 result = *fr * *sc;
 		return *reinterpret_cast<mat4*>(&result);
 	}
 
-	vec3 rotate_vec3_L(vec3 vec, quat rotation) {
+	LIBEXP vec3 rotate_vec3_L(vec3 vec, quat rotation) {
 		glm::quat quaternion = *reinterpret_cast<glm::quat*>(&rotation);
 		glm::vec3 vec_to_rotate = *reinterpret_cast<glm::vec3*>(&vec);
 		vec_to_rotate = glm::toMat3(quaternion) * vec_to_rotate;
 		return *reinterpret_cast<vec3*>(&vec_to_rotate);
 	}
 
-	quat quat_multiply_L(quat quat1, quat quat2) {
+	LIBEXP quat quat_multiply_L(quat quat1, quat quat2) {
 		glm::quat quaternion1 = *reinterpret_cast<glm::quat*>(&quat1);
 		glm::quat quaternion2 = *reinterpret_cast<glm::quat*>(&quat2);
 		glm::quat result = quaternion1 * quaternion2;
 		return *reinterpret_cast<quat*>(&result);
 	}
 
-	vec4 MixVector4_L(vec4 first, vec4 second, float blend) {
+	LIBEXP vec4 MixVector4_L(vec4 first, vec4 second, float blend) {
 		glm::vec4* vec_1 = reinterpret_cast<glm::vec4*>(&first);
 		glm::vec4* vec_2 = reinterpret_cast<glm::vec4*>(&second);
 		glm::vec4 mix = glm::mix(*vec_1, *vec_2, blend);
 		return *reinterpret_cast<vec4*>(&mix);
 	}
 
-	vec3 MixVector3_L(vec3 first, vec3 second, float blend) {
+	LIBEXP vec3 MixVector3_L(vec3 first, vec3 second, float blend) {
 		glm::vec3* vec_1 = reinterpret_cast<glm::vec3*>(&first);
 		glm::vec3* vec_2 = reinterpret_cast<glm::vec3*>(&second);
 		glm::vec3 mix = glm::mix(*vec_1, *vec_2, blend);
 		return *reinterpret_cast<vec3*>(&mix);
 	}
 
-	vec2 MixVector2_L(vec2 first, vec2 second, float blend) {
+	LIBEXP vec2 MixVector2_L(vec2 first, vec2 second, float blend) {
 		glm::vec2* vec_1 = reinterpret_cast<glm::vec2*>(&first);
 		glm::vec2* vec_2 = reinterpret_cast<glm::vec2*>(&second);
 		glm::vec2 mix = glm::mix(*vec_1, *vec_2, blend);

@@ -387,7 +387,8 @@ void ScriptSystemVM::ResetScriptVM()
 void ScriptHandler::BindHandlerFunctions(LuaEngineClass<ScriptHandler>* script_engine)
 {
     ModuleBindingProperties props;
-    script_engine->InitFFI();
+    std::vector<std::pair<std::string, std::string>> optional_dlls = { {"Engine",FileManager::Get()->GetLibraryPath("EngineCore")} };
+    script_engine->InitFFI(optional_dlls);
 
 
     IOModule().RegisterModule(props);
@@ -406,7 +407,8 @@ void ScriptHandler::BindHandlerFunctions(LuaEngineClass<ScriptHandler>* script_e
 void InitializationScriptHandler::BindHandlerFunctions(LuaEngineClass<InitializationScriptHandler>* script_engine)
 {
     ModuleBindingProperties props;
-    script_engine->InitFFI();
+    std::vector<std::pair<std::string, std::string>> optional_dlls = { {"Engine",FileManager::Get()->GetLibraryPath("EngineCore")} };
+    script_engine->InitFFI(optional_dlls);
 
     props.Add_bindings({
         //This is where function bindings go

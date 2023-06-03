@@ -1,9 +1,9 @@
 #pragma once 
 #include <LuaEngine.h>
-
+#include <Core/Defines.h>
 extern "C" {
 
-	typedef struct entity { uint32_t id; } entity;
+	LIBEXP typedef struct entity { uint32_t id; } entity;
 
 }
 

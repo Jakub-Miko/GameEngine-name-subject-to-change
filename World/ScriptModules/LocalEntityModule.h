@@ -4,10 +4,10 @@
 #include <World/Systems/ScriptSystemManagement.h>
 #include "GlobalEntityModule.h"
 #include "MathModule.h"
-
+#include <Core/Defines.h>
 
 extern "C" {
-	entity GetCurrentEntity_L();
+	LIBEXP entity GetCurrentEntity_L();
 }
 
 class LocalEntityModule : public ScriptModule {

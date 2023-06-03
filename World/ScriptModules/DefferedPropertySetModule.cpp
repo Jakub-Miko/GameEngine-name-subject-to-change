@@ -6,6 +6,7 @@
 #include <World/ScriptModules/MathModule.h>
 #include <World/Systems/ScriptSystemManagement.h>
 #include <World/Components/SerializableComponent.h>
+#include <Core/Defines.h>
 
 template<typename T>
 static void SetEntityProperty(Entity entity, std::string name, T value) {
@@ -23,91 +24,91 @@ static void SetEntityProperty(Entity entity, std::string name, T value) {
 
 extern "C" {
     
-    typedef struct entity_call_parameters_L {
+    LIBEXP typedef struct entity_call_parameters_L {
         void* parameter_list = nullptr; //Type erased
     } entity_call_parameters_L;
     
-    entity_call_parameters_L CreateCallParameters_Unmanaged() {
+    LIBEXP entity_call_parameters_L CreateCallParameters_Unmanaged() {
         return entity_call_parameters_L{ new std::vector<Script_Variant_type> };
     }
 
-    void Free_entity_call_parameters_L(entity_call_parameters_L params) {
+    LIBEXP void Free_entity_call_parameters_L(entity_call_parameters_L params) {
         if (params.parameter_list) {
             delete static_cast<std::vector<Script_Variant_type>*>(params.parameter_list);
         }
     };
 
-    void AddCallParameterInt_L(entity_call_parameters_L params, int value) {
+    LIBEXP void AddCallParameterInt_L(entity_call_parameters_L params, int value) {
         static_cast<std::vector<Script_Variant_type>*>(params.parameter_list)->push_back(value);
     }
 
-    void AddCallParameterFloat_L(entity_call_parameters_L params, float value) {
+    LIBEXP void AddCallParameterFloat_L(entity_call_parameters_L params, float value) {
         static_cast<std::vector<Script_Variant_type>*>(params.parameter_list)->push_back(value);
     }
-    void AddCallParameterDouble_L(entity_call_parameters_L params, double value) {
+    LIBEXP void AddCallParameterDouble_L(entity_call_parameters_L params, double value) {
         static_cast<std::vector<Script_Variant_type>*>(params.parameter_list)->push_back(value);
     }
-    void AddCallParameterString_L(entity_call_parameters_L params, const char* value) {
+    LIBEXP void AddCallParameterString_L(entity_call_parameters_L params, const char* value) {
         static_cast<std::vector<Script_Variant_type>*>(params.parameter_list)->push_back((std::string)value);
     }
-    void AddCallParameterEntity_L(entity_call_parameters_L params, entity value) {
+    LIBEXP void AddCallParameterEntity_L(entity_call_parameters_L params, entity value) {
         static_cast<std::vector<Script_Variant_type>*>(params.parameter_list)->push_back(Entity(value.id));
     }
 
 
-    entity CreateEntity_L(const char* path, int parent)
+    LIBEXP entity CreateEntity_L(const char* path, int parent)
     {
         return entity{ EntityManager::Get()->CreateEntity(FileManager::Get()->GetPath(path), Entity(parent)).id };
     }
 
-    entity CreateSerializableEntity_L(const char* path, int parent)
+    LIBEXP entity CreateSerializableEntity_L(const char* path, int parent)
     {
         Entity ent = EntityManager::Get()->CreateEntity(FileManager::Get()->GetPath(path), Entity(parent)).id;
         Application::GetWorld().SetComponent<SerializableComponent>(ent);
         return entity{ ent.id };
     }
 
-    entity CreateEntityNamed_L(const char* name ,const char* path, int parent)
+    LIBEXP entity CreateEntityNamed_L(const char* name ,const char* path, int parent)
     {
         return entity{ EntityManager::Get()->CreateEntity(name, FileManager::Get()->GetPath(path), Entity(parent)).id };
     }
 
-    entity CreateSerializableEntityNamed_L(const char* name, const char* path, int parent)
+    LIBEXP entity CreateSerializableEntityNamed_L(const char* name, const char* path, int parent)
     {
         Entity ent = EntityManager::Get()->CreateEntity(name, FileManager::Get()->GetPath(path), Entity(parent)).id;
         Application::GetWorld().SetComponent<SerializableComponent>(ent);
         return entity{ ent.id };
     }
 
-    void SetEntityProperty_INT_L(entity ent, const char* name, int value) {
+    LIBEXP void SetEntityProperty_INT_L(entity ent, const char* name, int value) {
         SetEntityProperty(Entity(ent.id),name , value);
     }
 
-    void SetEntityProperty_FLOAT_L(entity ent, const char* name, float value) {
+    LIBEXP void SetEntityProperty_FLOAT_L(entity ent, const char* name, float value) {
         SetEntityProperty(Entity(ent.id), name, value);
     }
 
-    void SetEntityProperty_VEC2_L(entity ent, const char* name, vec2 value) {
+    LIBEXP void SetEntityProperty_VEC2_L(entity ent, const char* name, vec2 value) {
         SetEntityProperty(Entity(ent.id), name, *reinterpret_cast<glm::vec2*>(&value));
     }
 
-    void SetEntityProperty_VEC3_L(entity ent, const char* name, vec3 value) {
+    LIBEXP void SetEntityProperty_VEC3_L(entity ent, const char* name, vec3 value) {
         SetEntityProperty(Entity(ent.id), name, *reinterpret_cast<glm::vec3*>(&value));
     }
 
-    void SetEntityProperty_VEC4_L(entity ent, const char* name, vec4 value) {
+    LIBEXP void SetEntityProperty_VEC4_L(entity ent, const char* name, vec4 value) {
         SetEntityProperty(Entity(ent.id), name, *reinterpret_cast<glm::vec4*>(&value));
     }
 
-    void SetEntityProperty_STRING_L(entity ent, const char* name, const char* value) {
+    LIBEXP void SetEntityProperty_STRING_L(entity ent, const char* name, const char* value) {
         SetEntityProperty(Entity(ent.id), name, value);
     }
 
-    void CallEntityFunction_L(entity ent, const char* name) {
+    LIBEXP void CallEntityFunction_L(entity ent, const char* name) {
         ScriptSystemManager::Get()->AddDefferedCall(Entity(ent.id), Deffered_Call{ std::string(name), std::vector< Script_Variant_type >() });
     }
 
-    void CallEntityFunctionWithArguments_L(entity ent, const char* name, entity_call_parameters_L args) {
+    LIBEXP void CallEntityFunctionWithArguments_L(entity ent, const char* name, entity_call_parameters_L args) {
         ScriptSystemManager::Get()->AddDefferedCall(Entity(ent.id), Deffered_Call{ std::string(name), *static_cast<std::vector<Script_Variant_type>*>(args.parameter_list) });
     }
 }
