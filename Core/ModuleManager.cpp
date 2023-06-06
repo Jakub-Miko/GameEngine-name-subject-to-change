@@ -6,7 +6,7 @@
 #include <Windows.h>
 #endif
 
-#ifdef defined(UNIX)
+#ifdef UNIX
 #include <dlfcn.h>
 #endif
 
@@ -93,7 +93,13 @@ std::shared_ptr<Module> ModuleManager::LoadModule(const std::string& module_name
 	
 	std::shared_ptr<Module> module = std::shared_ptr<Module>(new Module);
 	module->module_name = module_name;
+	
+#ifdef WIN32
 	module->lib = (void*)new HMODULE(lib);
+#elif defined(UNIX)
+	module->lib = lib;
+#endif
+
 
 	module_list.insert(std::make_pair(module_name, module));
 	return module;

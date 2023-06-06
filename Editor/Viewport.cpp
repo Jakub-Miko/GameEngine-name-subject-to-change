@@ -92,7 +92,7 @@ void Viewport::Render()
 
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0,0 });
 
-    ImGui::Begin("Viewport Settings", nullptr);
+    ImGui::Begin("Viewport Options", nullptr);
     
 
     bool phys_active = Application::GetWorld().GetPhysicsEngine().IsPhysicsActive();

@@ -1,5 +1,6 @@
 #pragma once 
 #include <Core/Defines.h>
+#include <vector>
 #include <string>
 #include <unordered_map>
 #include <stdexcept>
@@ -19,7 +20,7 @@ public:
     T* GetSymbol(const std::string& symbol_name) {
         T* symbol = (T*)GetSymbol_internal(symbol_name);
         if (!symbol) {
-            throw std::runtime_error("Symbol " + symbol_name + " from module " + library_path + " could not be loaded");
+            throw std::runtime_error("Symbol " + symbol_name + " from module " + module_name + " could not be loaded");
         }
         return symbol;
     }

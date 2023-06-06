@@ -5,6 +5,7 @@
 #include <Core/Debug.h>
 #include <Renderer/Renderer3D/Animations/AnimationManager.h>
 #include "Application.h"
+#include <Core/ModuleManager.h>
 #include <iostream>
 #include <World/Components/SerializableComponent.h>
 #include <World/Components/UITextComponent.h>
@@ -15,7 +16,7 @@
 #include <Renderer/TextureManager.h>
 #include <Audio/AudioSystem.h>
 #include <AL/al.h>
-
+#include <TestModule/TestFunc.h>
 #include <Events/SubjectObserver.h>
 #include <glm/glm.hpp>
 #include <Events/Event.h>
@@ -419,6 +420,18 @@ public:
 #pragma endregion
 
             auto cubemap = TextureManager::Get()->GetReflectionMap("asset:HDR_texture.tex");
+
+
+#pragma region ModuleTest
+
+            decltype(&TestMe) test_function = ModuleManager::Get()->LoadModule("TestLib")->GetSymbol<decltype(TestMe)>("TestMe");
+            std::cout << "Running Module Start\n";
+            test_function();
+            std::cout << "Running Module Stop\n";
+
+
+#pragma endregion
+
 
 
             stop = false;
