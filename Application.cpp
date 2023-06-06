@@ -2,6 +2,7 @@
 #include <Renderer/MeshManager.h>
 #include <Renderer/TextureManager.h>
 #include "Window.h"
+#include <Core/ModuleManager.h>
 #include <FileManager.h>
 #include <ConfigManager.h>
 #include <Renderer/Renderer.h>
@@ -89,6 +90,7 @@ Application::~Application()
     ThreadManager::Get()->JoinedThreadUnRegister();
     m_MainThread.reset();
     ThreadManager::Shutdown();
+    ModuleManager::Shutdown();
     ConfigManager::Shutdown();
     FileManager::Shutdown();
     delete m_GameLayer;
@@ -109,6 +111,8 @@ void Application::InitInstance()
     //Initialize FileManager
     FileManager::Init();
 
+    //Initialize modules
+    ModuleManager::Init();
    
     //Init GameState
     GameStateMachine::Init();
