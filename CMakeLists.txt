@@ -140,3 +140,7 @@ target_compile_definitions(EngineCore PRIVATE ${RENDER_API} MAX_NUM_OF_BONES=${M
 
 
 target_link_libraries(GameEngine PUBLIC EngineCore)
+
+add_library(TestLib SHARED "./TestModule/TestFunc.cpp")
+target_link_libraries(TestLib PUBLIC EngineCore)
+target_compile_definitions(TestLib PRIVATE BUILDDLL)
