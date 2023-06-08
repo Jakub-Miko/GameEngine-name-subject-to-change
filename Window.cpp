@@ -12,7 +12,7 @@ Window::Window(const WindowProperties& props)
 Window* Window::CreateWindow(const WindowProperties& props) {
     #ifdef DirectX12
     return new WindowsWindow(props);
-    #elif defined OpenGL
+    #elif defined OpenGL_API
     return new GlfwWindow(props);
     #else
     static_assert(false, "Wrong Window Type");
