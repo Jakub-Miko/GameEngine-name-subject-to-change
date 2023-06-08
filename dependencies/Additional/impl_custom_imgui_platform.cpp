@@ -5,7 +5,7 @@
 #include <future>
 #include <Editor/Editor.h>
 
-#ifdef OpenGL
+#ifdef OpenGL_API
 #include <GLFW/glfw3.h>
 #include <dependencies/imgui/backends/imgui_impl_glfw.h>
 #include <platform/OpenGL/OpenGLRenderCommandQueue.h>

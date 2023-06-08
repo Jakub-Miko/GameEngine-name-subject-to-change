@@ -14,7 +14,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/out")
 # set(BUILD_EXTRAS on CACHE BOOL "" FORCE)
 
 
-add_compile_definitions(${RENDER_API})
+add_compile_definitions("${RENDER_API}_API")
 
 if(UNIX)
   add_compile_definitions(UNIX=1)

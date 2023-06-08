@@ -1,9 +1,10 @@
 #include "impl_custom_imgui_backend.h"
 #include <stdexcept>
 
-#ifdef  OpenGL
+#ifdef  OpenGL_API
 #include <platform/OpenGL/OpenGLRenderCommandList.h>
 #endif
+
 
 bool impl_custom_imgui_backend::objects_init = false;
 
@@ -79,7 +80,7 @@ static void ResetState(ImDrawData* data, int width, int height) {
     list->SetVertexBuffer(impl_custom_imgui_backend::GetBackendData()->vertex_buffer.GetResource());
     list->SetIndexBuffer(impl_custom_imgui_backend::GetBackendData()->index_buffer.GetResource());
 
-    #ifdef  OpenGL
+    #ifdef  OpenGL_API
     //Used to deal with opengl multi contexts not sharing vaos.
     static_cast<OpenGLRenderCommandList*>(list)->RefreshVertexContext();
 #endif //  OpenGL
