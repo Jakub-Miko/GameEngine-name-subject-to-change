@@ -2,8 +2,6 @@
 #include <Application.h>
 #include <Editor/Editor.h>
 
-extern "C" LIBEXP void CDECL_CALL TestMe()
-{
-	Editor::Get()->EditorError("Library Loads");
-	return;
+extern "C" LIBEXP module_traits CDECL_CALL InitModule() {
+	return module_traits{ {"TestTrait1","TestTrait2"} };
 }

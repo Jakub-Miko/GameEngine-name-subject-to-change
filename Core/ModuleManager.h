@@ -1,4 +1,5 @@
 #pragma once 
+#include <Events/Event.h>
 #include <Core/Defines.h>
 #include <vector>
 #include <string>
@@ -46,6 +47,17 @@ private:
     void* lib;
 };
 
+class ModuleLoadEvent : public Event {
+    EVENT_ID(ModuleLoadEvent)
+public:
+    ModuleLoadEvent() = default;
+    ModuleLoadEvent(const ModuleLoadEvent& other) = default;
+    std::string module_name;
+    std::vector<std::string> module_traits;
+    std::shared_ptr<Module> module;
+};
+
+
 
 class ModuleManager {
 public:
@@ -65,7 +77,7 @@ public:
     void UnloadAllModules();
 
 private:
-    ModuleManager() : module_list() {}
+    ModuleManager();
     ~ModuleManager() = default;
     static ModuleManager* instance;
     std::unordered_map<std::string,std::shared_ptr<Module>> module_list;

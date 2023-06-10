@@ -91,7 +91,7 @@ target_link_libraries(EngineCore PUBLIC glfw glew_s glm Profiler MemoryManagemen
 TaskSystem LuaEngine RuntimeTypeIdentifier ThreadManager FileManager ConfigManager EnTT::EnTT RuntimeTypeIdentifier JsonParser STB_Image assimp OpenAL ImGuizmo
 Bullet freetype)
 
-target_compile_definitions(EngineCore PRIVATE BUILDDLL)
+target_compile_definitions(EngineCore PRIVATE BUILDDLL ENGINE_CORE)
 
 if(EDITOR)
 
