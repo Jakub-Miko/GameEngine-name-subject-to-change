@@ -1,6 +1,8 @@
 #include "ModuleManager.h"
 #include <FileManager.h>
 #include <filesystem>
+#include <Core/ModuleInterface.h>
+#include <Application.h>
 
 #ifdef WIN32
 #include <Windows.h>
@@ -9,6 +11,14 @@
 #ifdef UNIX
 #include <dlfcn.h>
 #endif
+
+#ifdef ENGINE_CORE
+
+extern "C" LIBEXP module_traits CDECL_CALL InitModule() {
+	throw std::runtime_error("This function is just a template and should be implemented within a module");
+}
+
+#endif 
 
 ModuleManager* ModuleManager::instance = nullptr;
 
@@ -100,6 +110,21 @@ std::shared_ptr<Module> ModuleManager::LoadModule(const std::string& module_name
 	module->lib = lib;
 #endif
 
+	auto module_init_func = module->GetSymbol<decltype(InitModule)>("InitModule");
+
+	if (!module_init_func) {
+		throw std::runtime_error("Module " + module_name + " could not be loaded, because it doesnt containt a InitModule function");
+	}
+
+	ModuleLoadEvent* event = new ModuleLoadEvent;
+	event->module_name = module_name;
+	event->module = module;
+	event->module_traits = module_init_func().module_trait_list;
+	if (event->module_traits.empty()) {
+		throw std::runtime_error("Module " + module_name + " could not be loaded, because it doesnt containt any traits");
+	}
+	Application::Get()->SendObservedEvent<ModuleLoadEvent>(event);
+	delete event;
 
 	module_list.insert(std::make_pair(module_name, module));
 	return module;
@@ -130,4 +155,9 @@ void ModuleManager::UnloadAllModules()
 {
 	std::lock_guard<std::mutex> lock(module_list_mutex);
 	module_list.clear();
+}
+
+ModuleManager::ModuleManager() : module_list()
+{
+	
 }

@@ -424,10 +424,8 @@ public:
 
 #pragma region ModuleTest
 
-            decltype(&TestMe) test_function = ModuleManager::Get()->LoadModule("TestLib")->GetSymbol<decltype(TestMe)>("TestMe");
-            std::cout << "Running Module Start\n";
-            test_function();
-            std::cout << "Running Module Stop\n";
+            ModuleManager::Get()->LoadModule("TestLib");
+
 
 
 #pragma endregion
