@@ -1,7 +1,6 @@
 #include "ModuleManager.h"
 #include <FileManager.h>
 #include <filesystem>
-#include <Core/ModuleInterface.h>
 #include <Application.h>
 
 #ifdef WIN32
@@ -18,12 +17,17 @@ extern "C" LIBEXP module_traits CDECL_CALL InitModule() {
 	throw std::runtime_error("This function is just a template and should be implemented within a module");
 }
 
+extern "C" LIBEXP module_types CDECL_CALL GetTypes_dummy() {
+	throw std::runtime_error("This function is just a template and should be implemented within a module");
+}
+
 #endif 
 
 ModuleManager* ModuleManager::instance = nullptr;
 
 Module::~Module()
 {
+
 #ifdef UNIX
 	dlclose(lib);
 #endif
@@ -124,6 +128,10 @@ std::shared_ptr<Module> ModuleManager::LoadModule(const std::string& module_name
 		throw std::runtime_error("Module " + module_name + " could not be loaded, because it doesnt containt any traits");
 	}
 	Application::Get()->SendObservedEvent<ModuleLoadEvent>(event);
+	std::lock_guard<std::mutex> lock2(module_factory_mutex);
+	for (auto& factory : module_factories) {
+		factory->ProcessLoad(event);
+	}
 	delete event;
 
 	module_list.insert(std::make_pair(module_name, module));
@@ -136,6 +144,15 @@ void ModuleManager::UnloadModule(const std::string& module_name)
 	std::lock_guard<std::mutex> lock(module_list_mutex);
 	auto fnd = module_list.find(module_name);
 	if (fnd != module_list.end()) {
+		ModuleUnLoadEvent* event = new ModuleUnLoadEvent;
+		event->module_name = module_name;
+		event->module = fnd->second;
+		Application::Get()->SendObservedEvent<ModuleUnLoadEvent>(event);
+		std::lock_guard<std::mutex> lock2(module_factory_mutex);
+		for (auto& factory : module_factories) {
+			factory->ProcessUnload(event);
+		}
+		delete event;
 		module_list.erase(module_name);
 	}
 }
@@ -154,10 +171,24 @@ std::vector<std::string> ModuleManager::GetLoadedModules()
 void ModuleManager::UnloadAllModules()
 {
 	std::lock_guard<std::mutex> lock(module_list_mutex);
+	ModuleResetEvent* event = new ModuleResetEvent;
+	Application::Get()->SendObservedEvent<ModuleResetEvent>(event);
+	std::lock_guard<std::mutex> lock2(module_factory_mutex);
+	for (auto& factory : module_factories) {
+		factory->ProcessReset();
+	}
+	delete event;
 	module_list.clear();
 }
 
-ModuleManager::ModuleManager() : module_list()
+ModuleManager::ModuleManager() : module_list(), module_factory_mutex(), module_list_mutex()
 {
 	
+}
+
+void BaseModuleFactory::RegisterFactory(BaseModuleFactory* instance)
+{
+	auto manager = ModuleManager::Get();
+	std::lock_guard<std::mutex> lock(manager->module_factory_mutex);
+	manager->module_factories.push_back(std::unique_ptr<BaseModuleFactory>(instance));
 }

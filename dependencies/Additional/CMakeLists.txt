@@ -1,4 +1,6 @@
+set(BUILD_SHARED_LIBS off)
 add_library(STB_Image "stb_image_source.cpp" "impl_custom_imgui_backend.h" "impl_custom_imgui_platform.h")
+set(BUILD_SHARED_LIBS on)
 
 target_include_directories(STB_Image PUBLIC "../stb_image")
 add_library(IMGUI INTERFACE)
