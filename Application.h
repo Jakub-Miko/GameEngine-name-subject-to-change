@@ -15,6 +15,18 @@
 #include <Renderer/RenderFence.h>
 #include <OSApi.h>
 
+
+#include <Core/Defines.h>
+LIBEXP class TestModular {
+public:
+    RUNTIME_TAG("TestModular");
+    virtual TestModular* clone() = 0;
+    virtual int GetNumber1() = 0;
+    virtual int GetNumber2() = 0;
+    virtual int GetNumber3() = 0;
+
+};
+
 class Window;
 class Renderer;
 class Layer;

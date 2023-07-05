@@ -1,18 +1,19 @@
 cmake_minimum_required(VERSION 3.0.0)
 project(EngineCore VERSION 0.1.0)
 
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/out")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/out")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/out")
-# set(BUILD_BULLET2_DEMOS on CACHE BOOL "" FORCE)
-# set(BUILD_BULLET_ROBOTICS_EXTRA on CACHE BOOL "" FORCE)
-# set(BUILD_BULLET_ROBOTICS_GUI_EXTRA off CACHE BOOL "" FORCE)
-# set(BUILD_CPU_DEMOS off CACHE BOOL "" FORCE)
-# set(BUILD_OPENGL3_DEMOS on CACHE BOOL "" FORCE)
-# set(BUILD_EXTRAS on CACHE BOOL "" FORCE)
-
+set(BUILD_BULLET2_DEMOS on CACHE BOOL "" FORCE)
+set(BUILD_BULLET_ROBOTICS_EXTRA on CACHE BOOL "" FORCE)
+set(BUILD_BULLET_ROBOTICS_GUI_EXTRA on CACHE BOOL "" FORCE)
+set(BUILD_CPU_DEMOS on CACHE BOOL "" FORCE)
+set(BUILD_OPENGL3_DEMOS on CACHE BOOL "" FORCE)
+set(BUILD_EXTRAS on CACHE BOOL "" FORCE)
+set(CMAKE_DEBUG_POSTFIX "") 
 
 add_compile_definitions("${RENDER_API}_API")
 
@@ -45,9 +46,10 @@ file(GLOB SRCS
 file(GLOB EXE_FILES
  "./Entry/*.cpp")
 
+
 add_executable(GameEngine ${EXE_FILES})
 add_library(EngineCore SHARED ${SRCS})
-
+set_target_properties(EngineCore PROPERTIES OUTPUT_NAME "EngineCore")
 
 set_target_properties(EngineCore PROPERTIES ENABLE_EXPORTS true WINDOWS_EXPORT_ALL_SYMBOLS true)
 
@@ -67,7 +69,6 @@ add_subdirectory("./dependencies/EnTT")
 set(ALSOFT_INSTALL off CACHE BOOL "" FORCE)
 set(ALSOFT_EXAMPLES off CACHE BOOL "" FORCE)
 
-add_subdirectory("./dependencies/OpenAL")
 
 add_subdirectory("./dependencies/glew/build/cmake")
 
@@ -83,7 +84,10 @@ add_subdirectory("./dependencies/assimp")
 
 add_subdirectory("./dependencies/Additional")
 
+add_subdirectory("./dependencies/OpenAL")
+set(BUILD_SHARED_LIBS off)
 add_subdirectory("./Utilities")
+set(BUILD_SHARED_LIBS on)
 
 target_include_directories(glew_s PUBLIC "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/dependencies/glew/include>")
 
