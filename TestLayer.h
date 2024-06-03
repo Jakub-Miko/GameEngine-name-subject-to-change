@@ -7,6 +7,7 @@
 #include "Application.h"
 #include <Core/ModuleManager.h>
 #include <iostream>
+#include <ConfigManager.h>
 #include <World/Components/SerializableComponent.h>
 #include <World/Components/UITextComponent.h>
 #include <World/Components/SkeletalMeshComponent.h>
@@ -426,13 +427,18 @@ public:
 
 #pragma region ModuleTest
 
-            ModuleFactory<TestModular>::Initialize();
             ModuleManager::Get()->LoadModule("TestLib");
+            ModuleFactory<TestModular>::Initialize();
 
             auto value1 = ModuleFactory<TestModular>::Get()->CreateType("TestImpl1");
             auto value2 = ModuleFactory<TestModular>::Get()->CreateType("TestImpl2");
             std::cout << value1->GetNumber1() << ", " << value1->GetNumber2() << ", " << value1->GetNumber3() << "\n";
             std::cout << value2->GetNumber1() << ", " << value2->GetNumber2() << ", " << value2->GetNumber3() << "\n";
+            delete value1;
+            delete value2;
+
+            std::cout << ConfigManager::Get()->GetArray("modules")->GetString(0) << "\n";
+
 #pragma endregion
 
 

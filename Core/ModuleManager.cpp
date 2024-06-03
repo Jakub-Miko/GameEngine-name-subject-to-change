@@ -42,6 +42,11 @@ const std::string& Module::GetModuleName() const
 	return module_name;
 }
 
+const std::vector<std::string>& Module::GetModuleTraits() const
+{
+	return module_traits;
+}
+
 Module::Module() : lib(nullptr), module_name("Unknown")
 {
 
@@ -107,7 +112,7 @@ std::shared_ptr<Module> ModuleManager::LoadModule(const std::string& module_name
 	
 	std::shared_ptr<Module> module = std::shared_ptr<Module>(new Module);
 	module->module_name = module_name;
-	
+
 #ifdef WIN32
 	module->lib = (void*)new HMODULE(lib);
 #elif defined(UNIX)
@@ -124,6 +129,7 @@ std::shared_ptr<Module> ModuleManager::LoadModule(const std::string& module_name
 	event->module_name = module_name;
 	event->module = module;
 	event->module_traits = module_init_func().module_trait_list;
+	module->module_traits = event->module_traits;
 	if (event->module_traits.empty()) {
 		throw std::runtime_error("Module " + module_name + " could not be loaded, because it doesnt containt any traits");
 	}
@@ -191,4 +197,15 @@ void BaseModuleFactory::RegisterFactory(BaseModuleFactory* instance)
 	auto manager = ModuleManager::Get();
 	std::lock_guard<std::mutex> lock(manager->module_factory_mutex);
 	manager->module_factories.push_back(std::unique_ptr<BaseModuleFactory>(instance));
+	ModuleLoadEvent* event = new ModuleLoadEvent;
+	std::lock_guard<std::mutex> lock2(manager->module_list_mutex);
+	for (auto& module : manager->module_list) {
+		event->module_name = module.second->GetModuleName();
+		event->module = module.second;
+		event->module_traits = module.second->GetModuleTraits();
+		instance->ProcessLoad(event);
+	}
+	delete event;
 }
+
+

@@ -38,6 +38,8 @@ public:
     }
 
     const std::string& GetModuleName() const;
+    const std::vector<std::string>& GetModuleTraits() const;
+
 
 private:
     Module();
@@ -45,6 +47,7 @@ private:
     friend class ModuleManager;
 
     std::string module_name;
+    std::vector<std::string> module_traits;
     void* lib;
 };
 
