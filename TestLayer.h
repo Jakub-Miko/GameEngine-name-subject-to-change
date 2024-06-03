@@ -433,6 +433,8 @@ public:
             auto value2 = ModuleFactory<TestModular>::Get()->CreateType("TestImpl2");
             std::cout << value1->GetNumber1() << ", " << value1->GetNumber2() << ", " << value1->GetNumber3() << "\n";
             std::cout << value2->GetNumber1() << ", " << value2->GetNumber2() << ", " << value2->GetNumber3() << "\n";
+            delete value1;
+            delete value2;
 #pragma endregion
 
 
