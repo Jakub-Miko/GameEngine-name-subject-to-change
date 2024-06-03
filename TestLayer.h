@@ -426,8 +426,8 @@ public:
 
 #pragma region ModuleTest
 
-            ModuleFactory<TestModular>::Initialize();
             ModuleManager::Get()->LoadModule("TestLib");
+            ModuleFactory<TestModular>::Initialize();
 
             auto value1 = ModuleFactory<TestModular>::Get()->CreateType("TestImpl1");
             auto value2 = ModuleFactory<TestModular>::Get()->CreateType("TestImpl2");

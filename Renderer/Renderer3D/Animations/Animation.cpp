@@ -191,6 +191,7 @@ AnimationPlayback::AnimationPlayback(std::shared_ptr<Animation> animation) : pla
 
 bool AnimationPlayback::UpdateAnimation(float delta_time, RenderCommandList* list, std::shared_ptr<Mesh> skeletal_mesh)
 {
+	//TODO: Revise
 	PROFILE("Update Animations");
 	if (last_time_updated == FrameManager::Get()->GetCurrentFrameNumber()) return was_succesful;
 	last_time_updated = FrameManager::Get()->GetCurrentFrameNumber();
@@ -236,6 +237,8 @@ bool AnimationPlayback::UpdateAnimation(float delta_time, RenderCommandList* lis
 		}
 		layer_num++;
 	}
+
+	//TODO: does this need to be here ! Probably ????
 	float base_duration = playback_layers[0].anim->GetDuration();
 	if (base_duration != 0.0f && target_duration != 0.0f) {
 		float speedup_ratio = base_duration / target_duration;
