@@ -156,7 +156,7 @@ void Octree::AddEntity(Entity ent)
 	}
 	auto& props = Application::GetWorld().GetSpatialIndex().GetSpatialIndexProperties();
 	if (!active) {
-		if (entity_list.size() + 1 <= props.max_entities_pre_node || depth >= props.max_depth) {
+		if (entity_list.size() + 1 <= props.max_entities_per_node || depth >= props.max_depth) {
 			entity_list.push_back(ent);
 			node->spatial_index_node = this;
 			node->octree_index = entity_list.size() - 1;
@@ -229,7 +229,7 @@ void Octree::Init(Octree* parent, const BoundingBox& node_box, const std::vector
 
 	auto& props = world.GetSpatialIndex().GetSpatialIndexProperties();
 	//if the number of nodes is smaller than minimum than place all entities into current node and stop subdividing
-	if (entities.size() <= props.max_entities_pre_node || depth >= props.max_depth) {
+	if (entities.size() <= props.max_entities_per_node || depth >= props.max_depth) {
 		for (auto entity : entities) {
 			SceneNode* node = world.GetSceneGraph()->GetSceneGraphNode(entity);
 			if (node) {
