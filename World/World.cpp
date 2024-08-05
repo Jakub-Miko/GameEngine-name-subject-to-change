@@ -146,7 +146,7 @@ void World::UpdateSkeletalMesh(Entity ent)
 
 Entity World::DuplicateEntity(Entity ent, Entity parent)
 {
-	if(!EntityIsValid(ent) && parent != Entity()) {
+	if(!EntityIsValid(ent) && parent != Entity()) { /// @todo Line @lineinfo : What is this condition ?
 		return Entity();
 	}
 	Entity new_ent = CreateEntity(parent);
