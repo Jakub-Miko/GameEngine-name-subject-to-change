@@ -61,6 +61,17 @@ public:
 };
 
 /**
+ * @brief Determines when the Component has a specialization of ComponentInitProxy
+ * @tparam T 
+ * 
+ * if this template is used it means @ref has_ComponentInitProxy_specialization_1 specialization was not used
+ * and the component has a specialization of ComponentInitProxy
+ * @see has_ComponentInitProxy_v
+*/
+template<typename T, typename = void>
+struct has_ComponentInitProxy : std::true_type {};
+
+/**
  * @brief Determines when the Component doesn't have a specialization of ComponentInitProxy
  * @tparam T Component type
  * 
@@ -72,16 +83,6 @@ public:
 template<typename T>
 struct has_ComponentInitProxy<T, std::void_t<typename ComponentInitProxy<T>::not_defined>> : std::false_type {};
 
-/**
- * @brief Determines when the Component has a specialization of ComponentInitProxy
- * @tparam T 
- * 
- * if this template is used it means @ref has_ComponentInitProxy_specialization_1 specialization was not used
- * and the component has a specialization of ComponentInitProxy
- * @see has_ComponentInitProxy_v
-*/
-template<typename T, typename = void>
-struct has_ComponentInitProxy : std::true_type {};
 
 
 /**
