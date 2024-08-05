@@ -135,7 +135,7 @@ public:
     /**
      * @brief Distributes the Event hierarchically without using observers.
      * @param event event to distribute
-     * @return whether the event was marked as proccessed (can have different implications for different events)
+     * @return whether the event was marked as processed (can have different implications for different events)
     */
     bool SendEvent(Event* event);
 
