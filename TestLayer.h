@@ -30,7 +30,6 @@
 #endif
 
 
-
 class TestEventType : public Event {
     EVENT_ID(TestEventType);
 
@@ -38,6 +37,12 @@ public:
     int x, y;
 };
 
+/**
+ * @brief A test layer for testing implementation 
+ * 
+ * Since unit tests are no very useful for a Monolithic Engine, most tests were performed here
+ * @warning This is not a replacememnt for proper testing, but a result of time constrictions when developing the first working version of the Engine.
+*/
 class TestLayer : public Layer
 {
 public:
