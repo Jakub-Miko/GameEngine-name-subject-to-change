@@ -38,7 +38,6 @@ public:
 
 	/**
 	 * @brief Get the frame number currently rendered by the render thread (render thread is always behind)
-	 * @return 
 	*/
 	uint32_t GetRendererFrameNumber() const {
 		return m_Sync_Fence->GetValue();
