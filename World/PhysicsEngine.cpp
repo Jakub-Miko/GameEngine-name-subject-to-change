@@ -14,21 +14,26 @@
 #include <Renderer/MeshManager.h>
 #include <Core/Debug.h>
 
+/**
+ * @brief Abstracted internal state of Bullet Physics Engine
+ * 
+ * Contains collision shapes created for each mesh.
+*/
 struct PhysicsEngine_BulletData {
-	std::unique_ptr<btCollisionConfiguration> collision_config;
+	std::unique_ptr<btCollisionConfiguration> collision_config; 
 	std::unique_ptr<btBroadphaseInterface> broadphase;
 	std::unique_ptr<btCollisionDispatcher> collision_dispather;
 	std::unique_ptr<btConstraintSolver> constraint_solver;
 	std::unique_ptr<btDynamicsWorld> world;
 
 	std::mutex triangle_shape_mutex;
-	std::unordered_map<std::string, std::shared_ptr<btBvhTriangleMeshShape>> triangle_shapes;
+	std::unordered_map<std::string, std::shared_ptr<btBvhTriangleMeshShape>> triangle_shapes; ///< colliders for Concave meshes
 
 	std::mutex box_shape_mutex;
-	std::unordered_map<std::string, std::shared_ptr<btBoxShape>> box_shapes;
+	std::unordered_map<std::string, std::shared_ptr<btBoxShape>> box_shapes; ///< colliders for meshes using a bounding box
 
 	std::mutex convex_hull_shape_mutex;
-	std::unordered_map<std::string, std::shared_ptr<btConvexHullShape>> convex_hull_shapes;
+	std::unordered_map<std::string, std::shared_ptr<btConvexHullShape>> convex_hull_shapes; ///< colliders for meshes using a Convex Hull. These are also saved as .hull files into the temp directory
 
 
 
