@@ -24,6 +24,11 @@
 #include <World/Components/AudioComponent.h>
 #include <Core/TypeList.h>
 
+/**
+ * @brief All of the Engines Components types
+ * 
+ * @warning Any of the Engines component types need to be added into this list in order to get properly initialized, alongside with their storage in the ECS
+*/
 using Component_Types = TypeList<BoundingVolumeComponent, CameraComponent, ConstructionComponent, DefferedUpdateComponent, DynamicPropertiesComponent, InitializationComponent,
 	KeyPressedScriptComponent, LabelComponent, LightComponent, LoadedComponent, MeshComponent, MousePressedScriptComponent, PrefabComponent, ScriptComponent, SerializableComponent, SquareComponent,
 	TransformComponent, ShadowCasterComponent, PhysicsComponent, SkeletalMeshComponent, AudioComponent, UITextComponent, SkylightComponent>;

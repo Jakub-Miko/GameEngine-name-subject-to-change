@@ -62,7 +62,7 @@ public:
 
 /**
  * @brief Determines when the Component has a specialization of ComponentInitProxy
- * @tparam T 
+ * @tparam T Component type
  * 
  * if this template is used it means @ref has_ComponentInitProxy_specialization_1 specialization was not used
  * and the component has a specialization of ComponentInitProxy
@@ -87,7 +87,7 @@ struct has_ComponentInitProxy<T, std::void_t<typename ComponentInitProxy<T>::not
 
 /**
  * @brief Represents a boolean which marks whether the component has a ComponentInitProxy
- * @tparam T component type 
+ * @tparam T Component type 
 */
 template<typename T>
 constexpr bool has_ComponentInitProxy_v = has_ComponentInitProxy<T>::value;
