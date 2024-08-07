@@ -3,10 +3,15 @@
 #include <Audio/AudioSystem.h>
 #include <World/Components/AudioComponent.h>
 
+/**
+ * @brief Updates audio objects positions to match Entity Transforms and Playback properties in their AudioComponents, 
+ * as well as updating the Listener position to sync with the Primary Entity 
+ * @param world world containing Entities with AudioComponents to update
+*/
 void AudioUpdateSystem(World& world)
 {
-    Entity camera = Application::GetWorld().GetPrimaryEntity();
-    glm::mat4& transform = Application::GetWorld().GetComponent<TransformComponent>(camera).TransformMatrix;
+    Entity camera = world.GetPrimaryEntity();
+    glm::mat4& transform = world.GetComponent<TransformComponent>(camera).TransformMatrix;
     glm::vec3 camera_pos = transform[3];
     AudioSystem::Get()->SetListenerPosition(camera_pos);
     AudioSystem::Get()->SetListenerOrientation(glm::mat3(transform));
