@@ -39,6 +39,13 @@ class ComponentInitProxy<PrefabComponent> {
 public:
 	static constexpr bool can_copy = true;
 
+	/**
+	 * @brief Create callback for the PrefabComponent
+	 * @param world World the component was assigned in 
+	 * @param entity entity to which the component was assigned to
+	 * 
+	 * @todo Maybe move the logic for creating the ConstructionComponent here ?
+	*/
 	static void OnCreate(World& world, Entity entity);
 
 	static void OnDestroy(World& world, Entity entity);

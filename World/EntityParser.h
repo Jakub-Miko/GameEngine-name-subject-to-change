@@ -9,10 +9,10 @@
 */
 struct EntityParseResult {
 	std::string component_json = ""; ///< Json string containing the data for all the Entities components
-	std::string construction_script = ""; ///< Construction Script of an entity
-	std::string inline_script = ""; ///< Inline Script of an entity
+	std::string construction_script = ""; ///< Construction Script of an entity @warning Should only be used on Prefab roots
+	std::string inline_script = ""; ///< Inline Script of an entity @warning Should only be used on Prefab roots
 	DynamicPropertiesComponent properties; ///< Deserialized DynamicPropertiesComponent of the entity
-	std::vector<std::string> children; ///< paths for the entities children 
+	std::vector<std::string> children; ///< identifiers for the children templates of this entity
 	bool has_inline = false; ///< Whether the Entity has an inline script @todo Redundant
 };
 

@@ -339,11 +339,11 @@ void EntityManager::DeserializeEntityPrefab_impl(const std::string& path_in, con
 		child_entity_template = GetEntitySignature(path);
 	}
 
-	bool has_construction_script = !child_entity_template.construction_script.empty();
+	bool has_construction_script = !child_entity_template.construction_script.empty(); /// @bug Line @lineinfo : Make sure prefab children cant have scripts
 	bool has_script = !child_entity_template.inline_script.empty();
 
 	Entity child_ent = world.CreateEntity<PrefabChildEntityType>(parent);
-	world.SetComponent<DynamicPropertiesComponent>(child_ent, DynamicPropertiesComponent(child_entity_template.properties));
+	world.SetComponent<DynamicPropertiesComponent>(child_ent, DynamicPropertiesComponent(child_entity_template.properties)); /// @warning Line @lineinfo : Is this necessary ?
 	if (child_entity_template.template_entity != Entity()) {
 		InitializeFromTemplate(child_ent, child_entity_template.template_entity);
 	}
@@ -352,15 +352,15 @@ void EntityManager::DeserializeEntityPrefab_impl(const std::string& path_in, con
 		world.SetComponent<TransformComponent>(child_ent);
 	}
 
-	if (has_construction_script) {
+	if (has_construction_script) { /// @warning Line @lineinfo : remove
 		script_vm->SetEngineInitializationEntity(child_ent, path);
 		script_vm->CallInitializationFunction(path, "OnConstruct");
 	}
-	if (has_script) {
+	if (has_script) { /// @warning Line @lineinfo : remove
 		world.SetComponent<InitializationComponent>(child_ent);
 	}
 
-	if (world.HasComponentSynced<LabelComponent>(child_ent)) {
+	if (world.HasComponentSynced<LabelComponent>(child_ent)) { /// @warning Line @lineinfo : Just use the label, theres no need for a DynamicPropertiesComponent
 		world.GetComponent<DynamicPropertiesComponent>(prefab_parent).m_Properties.insert_or_assign(world.GetComponent<LabelComponent>(child_ent).label, child_ent);
 	}
 

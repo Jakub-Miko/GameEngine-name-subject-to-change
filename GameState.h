@@ -51,7 +51,8 @@ public:
 	virtual ~GameState() {};
 
 	/**
-	 * @brief Get the main GameLayer from the Application, not used anymore, may be removed.
+	 * @brief Get the main GameLayer from the Application
+	 * @deprecated not used anymore, may be removed.
 	*/
 	Layer* GetGameLayer();
 

@@ -310,7 +310,7 @@ public:
 	 * @param ent Entity to duplicate
 	 * @param parent parent to the new Entity, if left at default the parent of to copied entity is used
 	 * @return the new Entity
-	 * @warning undefined behaviour: when prefab child is used 
+	 * @bug undefined behaviour: when prefab child is used 
 	 * @todo fix undefined behaviour
 	*/
 	Entity DuplicateEntity(Entity ent, Entity parent = Entity());
@@ -320,7 +320,7 @@ public:
 	 * @param ent Entity to duplicate
 	 * @param parent parent to the new Entity, if left at default the parent of to copied entity is used
 	 * @return the new Entity
-	 * @warning undefined behaviour: when non prefab child is used 
+	 * @bug undefined behaviour: when non prefab child is used 
 	 * @todo fix undefined behaviour
 	*/
 	Entity DuplicateEntityInPrefab(Entity ent, Entity parent = Entity());
