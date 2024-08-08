@@ -3,11 +3,6 @@
 #include <Audio/AudioSystem.h>
 #include <World/Components/AudioComponent.h>
 
-/**
- * @brief Updates audio objects positions to match Entity Transforms and Playback properties in their AudioComponents, 
- * as well as updating the Listener position to sync with the Primary Entity 
- * @param world world containing Entities with AudioComponents to update
-*/
 void AudioUpdateSystem(World& world)
 {
     Entity camera = world.GetPrimaryEntity();

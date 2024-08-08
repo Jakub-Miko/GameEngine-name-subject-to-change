@@ -19,10 +19,58 @@
  * @section Scripting
  * A prefab is also the most basic unit of scripting, allowing for each prefab to have an Inline Script and a Construction Script.
  * 
+ * @anchor inline_script
+ * Inline script
+ * --------
  * The Inline script is executed on runtime either every frame, or on certain events such as Key presses and Mouse presses.
  * 
+ * Example:
+ * ~~~
+function OnUpdate(delta_time)
+    speed = GetProperty_FLOAT("Speed")
+    if(IsKeyPressed(KeyCode.KEY_W)) then
+        translation = GetTranslation()
+        translation = translation + rotate_vec3(vec3(0,0,-1*speed), GetRotation())
+        SetTranslation(translation)
+    end
+    norm_scree_pos = GetMousePosition()
+    offset = vec2({ x = 0.0, y =0.0 })
+    norm_scree_pos = offset + norm_scree_pos;
+    norm_scree_pos = norm_scree_pos * vec2({-1,-1});
+    norm_scree_pos.y = math.min(math.max(-0.8, norm_scree_pos.y),0.8)
+    pos = {
+    x = math.sin(norm_scree_pos.x * 3.1415926) * math.cos(norm_scree_pos.y * 3.1415926/2) ,
+    y = math.sin(norm_scree_pos.y * 3.1415926 / 2),
+    z = math.cos(norm_scree_pos.x * 3.1415926) * math.cos(norm_scree_pos.y * 3.1415926/2)
+    }
+    rot = quat_lookat(-vec3(pos), vec3({0,1,0}) )
+    SetRotation(rot)
+end
+ 
+function OnStart() 
+	PlayAnimation("Skeleton","asset:default_dance_vampire_animations/DanceMoves.anim")
+	PlaySound("Audio","asset:test_track_mono.wav")
+	print("Start")
+end
+ * ~~~
+ * 
+ * 
+ * @anchor construction_script
+ * Construction script
+ * --------
  * The Construction script runs when a Prefab instance gets spawned, and can utilize the data in the customized DynamicPropertiesComponent to alter the Prefab on Construction before
  * any prefab children are deserialized.
+ * 
+ * Example:
+ * ~~~
+function OnConstruct()
+    pos = GetMousePosition()
+    jit.on()
+    pos = GetMousePosition()
+    SetTranslation({x=pos.x,y=pos.y,z=0.0})
+    UseInlineScript()
+end
+ * ~~~
  * 
 */
 
