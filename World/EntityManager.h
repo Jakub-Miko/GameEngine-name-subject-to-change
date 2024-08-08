@@ -17,12 +17,13 @@
  * Prefab children.
  * 
  * @section Scripting
- * A prefab is also the most basic unit of scripting, allowing for each prefab to have an Inline Script and a Construction Script.
+ * A prefab is also the most basic unit of scripting, allowing for each prefab to have an @ref inline_script "Inline Script" and a @ref construction_script "Construction Script". 
+ * A Prefab root with a script must contain a ScriptComponent.
  * 
  * @anchor inline_script
  * Inline script
  * --------
- * The Inline script is executed on runtime either every frame, or on certain events such as Key presses and Mouse presses.
+ * The Inline script is executed on runtime either every frame, or on certain events such as Key presses and Mouse presses. 
  * 
  * Example:
  * ~~~

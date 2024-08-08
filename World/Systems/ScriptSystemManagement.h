@@ -89,11 +89,11 @@ public:
     void ResetAllScriptSystemVMs();
 
     std::vector<Entity>& GetCollidedEntities() {
-        return collided_entities;
+        return collided_entities; /// @todo returning mutable references here might not be the best idea
     }
 
     std::unordered_map<uint32_t, std::vector<CollisionEvent_L>>& GetEntityCollisions() {
-        return entity_collisions;
+        return entity_collisions; /// @todo returning mutable references here might not be the best idea
     }
 
     std::vector<CollisionEvent_L>& GetEntityCollisions(Entity ent);
