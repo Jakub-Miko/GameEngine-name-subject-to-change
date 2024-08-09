@@ -20,11 +20,18 @@ void ScriptSystemUpdate(World& world, float delta_time);
 void ScriptSystemDefferedSet(World& world);
 
 /**
- * @brief Runs a Script function of an entity, which was called from another multithreaded Entity script, but was deffered since it was called by a different Entity
+ * @brief Runs a Script function of an entity which was called from another multithreaded Entity script in earlier stages, but was deffered since it was called by a different Entity
  * and as such could not be executed in a thread-safe manner immediately
  * @param world Reference to a world instance
- *
- * The list of entities to run is managed by the ScriptSystemManager
+ * 
+ * ScriptSystemDefferedCall runs in multiple iteration, on each iteration one list of deffered calls is read from, and another is written to when a deffered call spawns another deffered call.
+ * When one iteration ends and the list used for writing is not empty, the writing and reading lists are swapped and another iteration begins.
+ * The reading list used in the first iteration also contains deffered calls from earlier script stages such as OnUpdate.
+ * Iterations end when the last iteration didn't write any other deffered call.
+ * @ref ScriptSystemManager maintains both these alternating lists (actually sets of list one list stores @ref ScriptSystemManager::m_Pending_Deffered_call_vectors "entities"
+ * another stores @ref ScriptSystemManager::m_Deffered_call_maps "calls for entities").
+ * 
+ * @bug This can cause infinite loops when deffered calls cyclically spawn more deffered calls, implement max counter and set scripts to error state
 */
 void ScriptSystemDefferedCall(World& world);
 

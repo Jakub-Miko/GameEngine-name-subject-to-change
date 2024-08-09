@@ -16,28 +16,48 @@ class ScriptSystemVM;
 class ScriptHandler;
 class CollisionEvent;
 
+/**
+ * @brief Key-Value pair of a Script value stored as a variant
+ * 
+ * Used to store @ref DynamicPropertiesComponent "property" set actions which have been deffered @see ScriptSystemDefferedSet
+*/
 struct Script_Variant_Key_Value {
     Script_Variant_Key_Value(const Script_Variant_type& value,const std::string& name) : value(value), name(name) {}
     
-    Script_Variant_type value;
-    std::string name;
+    Script_Variant_type value; ///< The value of a property stored as a variant
+    std::string name; ///< The name of the property 
 };
 
+/**
+ * @brief A map containing associations between entities and all @ref Script_Variant_Key_Value "Script_Variant_Key_Values" which should be set in its DynamicPropertiesComponent during @ref ScriptSystemDefferedSet
+*/
 using Deffered_Set_Map = std::unordered_map<uint32_t, std::vector<Script_Variant_Key_Value>>;
 
+/**
+ * @brief A script function name  and its arguments, which should be called during @ref ScriptSystemDefferedCall for a deffered function call 
+*/
 struct Deffered_Call {
     std::string func_name;
     std::vector<Script_Variant_type> arguments;
 };
 
+/**
+* @brief A map containing associations between entities and all @ref Deffered_Call "deffered calls" which should be called during @ref ScriptSystemDefferedCall
+*/
 using Deffered_Call_Map = std::unordered_map<uint32_t, std::vector<Deffered_Call>>;
 
+/**
+ * @brief An object containing a lua script string used as a cache entry to be loaded to all lua VMs which need it without reopening and parsing files
+*/
 class ScriptObject {
 public:
     ScriptObject(const std::string& ref) : script(ref) {}
-    std::string script;
+    std::string script; ///< The lua script loaded from a file
 };
 
+/**
+ * @brief A singleton that manages a multithreaded Lua execution environment, which allows for calling various scripts for all entities in parallel, despite lua not supporting multithreading.
+*/
 class ScriptSystemManager {
 public:
     
@@ -46,56 +66,165 @@ public:
     ScriptSystemManager& operator=(const ScriptSystemManager& ref) = delete;
     ScriptSystemManager& operator=(ScriptSystemManager&& ref) = delete;
 
+    /**
+     * @brief Singleton initializer
+    */
     static void Initialize();
+    /**
+     * @brief Singleton getter
+    */
     static ScriptSystemManager* Get();
+    /**
+     * @brief Singleton destructor
+    */
     static void Shutdown();
 
+    /**
+     * @brief Called in every thread which will run lua scripts using the ScriptSystemManager to initialize necessary threadlocal data. 
+    */
     void InitThread();
 
+    /**
+     * @brief Gets a string containing a an @ref inline_script "inline script" loaded from a file, with caching
+     * @param path Path to the file containing the @ref inline_script "inline script", allows file subsections
+     * @return a string containing the loaded @ref inline_script "inline script"
+    */
     std::string& GetScript(const std::string& path);
 
+    /**
+     * @brief Gets a string containing a a @ref construction_script "construction script" loaded from a file, with caching
+     * @param path Path to the file containing the @ref construction_script "construction script", allows file subsections
+     * @return a string containing the loaded @ref construction_script "construction script"
+    */
     std::string& GetConstructionScript(const std::string& path);
 
+    /**
+     * @brief Used to replace a cache entry of an @ref inline_script "inline script" loaded from a file, with a script contained in a string
+     * @param path path of the @ref inline_script "inline script" cache entry to replace
+     * @param script the script to replace the @ref inline_script "inline script" cache entry with
+    */
     void UploadScript(const std::string& path, const std::string& script);
 
+    /**
+     * @brief Used to replace a cache entry of a @ref construction_script "construction script" loaded from a file, with a script contained in a string
+     * @param path path of the @ref construction_script "construction script" cache entry to replace
+     * @param script the script to replace the @ref construction_script "construction script" cache entry with
+    */
     void UploadConstructionScript(const std::string& path, const std::string& script);
 
+    /**
+     * @brief Marks entities which have new pending @ref ScriptSystemDefferedSet "deffered property set actions" as dirty by assigning them wit a DefferedUpdateComponent
+     * @param ent Entity to mark dirty 
+    */
     void SetEntityAsDirty(Entity ent);
 
+    /**
+     * @brief Get the Deffered_Call_Map containg pending deffered calls @see ScriptSystemDefferedCall 
+     * @return the current Deffered_Call_Map
+     * 
+     * @note The current deffered map alternates on every internal iteration of ScriptSystemDefferedCall, so deffered calls can also spawn other deffered calls
+    */
     Deffered_Call_Map& GetDefferedCalls();
+    /**
+     * @brief Gets a vector contaning all @ref Deffered_Call "deffered calls" pending for an Entity.
+     * @param ent Entity to get the @ref Deffered_Call "deffered calls" for 
+     * @return all @ref Deffered_Call "deffered calls" pending for an Entity
+    */
     std::vector<Deffered_Call>& GetDefferedCallsForEntity(Entity ent);
+    /**
+     * @brief Get all Entities with pending deffered calls
+     * @return vector of entities with pending deffered calls
+    */
     std::vector<Entity>& GetPendingDefferedCallEntities();
+    /**
+     * @brief Add a new deffered call to an Entity
+     * @param ent Entity to add the deffered call to (the one on which it will be called, not the one which added it)
+     * @param call_info Deffered_Call object containing the function name and arguments
+    */
     void AddDefferedCall(Entity ent, const Deffered_Call& call_info);
+
+    /**
+     * @brief Used by @ref ScriptSystemDefferedCall to swap Deffered call maps, so that deffered calls can also spawn other deffered calls. @see ScriptSystemManager::GetDefferedCalls
+    */
     void SwapDefferedCallCycle();
 
+    
     //This is not ThreadSafe, use only in synchronized contexts.
+    
+    /**
+     * @brief Erases an @ref inline_script "inline script" from all lua VMs and the cache, to force a reload from file on next call
+     * @param script_path Path to the script to invalidate
+     * 
+     * @warning This is not thread-safe, use only in synchronized contexts
+    */
     void InvalidateInlineScript(const std::string& script_path);
-
-
-    //This is not ThreadSafe, use only in synchronized contexts.
+    
+    /**
+     * @brief Erases a @ref construction_script "construction script" from all lua VMs and the cache, to force a reload from file on next call
+     * @param script_path Path to the script to invalidate
+     *
+     * @warning This is not thread-safe, use only in synchronized contexts
+    */
     void InvalidateConstructionScript(const std::string& script_path);
 
+    /**
+     * @brief Gets a vector of maps containing @ref ScriptSystemDefferedSet "deffered property set actions", one map for every thread.
+     * @return a vector of @ref Deffered_Set_Map "Deffered_Set_Maps" for every thread
+    */
     const std::vector<Deffered_Set_Map>& GetEntityChanges();
 
+    /**
+     * @brief Celars all @ref Deffered_Set_Map "Deffered_Set_Maps" for every thread
+    */
     void ClearEntityChanges();
 
+    /**
+     * @brief Gets a ScriptSystemVM for executing script
+     * @return a ScriptSystemVM instance if available, nullptr if not
+     * 
+     * The ScriptSystemVM returned is specific to the thread this function was called on, and the thread must have called ScriptSystemManager::InitializeScriptSystemVM, otherwise
+     * nullptr is returned
+    */
     ScriptSystemVM* TryGetScriptSystemVM();
 
+    /**
+     * @brief Registers an entity collision which will result in a call to OnCollision script functions call. @see ScriptSystemCollisionCallback
+     * @param col_event CollisionEvent launched by the PhysicsEngine
+    */
     void OnCollision(CollisionEvent* col_event);
 
+    /**
+     * @brief Called by every thread utilizing ScriptSystemManager, to initialize a thread local ScriptSystemVM instance
+    */
     void InitializeScriptSystemVM();
-    
-    //Only call from main thread when vms aren't used, this call is NOT thread-safe
+
+    /**
+     * @brief Resets all ScriptSystemVM instances to their default state
+     * @warning Only call from main thread when vms aren't used, this call is NOT thread-safe
+    */
     void ResetAllScriptSystemVMs();
 
+    /**
+     * @brief Get all entities which have experienced collisions and have PhysicsObjectProperties::RECIEVE_COLLISION_EVENTS flag set
+     * @return the list of collided entities with callbacks enabled
+    */
     std::vector<Entity>& GetCollidedEntities() {
         return collided_entities; /// @todo returning mutable references here might not be the best idea
     }
 
+    /**
+     * @brief Gets all collision events, associated with all entities
+     * @return a maps between entities and vectors of collision events
+    */
     std::unordered_map<uint32_t, std::vector<CollisionEvent_L>>& GetEntityCollisions() {
         return entity_collisions; /// @todo returning mutable references here might not be the best idea
     }
 
+    /**
+     * @brief Gets all collision events, associated with an Entity
+     * @param ent Entity to get the collisions of
+     * @return a vector of all collision events for an Entity
+    */
     std::vector<CollisionEvent_L>& GetEntityCollisions(Entity ent);
 
 
@@ -104,27 +233,39 @@ private:
     ~ScriptSystemManager();
     ScriptSystemManager();
 
+    /**
+     * @brief Internal function that creates and return a new Deffered_Set_Map
+     * @return a new instance of Deffered_Set_Map
+     * 
+     * @warning Only as many @ref Deffered_Set_Map "Deffered_Set_Maps" can be allocated as @ref ThreadManager::GetMaxThreadCount "Max Thread Count"
+    */
     Deffered_Set_Map* GetDefferedSetMap();
 
 private:
 
-    std::unordered_map<std::string, ScriptObject> m_ScriptCache;
-    std::vector<ScriptSystemVM*> m_Script_system_VMs;
-    std::mutex sync_mutex;
-    std::mutex script_cache_mutex;
+    std::unordered_map<std::string, ScriptObject> m_ScriptCache; ///< Cache associating script filepaths with loaded scripts
+    std::vector<ScriptSystemVM*> m_Script_system_VMs; ///< a vector containing all @ref ScriptVM "ScriptVMs" used by all threads utilizing ScriptSystemManager
+    std::mutex sync_mutex; ///< Mutex for @ref m_Script_system_VMs (Only used during @ref ScriptSystemManager::InitializeScriptSystemVM "thread initialization", since no writes are performed otherwise)
+    std::mutex script_cache_mutex; ///< Mutex for @ref m_ScriptCache
 
-    std::mutex DefferedSetMaps_mutex;
-    std::vector<Deffered_Set_Map> m_DefferedSetMaps;
+    std::mutex DefferedSetMaps_mutex; ///< Mutex for @ref m_DefferedSetMaps
+    std::vector<Deffered_Set_Map> m_DefferedSetMaps; ///< Vector of @ref Deffered_Set_Map "Deffered_Set_Maps" for all threads
 
     //Deffered calls have different cycles one used for reads and one for writes, they swap in the next cycle
     std::mutex Deffered_call_maps_mutex;
     bool deffered_call_cycle = false;
+    /**
+     * @brief Contains two @ref Deffered_Call_Map "Deffered_Call_Maps" used to store @ref Deffered_Call "deffered calls", for explanation why two are needed see the detials of @ref ScriptSystemDefferedCall
+    */
     std::vector<Deffered_Call_Map> m_Deffered_call_maps;
+    /**
+     * @brief Contains two vectors of entities used to store all entities on which deffered calls should be executed, for explanation why two are needed see the detials of @ref ScriptSystemDefferedCall
+    */
     std::vector<std::vector<Entity>> m_Pending_Deffered_call_vectors;
 
-    std::vector<Entity> collided_entities;
-    std::unordered_map<uint32_t, std::vector<CollisionEvent_L>> entity_collisions;
-    std::unique_ptr<EventObserverBase> collision_observer;
+    std::vector<Entity> collided_entities; ///< Vector containing all entities, which recieved collision events
+    std::unordered_map<uint32_t, std::vector<CollisionEvent_L>> entity_collisions; ///< Map associating all entities in @ref collided_entities with all their collision events
+    std::unique_ptr<EventObserverBase> collision_observer; ///< an EventObserver used to capture collision events generated by the PhysicsEngine 
 
 };
 

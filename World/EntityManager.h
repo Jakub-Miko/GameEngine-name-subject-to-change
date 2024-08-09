@@ -23,7 +23,8 @@
  * @anchor inline_script
  * Inline script
  * --------
- * The Inline script is executed on runtime either every frame, or on certain events such as Key presses and Mouse presses. 
+ * The Inline script is executed on runtime either every frame(OnUpdate), or on certain events such as Key presses(OnKeyPressed), 
+ Mouse presses(OnMouseButtonPressed), Collisions(OnCollision) or Spawn(OnStart). 
  * 
  * Example:
  * ~~~
@@ -47,7 +48,25 @@ function OnUpdate(delta_time)
     rot = quat_lookat(-vec3(pos), vec3({0,1,0}) )
     SetRotation(rot)
 end
- 
+
+function OnKeyPressed(e)
+
+end
+
+function OnMouseButtonPressed(e)
+
+end
+
+function OnCollision(event)
+    if(event.num_collision_points == 0) then return end
+    local distance = event.collision_points[1].y - GetChildWorldTranslation("CollisionBox").y + GetChildScale("CollisionBox").y
+    if (math.abs(distance)< 0.05) then
+        SetProperty_INT("Collides_bottom",1)
+    else
+        SetProperty_INT("Collides_bottom",0)
+    end
+end
+
 function OnStart() 
 	PlayAnimation("Skeleton","asset:default_dance_vampire_animations/DanceMoves.anim")
 	PlaySound("Audio","asset:test_track_mono.wav")
