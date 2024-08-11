@@ -5,7 +5,7 @@ class World;
  * @brief Renders all Entites containing the MeshComponent to the scene from the perspective of the primary entity with static lighting
  * @param world Reference to a world instance
  * 
- * @deprecated This is no longer used and was replaced by a proper deffered rendering pipeline, check Renderer3D
+ * @deprecated This is no longer used and was replaced by a proper deferred rendering pipeline, check Renderer3D
 */
 void MeshRenderSystem(World& world);
 

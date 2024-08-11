@@ -53,7 +53,7 @@ void GameLayer::PreUpdate(float delta_time)
     World& world = Application::GetWorld();
     world.CheckCamera();
     EntityConstructionSystem(world);
-    ScriptSystemDefferedSet(world);
+    ScriptSystemDeferredSet(world);
 }
 
 void GameLayer::OnUpdate(float delta_time) { 
@@ -61,7 +61,7 @@ void GameLayer::OnUpdate(float delta_time) {
     world.UpdateSceneScript(delta_time);
     InitializationSystem(world);
     ScriptSystemUpdate(world, delta_time);
-    ScriptSystemDefferedCall(world);
+    ScriptSystemDeferredCall(world);
     world.SetPrimaryEntitySystem();
     MeshManager::Get()->UpdateLoadedMeshes(); // MultiThread
     AudioSystem::Get()->UpdateLoadedSounds();

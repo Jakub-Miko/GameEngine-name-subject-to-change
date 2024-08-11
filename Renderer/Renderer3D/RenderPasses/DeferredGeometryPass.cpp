@@ -1,4 +1,4 @@
-#include "DefferedGeometryPass.h"
+#include "DeferredGeometryPass.h"
 #include <Renderer/RootSignature.h>
 #include <Renderer/Renderer3D/Renderer3D.h>
 #include <Renderer/Renderer3D/MaterialManager.h>
@@ -37,13 +37,13 @@ struct VertexLayoutFactory<GeometryPassPreset> {
 };
 
 
-struct DefferedGeometryPass::internal_data {
+struct DeferredGeometryPass::internal_data {
 	std::shared_ptr<Pipeline> pipeline;
 	std::shared_ptr<RenderBufferResource> constant_scene_buf;
 	bool initialized = false;
 };
 
-void DefferedGeometryPass::InitPostProcessingPassData() {
+void DeferredGeometryPass::InitPostProcessingPassData() {
 	PipelineDescriptor pipeline_desc;
 	pipeline_desc.viewport = RenderViewport();
 	pipeline_desc.scissor_rect = RenderScissorRect();
@@ -74,20 +74,20 @@ void DefferedGeometryPass::InitPostProcessingPassData() {
 }
 
 
-DefferedGeometryPass::DefferedGeometryPass(const std::string& input_geometry, const std::string& input_buffer, const std::string& output_buffer) : input_geometry(input_geometry), output_buffer(output_buffer), input_buffer(input_buffer)
+DeferredGeometryPass::DeferredGeometryPass(const std::string& input_geometry, const std::string& input_buffer, const std::string& output_buffer) : input_geometry(input_geometry), output_buffer(output_buffer), input_buffer(input_buffer)
 {
 	data = new internal_data;
 	InitPostProcessingPassData();
 }
 
-void DefferedGeometryPass::Setup(RenderPassResourceDefinnition& setup_builder)
+void DeferredGeometryPass::Setup(RenderPassResourceDefinnition& setup_builder)
 {
 	setup_builder.AddResource<std::shared_ptr<RenderFrameBufferResource>>(input_buffer, RenderPassResourceDescriptor_Access::READ);
 	setup_builder.AddResource<RenderResourceCollection<Entity>>(input_geometry, RenderPassResourceDescriptor_Access::READ);
 	setup_builder.AddResource<std::shared_ptr<RenderFrameBufferResource>>(output_buffer, RenderPassResourceDescriptor_Access::WRITE);
 }
 
-void DefferedGeometryPass::Render(RenderPipelineResourceManager& resource_manager)
+void DeferredGeometryPass::Render(RenderPipelineResourceManager& resource_manager)
 {
 	auto& geometry = resource_manager.GetResource<RenderResourceCollection<Entity>>(input_geometry);
 	auto& out_buffer = resource_manager.GetResource<std::shared_ptr<RenderFrameBufferResource>>(input_buffer);
@@ -136,7 +136,7 @@ void DefferedGeometryPass::Render(RenderPipelineResourceManager& resource_manage
 
 }
 
-DefferedGeometryPass::~DefferedGeometryPass()
+DeferredGeometryPass::~DeferredGeometryPass()
 {
 	if (data) {
 		delete data;

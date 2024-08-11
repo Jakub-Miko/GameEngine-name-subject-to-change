@@ -7,14 +7,14 @@
 class RenderCommandList;
 class CameraComponent;
 
-class DefferedLightingPass : public RenderPass {
+class DeferredLightingPass : public RenderPass {
 public:
 	struct internal_data;
-	DefferedLightingPass(const std::string& input_gbuffer, const std::string& input_lights, const std::string& input_directional_shadowed_lights, 
+	DeferredLightingPass(const std::string& input_gbuffer, const std::string& input_lights, const std::string& input_directional_shadowed_lights, 
 		const std::string& input_point_shadowed_lights, const std::string& output_buffer, const std::string& shadow_map_dependency_tag, const std::string& input_directional_shadowed_cascades);
 	virtual void Setup(RenderPassResourceDefinnition& setup_builder) override;
 	virtual void Render(RenderPipelineResourceManager& resource_manager) override;
-	virtual ~DefferedLightingPass();
+	virtual ~DeferredLightingPass();
 private:
 
 	struct render_props {

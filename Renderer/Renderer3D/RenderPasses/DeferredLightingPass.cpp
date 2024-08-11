@@ -1,4 +1,4 @@
-#include "DefferedLightingPass.h"
+#include "DeferredLightingPass.h"
 #include <Renderer/TextureManager.h>
 #include <Renderer/RootSignature.h>
 #include <Renderer/Renderer3D/Renderer3D.h>
@@ -41,7 +41,7 @@ struct VertexLayoutFactory<LightingPassPreset> {
 };
 
 
-struct DefferedLightingPass::internal_data {
+struct DeferredLightingPass::internal_data {
 	std::shared_ptr<Pipeline> pipeline;
 	std::shared_ptr<Pipeline> pipeline_skylight;
 	std::shared_ptr<Pipeline> pipeline_shadowed_point;
@@ -62,7 +62,7 @@ struct DefferedLightingPass::internal_data {
 	bool initialized = false;
 };
 
-void DefferedLightingPass::InitPostProcessingPassData() {
+void DeferredLightingPass::InitPostProcessingPassData() {
 	PipelineDescriptor pipeline_desc;
 	pipeline_desc.viewport = RenderViewport();
 	pipeline_desc.scissor_rect = RenderScissorRect();
@@ -186,7 +186,7 @@ void DefferedLightingPass::InitPostProcessingPassData() {
 }
 
 
-DefferedLightingPass::DefferedLightingPass(const std::string& input_gbuffer, const std::string& input_lights, const std::string& input_directional_shadowed_lights,
+DeferredLightingPass::DeferredLightingPass(const std::string& input_gbuffer, const std::string& input_lights, const std::string& input_directional_shadowed_lights,
 	const std::string& input_point_shadowed_lights, const std::string& output_buffer, const std::string& shadow_map_dependency_tag, const std::string&  input_directional_shadowed_cascades)
 	: input_gbuffer(input_gbuffer), output_buffer(output_buffer), input_lights(input_lights), input_directional_shadowed_lights(input_directional_shadowed_lights),
 	input_point_shadowed_lights(input_point_shadowed_lights), shadow_map_dependency_tag(shadow_map_dependency_tag), input_directional_shadowed_cascades(input_directional_shadowed_cascades)
@@ -195,7 +195,7 @@ DefferedLightingPass::DefferedLightingPass(const std::string& input_gbuffer, con
 	InitPostProcessingPassData();
 }
 
-void DefferedLightingPass::Setup(RenderPassResourceDefinnition& setup_builder)
+void DeferredLightingPass::Setup(RenderPassResourceDefinnition& setup_builder)
 {
 	setup_builder.AddResource<RenderResourceCollection<Entity>>(input_lights, RenderPassResourceDescriptor_Access::READ);
 	setup_builder.AddResource<RenderResourceCollection<Entity>>(input_directional_shadowed_lights, RenderPassResourceDescriptor_Access::READ);
@@ -206,7 +206,7 @@ void DefferedLightingPass::Setup(RenderPassResourceDefinnition& setup_builder)
 	setup_builder.AddResource<RenderResourceCollection<glm::mat4>>(input_directional_shadowed_cascades, RenderPassResourceDescriptor_Access::READ);
 }
 
-void DefferedLightingPass::Render(RenderPipelineResourceManager& resource_manager)
+void DeferredLightingPass::Render(RenderPipelineResourceManager& resource_manager)
 {
 	render_props props;
 	auto& gbuffer = resource_manager.GetResource<std::shared_ptr<RenderFrameBufferResource>>(input_gbuffer);
@@ -240,14 +240,14 @@ void DefferedLightingPass::Render(RenderPipelineResourceManager& resource_manage
 
 }
 
-DefferedLightingPass::~DefferedLightingPass()
+DeferredLightingPass::~DeferredLightingPass()
 {
 	if (data) {
 		delete data;
 	}
 }
 
-void DefferedLightingPass::RenderLights(RenderPipelineResourceManager& resource_manager,RenderCommandList* list, const CameraComponent& camera,const render_props& props)
+void DeferredLightingPass::RenderLights(RenderPipelineResourceManager& resource_manager,RenderCommandList* list, const CameraComponent& camera,const render_props& props)
 {
 	auto& geometry = resource_manager.GetResource<RenderResourceCollection<Entity>>(input_lights);
 	auto& gbuffer = resource_manager.GetResource<std::shared_ptr<RenderFrameBufferResource>>(input_gbuffer);
@@ -308,7 +308,7 @@ void DefferedLightingPass::RenderLights(RenderPipelineResourceManager& resource_
 	}
 }
 
-void DefferedLightingPass::RenderShadowedLightsPoint(RenderPipelineResourceManager& resource_manager, RenderCommandList* list, const CameraComponent& camera, const render_props& props)
+void DeferredLightingPass::RenderShadowedLightsPoint(RenderPipelineResourceManager& resource_manager, RenderCommandList* list, const CameraComponent& camera, const render_props& props)
 {
 	const RenderResourceCollection<Entity>* geometry;
 	
@@ -367,7 +367,7 @@ void DefferedLightingPass::RenderShadowedLightsPoint(RenderPipelineResourceManag
 	}
 }
 
-void DefferedLightingPass::RenderShadowedLightsDirectional(RenderPipelineResourceManager& resource_manager, RenderCommandList* list, const CameraComponent& camera, const render_props& props)
+void DeferredLightingPass::RenderShadowedLightsDirectional(RenderPipelineResourceManager& resource_manager, RenderCommandList* list, const CameraComponent& camera, const render_props& props)
 {
 	const RenderResourceCollection<Entity>* geometry;
 	geometry = &resource_manager.GetResource<RenderResourceCollection<Entity>>(input_directional_shadowed_lights);
@@ -443,7 +443,7 @@ void DefferedLightingPass::RenderShadowedLightsDirectional(RenderPipelineResourc
 	}
 }
 
-void DefferedLightingPass::RenderSkylights(RenderPipelineResourceManager& resource_manager, RenderCommandList* list, const CameraComponent& camera, const render_props& props)
+void DeferredLightingPass::RenderSkylights(RenderPipelineResourceManager& resource_manager, RenderCommandList* list, const CameraComponent& camera, const render_props& props)
 {
 	const RenderResourceCollection<Entity>* geometry;
 	auto skylight_view = Application::GetWorld().GetRegistry().view<SkylightComponent>();

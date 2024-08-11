@@ -62,14 +62,14 @@ public:
 	static void Init();
 
 	/**
-	 * @brief Singlton destructor
+	 * @brief Singleton destructor
 	*/
 	static void Shutdown();
 
 	/**
 	 * @brief current state is updated according to the next_state set during the last frame.
 	 * 
-	 * States are not changed immediately when requested, the state change is instead deffered until this function gets called.
+	 * States are not changed immediately when requested, the state change is instead deferred until this function gets called.
 	*/
 	void UpdateNextState();
 

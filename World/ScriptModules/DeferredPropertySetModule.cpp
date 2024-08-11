@@ -1,4 +1,4 @@
-#include "DefferedPropertySetModule.h"
+#include "DeferredPropertySetModule.h"
 #include <World/Components/ScriptComponent.h>
 #include <World/EntityManager.h>
 #include <World/ScriptModules/GlobalEntityModule.h>
@@ -10,7 +10,7 @@
 
 template<typename T>
 static void SetEntityProperty(Entity entity, std::string name, T value) {
-    auto map = ThreadManager::GetThreadLocalData<Deffered_Set_Map>();
+    auto map = ThreadManager::GetThreadLocalData<Deferred_Set_Map>();
     auto fnd = map->find((uint32_t)entity.id);
     if (fnd != map->end()) {
         fnd->second.push_back(Script_Variant_Key_Value(value, name));
@@ -105,15 +105,15 @@ extern "C" {
     }
 
     LIBEXP void CallEntityFunction_L(entity ent, const char* name) {
-        ScriptSystemManager::Get()->AddDefferedCall(Entity(ent.id), Deffered_Call{ std::string(name), std::vector< Script_Variant_type >() });
+        ScriptSystemManager::Get()->AddDeferredCall(Entity(ent.id), Deferred_Call{ std::string(name), std::vector< Script_Variant_type >() });
     }
 
     LIBEXP void CallEntityFunctionWithArguments_L(entity ent, const char* name, entity_call_parameters_L args) {
-        ScriptSystemManager::Get()->AddDefferedCall(Entity(ent.id), Deffered_Call{ std::string(name), *static_cast<std::vector<Script_Variant_type>*>(args.parameter_list) });
+        ScriptSystemManager::Get()->AddDeferredCall(Entity(ent.id), Deferred_Call{ std::string(name), *static_cast<std::vector<Script_Variant_type>*>(args.parameter_list) });
     }
 }
 
-void DefferedPropertySetModule::OnRegisterModule(ModuleBindingProperties& props)
+void DeferredPropertySetModule::OnRegisterModule(ModuleBindingProperties& props)
 {
     GlobalEntityModule().RegisterModule(props);
     MathModule().RegisterModule(props);

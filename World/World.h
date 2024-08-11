@@ -132,7 +132,7 @@ struct HasOnUpdate
 };
 
 /**
- * @brief Enum which identifies what operation should be performed at a deffered World::RemoveEntity call
+ * @brief Enum which identifies what operation should be performed at a deferred World::RemoveEntity call
 */
 enum class RemoveEntityAction : char {
 	REMOVE = 0, ///< Remove the entity with all its children and prefab children
@@ -725,12 +725,12 @@ private:
 	void SerializePrefabChild(Entity child, std::vector<std::pair<std::string, std::string>>& file_structure);
 
 	/**
-	 * @brief Called by the engine to Process a deffered LoadScene request
+	 * @brief Called by the engine to Process a deferred LoadScene request
 	*/
 	void LoadSceneSystem();
 
 	/**
-	 * @brief Internal structure to store deffered Remove requests
+	 * @brief Internal structure to store deferred Remove requests
 	*/
 	struct RemoveEntityRequest {
 		Entity entity;
@@ -738,7 +738,7 @@ private:
 	};
 	
 	/**
-	 * @brief Called by the engine to Process a deffered Deletion request 
+	 * @brief Called by the engine to Process a deferred Deletion request 
 	*/
 	void DeletionSystem();
 
@@ -748,7 +748,7 @@ private:
 	void DeleteNode(SceneNode* node);
 
 	/**
-	 * @brief Processes deffered SetPrimary entity request
+	 * @brief Processes deferred SetPrimary entity request
 	*/
 	void SetPrimaryEntitySystem();
 

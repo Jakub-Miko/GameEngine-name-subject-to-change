@@ -3,13 +3,13 @@
 #include <string>
 
 
-class DefferedGeometryPass : public RenderPass {
+class DeferredGeometryPass : public RenderPass {
 public:
 	struct internal_data;
-	DefferedGeometryPass(const std::string& input_geometry, const std::string& input_buffer,const std::string& output_buffer);
+	DeferredGeometryPass(const std::string& input_geometry, const std::string& input_buffer,const std::string& output_buffer);
 	virtual void Setup(RenderPassResourceDefinnition& setup_builder) override;
 	virtual void Render(RenderPipelineResourceManager& resource_manager) override;
-	virtual ~DefferedGeometryPass();
+	virtual ~DeferredGeometryPass();
 private:
 	void InitPostProcessingPassData();
 	std::string input_geometry;

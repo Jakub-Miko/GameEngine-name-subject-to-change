@@ -94,7 +94,7 @@ end
 */
 
 /**
- * @brief Entry for a deffered contruction of an entity from a file
+ * @brief Entry for a deferred contruction of an entity from a file
  * 
  * @deprecated Not used anymore, replaced by ConstructionComponent
 */
@@ -143,7 +143,7 @@ public:
     static void Shutdown();
     
     /**
-     * @brief Loads a Prefab from a file. This function is deffered
+     * @brief Loads a Prefab from a file. This function is deferred
      * @param path file to create the prefab from 
      * @param parent the parent of the new prefab Root entity
      * @return the new Prefab root entity

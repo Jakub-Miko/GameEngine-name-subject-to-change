@@ -195,14 +195,14 @@ public:
 	bool IsPhysicsActive() const { return running; }
 
 	/**
-	 * @brief Add an entity with a PhysicsComponent to this simulation world, this action is deffered
+	 * @brief Add an entity with a PhysicsComponent to this simulation world, this action is deferred
 	 * @param ent Entity to add 
 	 * @warning ent needs to have a PhysicsComponent
 	*/
 	void RegisterPhysicsComponent(Entity ent);
 
 	/**
-	 * @brief Remove an entity with a PhysicsComponent from this simulation world, this action is deffered
+	 * @brief Remove an entity with a PhysicsComponent from this simulation world, this action is deferred
 	 * @param ent Entity to Remove
 	 * @warning ent must a registered simulated Entity
 	*/
@@ -228,7 +228,7 @@ private:
 	friend class TransformMotionState;
 
 	/**
-	 * @brief Represents a deffered request to add an Entity to a physics world
+	 * @brief Represents a deferred request to add an Entity to a physics world
 	 * @see PhysicsEngine::RegisterPhysicsComponent
 	*/
 	struct creation_queue_entry {
@@ -237,7 +237,7 @@ private:
 	};
 
 	/**
-	 * @brief Represents a deffered request to remove an Entity from a physics world
+	 * @brief Represents a deferred request to remove an Entity from a physics world
 	 * @see PhysicsEngine::UnRegisterPhysicsComponent
 	*/
 	struct deletion_queue_entry {

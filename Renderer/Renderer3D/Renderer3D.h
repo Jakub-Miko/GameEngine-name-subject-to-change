@@ -1,6 +1,6 @@
 #pragma once
 #include <Renderer/RenderDescriptorHeap.h>
-#include "DefferedRenderingPipeline.h"
+#include "DeferredRenderingPipeline.h"
 
 class Renderer3D {
 public:
@@ -23,7 +23,7 @@ public:
 
     template<typename T>
     const T& GetPersistentResource(const std::string& name) const {
-        return deffered_pipeline->template GetPersistentResource<T>(name);
+        return deferred_pipeline->template GetPersistentResource<T>(name);
     }
 
 private:
@@ -32,5 +32,5 @@ private:
 
 private:
     RenderDescriptorHeap default_descriptor_heap;
-    std::shared_ptr<RenderPipeline> deffered_pipeline;
+    std::shared_ptr<RenderPipeline> deferred_pipeline;
 };

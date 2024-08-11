@@ -10,7 +10,7 @@
 #include <World/EntityManager.h>
 #include <World/ComponentTypes.h>
 #include <World/Systems/ScriptSystemManagement.h>
-#include <World/ScriptModules/DefferedPropertySetModule.h>
+#include <World/ScriptModules/DeferredPropertySetModule.h>
 #include <World/ScriptModules/IOModule.h>
 #include <World/ScriptModules/ApplicationDataModule.h>
 #include <World/ScriptModules/TimeModule.h>
@@ -389,7 +389,7 @@ void World::BindLuaFunctions()
 
 	ModuleBindingProperties props;
 
-	DefferedPropertySetModule().RegisterModule(props);
+	DeferredPropertySetModule().RegisterModule(props);
 	IOModule().RegisterModule(props);
 	ApplicationDataModule().RegisterModule(props);
 	TimeModule().RegisterModule(props);

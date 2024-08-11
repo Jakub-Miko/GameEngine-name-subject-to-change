@@ -1,4 +1,4 @@
-#include "DefferedSkeletalGeometryPass.h"
+#include "DeferredSkeletalGeometryPass.h"
 #include <Renderer/RootSignature.h>
 #include <Renderer/Renderer3D/Renderer3D.h>
 #include <Renderer/Renderer3D/MaterialManager.h>
@@ -15,13 +15,13 @@
 
 
 
-struct DefferedSkeletalGeometryPass::internal_data {
+struct DeferredSkeletalGeometryPass::internal_data {
 	std::shared_ptr<Pipeline> pipeline;
 	std::shared_ptr<RenderBufferResource> constant_scene_buf;
 	bool initialized = false;
 };
 
-void DefferedSkeletalGeometryPass::InitPostProcessingPassData() {
+void DeferredSkeletalGeometryPass::InitPostProcessingPassData() {
 	PipelineDescriptor pipeline_desc;
 	pipeline_desc.viewport = RenderViewport();
 	pipeline_desc.scissor_rect = RenderScissorRect();
@@ -52,20 +52,20 @@ void DefferedSkeletalGeometryPass::InitPostProcessingPassData() {
 }
 
 
-DefferedSkeletalGeometryPass::DefferedSkeletalGeometryPass(const std::string& input_geometry, const std::string& input_buffer, const std::string& output_buffer) : input_geometry(input_geometry), output_buffer(output_buffer), input_buffer(input_buffer)
+DeferredSkeletalGeometryPass::DeferredSkeletalGeometryPass(const std::string& input_geometry, const std::string& input_buffer, const std::string& output_buffer) : input_geometry(input_geometry), output_buffer(output_buffer), input_buffer(input_buffer)
 {
 	data = new internal_data;
 	InitPostProcessingPassData();
 }
 
-void DefferedSkeletalGeometryPass::Setup(RenderPassResourceDefinnition& setup_builder)
+void DeferredSkeletalGeometryPass::Setup(RenderPassResourceDefinnition& setup_builder)
 {
 	setup_builder.AddResource<std::shared_ptr<RenderFrameBufferResource>>(input_buffer, RenderPassResourceDescriptor_Access::READ);
 	setup_builder.AddResource<RenderResourceCollection<Entity>>(input_geometry, RenderPassResourceDescriptor_Access::READ);
 	setup_builder.AddResource<std::shared_ptr<RenderFrameBufferResource>>(output_buffer, RenderPassResourceDescriptor_Access::WRITE);
 }
 
-void DefferedSkeletalGeometryPass::Render(RenderPipelineResourceManager& resource_manager)
+void DeferredSkeletalGeometryPass::Render(RenderPipelineResourceManager& resource_manager)
 {
 	auto& geometry = resource_manager.GetResource<RenderResourceCollection<Entity>>(input_geometry);
 	auto& out_buffer = resource_manager.GetResource<std::shared_ptr<RenderFrameBufferResource>>(input_buffer);
@@ -120,7 +120,7 @@ void DefferedSkeletalGeometryPass::Render(RenderPipelineResourceManager& resourc
 
 }
  
-DefferedSkeletalGeometryPass::~DefferedSkeletalGeometryPass()
+DeferredSkeletalGeometryPass::~DeferredSkeletalGeometryPass()
 {
 	if (data) {
 		delete data;

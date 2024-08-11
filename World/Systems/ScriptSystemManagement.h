@@ -19,7 +19,7 @@ class CollisionEvent;
 /**
  * @brief Key-Value pair of a Script value stored as a variant
  * 
- * Used to store @ref DynamicPropertiesComponent "property" set actions which have been deffered @see ScriptSystemDefferedSet
+ * Used to store @ref DynamicPropertiesComponent "property" set actions which have been deferred @see ScriptSystemDeferredSet
 */
 struct Script_Variant_Key_Value {
     Script_Variant_Key_Value(const Script_Variant_type& value,const std::string& name) : value(value), name(name) {}
@@ -29,22 +29,22 @@ struct Script_Variant_Key_Value {
 };
 
 /**
- * @brief A map containing associations between entities and all @ref Script_Variant_Key_Value "Script_Variant_Key_Values" which should be set in its DynamicPropertiesComponent during @ref ScriptSystemDefferedSet
+ * @brief A map containing associations between entities and all @ref Script_Variant_Key_Value "Script_Variant_Key_Values" which should be set in its DynamicPropertiesComponent during @ref ScriptSystemDeferredSet
 */
-using Deffered_Set_Map = std::unordered_map<uint32_t, std::vector<Script_Variant_Key_Value>>;
+using Deferred_Set_Map = std::unordered_map<uint32_t, std::vector<Script_Variant_Key_Value>>;
 
 /**
- * @brief A script function name  and its arguments, which should be called during @ref ScriptSystemDefferedCall for a deffered function call 
+ * @brief A script function name  and its arguments, which should be called during @ref ScriptSystemDeferredCall for a deferred function call 
 */
-struct Deffered_Call {
+struct Deferred_Call {
     std::string func_name;
     std::vector<Script_Variant_type> arguments;
 };
 
 /**
-* @brief A map containing associations between entities and all @ref Deffered_Call "deffered calls" which should be called during @ref ScriptSystemDefferedCall
+* @brief A map containing associations between entities and all @ref Deferred_Call "deferred calls" which should be called during @ref ScriptSystemDeferredCall
 */
-using Deffered_Call_Map = std::unordered_map<uint32_t, std::vector<Deffered_Call>>;
+using Deferred_Call_Map = std::unordered_map<uint32_t, std::vector<Deferred_Call>>;
 
 /**
  * @brief An object containing a lua script string used as a cache entry to be loaded to all lua VMs which need it without reopening and parsing files
@@ -113,42 +113,42 @@ public:
     void UploadConstructionScript(const std::string& path, const std::string& script);
 
     /**
-     * @brief Marks entities which have new pending @ref ScriptSystemDefferedSet "deffered property set actions" as dirty by assigning them wit a DefferedUpdateComponent
+     * @brief Marks entities which have new pending @ref ScriptSystemDeferredSet "deferred property set actions" as dirty by assigning them wit a DeferredUpdateComponent
      * @param ent Entity to mark dirty 
     */
     void SetEntityAsDirty(Entity ent);
 
     /**
-     * @brief Get the Deffered_Call_Map containg pending deffered calls @see ScriptSystemDefferedCall 
-     * @return the current Deffered_Call_Map
+     * @brief Get the Deferred_Call_Map containg pending deferred calls @see ScriptSystemDeferredCall 
+     * @return the current Deferred_Call_Map
      * 
-     * @note The current deffered map alternates on every internal iteration of ScriptSystemDefferedCall, so deffered calls can also spawn other deffered calls
-     * @warning access to the Deffered_Call_Map is not thread-safe 
+     * @note The current deferred map alternates on every internal iteration of ScriptSystemDeferredCall, so deferred calls can also spawn other deferred calls
+     * @warning access to the Deferred_Call_Map is not thread-safe 
     */
-    Deffered_Call_Map& GetDefferedCalls();
+    Deferred_Call_Map& GetDeferredCalls();
     /**
-     * @brief Gets a vector contaning all @ref Deffered_Call "deffered calls" pending for an Entity.
-     * @param ent Entity to get the @ref Deffered_Call "deffered calls" for 
-     * @return all @ref Deffered_Call "deffered calls" pending for an Entity
+     * @brief Gets a vector contaning all @ref Deferred_Call "deferred calls" pending for an Entity.
+     * @param ent Entity to get the @ref Deferred_Call "deferred calls" for 
+     * @return all @ref Deferred_Call "deferred calls" pending for an Entity
     */
-    std::vector<Deffered_Call>& GetDefferedCallsForEntity(Entity ent);
+    std::vector<Deferred_Call>& GetDeferredCallsForEntity(Entity ent);
     /**
-     * @brief Get all Entities with pending deffered calls
-     * @return vector of entities with pending deffered calls
+     * @brief Get all Entities with pending deferred calls
+     * @return vector of entities with pending deferred calls
      * @warning This method is not thread safe 
     */
-    std::vector<Entity>& GetPendingDefferedCallEntities();
+    std::vector<Entity>& GetPendingDeferredCallEntities();
     /**
-     * @brief Add a new deffered call to an Entity
-     * @param ent Entity to add the deffered call to (the one on which it will be called, not the one which added it)
-     * @param call_info Deffered_Call object containing the function name and arguments
+     * @brief Add a new deferred call to an Entity
+     * @param ent Entity to add the deferred call to (the one on which it will be called, not the one which added it)
+     * @param call_info Deferred_Call object containing the function name and arguments
     */
-    void AddDefferedCall(Entity ent, const Deffered_Call& call_info);
+    void AddDeferredCall(Entity ent, const Deferred_Call& call_info);
 
     /**
-     * @brief Used by @ref ScriptSystemDefferedCall to swap Deffered call maps, so that deffered calls can also spawn other deffered calls. @see ScriptSystemManager::GetDefferedCalls
+     * @brief Used by @ref ScriptSystemDeferredCall to swap Deferred call maps, so that deferred calls can also spawn other deferred calls. @see ScriptSystemManager::GetDeferredCalls
     */
-    void SwapDefferedCallCycle();
+    void SwapDeferredCallCycle();
 
     
     //This is not ThreadSafe, use only in synchronized contexts.
@@ -170,13 +170,13 @@ public:
     void InvalidateConstructionScript(const std::string& script_path);
 
     /**
-     * @brief Gets a vector of maps containing @ref ScriptSystemDefferedSet "deffered property set actions", one map for every thread.
-     * @return a vector of @ref Deffered_Set_Map "Deffered_Set_Maps" for every thread
+     * @brief Gets a vector of maps containing @ref ScriptSystemDeferredSet "deferred property set actions", one map for every thread.
+     * @return a vector of @ref Deferred_Set_Map "Deferred_Set_Maps" for every thread
     */
-    const std::vector<Deffered_Set_Map>& GetEntityChanges();
+    const std::vector<Deferred_Set_Map>& GetEntityChanges();
 
     /**
-     * @brief Celars all @ref Deffered_Set_Map "Deffered_Set_Maps" for every thread
+     * @brief Clears all @ref Deferred_Set_Map "Deferred_Set_Maps" for every thread
     */
     void ClearEntityChanges();
 
@@ -236,12 +236,12 @@ private:
     ScriptSystemManager();
 
     /**
-     * @brief Internal function that creates and return a new Deffered_Set_Map
-     * @return a new instance of Deffered_Set_Map
+     * @brief Internal function that creates and return a new Deferred_Set_Map
+     * @return a new instance of Deferred_Set_Map
      * 
-     * @warning Only as many @ref Deffered_Set_Map "Deffered_Set_Maps" can be allocated as @ref ThreadManager::GetMaxThreadCount "Max Thread Count"
+     * @warning Only as many @ref Deferred_Set_Map "Deferred_Set_Maps" can be allocated as @ref ThreadManager::GetMaxThreadCount "Max Thread Count"
     */
-    Deffered_Set_Map* GetDefferedSetMap();
+    Deferred_Set_Map* GetDeferredSetMap();
 
 private:
 
@@ -250,20 +250,20 @@ private:
     std::mutex sync_mutex; ///< Mutex for @ref m_Script_system_VMs (Only used during @ref ScriptSystemManager::InitializeScriptSystemVM "thread initialization", since no writes are performed otherwise)
     std::mutex script_cache_mutex; ///< Mutex for @ref m_ScriptCache
 
-    std::mutex DefferedSetMaps_mutex; ///< Mutex for @ref m_DefferedSetMaps
-    std::vector<Deffered_Set_Map> m_DefferedSetMaps; ///< Vector of @ref Deffered_Set_Map "Deffered_Set_Maps" for all threads
+    std::mutex DeferredSetMaps_mutex; ///< Mutex for @ref m_DeferredSetMaps
+    std::vector<Deferred_Set_Map> m_DeferredSetMaps; ///< Vector of @ref Deferred_Set_Map "Deferred_Set_Maps" for all threads
 
-    //Deffered calls have different cycles one used for reads and one for writes, they swap in the next cycle
-    std::mutex Deffered_call_maps_mutex;
-    bool deffered_call_cycle = false;
+    //Deferred calls have different cycles one used for reads and one for writes, they swap in the next cycle
+    std::mutex Deferred_call_maps_mutex;
+    bool deferred_call_cycle = false;
     /**
-     * @brief Contains two @ref Deffered_Call_Map "Deffered_Call_Maps" used to store @ref Deffered_Call "deffered calls", for explanation why two are needed see the detials of @ref ScriptSystemDefferedCall
+     * @brief Contains two @ref Deferred_Call_Map "Deferred_Call_Maps" used to store @ref Deferred_Call "deferred calls", for explanation why two are needed see the detials of @ref ScriptSystemDeferredCall
     */
-    std::vector<Deffered_Call_Map> m_Deffered_call_maps;
+    std::vector<Deferred_Call_Map> m_Deferred_call_maps;
     /**
-     * @brief Contains two vectors of entities used to store all entities on which deffered calls should be executed, for explanation why two are needed see the detials of @ref ScriptSystemDefferedCall
+     * @brief Contains two vectors of entities used to store all entities on which deferred calls should be executed, for explanation why two are needed see the detials of @ref ScriptSystemDeferredCall
     */
-    std::vector<std::vector<Entity>> m_Pending_Deffered_call_vectors;
+    std::vector<std::vector<Entity>> m_Pending_Deferred_call_vectors;
 
     std::vector<Entity> collided_entities; ///< Vector containing all entities, which recieved collision events
     std::unordered_map<uint32_t, std::vector<CollisionEvent_L>> entity_collisions; ///< Map associating all entities in @ref collided_entities with all their collision events
@@ -973,7 +973,7 @@ public:
     }
 
     /**
-     * @brief internal function: Forces an @ref inline_script "inline script" at script_path to be reloaded from @ref ScriptSystemManager cache.
+     * @brief internal function: Forces a @ref inline_script "inline script" at script_path to be reloaded from @ref ScriptSystemManager cache.
      * @param script_path the path to the @ref inline_script "inline script" to invalidate
      *
      * @warning this does not invalidate ScriptSystemManager cache, only the @ref inline_script "inline script" LuaEngine definitions. This is mostly for internal use.
@@ -982,7 +982,7 @@ public:
     void InvalidateInlineScript(const std::string& script_path);
 
     /**
-     * @brief internal function: Forces an @ref construction_script "construction script" at script_path to be reloaded from @ref ScriptSystemManager cache.
+     * @brief internal function: Forces a @ref construction_script "construction script" at script_path to be reloaded from @ref ScriptSystemManager cache.
      * @param script_path the path to the @ref construction_script "construction script" to invalidate
      *
      * @warning this does not invalidate ScriptSystemManager cache, only the @ref construction_script "construction script" LuaEngine definitions. This is mostly for internal use.

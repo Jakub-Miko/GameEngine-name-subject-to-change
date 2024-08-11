@@ -2,7 +2,7 @@
 #include <World/Components/BoundingVolumeComponent.h>
 #include <World/Components/CameraComponent.h>
 #include <World/Components/ConstructionComponent.h>
-#include <World/Components/DefferedUpdateComponent.h>
+#include <World/Components/DeferredUpdateComponent.h>
 #include <World/Components/DynamicPropertiesComponent.h>
 #include <World/Components/InitializationComponent.h>
 #include <World/Components/KeyPressedScriptComponent.h>
@@ -29,6 +29,6 @@
  * 
  * @warning Any of the Engines component types need to be added into this list in order to get properly initialized, alongside with their storage in the ECS
 */
-using Component_Types = TypeList<BoundingVolumeComponent, CameraComponent, ConstructionComponent, DefferedUpdateComponent, DynamicPropertiesComponent, InitializationComponent,
+using Component_Types = TypeList<BoundingVolumeComponent, CameraComponent, ConstructionComponent, DeferredUpdateComponent, DynamicPropertiesComponent, InitializationComponent,
 	KeyPressedScriptComponent, LabelComponent, LightComponent, LoadedComponent, MeshComponent, MousePressedScriptComponent, PrefabComponent, ScriptComponent, SerializableComponent, SquareComponent,
 	TransformComponent, ShadowCasterComponent, PhysicsComponent, SkeletalMeshComponent, AudioComponent, UITextComponent, SkylightComponent>;

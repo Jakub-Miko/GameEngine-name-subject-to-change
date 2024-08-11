@@ -1,7 +1,7 @@
 #include "Renderer3D.h"
 #include "MaterialManager.h"
 #include <FrameManager.h>
-#include "DefferedRenderingPipeline.h"
+#include "DeferredRenderingPipeline.h"
 #include "Animations/AnimationManager.h"
 
 Renderer3D* Renderer3D::instance = nullptr;
@@ -12,7 +12,7 @@ void Renderer3D::Init()
 		instance = new Renderer3D;
 		MaterialManager::Init();
 		AnimationManager::Init();
-		instance->deffered_pipeline = DefferedRenderingPipeline::CreatePipeline();
+		instance->deferred_pipeline = DeferredRenderingPipeline::CreatePipeline();
 	}
 }
 
@@ -37,11 +37,11 @@ Renderer3D* Renderer3D::Get()
 void Renderer3D::Update(float delta_time)
 {
 	MaterialManager::Get()->UpdateMaterials();
-	deffered_pipeline->Render();
+	deferred_pipeline->Render();
 	default_descriptor_heap.FlushDescriptorDeallocations(FrameManager::Get()->GetCurrentFrameNumber());
 }
 
-Renderer3D::Renderer3D() : default_descriptor_heap(500), deffered_pipeline()
+Renderer3D::Renderer3D() : default_descriptor_heap(500), deferred_pipeline()
 {
 
 }

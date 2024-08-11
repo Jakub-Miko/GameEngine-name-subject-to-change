@@ -8,7 +8,7 @@
 #include <Application.h>
 #include <Events/KeyPressEvent.h>
 #include <States/SandboxState.h>
-#include <World/ScriptModules/DefferedPropertySetModule.h>
+#include <World/ScriptModules/DeferredPropertySetModule.h>
 #include <World/ScriptModules/IOModule.h>
 #include <World/ScriptModules/StateModule.h>
 #include <World/ScriptModules/ApplicationDataModule.h>
@@ -166,7 +166,7 @@ void GameStateMachine::BindLuaFunctions()
 	ModuleBindingProperties props;
 
 	StateModule().RegisterModule(props);
-	DefferedPropertySetModule().RegisterModule(props);
+	DeferredPropertySetModule().RegisterModule(props);
 	IOModule().RegisterModule(props);
 	ApplicationDataModule().RegisterModule(props);
 	TimeModule().RegisterModule(props);

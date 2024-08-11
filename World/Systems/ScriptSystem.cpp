@@ -1,6 +1,6 @@
 #include "ScriptSystem.h"
 #include "ScriptSystemManagement.h"
-#include <World/Components/DefferedUpdateComponent.h>
+#include <World/Components/DeferredUpdateComponent.h>
 
 void ScriptSystemUpdate(World& world, float delta_time)
 {
@@ -24,9 +24,9 @@ void ScriptSystemUpdate(World& world, float delta_time)
     RunSystemSimple<ScriptComponent>(world, func_1);
 }
 
-void ScriptSystemDefferedSet(World& world)
+void ScriptSystemDeferredSet(World& world)
 {
-    auto func_deffered = [&world](ComponentCollection compcol, system_view_type<DefferedUpdateComponent>& comps, entt::registry* reg) {
+    auto func_deferred = [&world](ComponentCollection compcol, system_view_type<DeferredUpdateComponent>& comps, entt::registry* reg) {
 
         auto& changes = ScriptSystemManager::Get()->GetEntityChanges();
 
@@ -47,18 +47,18 @@ void ScriptSystemDefferedSet(World& world)
 
     };
 
-    RunSystemSimple<DefferedUpdateComponent>(world, func_deffered);
-    world.GetRegistry().clear<DefferedUpdateComponent>();
+    RunSystemSimple<DeferredUpdateComponent>(world, func_deferred);
+    world.GetRegistry().clear<DeferredUpdateComponent>();
     ScriptSystemManager::Get()->ClearEntityChanges();
 }
 
-void ScriptSystemDefferedCall(World& world)
+void ScriptSystemDeferredCall(World& world)
 {
-    ScriptSystemManager::Get()->SwapDefferedCallCycle();
-    auto* current_entities = &ScriptSystemManager::Get()->GetPendingDefferedCallEntities();
-    auto* current_calls = &ScriptSystemManager::Get()->GetDefferedCalls();
+    ScriptSystemManager::Get()->SwapDeferredCallCycle();
+    auto* current_entities = &ScriptSystemManager::Get()->GetPendingDeferredCallEntities();
+    auto* current_calls = &ScriptSystemManager::Get()->GetDeferredCalls();
     
-    auto func_deffered = [&world](ComponentCollection compcol, const std::vector<Entity>& comps) {
+    auto func_deferred = [&world](ComponentCollection compcol, const std::vector<Entity>& comps) {
         auto script_vm = ScriptSystemManager::Get()->TryGetScriptSystemVM();
         if (!script_vm) {
             ScriptSystemManager::Get()->InitializeScriptSystemVM();
@@ -66,7 +66,7 @@ void ScriptSystemDefferedCall(World& world)
         }
 
         for (auto iter = comps.begin() + compcol.start_index; iter != comps.begin() + compcol.start_index + compcol.size; iter++) {
-            auto& changes = ScriptSystemManager::Get()->GetDefferedCallsForEntity(*iter);
+            auto& changes = ScriptSystemManager::Get()->GetDeferredCallsForEntity(*iter);
             auto& script_comp = world.GetComponent<ScriptComponent>(*iter);
             for (auto& change : changes) {
                 script_vm->SetEngineEntity(*iter);
@@ -78,12 +78,12 @@ void ScriptSystemDefferedCall(World& world)
 
     };
     while (!current_entities->empty()) {
-        RunSystemSimpleVector(world, *current_entities, func_deffered);
+        RunSystemSimpleVector(world, *current_entities, func_deferred);
         current_calls->clear();
         current_entities->clear();
-        ScriptSystemManager::Get()->SwapDefferedCallCycle();
-        current_entities = &ScriptSystemManager::Get()->GetPendingDefferedCallEntities();
-        current_calls = &ScriptSystemManager::Get()->GetDefferedCalls();
+        ScriptSystemManager::Get()->SwapDeferredCallCycle();
+        current_entities = &ScriptSystemManager::Get()->GetPendingDeferredCallEntities();
+        current_calls = &ScriptSystemManager::Get()->GetDeferredCalls();
     }
 
 }
@@ -92,7 +92,7 @@ void ScriptSystemCollisionCallback(World& world) {
     auto* current_entities = &ScriptSystemManager::Get()->GetCollidedEntities();
     auto* current_collisions = &ScriptSystemManager::Get()->GetEntityCollisions();
 
-    auto func_deffered = [&world](ComponentCollection compcol, const std::vector<Entity>& comps) {
+    auto func_deferred = [&world](ComponentCollection compcol, const std::vector<Entity>& comps) {
         auto script_vm = ScriptSystemManager::Get()->TryGetScriptSystemVM();
         if (!script_vm) {
             ScriptSystemManager::Get()->InitializeScriptSystemVM();
@@ -111,7 +111,7 @@ void ScriptSystemCollisionCallback(World& world) {
 
 
     };
-    RunSystemSimpleVector(world, *current_entities, func_deffered);
+    RunSystemSimpleVector(world, *current_entities, func_deferred);
     current_collisions->clear();
     current_entities->clear();
 }
