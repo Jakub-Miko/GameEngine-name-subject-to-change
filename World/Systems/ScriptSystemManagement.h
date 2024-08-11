@@ -123,6 +123,7 @@ public:
      * @return the current Deffered_Call_Map
      * 
      * @note The current deffered map alternates on every internal iteration of ScriptSystemDefferedCall, so deffered calls can also spawn other deffered calls
+     * @warning access to the Deffered_Call_Map is not thread-safe 
     */
     Deffered_Call_Map& GetDefferedCalls();
     /**
@@ -134,6 +135,7 @@ public:
     /**
      * @brief Get all Entities with pending deffered calls
      * @return vector of entities with pending deffered calls
+     * @warning This method is not thread safe 
     */
     std::vector<Entity>& GetPendingDefferedCallEntities();
     /**
@@ -271,15 +273,51 @@ private:
 
 #pragma region ScriptHandler
 
+/**
+ * @brief An object which takes care of binding Engine functionality into the lua @ref ScriptVM "ScriptVMs" for @ref inline_script "inline scripts", and also keeps
+ * track of the entity currently being processed by the @ref inline_script "inline script"
+ * 
+ * This class contains methods used for initialization of @ref LuaEngineClass "LuaEngines" taking care of @ref inline_script "inline script" execution.
+ * It binds C++ side Engine functionality to allow scripts to call Engine specific functions. It also provides the GetEntity function which is heavily used
+ * in all lua functions which manipulate the current entity being processed.
+ * 
+ * @note This object is only used in @ref inline_script "inline scripts"
+*/
 class ScriptHandler {
 public:
+    /**
+     * @brief Creates a new ScriptHandler bound with an Entity which will be used to execute all operations operating on the current entity in @ref inline_script "inline scripts"
+     * @param ent Entity to be bound as the new current Entity
+    */
     ScriptHandler(Entity ent) : current_entity(ent) {}
+    
+    /**
+     * @brief Binds all Engine side C++ functionality to lua functions used in the @ref inline_script "inline script"
+     * @param script_engine The @ref LuaEngineClass "LuaEngine" to bind the functionality to.  
+    */
     static void BindHandlerFunctions(LuaEngineClass<ScriptHandler>* script_engine);
+    /**
+     * @brief Defines ScriptKeyBindings enum structure in the lua engine,
+     * @param script_engine The @ref LuaEngineClass "LuaEngine" to define the ScriptKeyBindings enum in.  
+    */
     static void BindKeyCodes(LuaEngineClass<ScriptHandler>* script_engine);
+    
     //This is where Functions which are bound to Lua go
 #pragma region LuaBound
+    /**
+     * @brief Test function no longer used
+     * @deprecated This function will be removed
+    */
     glm::vec2 TestGetPosition();
 
+    /**
+     * @brief Gets the property from the DynamicPropertiesComponent of the current Entity.
+     * @tparam T Type of the property to return 
+     * @param name name of the property to return 
+     * @return The property of the current Entity
+     * 
+     * @deprecated This actual method used is defined in the @ref LocalPropertySetModule.cpp file 
+    */
     template<typename T>
     T GetProperty(std::string name) {
         auto& props = Application::GetWorld().GetComponent<DynamicPropertiesComponent>(current_entity).m_Properties;
@@ -301,6 +339,14 @@ public:
         }
     }
 
+    /**
+     * @brief Sets the property in the DynamicPropertiesComponent of the current Entity.
+     * @tparam T Type of the property to set
+     * @param name name of the property to set
+     * @param value the value to set the property to 
+     * 
+     * @deprecated This actual method used is defined in the @ref LocalPropertySetModule.cpp file 
+    */
     template<typename T>
     void SetProperty(std::string name,T value) {
         auto& props = Application::GetWorld().GetComponent<DynamicPropertiesComponent>(current_entity).m_Properties;
@@ -321,8 +367,20 @@ public:
         }
     }
 
+
+    /**
+     * @brief Cheks if the property exists in the DynamicPropertiesComponent of the current Entity.
+     * @param name name of the property to check
+     * @param value true if it exists, false if not
+     *
+     * @deprecated This actual method used is defined in the @ref LocalPropertySetModule.cpp file
+    */
     bool PropertyExists(std::string name);
 
+    /**
+     * @brief Gets the currently bound Entity which is currently being processed
+     * @return the Entity currently being processed.
+    */
     Entity GetEntity() const {
         return current_entity;
     }
@@ -330,52 +388,131 @@ public:
 
 #pragma endregion
 private:
-    Entity current_entity;
+    Entity current_entity; ///< the Entity currently being processed.
 };
 
 #pragma endregion
 
 #pragma region InitializationScriptHandler
 
+
+/**
+ * @brief An object which takes care of binding Engine functionality into the lua @ref ScriptVM "ScriptVMs" for @ref construction_script "construction script", and also keeps
+ * track of the entity currently being processed by the @ref construction_script "construction script"
+ *
+ * This class contains methods used for initialization of @ref LuaEngineClass "LuaEngines" taking care of @ref construction_script "construction script" execution.
+ * It binds C++ side Engine functionality to allow scripts to call Engine specific functions. It also provides the GetEntity function which is heavily used
+ * in all lua functions which manipulate the current entity being processed.
+ * 
+ * @note This object is only used in @ref construction_script "construction scripts"
+ * 
+ * @todo Most of this is deprecated and needs to be revised or just removed. Many necessary modules are missing and methods for adding components are missing as well.
+ * Most functions also target current entity, but if the Prefab root is the only entity which can have a Script component, then nothing but the Prefab root can be influenced.
+*/
 class InitializationScriptHandler {
 public:
+    /**
+     * @brief Creates a new InitializationScriptHandler bound with an Entity which will be used to execute all operations operating on the current entity in @ref construction_script "construction scripts"
+     * @param ent Entity to be bound as the new current Entity
+     * @param path Path of the Entity file from which the entity is being constructed (can contain file subsections)
+    */
     InitializationScriptHandler(Entity ent, const std::string& path) : current_entity(ent), current_path(path) {}
+
+    /**
+     * @brief Binds all Engine side C++ functionality to lua functions used in the @ref construction_script "construction script"
+     * @param script_engine The @ref LuaEngineClass "LuaEngine" to bind the functionality to.
+    */
     static void BindHandlerFunctions(LuaEngineClass<InitializationScriptHandler>* script_engine);
     //This is where Functions which are bound to Lua go
 #pragma region LuaBound
     
+    /**
+     * @brief Template for setting the components of the current entity
+     * @tparam T Type of the Component to set
+     * @tparam ...Args Types os parameters to pass to the component constructor
+     * @param ...args values of arguments passed to the component constructor
+    */
     template<typename T, typename ... Args>
     void SetComponent(Args&&... args) {
         Application::GetWorld().SetComponent<T>(current_entity, T(std::forward<Args>(args)...));
     }
 
+    /**
+     * @brief Function bound to Lua which overrides the inline script path. 
+     * @param path a file containing the new @ref inline_script "inline script" to be bound (can contain file subsections).
+     * @note This function should only be used rarely
+     * @note This function is only available in the @ref construction_script "construction script"
+    */
     void SetScriptComponent(std::string path);
 
+    /**
+     * @brief Old function which adds a SquareComponent to the current entity
+     * @param color color of the SquareComponent
+     * @deprecated Will be removed
+    */
     void SetSquareComponent(glm::vec4 color = glm::vec4(1.0f));
 
+    /**
+     * @brief Adds a CameraComponent to the current Entity
+     * @param fov The Field of View of the CameraComponent
+     * @param zNear The near clipping plane distance of the CameraComponent
+     * @param zFar The far clipping plane distance of the CameraComponent
+     * @param aspect_ratio The aspact ratio of the camera projection of the CameraComponent
+     * 
+     * @note This function is only available in the @ref construction_script "construction script"
+    */
     void SetCameraComponent(float fov, float zNear, float zFar, float aspect_ratio);
 
+    /**
+     * @brief Sets the translation of the current Entity
+     * @param translation the new local translation of the current Entity
+    */
     void SetTranslation(glm::vec3 translation);
 
+    /**
+     * @brief Sets the scale of the current Entity
+     * @param translation the new local scale of the current Entity
+    */
     void SetScale(glm::vec3 scale);
 
+    /**
+     * @brief Enables the reception of @ref KeyPressEvent "KeyPressEvents"
+     * 
+     * @warning The OnKeyPressed needs to be defined in the @ref inline_script "inline script"
+    */
     void EnableKeyPressedEvents();
 
+    /**
+     * @brief Enables the reception of @ref MouseButtonPressEvent "MouseButtonPressEvents"
+     * 
+     * @warning The OnMouseButtonPressed needs to be defined in the @ref inline_script "inline script"
+    */
     void EnableMouseButtonPressedEvents();
 
+    /**
+     * @brief Gets the currently bound Entity which is currently being processed
+     * @return the Entity currently being processed.
+    */
     Entity GetEntity() const {
         return current_entity;
     }
 
 #pragma endregion
 private:
-    std::string current_path;
-    Entity current_entity;
+    std::string current_path; ///< Path of the Entity file from which the entity is being constructed (can contain file subsections)
+    Entity current_entity; ///< the Entity currently being processed.
 };
 
 #pragma endregion
 
-
+/**
+ * @brief Encapsulates two different @ref LuaEngineClass "LuaEngines"(One for @ref inline_script "inline scripts" and one for @ref construction_script "construction scripts") and 
+ * takes care of lazy loading lua scripts into them from the cache in the ScriptSystemManager. One exists for each thread since lua does not support multithreading.
+ * 
+ * ScriptSystemVM can be either in  @ref construction_script "construction scripts" mode or @ref inline_script "inline scripts" mode. Each mode maintains its own LuaEngine and current Entity.
+ * All member functions which call lua functions also have two versions which use the two @ref LuaEngineClass "LuaEngines". To set the modes current 
+ * Entity use ScriptSystemVM::SetEngineEntity(for @ref inline_script "inline scripts") and ScriptSystemVM::SetEngineInitializationEntity(for @ref construction_script "construction scripts")
+*/
 class ScriptSystemVM {
 public:
     friend ScriptSystemManager;
@@ -383,8 +520,18 @@ private:
     ScriptSystemVM();
     ~ScriptSystemVM();
 public:
+    /**
+     * @brief Sets the ScriptSystemVM to @ref inline_script "inline script" mode and sets its new Entity to process 
+     * @param ent an Entity that will be used as the new currently processed Entity
+     * 
+     * All Engine functions called from the @ref inline_script "inline script", which operate on the current Entity will operate on the Entity set in this call
+    */
     void SetEngineEntity(Entity ent);
 
+    /**
+     * @brief Gets the current Entity for either @ref inline_script "inline scripts" or @ref inline_script "inline scripts" depending on the mode the ScriptSystemVM is in.
+     * @return the current Entity 
+    */
     Entity GetCurrentEntity() const {
         if (init_mode) {
             return current_Initialization_handler.GetEntity();
@@ -394,14 +541,34 @@ public:
         }
     }
 
+    /**
+     * @brief Gets the current Entity for @ref inline_script "inline scripts".
+     * @return the current Entity for @ref inline_script "inline scripts".
+    */
     Entity GetEngineEntity() const {
         return curentHandler.GetEntity();
     }
 
+    /**
+     * @brief Runs the Lua Garbage collector
+    */
     void RunGarbageCollector();
 
     // For Script Runtime
 
+    /**
+     * @brief Calls a lua @ref inline_script "inline script" function.
+     * @tparam R The non void return type of the script
+     * @tparam ...Args The lua function parameter types
+     * @param path The path to the Entity file which contains the script
+     * @param function_name The name of the function in the file
+     * @param ...args the values of the function arguments to call the function with
+     * @return The return value of the lua function
+     * 
+     * @note This function uses template parameter pack for the arguments. Each function using a different number and combination of parameter types is a completely different function
+     * from the compilers perspective, and as such the types of parameters passed can not change on runtime. 
+     * If this functionality is required use the versions of Call functions containg the word Runtime
+    */
     template<typename R, typename ... Args>
     auto CallFunction(const std::string& path,const std::string& function_name, Args ... args) 
         -> std::enable_if_t<(!std::is_void_v<R>),R>
@@ -423,7 +590,17 @@ public:
             return CallFunction<R>(path, function_name, args...);
         }
     }
-
+    /**
+     * @brief Calls a lua @ref inline_script "inline script" function. This version allows for dynamic parameters list, which can change at runtime, instead of relying on templates.
+     * @tparam R The non void return type of the script
+     * @tparam ...Args The lua function parameter variant types
+     * @param path The path to the Entity file which contains the script
+     * @param function_name The name of the function in the file
+     * @param args the vector of values of the function arguments to call the function with. This vector can contain a varying number of different types at runtime.
+     * @return The return value of the lua function
+     * 
+     * @warning All types passed must still be of the same variant type
+    */
     template<typename R, typename ... Args>
     auto CallFunctionRuntime(const std::string& path, const std::string& function_name, const std::vector<std::variant<Args...>>& args)
         -> std::enable_if_t<(!std::is_void_v<R>), R>
@@ -446,12 +623,28 @@ public:
         }
     }
 
+    /**
+     * @brief Calls a lua @ref inline_script "inline script" function. This function doesn't throw on error, but returns the success state as a boolean.
+     * @tparam R The non void return type of the script, if this is void The return value gets ignored
+     * @tparam ...Args The lua function parameter types
+     * @param out the pointer to which the return value of the lua function will be written on success, if R is not void, this cannot be nullprt
+     * @param path The path to the Entity file which contains the script
+     * @param function_name The name of the function in the file
+     * @param ...args the values of the function arguments to call the function with
+     * @return The success value of the lua call.
+     *
+     * @note This function uses template parameter pack for the arguments. Each function using a different number and combination of parameter types is a completely different function
+     * from the compilers perspective, and as such the types of parameters passed can not change on runtime.
+     * If this functionality is required use the versions of Call functions containg the word Runtime
+     * 
+     * @warning If R is not void out needs to be valid.
+    */
     template<typename R, typename ... Args>
     auto TryCallFunction(R* out,const std::string& path, const std::string& function_name, Args ... args)
         -> std::enable_if_t<(!std::is_void_v<R>), bool>
     {
         if (m_BoundScripts.find(LuaEngineUtilities::ScriptHash(path)) != m_BoundScripts.end()) {
-            bool success = m_LuaEngine.TryCallObject<void>(out, LuaEngineUtilities::ScriptHash(path), function_name, args...);
+            bool success = m_LuaEngine.TryCallObject<R>(out, LuaEngineUtilities::ScriptHash(path), function_name, args...);
             if (success) {
                 return true;
             }
@@ -467,12 +660,25 @@ public:
         }
     }
 
+    /**
+     * @brief Calls a lua @ref inline_script "inline script" function. This function doesn't throw on error, but returns the success state as a boolean. This version allows for dynamic parameters list, which can change at runtime, instead of relying on templates.
+     * @tparam R The non void return type of the script, if this is void The return value gets ignored
+     * @tparam ...Args The lua function parameter variant types
+     * @param out the pointer to which the return value of the lua function will be written on success, if R is not void, this cannot be nullprt
+     * @param path The path to the Entity file which contains the script
+     * @param function_name The name of the function in the file
+     * @param args the vector of values of the function arguments to call the function with. This vector can contain a varying number of different types at runtime.
+     * @return The success value of the lua call.
+     * 
+     * @warning If R is not void out needs to be valid.
+     * @warning All types passed must still be of the same variant type
+    */
     template<typename R, typename ... Args>
     auto TryCallFunctionRuntime(R* out, const std::string& path, const std::string& function_name, const std::vector<std::variant<Args...>>& args)
         -> std::enable_if_t<(!std::is_void_v<R>), bool>
     {
         if (m_BoundScripts.find(LuaEngineUtilities::ScriptHash(path)) != m_BoundScripts.end()) {
-            bool success = m_LuaEngine.TryCallObjectRuntime<void>(out, LuaEngineUtilities::ScriptHash(path), function_name, args);
+            bool success = m_LuaEngine.TryCallObjectRuntime<R>(out, LuaEngineUtilities::ScriptHash(path), function_name, args);
             if (success) {
                 return true;
             }
@@ -488,6 +694,17 @@ public:
         }
     }
 
+    /**
+     * @brief Calls a lua @ref inline_script "inline script" function. Runs without return value.
+     * @tparam ...Args The lua function parameter types
+     * @param path The path to the Entity file which contains the script
+     * @param function_name The name of the function in the file
+     * @param ...args the values of the function arguments to call the function with
+     * 
+     * @note This function uses template parameter pack for the arguments. Each function using a different number and combination of parameter types is a completely different function
+     * from the compilers perspective, and as such the types of parameters passed can not change on runtime. 
+     * If this functionality is required use the versions of Call functions containg the word Runtime.
+    */
     template<typename ... Args>
     void CallFunction(const std::string& path, const std::string& function_name, Args ... args) {
         if (m_BoundScripts.find(LuaEngineUtilities::ScriptHash(path)) != m_BoundScripts.end()) {
@@ -510,6 +727,16 @@ public:
         }
     }
 
+
+    /**
+     * @brief Calls a lua @ref inline_script "inline script" function. This version allows for dynamic parameters list, which can change at runtime, instead of relying on templates. Runs without return value.
+     * @tparam ...Args The lua function parameter variant types
+     * @param path The path to the Entity file which contains the script
+     * @param function_name The name of the function in the file
+     * @param args the vector of values of the function arguments to call the function with. This vector can contain a varying number of different types at runtime.
+     *
+     * @warning All types passed must still be of the same variant type
+    */
     template<typename ... Args>
     void CallFunctionRuntime(const std::string& path, const std::string& function_name, const std::vector<std::variant<Args...>>& args) {
         if (m_BoundScripts.find(LuaEngineUtilities::ScriptHash(path)) != m_BoundScripts.end()) {
@@ -532,6 +759,19 @@ public:
         }
     }
 
+    /**
+     * @brief Calls a lua @ref inline_script "inline script" function. This function doesn't throw on error, but returns the success state as a boolean. Runs without script return value.
+     * @tparam ...Args The lua function parameter types
+     * @param null this parameter is irrelevant and is not used
+     * @param path The path to the Entity file which contains the script
+     * @param function_name The name of the function in the file
+     * @param ...args the values of the function arguments to call the function with
+     * @return The success value of the lua call.
+     *
+     * @note This function uses template parameter pack for the arguments. Each function using a different number and combination of parameter types is a completely different function
+     * from the compilers perspective, and as such the types of parameters passed can not change on runtime.
+     * If this functionality is required use the versions of Call functions containg the word Runtime
+    */
     template<typename ... Args>
     bool TryCallFunction(void* null,const std::string& path, const std::string& function_name, Args ... args) {
         if (m_BoundScripts.find(LuaEngineUtilities::ScriptHash(path)) != m_BoundScripts.end()) {
@@ -554,6 +794,19 @@ public:
         }
     }
 
+
+    /**
+     * @brief Calls a lua @ref inline_script "inline script" function. This function doesn't throw on error, but returns the success state as a boolean. This version allows for dynamic parameters list, 
+     * which can change at runtime, instead of relying on templates. Runs without script return value.
+     * @tparam ...Args The lua function parameter variant types
+     * @param null this parameter is irrelevant and is not used
+     * @param path The path to the Entity file which contains the script
+     * @param function_name The name of the function in the file
+     * @param args the vector of values of the function arguments to call the function with. This vector can contain a varying number of different types at runtime.
+     * @return The success value of the lua call.
+     * 
+     * @warning All types passed must still be of the same variant type
+    */
     template<typename ... Args>
     bool TryCallFunctionRuntime(void* null, const std::string& path, const std::string& function_name, const std::vector<std::variant<Args...>>& args) {
         if (m_BoundScripts.find(LuaEngineUtilities::ScriptHash(path)) != m_BoundScripts.end()) {
@@ -578,12 +831,31 @@ public:
 
     // For Initialization Scripts.
 
+    /**
+     * @brief Sets the ScriptSystemVM to @ref construction_script "construction script" mode and sets its new Entity to process
+     * @param ent an Entity that will be used as the new currently processed Entity
+     *
+     * All Engine functions called from the @ref construction_script "construction script", which operate on the current Entity will operate on the Entity set in this call
+    */
     void SetEngineInitializationEntity(Entity ent, const std::string& path);
 
+    /**
+     * @brief Gets the current Entity for @ref construction_script "construction scripts".
+     * @return the current Entity for @ref construction_script "construction scripts".
+    */
     Entity GetEngineInitializationEntity() const {
         return current_Initialization_handler.GetEntity();
     };
 
+    /**
+     * @brief Calls a lua @ref construction_script "construction script" function.
+     * @tparam R The non void return type of the script
+     * @tparam ...Args The lua function parameter types
+     * @param path The path to the Entity file which contains the script
+     * @param function_name The name of the function in the file
+     * @param ...args the values of the function arguments to call the function with
+     * @return The return value of the lua function
+    */
     template<typename R, typename ... Args>
     auto CallInitializationFunction(const std::string& path, const std::string& function_name, Args ... args)
         -> std::enable_if_t<(!std::is_void_v<R>), R>
@@ -606,12 +878,24 @@ public:
         }
     }
 
+    /**
+     * @brief Calls a lua @ref construction_script "construction script" function. This function doesn't throw on error, but returns the success state as a boolean.
+     * @tparam R The non void return type of the script, if this is void The return value gets ignored
+     * @tparam ...Args The lua function parameter types
+     * @param out the pointer to which the return value of the lua function will be written on success, if R is not void, this cannot be nullprt
+     * @param path The path to the Entity file which contains the script
+     * @param function_name The name of the function in the file
+     * @param ...args the values of the function arguments to call the function with
+     * @return The success value of the lua call.
+     * 
+     * @warning If R is not void out needs to be valid.
+    */
     template<typename R, typename ... Args>
     auto TryCallInitializationFunction(R* out, const std::string& path, const std::string& function_name, Args ... args)
         -> std::enable_if_t<(!std::is_void_v<R>), bool>
     {
         if (m_BoundInitializationScripts.find(LuaEngineUtilities::ScriptHash(path, true)) != m_BoundInitializationScripts.end()) {
-            bool success = m_LuaInitializationEngine.TryCallObject<void>(out, LuaEngineUtilities::ScriptHash(path, true), function_name, args...);
+            bool success = m_LuaInitializationEngine.TryCallObject<R>(out, LuaEngineUtilities::ScriptHash(path, true), function_name, args...);
             if (success) {
                 return true;
             }
@@ -627,6 +911,13 @@ public:
         }
     }
 
+    /**
+     * @brief Calls a lua @ref construction_script "construction script" function. Runs without return value.
+     * @tparam ...Args The lua function parameter types
+     * @param path The path to the Entity file which contains the script
+     * @param function_name The name of the function in the file
+     * @param ...args the values of the function arguments to call the function with
+    */
     template<typename ... Args>
     void CallInitializationFunction(const std::string& file_path, const std::string& function_name, Args ... args) {
         auto path = FileManager::Get()->GetRelativeFilePath(FileManager::Get()->GetPath(file_path));
@@ -650,6 +941,15 @@ public:
         }
     }
 
+    /**
+     * @brief Calls a lua @ref construction_script "construction script" function. This function doesn't throw on error, but returns the success state as a boolean. Runs without script return value.
+     * @tparam ...Args The lua function parameter types
+     * @param null this parameter is irrelevant and is not used
+     * @param path The path to the Entity file which contains the script
+     * @param function_name The name of the function in the file
+     * @param ...args the values of the function arguments to call the function with
+     * @return The success value of the lua call.
+    */
     template<typename ... Args>
     bool TryCallInitializationFunction(void* null, const std::string& path, const std::string& function_name, Args ... args) {
         if (m_BoundInitializationScripts.find(LuaEngineUtilities::ScriptHash(path, true)) != m_BoundInitializationScripts.end()) {
@@ -672,22 +972,40 @@ public:
         }
     }
 
+    /**
+     * @brief internal function: Forces an @ref inline_script "inline script" at script_path to be reloaded from @ref ScriptSystemManager cache.
+     * @param script_path the path to the @ref inline_script "inline script" to invalidate
+     *
+     * @warning this does not invalidate ScriptSystemManager cache, only the @ref inline_script "inline script" LuaEngine definitions. This is mostly for internal use.
+     * use ScriptSystemManager::InvalidateInlineScript instead.
+    */
     void InvalidateInlineScript(const std::string& script_path);
+
+    /**
+     * @brief internal function: Forces an @ref construction_script "construction script" at script_path to be reloaded from @ref ScriptSystemManager cache.
+     * @param script_path the path to the @ref construction_script "construction script" to invalidate
+     *
+     * @warning this does not invalidate ScriptSystemManager cache, only the @ref construction_script "construction script" LuaEngine definitions. This is mostly for internal use.
+     * use ScriptSystemManager::InvalidateConstructionScript instead.
+    */
     void InvalidateConstructionScript(const std::string& script_path);
 
+    /**
+     * @brief Resets all both LuaEngines to default.
+    */
     void ResetScriptVM();
 
 
 private:
-    ScriptHandler curentHandler;
-    bool init_mode = false;
+    ScriptHandler curentHandler; ///< The ScriptHandler responsible for handling the storage of @ref inline_script "inline script" current Entity and @ref inline_script "inline script" function binding
+    bool init_mode = false; ///< keeps track of the mode the ScriptSystemVM is in (@ref inline_script "inline script" or @ref construction_script "construction script")
 
-    std::unordered_set<std::string> m_BoundScripts;
-    LuaEngineClass<ScriptHandler> m_LuaEngine;
+    std::unordered_set<std::string> m_BoundScripts; ///< All script sources which have been loaded into the @ref inline_script "inline script" @ref LuaEngineClass "LuaEngine"
+    LuaEngineClass<ScriptHandler> m_LuaEngine; ///< the @ref inline_script "inline script" @ref LuaEngineClass "LuaEngine"
 
-    InitializationScriptHandler current_Initialization_handler;
+    InitializationScriptHandler current_Initialization_handler; ///< The ScriptHandler responsible for handling the storage of @ref construction_script "construction script" current Entity and @ref construction_script "construction script" function binding
 
-    std::unordered_set<std::string> m_BoundInitializationScripts;  
-    LuaEngineClass<InitializationScriptHandler> m_LuaInitializationEngine;
+    std::unordered_set<std::string> m_BoundInitializationScripts; ///< All script sources which have been loaded into the @ref construction_script "construction script" @ref LuaEngineClass "LuaEngine"
+    LuaEngineClass<InitializationScriptHandler> m_LuaInitializationEngine; ///< the @ref construction_script "construction script" @ref LuaEngineClass "LuaEngine"
 };
 
