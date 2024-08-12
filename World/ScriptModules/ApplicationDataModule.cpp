@@ -10,19 +10,35 @@
 
 extern "C" {
 
+    /**
+     * @brief Prints a string to the standard output
+     * @param string String to print
+    */
     LIBEXP void print_s(const char* string) {
         std::cout << "FFI says: " << string << "\n";
     }
 
+    /**
+     * @brief Gets a vector containing the application window resolution
+     * @return window resolution
+    */
     LIBEXP vec2 GetWindowResolution_L() {
         auto& props = Application::Get()->GetWindow()->GetProperties();
         return vec2{ (float)props.resolution_x, (float)props.resolution_y };
     }
 
+    /**
+     * @brief Sets the primary Entity of the @ref World.
+     * @param ent Entity to set as Primary.
+    */
     LIBEXP void SetPrimaryEntity_L(entity ent) {
         Application::GetWorld().SetPrimaryEntity(ent.id);
     }
 
+    /**
+     * @brief Gets the primary Entity of the world.
+     * @return The @ref World "Worlds" Primary Entity
+    */
     LIBEXP entity GetPrimaryEntity_L() {
         return entity{Application::GetWorld().GetPrimaryEntity().id};
     }

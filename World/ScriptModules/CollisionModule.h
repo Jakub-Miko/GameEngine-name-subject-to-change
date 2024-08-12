@@ -5,6 +5,9 @@
 #include <Core/Defines.h>
 
 extern "C" {
+	/**
+	 * @brief a class representing a CollisionEvent in Lua scripts
+	*/
 	LIBEXP typedef struct CollisionEvent_L {
 		entity collider;
 		int num_collision_points;
@@ -13,10 +16,21 @@ extern "C" {
 
 }
 
+
+/**
+ * @brief A LuaEngineObjectDelegate specialization, which provides an interface between the C++ CollisionEvent_L type and its Lua counterpart.
+ * 
+ * @deprecated These are not used when Lua FFI is used. So it is here just for backwards compatibility.
+*/
 template<>
 class LuaEngineObjectDelegate<CollisionEvent_L> {
 public:
 
+	/** 
+	 * @brief An interface which converts the C++ structure to a Lua representation.
+	 * @param proxy an object which exposes methods to build out the Lua representation of an the specialized structure.
+	 * @param value the C++ object to convert
+	*/
 	static void SetObject(LuaEngineProxy proxy, const CollisionEvent_L& value) {
 		proxy.SetTable([&value](LuaEngineProxy proxy) {
 			proxy.SetTableItem<int>(value.collider.id, "id");
@@ -31,6 +45,15 @@ public:
 		, "collision_points");
 	}
 
+	/**
+	 * @brief An interface which converts the Lua representation of a structure to a C++ structure.
+	 * @param proxy an object which exposes methods read out the Lua structure representation from the Lua state
+	 * @param index The index at which the table with the structure is located in the Lua stack. 
+	 * (Since these structures are only used as return values, they are always on top of the stack when being fetched, so this index isn't used.)
+	 * @return an instance of the C++ structure
+	 * 
+	 * @bug If this function gets used to fetch something at index other than -1, it will not function properly.
+	*/
 	static CollisionEvent_L GetObject(LuaEngineProxy proxy, int index = -1) {
 		CollisionEvent_L col_event;
 
@@ -48,8 +71,19 @@ public:
 	}
 };
 
+/**
+ * @brief Provides Lua Scripts with a definition for @ref CollisionEvent_L. 
+ * 
+ * @note This module depends on:
+ * - @ref GlobalEntityModule
+ * - @ref MathModule
+*/
 class CollisionModule : public ScriptModule {
 public:
 	SCRIPT_MODULE_NAME("CollisionModule");
+	/**
+	 * @brief Provides the bindings with the functionality of this module. 
+	 * @param props ModuleBindingProperties to which the bindings and definitions of this module are written.
+	*/
 	virtual void OnRegisterModule(ModuleBindingProperties& props) override;
 };

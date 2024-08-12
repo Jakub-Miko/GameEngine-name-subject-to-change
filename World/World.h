@@ -581,7 +581,7 @@ public:
 	/**
 	 * @brief Check if scene load process has finished
 	 * @return 
-	 * @todo Is this not flipped ?
+	 * @bug Is this not flipped ?
 	*/
 	bool IsSceneLoaded() const {
 		//return load_scene.get(); // Previously

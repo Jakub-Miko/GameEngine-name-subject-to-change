@@ -140,7 +140,7 @@ private:
 	void ScriptOnUpdate(float delta_time);
 
 	/**
-	 * @brief Propagete an Event to the current state script
+	 * @brief Propagate an Event to the current state script
 	 * @param e 
 	*/
 	void ScriptOnEvent(Event* e);

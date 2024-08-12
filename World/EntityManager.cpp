@@ -360,7 +360,7 @@ void EntityManager::DeserializeEntityPrefab_impl(const std::string& path_in, con
 		world.SetComponent<InitializationComponent>(child_ent);
 	}
 
-	if (world.HasComponentSynced<LabelComponent>(child_ent)) { /// @warning Line @lineinfo : Just use the label, theres no need for a DynamicPropertiesComponent
+	if (world.HasComponentSynced<LabelComponent>(child_ent)) { /// Used to lookup prefab children by name, there must be a better way
 		world.GetComponent<DynamicPropertiesComponent>(prefab_parent).m_Properties.insert_or_assign(world.GetComponent<LabelComponent>(child_ent).label, child_ent);
 	}
 
