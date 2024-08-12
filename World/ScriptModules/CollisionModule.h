@@ -52,7 +52,7 @@ public:
 	 * (Since these structures are only used as return values, they are always on top of the stack when being fetched, so this index isn't used.)
 	 * @return an instance of the C++ structure
 	 * 
-	 * @bug If this function gets used to fetch something at index other than -1, it will not function properly.
+	 * @bug If this function gets used to fetch something at index other than -1, it will not function properly. LuaEngineProxy::GetTable doesnt have the index parameter.
 	*/
 	static CollisionEvent_L GetObject(LuaEngineProxy proxy, int index = -1) {
 		CollisionEvent_L col_event;
