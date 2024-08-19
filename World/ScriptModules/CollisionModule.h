@@ -20,7 +20,6 @@ extern "C" {
 /**
  * @brief A LuaEngineObjectDelegate specialization, which provides an interface between the C++ CollisionEvent_L type and its Lua counterpart.
  * 
- * @deprecated These are not used when Lua FFI is used. So it is here just for backwards compatibility.
 */
 template<>
 class LuaEngineObjectDelegate<CollisionEvent_L> {

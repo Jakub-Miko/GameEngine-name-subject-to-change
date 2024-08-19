@@ -11,11 +11,19 @@
 
 extern "C" {
 
+    /**
+     * @brief Provides an option to enable the reception of @ref MouseButtonPressEvent "MouseButtonPressEvents" through the OnMouseButtonPressed function in the @ref inline_script "inline script"
+     * @lua 
+     */
     LIBEXP void EnableMouseButtonPressedEvents_L() {
         Entity ent = Entity(GetCurrentEntity_L().id);
         Application::GetWorld().SetComponent<MousePressedScriptComponent>(ent);
     }
 
+    /**
+     * @brief Provides an option to enable the reception of @ref KeyPressedEvent "KeyPressedEvents" through the OnMouseButtonPressed function in the @ref inline_script "inline script"
+     * @lua 
+     */
     LIBEXP void EnableKeyPressedEvents_L() {
         Entity ent = Entity(GetCurrentEntity_L().id);
         Application::GetWorld().SetComponent<KeyPressedScriptComponent>(ent);

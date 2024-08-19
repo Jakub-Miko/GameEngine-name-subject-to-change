@@ -5,6 +5,11 @@
 
 extern "C" {
 
+	/**
+	 * @brief Verifies if an @ref entity instance is valid
+	 * @param ent entity to validate
+	 * @return whether the entity is valid
+	 */
 	LIBEXP bool IsEntityValid_L(entity ent) {
 		return Entity(ent.id) != Entity() && Application::Get()->GetWorld().EntityIsValid(Entity(ent.id));
 	}

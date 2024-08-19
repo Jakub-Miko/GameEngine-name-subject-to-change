@@ -23,5 +23,10 @@
 class DeferredPropertySetModule : public ScriptModule {
 public:
 	SCRIPT_MODULE_NAME("DeferredPropertySetModule");
+	
+	/**
+	 * @brief Provides the bindings with the functionality of this module.
+	 * @param props ModuleBindingProperties to which the bindings and definitions of this module are written.
+	*/
 	virtual void OnRegisterModule(ModuleBindingProperties& props) override;
 };
