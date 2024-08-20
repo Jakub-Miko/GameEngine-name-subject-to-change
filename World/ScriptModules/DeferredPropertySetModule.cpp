@@ -14,6 +14,7 @@
  * @param entity Entity of which to set the property
  * @param name Name of the property to set
  * @param value Value of the property to set
+ * @lua
  */
 template<typename T>
 static void SetEntityProperty(Entity entity, std::string name, T value) {
