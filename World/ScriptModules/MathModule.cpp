@@ -6,6 +6,14 @@
 
 
 extern "C" {
+
+	/**
+	 * @brief Transforms a vec3 by a 3x3 matrix
+	 * @param matrix transformation matrix
+	 * @param vector vector to transform
+	 * @return a transformed vec3
+	 * @lua
+	 */
 	LIBEXP vec3 multiply_matrix_vec3_L(mat3* matrix, vec3* vector) {
 		glm::mat3* mat = reinterpret_cast<glm::mat3*>(matrix);
 		glm::vec3* vec = reinterpret_cast<glm::vec3*>(vector);
@@ -13,21 +21,46 @@ extern "C" {
 		return *reinterpret_cast<vec3*>(&result);
 	}
 
+	/**
+	 * @brief Gets the length of a vec2
+	 * @param in_vector vector to get the length of 
+	 * @return the length of the vector 
+	 * @lua
+	 */
 	LIBEXP float GetVector2Length_L(vec2 in_vector) {
 		glm::vec2 vec = *reinterpret_cast<glm::vec2*>(&in_vector);
 		return glm::length(vec);
 	}
 
+	/**
+	 * @brief Gets the length of a vec3
+	 * @param in_vector vector to get the length of 
+	 * @return the length of the vector 
+	 * @lua
+	 */
 	LIBEXP float GetVector3Length_L(vec3 in_vector) {
 		glm::vec3 vec = *reinterpret_cast<glm::vec3*>(&in_vector);
 		return glm::length(vec);
 	}
 
+	/**
+	 * @brief Gets the length of a vec4
+	 * @param in_vector vector to get the length of 
+	 * @return the length of the vector 
+	 * @lua
+	 */
 	LIBEXP float GetVector4Length_L(vec4 in_vector) {
 		glm::vec4 vec = *reinterpret_cast<glm::vec4*>(&in_vector);
 		return glm::length(vec);
 	}
 
+	/**
+	 * @brief Transforms a vec4 by a 4x4 matrix
+	 * @param matrix transformation matrix
+	 * @param vector vector to transform
+	 * @return a transformed vec4
+	 * @lua
+	 */
 	LIBEXP vec4 multiply_matrix_vec4_L(mat4* matrix, vec4* vector) {
 		glm::mat4* mat = reinterpret_cast<glm::mat4*>(matrix);
 		glm::vec4* vec = reinterpret_cast<glm::vec4*>(vector);
@@ -35,12 +68,23 @@ extern "C" {
 		return *reinterpret_cast<vec4*>(&result);
 	}
 
+	/**
+	 * @brief Converts a rotation 3x3 matrix to a quaternion representation
+	 * @param matrix matrix to convert
+	 * @return converted quaternion
+	 * @lua
+	 */
 	LIBEXP quat mat3_to_quat_L(mat3* matrix) {
 		glm::mat3* mat = reinterpret_cast<glm::mat3*>(matrix);
 		glm::quat quaternion = glm::quat_cast(*mat);
 		return *reinterpret_cast<quat*>(&quaternion);
 	}
 
+	/**
+	 * @brief Multiplies two 3x3 matrices 
+	 * @return the resulting 3x3 matrix
+	 * @lua
+	 */
 	LIBEXP mat3 multiple_mat3_L(mat3* first, mat3* second) {
 		glm::mat3* fr = reinterpret_cast<glm::mat3*>(first);
 		glm::mat3* sc = reinterpret_cast<glm::mat3*>(second);
@@ -48,6 +92,13 @@ extern "C" {
 		return *reinterpret_cast<mat3*>(&result);
 	}
 
+	/**
+	 * @brief Creates a quaternion representing a rotation of a camera when looking in a certain direction
+	 * @param direction the direction the camera is looking in 
+	 * @param up_vector reference vector used in the calculation to produce a right vector, generally a vector pointing upwards (0,1,0) unless direction is colinear
+	 * @return quaternion representing the camera rotation
+	 * @lua
+	 */
 	LIBEXP quat quat_lookat_L(vec3* direction, vec3* up_vector) {
 		glm::vec3* direction_v = reinterpret_cast<glm::vec3*>(direction);
 		glm::vec3* up_vector_v = reinterpret_cast<glm::vec3*>(up_vector);
@@ -55,6 +106,11 @@ extern "C" {
 		return *reinterpret_cast<quat*>(&result);
 	}
 
+	/**
+	 * @brief Multiplies two 4x4 matrices
+	 * @return the resulting 4x4 matrix
+	 * @lua
+	 */
 	LIBEXP mat4 multiple_mat4_L(mat4* first, mat4* second) {
 		glm::mat4* fr = reinterpret_cast<glm::mat4*>(first);
 		glm::mat4* sc = reinterpret_cast<glm::mat4*>(second);
@@ -62,6 +118,13 @@ extern "C" {
 		return *reinterpret_cast<mat4*>(&result);
 	}
 
+	/**
+	 * @brief Rotates a vec3 by a quaternion
+	 * @param vec vector to rotate
+	 * @param rotation rotation quaternion to rotate by 
+	 * @return rotated vector
+	 * @lua
+	 */
 	LIBEXP vec3 rotate_vec3_L(vec3 vec, quat rotation) {
 		glm::quat quaternion = *reinterpret_cast<glm::quat*>(&rotation);
 		glm::vec3 vec_to_rotate = *reinterpret_cast<glm::vec3*>(&vec);
@@ -69,6 +132,11 @@ extern "C" {
 		return *reinterpret_cast<vec3*>(&vec_to_rotate);
 	}
 
+	/**
+	 * @brief Multiplies to quaternions
+	 * @return the resulting quaternion
+	 * @lua
+	 */
 	LIBEXP quat quat_multiply_L(quat quat1, quat quat2) {
 		glm::quat quaternion1 = *reinterpret_cast<glm::quat*>(&quat1);
 		glm::quat quaternion2 = *reinterpret_cast<glm::quat*>(&quat2);
@@ -76,6 +144,14 @@ extern "C" {
 		return *reinterpret_cast<quat*>(&result);
 	}
 
+	/**
+	 * @brief Interpolates between two vectors
+	 * @param first first vector to interpolate
+	 * @param second second vector to interpolate 
+	 * @param blend interpolation ratio
+	 * @return interpolated vector
+	 * @lua
+	 */
 	LIBEXP vec4 MixVector4_L(vec4 first, vec4 second, float blend) {
 		glm::vec4* vec_1 = reinterpret_cast<glm::vec4*>(&first);
 		glm::vec4* vec_2 = reinterpret_cast<glm::vec4*>(&second);
@@ -83,6 +159,14 @@ extern "C" {
 		return *reinterpret_cast<vec4*>(&mix);
 	}
 
+	/**
+	 * @brief Interpolates between two vectors
+	 * @param first first vector to interpolate
+	 * @param second second vector to interpolate 
+	 * @param blend interpolation ratio
+	 * @return interpolated vector
+	 * @lua
+	 */
 	LIBEXP vec3 MixVector3_L(vec3 first, vec3 second, float blend) {
 		glm::vec3* vec_1 = reinterpret_cast<glm::vec3*>(&first);
 		glm::vec3* vec_2 = reinterpret_cast<glm::vec3*>(&second);
@@ -90,6 +174,14 @@ extern "C" {
 		return *reinterpret_cast<vec3*>(&mix);
 	}
 
+	/**
+	 * @brief Interpolates between two vectors
+	 * @param first first vector to interpolate
+	 * @param second second vector to interpolate
+	 * @param blend interpolation ratio
+	 * @return interpolated vector
+	 * @lua
+	 */
 	LIBEXP vec2 MixVector2_L(vec2 first, vec2 second, float blend) {
 		glm::vec2* vec_1 = reinterpret_cast<glm::vec2*>(&first);
 		glm::vec2* vec_2 = reinterpret_cast<glm::vec2*>(&second);

@@ -19,7 +19,6 @@ extern "C" {
 
 /**
  * @brief A LuaEngineObjectDelegate specialization, which provides an interface between the C++ CollisionEvent_L type and its Lua counterpart.
- * 
 */
 template<>
 class LuaEngineObjectDelegate<CollisionEvent_L> {
