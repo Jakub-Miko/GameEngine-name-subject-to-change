@@ -81,6 +81,7 @@ end
  * The Construction script runs when a Prefab instance gets spawned, and can utilize the data in the customized DynamicPropertiesComponent to alter the Prefab on Construction before
  * any prefab children are deserialized.
  * @note Construction scripts are currently not very useful and may be completely revised in the future
+ * 
  * Example:
  * ~~~
 function OnConstruct()

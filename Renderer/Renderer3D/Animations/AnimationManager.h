@@ -7,6 +7,10 @@
 #include <Renderer/Renderer3D/Animations/Skeleton.h>
 #include <AsyncTaskDispatcher.h>
 
+/** @page animation_page Animations
+ * Hello world
+ */
+
 struct aiScene;
 
 class AnimationManager {
