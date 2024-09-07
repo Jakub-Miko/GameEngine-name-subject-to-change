@@ -241,7 +241,7 @@ bool AnimationPlayback::UpdateAnimation(float delta_time, RenderCommandList* lis
 	//TODO: does this need to be here ! Probably ????
 	float base_duration = playback_layers[0].anim->GetDuration();
 	if (base_duration != 0.0f && target_duration != 0.0f) {
-		float speedup_ratio = base_duration / target_duration;
+		float speedup_ratio = base_duration / target_duration; ///< @bugline doesn't this mean that the primary layer always has speed match on ????
 		playback_layers[0].time += speedup_ratio * delta_time * 0.001 * playback_layers[0].anim->GetTicksPerSecond();
 	}
 	if (playback_layers[0].time >= base_duration && base_duration != 0.0f) {
