@@ -12,7 +12,7 @@
  * They allow for construction of more complex reusable Entities by combing multiple entities together and making them behave as one from the perspective of a Scene.
  * 
  * They are serialized in their own files and can be reused across multiple Scenes. Multiple instances of a single prefab file can exist in a Scene by creating an
- * Entity with a Prefab Component linked to a certian prefab file. This Entity will become a Prefab root, and the engine will populate its prefab children with the entities
+ * Entity with a Prefab Component linked to a certain prefab file. This Entity will become a Prefab root, and the engine will populate its prefab children with the entities
  * in a defined prefab file. The scene can override the properties of the Prefab root and DynamicPropertiesComponent along side with scripting can be used to pass down instance specific data down to 
  * Prefab children.
  * 
@@ -95,7 +95,7 @@ end
 */
 
 /**
- * @brief Entry for a deferred contruction of an entity from a file
+ * @brief Entry for a deferred construction of an entity from a file
  * 
  * @deprecated Not used anymore, replaced by ConstructionComponent
 */
@@ -139,7 +139,7 @@ public:
     */
     static EntityManager* Get();
     /**
-     * @brief Signleton destructor
+     * @brief Singleton destructor
     */
     static void Shutdown();
     
@@ -211,8 +211,8 @@ public:
     void ClearPrefabCacheEntry(const std::string& name);
 
     /**
-     * @brief Replicates the template entities compoents on an actual entity.
-     * @param target_entity Entity which is a part of the World, on which compoenents will be replicated
+     * @brief Replicates the template entities components on an actual entity.
+     * @param target_entity Entity which is a part of the World, on which components will be replicated
      * @param template_entity a Pseudo entity which is not a part of the World but a part of a template ECS registry, used as a template for the components (member of EntityTemplate)
      * @param exclude_ids ECS registry ids to exclude replicating certain types of components
      * @warning Should be used only internally or if necessary, improper use may cause undefined behaviour
@@ -220,7 +220,7 @@ public:
     void InitializeFromTemplate(Entity target_entity, Entity template_entity, const std::vector<std::string>& exclude_ids = std::vector<std::string>());
 
     /**
-     * @brief Used to Initliaze an Entity as a Prefab deserialized from a file
+     * @brief Used to Initialize an Entity as a Prefab deserialized from a file
      * @param target_entity Entity to initialize, cannot be a part of the scene yet, unless it has been deserialized after a SceneLoad and already has a PrefabComponent
      * @param path path to the Prefab to use
      * @param parent Parent of the new entity 
@@ -258,7 +258,7 @@ private:
     void ClearPrefabCache();
 
     /**
-     * @brief Similar to EntityManager::GetEntitySignature but optionally loads an entity from a file subsection, allowing more enitities and entire prefabs to be store in one file
+     * @brief Similar to EntityManager::GetEntitySignature but optionally loads an entity from a file subsection, allowing more entities and entire prefabs to be store in one file
      * @param path path of the file containing the entity definition
      * @param file_buffer string containing the file contents of the currently open file to resolve local references
      * @return an EntityTemplate loaded from the file
@@ -278,7 +278,7 @@ private:
     void DeserializeEntityPrefab_impl( const std::string& path, const std::string& original_path ,const std::string& local_file_buffer, Entity parent = Entity(), Entity prefab_parent = Entity());
 
     /**
-     * @brief Same as EntityManager::DeserializeComponents but initializes the components of a template Entity existing in an ECS seperate from the World
+     * @brief Same as EntityManager::DeserializeComponents but initializes the components of a template Entity existing in an ECS separate from the World
      * @param target_entity entity to assign new components
      * @param json_string json object containing serialized component data
     */
