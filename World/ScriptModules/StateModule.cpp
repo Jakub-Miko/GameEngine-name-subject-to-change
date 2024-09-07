@@ -7,6 +7,15 @@
 #include <Core/Defines.h>
 
 extern "C" {
+
+    /**
+     * @brief Set a new state in the GameStateMachine
+     * 
+     * The state must first be registered with @ref GameStateMachine::RegisterState
+     * 
+     * @param state_name the name of the Registered state to use.
+     * @lua
+     */
     LIBEXP void SetState_L(const char* state_name) {
         auto state = GameStateMachine::Get()->GetStateFromName(state_name);
         GameStateMachine::Get()->ChangeState(state);
