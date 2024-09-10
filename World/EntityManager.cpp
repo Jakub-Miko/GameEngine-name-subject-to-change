@@ -339,7 +339,7 @@ void EntityManager::DeserializeEntityPrefab_impl(const std::string& path_in, con
 		child_entity_template = GetEntitySignature(path);
 	}
 
-	bool has_construction_script = !child_entity_template.construction_script.empty(); /// @bugline : Make sure prefab children cant have scripts
+	bool has_construction_script = !child_entity_template.construction_script.empty(); /// @bugline Make sure prefab children cant have scripts
 	bool has_script = !child_entity_template.inline_script.empty();
 
 	Entity child_ent = world.CreateEntity<PrefabChildEntityType>(parent);
