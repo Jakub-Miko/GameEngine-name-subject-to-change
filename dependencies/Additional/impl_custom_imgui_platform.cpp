@@ -5,11 +5,8 @@
 #include <future>
 #include <Editor/Editor.h>
 
-#ifdef OpenGL_API
 #include <GLFW/glfw3.h>
 #include <dependencies/imgui/backends/imgui_impl_glfw.h>
-#include <platform/OpenGL/OpenGLRenderCommandQueue.h>
-#include <platform/OpenGL/OpenGLRenderCommand.h>
 #include <platform/GLFW/GlfwWindow.h>
 
 #ifdef _WIN32
@@ -78,6 +75,51 @@ void impl_custom_imgui_platform::shutdown_custom_imgui_platform()
 
 }
 
+
+static void ImGui_ImplGlfw_WindowCloseCallback(GLFWwindow* window)
+{
+    if (ImGuiViewport* viewport = ImGui::FindViewportByPlatformHandle(window))
+        viewport->PlatformRequestClose = true;
+}
+
+static void ImGui_ImplGlfw_WindowPosCallback(GLFWwindow* window, int, int)
+{
+    if (ImGuiViewport* viewport = ImGui::FindViewportByPlatformHandle(window))
+    {
+        if (ImGui_ImplGlfw_ViewportData_internal* vd = (ImGui_ImplGlfw_ViewportData_internal*)viewport->PlatformUserData)
+        {
+            bool ignore_event = (ImGui::GetFrameCount() <= vd->IgnoreWindowPosEventFrame + 1);
+            //data->IgnoreWindowPosEventFrame = -1;
+            if (ignore_event)
+                return;
+        }
+        viewport->PlatformRequestMove = true;
+    }
+}
+
+static void ImGui_ImplGlfw_WindowSizeCallback(GLFWwindow* window, int, int)
+{
+    if (ImGuiViewport* viewport = ImGui::FindViewportByPlatformHandle(window))
+    {
+        if (ImGui_ImplGlfw_ViewportData_internal* vd = (ImGui_ImplGlfw_ViewportData_internal*)viewport->PlatformUserData)
+        {
+            bool ignore_event = (ImGui::GetFrameCount() <= vd->IgnoreWindowSizeEventFrame + 1);
+            //data->IgnoreWindowSizeEventFrame = -1;
+            if (ignore_event)
+                return;
+        }
+        viewport->PlatformRequestResize = true;
+    }
+}
+
+
+
+#ifdef OpenGL_API
+#include <platform/OpenGL/OpenGLRenderCommandQueue.h>
+#include <platform/OpenGL/OpenGLRenderCommand.h>
+
+
+
 void impl_custom_imgui_platform::UpdatePlatformWindows()
 {
     ImGuiContext* g = ImGui::GetCurrentContext();
@@ -134,41 +176,6 @@ static void ImGui_custom_RenderWindow(ImGuiViewport* viewport, void*)
     gl_command_queue->ExecuteCommand(command);
 }
 
-static void ImGui_ImplGlfw_WindowCloseCallback(GLFWwindow* window)
-{
-    if (ImGuiViewport* viewport = ImGui::FindViewportByPlatformHandle(window))
-        viewport->PlatformRequestClose = true;
-}
-
-static void ImGui_ImplGlfw_WindowPosCallback(GLFWwindow* window, int, int)
-{
-    if (ImGuiViewport* viewport = ImGui::FindViewportByPlatformHandle(window))
-    {
-        if (ImGui_ImplGlfw_ViewportData_internal* vd = (ImGui_ImplGlfw_ViewportData_internal*)viewport->PlatformUserData)
-        {
-            bool ignore_event = (ImGui::GetFrameCount() <= vd->IgnoreWindowPosEventFrame + 1);
-            //data->IgnoreWindowPosEventFrame = -1;
-            if (ignore_event)
-                return;
-        }
-        viewport->PlatformRequestMove = true;
-    }
-}
-
-static void ImGui_ImplGlfw_WindowSizeCallback(GLFWwindow* window, int, int)
-{
-    if (ImGuiViewport* viewport = ImGui::FindViewportByPlatformHandle(window))
-    {
-        if (ImGui_ImplGlfw_ViewportData_internal* vd = (ImGui_ImplGlfw_ViewportData_internal*)viewport->PlatformUserData)
-        {
-            bool ignore_event = (ImGui::GetFrameCount() <= vd->IgnoreWindowSizeEventFrame + 1);
-            //data->IgnoreWindowSizeEventFrame = -1;
-            if (ignore_event)
-                return;
-        }
-        viewport->PlatformRequestResize = true;
-    }
-}
 
 void impl_custom_imgui_platform::ImGui_custom_CreateWindow(ImGuiViewport* viewport)
 {
@@ -251,6 +258,35 @@ static void ImGui_custom_DestroyWindow(ImGuiViewport* viewport)
     viewport->PlatformUserData = viewport->PlatformHandle = NULL;
 }
 
+#elif defined Vulkan_API
+void impl_custom_imgui_platform::UpdatePlatformWindows()
+{
+    
+}
+
+static void ImGui_custom_SwapBuffers(ImGuiViewport* viewport, void*)
+{
+   
+}
+
+static void ImGui_custom_RenderWindow(ImGuiViewport* viewport, void*)
+{
+    
+}
+
+
+void impl_custom_imgui_platform::ImGui_custom_CreateWindow(ImGuiViewport* viewport)
+{
+   
+}
+
+static void ImGui_custom_DestroyWindow(ImGuiViewport* viewport)
+{
+   
+}
+
+#endif
+
 void impl_custom_imgui_platform::init_custom_imgui_platform()
 {
     ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
@@ -260,6 +296,3 @@ void impl_custom_imgui_platform::init_custom_imgui_platform()
     platform_io.Platform_DestroyWindow = ImGui_custom_DestroyWindow;
 
 }
-
-
-#endif

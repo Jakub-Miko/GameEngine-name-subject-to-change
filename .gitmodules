@@ -50,3 +50,12 @@
 [submodule "dependencies/shaderc"]
 	path = dependencies/shaderc
 	url = https://github.com/google/shaderc.git
+[submodule "platform/Vulkan/dependencies/spirv-tools"]
+	path = platform/Vulkan/dependencies/spirv-tools
+	url = https://github.com/KhronosGroup/SPIRV-Tools.git
+[submodule "platform/Vulkan/dependencies/spirv-headers"]
+	path = platform/Vulkan/dependencies/spirv-headers
+	url = https://github.com/KhronosGroup/SPIRV-Headers.git
+[submodule "platform/Vulkan/dependencies/glslang"]
+	path = platform/Vulkan/dependencies/glslang
+	url = https://github.com/KhronosGroup/glslang.git

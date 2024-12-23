@@ -1,7 +1,14 @@
 #include "GlfwWindow.h"
 #include <GL/glew.h>
 #include <Renderer/Renderer.h>
+#ifdef OpenGL_API
 #include <platform/OpenGL/OpenGLRenderCommandList.h>
+#elif defined(Vulkan_API)
+#include <platform/Vulkan/VulkanContext.h>
+#include <vulkan/vulkan.h>
+#endif
+
+
 #include <GLFW/glfw3.h>
 #include <ConfigManager.h>
 #include <vector>
@@ -21,6 +28,14 @@ GlfwWindow::GlfwWindow(const WindowProperties& props)
 
 void GlfwWindow::Init()
 {
+#ifdef Vulkan_API
+    uint32_t count;
+    const char** extensions = glfwGetRequiredInstanceExtensions(&count);
+    
+    VulkanContext::Create();
+    VulkanContext::Get()->RequestExtensions(extensions, count);
+
+#elif defined OpenGL_API
     auto list = reinterpret_cast<OpenGLRenderCommandList*>(Renderer::Get()->GetRenderCommandList());
     list->BindOpenGLContext();
     std::shared_ptr<RenderFence> fence = std::shared_ptr<RenderFence>( Renderer::Get()->GetFence());
@@ -29,6 +44,7 @@ void GlfwWindow::Init()
     fence->WaitForValue(1);
     glfwSetDropCallback(m_Window, &DropCallback);
     RegistorDragAndDropCallback(&DefaultDropCallback);
+#endif
 }
 
 void GlfwWindow::PreInit()

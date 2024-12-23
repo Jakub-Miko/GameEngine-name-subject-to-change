@@ -18,14 +18,10 @@ target_include_directories(ImGuizmo INTERFACE "${CMAKE_SOURCE_DIR}/dependencies/
 
 if(WIN32) 
 
-
-if(${RENDER_API} STREQUAL "OpenGL")
-
 target_sources(IMGUI INTERFACE "${CMAKE_SOURCE_DIR}/dependencies/imgui/backends/imgui_impl_glfw.h" "${CMAKE_SOURCE_DIR}/dependencies/imgui/backends/imgui_impl_glfw.cpp")
 target_sources(IMGUI INTERFACE "${CMAKE_SOURCE_DIR}/dependencies/Additional/impl_custom_imgui_backend.h" "${CMAKE_SOURCE_DIR}/dependencies/Additional/impl_custom_imgui_backend.cpp")
 target_sources(IMGUI INTERFACE "${CMAKE_SOURCE_DIR}/dependencies/Additional/impl_custom_imgui_platform.h" "${CMAKE_SOURCE_DIR}/dependencies/Additional/impl_custom_imgui_platform.cpp")
 
-endif()
 
 if(${RENDER_API} STREQUAL "DirectX")
 
@@ -35,12 +31,10 @@ endif()
 
 else()
 
-if(${RENDER_API} STREQUAL "OpenGL")
 
 target_sources(IMGUI INTERFACE "${CMAKE_SOURCE_DIR}/dependencies/imgui/backends/imgui_impl_glfw.h" "${CMAKE_SOURCE_DIR}/dependencies/imgui/backends/imgui_impl_glfw.cpp")
 target_sources(IMGUI INTERFACE "${CMAKE_SOURCE_DIR}/dependencies/Additional/impl_custom_imgui_backend.h" "${CMAKE_SOURCE_DIR}/dependencies/Additional/impl_custom_imgui_backend.cpp")
 target_sources(IMGUI INTERFACE "${CMAKE_SOURCE_DIR}/dependencies/Additional/impl_custom_imgui_platform.h" "${CMAKE_SOURCE_DIR}/dependencies/Additional/impl_custom_imgui_platform.cpp")
 
-endif()
 
 endif()

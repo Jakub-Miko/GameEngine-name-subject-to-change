@@ -14,6 +14,8 @@ Window* Window::CreateWindow(const WindowProperties& props) {
     return new WindowsWindow(props);
     #elif defined OpenGL_API
     return new GlfwWindow(props);
+    #elif defined Vulkan_API
+    return new GlfwWindow(props);
     #else
     static_assert(false, "Wrong Window Type");
     #endif

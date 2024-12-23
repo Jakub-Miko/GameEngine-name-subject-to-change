@@ -59,6 +59,32 @@ file(GLOB OPENGL_SRC
 "./platform/OpenGL/*/*.cpp" "./platform/OpenGL/*/*.h"
 "./platform/GLFW/*.cpp" "./platform/GLFW/*.h" )
 
+if("${RENDER_API}" STREQUAL "Vulkan")
+
+file(GLOB Vulkan_SRC 
+"./platform/Vulkan/*.cpp" "./platform/Vulkan/*.h"
+"./platform/Vulkan/*/*.cpp" "./platform/Vulkan/*/*.h" )
+
+set(UPDATE_DEPS ON)
+set(SHADERC_SKIP_TESTS ON)
+set(ALLOW_EXTERNAL_SPIRV_TOOLS ON)
+add_subdirectory("./platform/Vulkan/dependencies/headers")
+add_subdirectory("./platform/Vulkan/dependencies/loader")
+add_subdirectory("./platform/Vulkan/dependencies/vma")
+add_subdirectory("./platform/Vulkan/dependencies/bootstrap")
+add_subdirectory("./platform/Vulkan/dependencies/spirv-headers")
+add_subdirectory("./platform/Vulkan/dependencies/glslang")
+add_subdirectory("./platform/Vulkan/dependencies/spirv-tools")
+add_subdirectory("./dependencies/shaderc")
+message(WARNING "Vulkan mode")
+target_link_libraries(EngineCore PRIVATE Vulkan-Headers vulkan GPUOpen::VulkanMemoryAllocator vk-bootstrap::vk-bootstrap shaderc)
+
+target_sources(EngineCore PRIVATE ${Vulkan_SRC})
+
+endif()
+
+if(WIN32) 
+
 set(FT_DISABLE_ZLIB on CACHE BOOL "" FORCE)
 set(BUILD_SHARED_LIBS on)
 add_subdirectory("./dependencies/FreeType")
@@ -111,10 +137,10 @@ target_link_libraries(EngineCore PUBLIC IMGUI)
 
 endif()
 
-
-if(WIN32) 
-
 set_property(CACHE RENDER_API PROPERTY STRINGS "OpenGL" "DirectX12")
+
+
+
 
 file(GLOB DIRECTX_SRC
 "./platform/DirectX/*.cpp" "./platform/DirectX/*.h"
