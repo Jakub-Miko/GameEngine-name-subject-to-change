@@ -35,3 +35,18 @@
 [submodule "docs/theme"]
 	path = docs/theme
 	url = https://github.com/jothepro/doxygen-awesome-css.git
+[submodule "platform/Vulkan/dependencies/headers"]
+	path = platform/Vulkan/dependencies/headers
+	url = https://github.com/KhronosGroup/Vulkan-Headers.git
+[submodule "platform/Vulkan/dependencies/loader"]
+	path = platform/Vulkan/dependencies/loader
+	url = https://github.com/KhronosGroup/Vulkan-Loader.git
+[submodule "platform/Vulkan/dependencies/vma"]
+	path = platform/Vulkan/dependencies/vma
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
+[submodule "platform/Vulkan/dependencies/bootstrap"]
+	path = platform/Vulkan/dependencies/bootstrap
+	url = https://github.com/charles-lunarg/vk-bootstrap.git
+[submodule "dependencies/shaderc"]
+	path = dependencies/shaderc
+	url = https://github.com/google/shaderc.git
