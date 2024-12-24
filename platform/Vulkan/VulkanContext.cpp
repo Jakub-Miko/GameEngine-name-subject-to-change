@@ -1,4 +1,6 @@
 #include "VulkanContext.h"
+#include <VkBootstrap.h>
+#include <stdexcept>
 
 VulkanContext* VulkanContext::instance = nullptr;
 
@@ -9,8 +11,51 @@ void VulkanContext::Create()
 	}
 }
 
-void VulkanContext::Initialize()
+void VulkanContext::InitializeInstance()
 {
+	vkb::InstanceBuilder builder;
+#ifndef NDEBUG
+	builder.request_validation_layers();
+#endif
+	builder.use_default_debug_messenger();
+	builder.set_app_name("NSTC Engine");
+	builder.set_engine_name("NSTC Engine");
+	builder.require_api_version(1, 3, 0);
+	builder.enable_extensions(GetExtensions());
+	vkb_instance = builder.build().value();
+	vk_instance = vkb_instance.instance;
+
+
+}
+
+void VulkanContext::InitializeDevice()
+{
+	vkb::PhysicalDeviceSelector selector(vkb_instance);
+	selector.set_surface(vk_surface);
+
+	auto device = selector.select();
+
+	if (!device.has_value()) {
+		throw std::runtime_error(device.error().message());
+	}
+
+	vkb::DeviceBuilder builder(device.value());
+	auto device_result = builder.build();
+	if (!device_result.has_value()) {
+		throw std::runtime_error(device_result.error().message());
+	}
+	vkb_device = device_result.value();
+	vk_device = vkb_device.device;
+
+	vkb::SwapchainBuilder swapchain_builder(vkb_device);
+	auto swapchain_result = swapchain_builder.build();
+	if (!swapchain_result.has_value()) {
+		throw std::runtime_error(swapchain_result.error().message());
+	}
+	vkb_swapchain = swapchain_result.value(); 
+	vk_swapchain = vkb_swapchain.swapchain;
+
+
 }
 
 VulkanContext* VulkanContext::Get()
@@ -41,16 +86,16 @@ void VulkanContext::RequestExtensions(const char** extensions, int count)
 	}
 }
 
-std::shared_ptr<const char*> VulkanContext::GetExtensions()
+std::vector<const char*> VulkanContext::GetExtensions()
 {
-	const char** extensions = (const char**)malloc(sizeof(char*) * requested_extensions.size());
+	std::vector<const char*> vec;
 
 	int i = 0;
 	for (auto& string : requested_extensions) {
-		extensions[i++] = string.c_str();
+		vec.push_back(string.c_str());
 	}
 
-	return std::shared_ptr<const char*>(extensions, free);
+	return std::move(vec);
 }
 
 VulkanContext::VulkanContext() : requested_extensions()
@@ -60,4 +105,6 @@ VulkanContext::VulkanContext() : requested_extensions()
 
 VulkanContext::~VulkanContext()
 {
+
+
 }

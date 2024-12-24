@@ -28,14 +28,7 @@ GlfwWindow::GlfwWindow(const WindowProperties& props)
 
 void GlfwWindow::Init()
 {
-#ifdef Vulkan_API
-    uint32_t count;
-    const char** extensions = glfwGetRequiredInstanceExtensions(&count);
-    
-    VulkanContext::Create();
-    VulkanContext::Get()->RequestExtensions(extensions, count);
-
-#elif defined OpenGL_API
+#if defined OpenGL_API
     auto list = reinterpret_cast<OpenGLRenderCommandList*>(Renderer::Get()->GetRenderCommandList());
     list->BindOpenGLContext();
     std::shared_ptr<RenderFence> fence = std::shared_ptr<RenderFence>( Renderer::Get()->GetFence());
@@ -52,7 +45,16 @@ void GlfwWindow::PreInit()
     /* Initialize the library */
     if (!glfwInit())
         Application::Get()->Exit();
-    
+#ifdef Vulkan_API
+    uint32_t count;
+    const char** extensions = glfwGetRequiredInstanceExtensions(&count);
+    VulkanContext::Create();
+    VulkanContext::Get()->RequestExtensions(extensions, count);
+    VulkanContext* context = VulkanContext::Get();
+    context->InitializeInstance();
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+
+#endif
     //this causes issues on linux since it will automatically maximize all undocked windows.
     //glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
 
@@ -75,6 +77,20 @@ void GlfwWindow::PreInit()
         glfwTerminate();
         Application::Get()->Exit();
     }
+#ifdef Vulkan_API
+    VkSurfaceKHR surface;
+    if (glfwCreateWindowSurface(VulkanContext::Get()->GetVkInstance(), m_Window,NULL, &surface)) {
+        glfwTerminate();
+        Application::Get()->Exit();
+    }
+
+    context->SetSurface(surface);
+
+    context->InitializeDevice();
+
+#endif
+
+
 }
 
 void GlfwWindow::PollEvents()

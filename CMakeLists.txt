@@ -65,10 +65,14 @@ file(GLOB Vulkan_SRC
 "./platform/Vulkan/*.cpp" "./platform/Vulkan/*.h"
 "./platform/Vulkan/*/*.cpp" "./platform/Vulkan/*/*.h" )
 
-set(UPDATE_DEPS ON)
+set(UPDATE_DEPS OFF)
+set(BUILD_TESTS OFF)
 set(SHADERC_SKIP_TESTS ON)
 set(ALLOW_EXTERNAL_SPIRV_TOOLS ON)
 add_subdirectory("./platform/Vulkan/dependencies/headers")
+get_target_property(VK_HEADER_DIRECTORY Vulkan-Headers INCLUDE_DIRECTORIES)
+
+set(VULKAN_HEADERS_INSTALL_DIR "${VK_HEADER_DIRECTORY}")
 add_subdirectory("./platform/Vulkan/dependencies/loader")
 add_subdirectory("./platform/Vulkan/dependencies/vma")
 add_subdirectory("./platform/Vulkan/dependencies/bootstrap")
