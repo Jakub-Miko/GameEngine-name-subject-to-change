@@ -1,6 +1,9 @@
 #include "RenderContext.h"
-
+#ifdef OpenGL_API
 #include <platform/OpenGL/OpenGLRenderContext.h>
+#elif defined Vulkan_API
+#include <platform/Vulkan/VulkanRenderContext.h>
+#endif
 
 RenderContext* RenderContext::instance = nullptr;
 
@@ -12,7 +15,11 @@ RenderContext* RenderContext::Get()
 void RenderContext::Create()
 {
 	if (!instance) {
+#ifdef OpenGL_API
 		instance = new OpenGLRenderContext();
+#elif defined Vulkan_API
+		instance = new VulkanRenderContext();
+#endif
 	}
 }
 

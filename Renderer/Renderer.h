@@ -51,8 +51,8 @@ public:
     void ReuseAllocator(RenderCommandAllocator* alloc);
 
 private:
+    Renderer();
     friend class RenderContext;
-    Renderer() = default;
     void SetRenderQueue(RenderCommandQueue* queue, RenderQueueTypes type);
     void Destroy();
     

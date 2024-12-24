@@ -4,7 +4,7 @@
 #ifdef OpenGL_API
 #include <platform/OpenGL/OpenGLRenderCommandList.h>
 #elif defined(Vulkan_API)
-#include <platform/Vulkan/VulkanContext.h>
+#include <platform/Vulkan/VulkanRenderContext.h>
 #include <vulkan/vulkan.h>
 #endif
 
@@ -24,6 +24,7 @@ GlfwWindow::GlfwWindow(const WindowProperties& props)
             m_Properties.fullscreen = (bool)ConfigManager::Get()->GetInt("fullscreen");
         }
     }
+
 }
 
 void GlfwWindow::Init()
@@ -46,12 +47,12 @@ void GlfwWindow::PreInit()
     if (!glfwInit())
         Application::Get()->Exit();
 #ifdef Vulkan_API
+    VulkanRenderContext* context = static_cast<VulkanRenderContext*>(RenderContext::Get());
+
     uint32_t count;
     const char** extensions = glfwGetRequiredInstanceExtensions(&count);
-    VulkanContext::Create();
-    VulkanContext::Get()->RequestExtensions(extensions, count);
-    VulkanContext* context = VulkanContext::Get();
-    context->InitializeInstance();
+    context->RequestExtensions(extensions, count);
+    context->InstanceInit(); // we need to initialize the instance here, since we need it to create a surface
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
 #endif
@@ -79,14 +80,13 @@ void GlfwWindow::PreInit()
     }
 #ifdef Vulkan_API
     VkSurfaceKHR surface;
-    if (glfwCreateWindowSurface(VulkanContext::Get()->GetVkInstance(), m_Window,NULL, &surface)) {
+    if (glfwCreateWindowSurface(context->GetVkInstance(), m_Window,NULL, &surface)) {
         glfwTerminate();
         Application::Get()->Exit();
     }
 
     context->SetSurface(surface);
 
-    context->InitializeDevice();
 
 #endif
 

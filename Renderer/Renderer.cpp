@@ -17,9 +17,12 @@ Renderer* Renderer::Get() {
     return instance;
 }
 
+Renderer::Renderer() {
+    RenderContext::Create();
+} 
+
 void Renderer::PreInit() {
     stbi_set_flip_vertically_on_load(true);
-    RenderContext::Create();
     if(RenderContext::Get()) {
         RenderContext::Get()->PreInit();
     }
