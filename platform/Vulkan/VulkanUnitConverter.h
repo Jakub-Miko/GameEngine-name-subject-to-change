@@ -1,0 +1,182 @@
+#pragma once
+#include <Core/UnitConverter.h>
+#include <Renderer/RendererDefines.h>
+#include <stdexcept>
+#include <Vulkan/vulkan.h>
+
+class VulkanUnitConverter {
+public:
+
+	static VkFormat PrimitiveToVulkan(RenderPrimitiveType type) {
+		switch (type) {
+		case RenderPrimitiveType::CHAR:				return VK_FORMAT_R8_SINT;
+		case RenderPrimitiveType::FLOAT:			return VK_FORMAT_R32_SFLOAT;
+		case RenderPrimitiveType::INT:				return VK_FORMAT_R32_SINT;
+		case RenderPrimitiveType::UNSIGNED_CHAR:	return VK_FORMAT_R8_UINT;
+		case RenderPrimitiveType::UNSIGNED_INT:		return VK_FORMAT_R32_UINT;
+		case RenderPrimitiveType::VEC2:				return VK_FORMAT_R32_SFLOAT;
+		case RenderPrimitiveType::VEC3:				return VK_FORMAT_R32_SFLOAT;
+		case RenderPrimitiveType::VEC4:				return VK_FORMAT_R32_SFLOAT;
+		case RenderPrimitiveType::MAT3:				return VK_FORMAT_R32_SFLOAT;
+		case RenderPrimitiveType::MAT4:				return VK_FORMAT_R32_SFLOAT;
+		default: 
+			throw std::runtime_error("Conversion failed");
+		}
+	}
+
+	static bool IsPrimitiveInteger(RenderPrimitiveType type) {
+		switch (type) {
+		case RenderPrimitiveType::CHAR:				return true;
+		case RenderPrimitiveType::FLOAT:			return false;
+		case RenderPrimitiveType::INT:				return true;
+		case RenderPrimitiveType::UNSIGNED_CHAR:	return true;
+		case RenderPrimitiveType::UNSIGNED_INT:		return true;
+		case RenderPrimitiveType::VEC2:				return false;
+		case RenderPrimitiveType::VEC3:				return false;
+		case RenderPrimitiveType::VEC4:				return false;
+		case RenderPrimitiveType::MAT3:				return false;
+		case RenderPrimitiveType::MAT4:				return false;
+		default:
+			throw std::runtime_error("Conversion failed");
+		}
+	}
+
+	static int PrimitiveSize(RenderPrimitiveType type) {
+		return UnitConverter::PrimitiveSize(type);
+	}
+
+	static GLenum TextureFormatToVulkanInternalformat(TextureFormat type) {
+		switch (type) {
+		case TextureFormat::RGBA_UNSIGNED_CHAR:				return VK_FORMAT_R8G8B8A8_UINT;
+		case TextureFormat::RGB_UNSIGNED_CHAR:				return VK_FORMAT_R8G8B8_UINT;
+		case TextureFormat::DEPTH24_STENCIL8_UNSIGNED_CHAR:	return VK_FORMAT_D24_UNORM_S8_UINT;
+		case TextureFormat::RGB_32FLOAT:					return VK_FORMAT_R32G32B32_SFLOAT;
+		case TextureFormat::RGBA_32FLOAT:					return VK_FORMAT_R32G32B32A32_SFLOAT;
+		case TextureFormat::R_UNSIGNED_INT:					return VK_FORMAT_R32_UINT;
+		case TextureFormat::R_UNSIGNED_CHAR:                return VK_FORMAT_R8_UINT;
+		case TextureFormat::R_UNSIGNED_CHAR_NORM:           return VK_FORMAT_R8_UNORM;
+		case TextureFormat::R_8FLOAT:						return VK_FORMAT_R8_UNORM;
+		default:
+			throw std::runtime_error("Conversion failed");
+		}
+	}
+
+	static VkCompareOp  DepthComparisonModeToVulkanCompareFunc(DepthComparisonMode mode) {
+		switch (mode) {
+		case DepthComparisonMode::ALWAYS:					return VK_COMPARE_OP_ALWAYS;
+		case DepthComparisonMode::EQUAL:					return VK_COMPARE_OP_EQUAL;
+		case DepthComparisonMode::GREATER:				return VK_COMPARE_OP_GREATER;
+		case DepthComparisonMode::GREATER_EQUAL:			return VK_COMPARE_OP_GREATER_OR_EQUAL;
+		case DepthComparisonMode::LESS:					return VK_COMPARE_OP_LESS;
+		case DepthComparisonMode::LESS_EQUAL:				return VK_COMPARE_OP_LESS_OR_EQUAL;
+		case DepthComparisonMode::NEVER:					return VK_COMPARE_OP_NEVER;
+		case DepthComparisonMode::NOT_EQUAL:				return VK_COMPARE_OP_NOT_EQUAL;
+		case DepthComparisonMode::DISABLED:					return VK_COMPARE_OP_NEVER;
+		default:
+			throw std::runtime_error("Conversion failed");
+		}
+	}
+
+	static VkBlendOp BlendEquationToVulkanEnum(BlendEquation type) {
+		switch (type) {
+		case BlendEquation::ADD:				return VK_BLEND_OP_ADD;
+		case BlendEquation::MAX:				return VK_BLEND_OP_MAX;
+		case BlendEquation::MIN:				return VK_BLEND_OP_MIN;
+		case BlendEquation::REVERSE_SUBTRACT:	return VK_BLEND_OP_REVERSE_SUBTRACT;
+		case BlendEquation::SUBTRACT:			return VK_BLEND_OP_SUBTRACT;
+		default:
+			throw std::runtime_error("Conversion failed");
+		}
+	}
+
+	static VkCullModeFlagBits CullModeTOVulkanFlags(CullMode type) {
+		switch (type) {
+		case CullMode::BACK:				return VK_CULL_MODE_BACK_BIT;
+		case CullMode::FRONT:				return VK_CULL_MODE_FRONT_BIT;
+		default:
+			throw std::runtime_error("Conversion failed");
+		}
+	}
+
+	static int TextureFormatToTexelSize(TextureFormat type) {
+		switch (type) {
+		case TextureFormat::RGBA_UNSIGNED_CHAR:				return 4*sizeof(unsigned char);
+		case TextureFormat::RGB_UNSIGNED_CHAR:				return 3*sizeof(unsigned char);
+		case TextureFormat::DEPTH24_STENCIL8_UNSIGNED_CHAR:	return 4*sizeof(unsigned char);
+		case TextureFormat::RGB_32FLOAT:					return 3*sizeof(float);
+		case TextureFormat::RGBA_32FLOAT:					return 4*sizeof(float);
+		case TextureFormat::R_UNSIGNED_INT:					return sizeof(uint32_t);
+		case TextureFormat::R_UNSIGNED_CHAR:                return sizeof(char);
+		case TextureFormat::R_UNSIGNED_CHAR_NORM:           return sizeof(char);
+		case TextureFormat::R_8FLOAT:						return sizeof(char);
+		default:
+			throw std::runtime_error("Conversion failed");
+		}
+	}
+
+	static VkSamplerAddressMode TextureAddressModeToVulkanAddressMode(TextureAddressMode mode) {
+		switch (mode) {
+		case TextureAddressMode::BORDER:				return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+		case TextureAddressMode::CLAMP:					return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		case TextureAddressMode::MIRROR:				return VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
+		case TextureAddressMode::WRAP:					return VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		default:
+			throw std::runtime_error("Conversion failed");
+		}
+	}
+
+	static VkFilter TextureFilterToMinMagFilter(TextureFilter filter) {
+		switch (filter) {
+		case TextureFilter::LINEAR_MIN_MAG:					return VK_FILTER_LINEAR;
+		case TextureFilter::POINT_MIN_MAG:					return VK_FILTER_NEAREST;
+		case TextureFilter::LINEAR_MIN_MAG_MIP:				return VK_FILTER_LINEAR;
+		case TextureFilter::LINEAR_MIN_MAG_POINT_MIP:		return VK_FILTER_LINEAR;
+		case TextureFilter::POINT_MIN_MAG_LINEAR_MIP:		return VK_FILTER_NEAREST;
+		case TextureFilter::POINT_MIN_MAG_MIP:				return VK_FILTER_NEAREST ;
+		default:
+			throw std::runtime_error("Conversion failed");
+		}
+	}
+
+	static VkSamplerMipmapMode  TextureFilterToMipFilter(TextureFilter filter) {
+		switch (filter) {
+		case TextureFilter::LINEAR_MIN_MAG:					return VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		case TextureFilter::POINT_MIN_MAG:					return VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		case TextureFilter::LINEAR_MIN_MAG_MIP:				return VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		case TextureFilter::LINEAR_MIN_MAG_POINT_MIP:		return VK_SAMPLER_MIPMAP_MODE_NEAREST;
+		case TextureFilter::POINT_MIN_MAG_LINEAR_MIP:		return VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		case TextureFilter::POINT_MIN_MAG_MIP:				return VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		default:
+			throw std::runtime_error("Conversion failed");
+		}
+	}
+
+	static VkPolygonMode  PrimitivePolygonRenderModetoVulkanEnum(PrimitivePolygonRenderMode mode) {
+		switch (mode) {
+		case PrimitivePolygonRenderMode::DEFAULT:				return VK_POLYGON_MODE_FILL;
+		case PrimitivePolygonRenderMode::WIREFRAME:				return VK_POLYGON_MODE_LINE;
+		default:
+			throw std::runtime_error("Conversion failed");
+		}
+	}
+
+	static VkBlendFactor BlendFunctiontoVkBlendFactor(BlendFunction mode) {
+		switch (mode) {
+		case BlendFunction::ONE:					return VK_BLEND_FACTOR_ONE;
+		case BlendFunction::ZERO:					return VK_BLEND_FACTOR_ZERO;
+		case BlendFunction::DST_ALPHA:				return VK_BLEND_FACTOR_DST_ALPHA;
+		case BlendFunction::SRC_ALPHA:				return VK_BLEND_FACTOR_SRC_ALPHA;
+		case BlendFunction::ONE_MINUS_DST_ALPHA:	return VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
+		case BlendFunction::ONE_MINUS_SRC_ALPHA:	return VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+		case BlendFunction::SRC_COLOR:				return VK_BLEND_FACTOR_SRC_COLOR;
+		case BlendFunction::DST_COLOR:				return VK_BLEND_FACTOR_DST_COLOR;
+		case BlendFunction::ONE_MINUS_SRC_COLOR:	return VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
+		case BlendFunction::ONE_MINUS_DST_COLOR:	return VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
+		default:
+			throw std::runtime_error("Conversion failed");
+		}
+	}
+
+
+};
+
