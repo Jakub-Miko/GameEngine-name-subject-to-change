@@ -11,7 +11,5 @@ public:
 	virtual void Signal(std::shared_ptr<RenderFence> fence, int num) = 0;
 	virtual void Present() = 0;
 
-	static RenderCommandQueue* CreateRenderCommandQueue();
-
 	virtual ~RenderCommandQueue() {};
 }; 

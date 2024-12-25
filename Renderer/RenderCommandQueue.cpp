@@ -1,7 +1,9 @@
 #include "RenderCommandQueue.h"
-#include <platform/OpenGL/OpenGLRenderCommandQueue.h>
 
-RenderCommandQueue* RenderCommandQueue::CreateRenderCommandQueue()
-{
-	return new OpenGLRenderCommandQueue();
-}
+#ifdef OpenGL_API
+#include <platform/OpenGL/OpenGLRenderCommandQueue.h>
+#elif defined Vulkan_API
+#include <platform/Vulkan/VulkanRenderCommandQueue.h>
+#endif
+
+

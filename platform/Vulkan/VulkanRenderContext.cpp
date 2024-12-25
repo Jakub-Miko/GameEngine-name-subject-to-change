@@ -2,7 +2,7 @@
 #include <VkBootstrap.h>
 #include <stdexcept>
 #include "VulkanRenderContext.h"
-
+#include "VulkanRenderCommandQueue.h"
 
 void VulkanRenderContext::RequestExtension(const std::string& extension)
 {
@@ -33,6 +33,14 @@ std::vector<const char*> VulkanRenderContext::GetExtensions()
 
 void VulkanRenderContext::Destroy()
 {
+	delete Renderer::Get()->GetCommandQueue();
+	SetRenderQueue(nullptr, RenderQueueTypes::DirectQueue);
+	SetRenderQueue(nullptr, RenderQueueTypes::ComputeQueue);
+	SetRenderQueue(nullptr, RenderQueueTypes::CopyQueue);
+
+	vkb::destroy_swapchain(vkb_swapchain);
+	vkb::destroy_device(vkb_device);
+	vkb::destroy_instance(vkb_instance);
 }
 
 VulkanRenderContext::VulkanRenderContext() : requested_extensions(), vk_device(), 
@@ -69,6 +77,13 @@ void VulkanRenderContext::Init()
 	}
 	vkb_swapchain = swapchain_result.value();
 	vk_swapchain = vkb_swapchain.swapchain;
+
+	VulkanRenderCommandQueue* queue =  new VulkanRenderCommandQueue(vkb_device.get_queue(vkb::QueueType::graphics).value());
+
+	SetRenderQueue(queue, RenderQueueTypes::DirectQueue);
+	SetRenderQueue(queue, RenderQueueTypes::CopyQueue);
+	SetRenderQueue(queue, RenderQueueTypes::ComputeQueue);
+
 }
 
 void VulkanRenderContext::PreInit()
@@ -82,9 +97,7 @@ void VulkanRenderContext::StartShutdown()
 
 VulkanRenderContext::~VulkanRenderContext()
 {
-	vkb::destroy_swapchain(vkb_swapchain);
-	vkb::destroy_device(vkb_device);
-	vkb::destroy_instance(vkb_instance);
+
 }
 
 void VulkanRenderContext::InstanceInit()

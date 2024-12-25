@@ -22,6 +22,8 @@ public:
 
 
 	VkInstance GetVkInstance() const { return vk_instance; }
+	VkDevice GetVkDevice() const { return vk_device; }
+	vkb::Device GetVkbDevice() const { return vkb_device; }
 	void SetSurface(VkSurfaceKHR surface) { vk_surface = surface; }
 	void RequestExtension(const std::string& extension);
 	void RequestExtensions(const char** extensions, int count);
