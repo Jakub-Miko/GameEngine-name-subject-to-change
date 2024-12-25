@@ -82,8 +82,9 @@ void VulkanRenderContext::StartShutdown()
 
 VulkanRenderContext::~VulkanRenderContext()
 {
-
-
+	vkb::destroy_swapchain(vkb_swapchain);
+	vkb::destroy_device(vkb_device);
+	vkb::destroy_instance(vkb_instance);
 }
 
 void VulkanRenderContext::InstanceInit()
