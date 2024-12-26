@@ -9,6 +9,12 @@
 class FrameManager {
 public:
 
+
+	/**
+	 * @brief Singleton initialization
+	*/
+	static void PreInitialize();
+
 	/**
 	 * @brief Singleton initialization
 	*/

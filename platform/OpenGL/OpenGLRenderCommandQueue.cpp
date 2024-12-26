@@ -54,7 +54,7 @@ void OpenGLRenderCommandQueue::Present()
 	m_cond_var.notify_one();
 }
 
-//TODO: Use synchronization to make sure everythings finished
+//TODO: Use synchronization to make sure everything finished
 OpenGLRenderCommandQueue::~OpenGLRenderCommandQueue()
 {
 	shutdown_flag = 2;

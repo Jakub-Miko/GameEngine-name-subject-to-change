@@ -5,6 +5,7 @@
 #include <vulkan/vulkan.h>
 #include <VkBootstrap.h>
 #include <Renderer/RenderContext.h>
+#include <Core/FrameMultiBufferResource.h>
 
 #define DEFINE_VK_INSTANCE(x) auto x = static_cast<VulkanRenderContext*>(RenderContext::Get());
 
@@ -22,16 +23,29 @@ public:
 	VulkanRenderContext& operator=(const VulkanRenderContext& ref) = delete;
 	VulkanRenderContext& operator=(VulkanRenderContext&& ref) = delete;
 
+	/**
+	 * @brief Insert a wait in the queue to wait until a new render image is available, then set a new current framebuffer
+	 * @note this is done after the presenting of the last frame so the resources of the next frame are used
+	 */
+	void StartNewFrame();
 
+	/**
+	 * @brief This Insert synchronization to finish the rendering before presenting
+	 */
+	void SignalEndFrame();
+	uint32_t GetCurrentFramebufferIndex() const { return current_framebuffer; }
 	VkInstance GetVkInstance() const { return vk_instance; }
+	VkSwapchainKHR* GetVkSwapchain() { return &vk_swapchain; }
 	VkDevice GetVkDevice() const { return vk_device; }
 	vkb::Device GetVkbDevice() const { return vkb_device; }
 	void SetSurface(VkSurfaceKHR surface) { vk_surface = surface; }
+	VkSemaphore GetVkRenderSemaphore() { return frame_sync.render_fence.GetResource(); };
 	void RequestExtension(const std::string& extension);
 	void RequestExtensions(const char** extensions, int count);
 	std::vector<const char*> GetExtensions();
 
 protected:
+	uint32_t GetNextPresentImageIndex();
 	virtual void Destroy() override;
 
 private:
@@ -45,4 +59,11 @@ private:
 	VkSurfaceKHR vk_surface;
 	vkb::Swapchain vkb_swapchain;
 	VkSwapchainKHR vk_swapchain;
+	uint32_t current_framebuffer;
+	struct {
+		int last_frame_signaled = 0;
+		std::shared_ptr<RenderFence> latency_frame_fence;
+		FrameMultiBufferResource<VkSemaphore> render_fence;
+		FrameMultiBufferResource<VkSemaphore> present_fence; ///< we normally use timeline semaphores instead of fences, but vkAcquireNextImageKHR only takes binary ones
+	} frame_sync;
 };

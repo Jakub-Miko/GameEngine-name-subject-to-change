@@ -6,12 +6,14 @@
 bool VulkanRenderFence::WaitForValue(int desired_value)
 {
 	DEFINE_VK_INSTANCE(context);
+	uint64_t value = desired_value;
+
 	VkSemaphoreWaitInfo info;
 	info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;
 	info.pNext = NULL;
 	info.semaphoreCount = 1;
 	info.pSemaphores = &semaphore;
-	info.pValues = &desired_value;
+	info.pValues = &value;
 	
 	int code = vkWaitSemaphores(context->GetVkDevice(), &info, 30000000000); // timeout 30 seconds
 	if (code != VK_SUCCESS) {
@@ -32,7 +34,7 @@ int VulkanRenderFence::GetValue()
 	return value;
 }
 
-VulkanRenderFence::VulkanRenderFence() : fence()
+VulkanRenderFence::VulkanRenderFence() : semaphore()
 {
 	DEFINE_VK_INSTANCE(context);
 
@@ -54,7 +56,7 @@ VulkanRenderFence::VulkanRenderFence() : fence()
 VulkanRenderFence::~VulkanRenderFence()
 {
 	DEFINE_VK_INSTANCE(context);
-	vkDestroySemaphore(context->GetVkDevice(), fence, NULL);
+	vkDestroySemaphore(context->GetVkDevice(), semaphore, NULL);
 }
 
 void VulkanRenderFence::Signal(int num)
@@ -70,3 +72,4 @@ void VulkanRenderFence::Signal(int num)
 
 	vkSignalSemaphore(context->GetVkDevice(), &info);
 }
+

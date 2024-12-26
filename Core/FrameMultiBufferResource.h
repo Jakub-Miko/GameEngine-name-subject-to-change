@@ -33,6 +33,8 @@ public:
 		return *this;
 	}
 
+	std::vector<T>& GetAllResource() { return resources; }
+
 	template<typename F, typename dummy = std::enable_if_t<std::is_same_v<decltype(std::declval<F>()()),T>>>
 	FrameMultiBufferResource(F func) {
 		int num_of_latency_frames = FrameManager::Get()->GetLatencyFrames();
@@ -41,6 +43,7 @@ public:
 			resources.push_back(func());
 		}
 	}
+
 
 	~FrameMultiBufferResource() {
 		resources.clear();
@@ -52,6 +55,10 @@ public:
 
 	T& GetResource() {
 		return resources[(FrameManager::Get()->GetCurrentFrameNumber() % resources.size())];
+	}
+
+	T& GetNextResource() {
+		return resources[((FrameManager::Get()->GetCurrentFrameNumber() + 1) % resources.size())];
 	}
 
 private:

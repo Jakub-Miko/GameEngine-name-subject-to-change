@@ -153,6 +153,8 @@ void Application::InitInstance()
     //Initialize MainThread as JoinedThread
     InitThread();
 
+    FrameManager::PreInitialize();
+
     //Window and renderer Initialization phase
     m_Window->Init();
     Renderer::Get()->Init();

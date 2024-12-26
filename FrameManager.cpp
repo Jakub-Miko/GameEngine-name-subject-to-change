@@ -5,17 +5,23 @@
 FrameManager* FrameManager::instance = nullptr;
 
 
-void FrameManager::Initialize()
+void FrameManager::PreInitialize()
 {
 	if (!instance) {
 		instance = new FrameManager();
 	}
 }
 
+void FrameManager::Initialize()
+{
+	instance->m_Sync_Fence.reset(Renderer::Get()->GetFence());
+}
+
 FrameManager* FrameManager::Get()
 {
 	return instance;
 }
+
 
 void FrameManager::Shutdown()
 {
@@ -39,7 +45,6 @@ FrameManager::FrameManager()
 {
 	frame_number = ConfigManager::Get()->GetInt("Latency_Frames");
 	latency = frame_number;
-	m_Sync_Fence.reset(Renderer::Get()->GetFence());
 }
 
 FrameManager::~FrameManager()

@@ -10,6 +10,9 @@ public:
 	virtual void Signal(std::shared_ptr<RenderFence> fence, int num) override;
 	virtual void Present() override;
 
+	void VkBinarySemaphoreSignal(VkSemaphore semaphore);
+	void VkBinarySemaphoreWait(VkSemaphore semaphore, VkPipelineStageFlags wait_mask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+
 	VulkanRenderCommandQueue(VkQueue queue) : vk_queue(queue) {}
 
 	VkQueue* GetVkQueue() { return &vk_queue; }
