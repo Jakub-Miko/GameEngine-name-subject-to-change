@@ -6,6 +6,8 @@
 #include <VkBootstrap.h>
 #include <Renderer/RenderContext.h>
 
+#define DEFINE_VK_INSTANCE(x) auto x = static_cast<VulkanRenderContext*>(RenderContext::Get());
+
 class VulkanRenderContext : public RenderContext {
 public:
 

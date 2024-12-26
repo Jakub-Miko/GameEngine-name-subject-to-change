@@ -11,13 +11,13 @@ void* VulkanRenderCommandAllocator::Get()
 
 void VulkanRenderCommandAllocator::clear()
 {
-	auto context = static_cast<VulkanRenderContext*>(RenderContext::Get());
+	DEFINE_VK_INSTANCE(context);
 	vkResetCommandPool(context->GetVkDevice(), pool, NULL);
 }
 
 VulkanRenderCommandAllocator::VulkanRenderCommandAllocator(size_t starting_size)
 {
-	auto context = static_cast<VulkanRenderContext*>(RenderContext::Get());
+	DEFINE_VK_INSTANCE(context);
 
 	VkCommandPoolCreateInfo info;
 	info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -30,6 +30,6 @@ VulkanRenderCommandAllocator::VulkanRenderCommandAllocator(size_t starting_size)
 
 VulkanRenderCommandAllocator::~VulkanRenderCommandAllocator()
 {
-	auto context = static_cast<VulkanRenderContext*>(RenderContext::Get());
+	DEFINE_VK_INSTANCE(context);
 	vkDestroyCommandPool(context->GetVkDevice(), pool, NULL);
 }

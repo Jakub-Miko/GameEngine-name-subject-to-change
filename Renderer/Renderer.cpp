@@ -34,6 +34,7 @@ RenderCommandList* Renderer::GetRenderCommandList()
         [this](RenderCommandAllocator* ptr) { ReuseAllocator(ptr); }));
 }
 
+/// @todo This is not optimal all command lists for the same frame and thread should share an allocator.
 RenderCommandAllocator* Renderer::GetCommandAllocator()
 {
     std::unique_lock<std::mutex> lock(m_List_mutex);

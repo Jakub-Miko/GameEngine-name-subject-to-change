@@ -4,7 +4,7 @@
 
 VulkanRenderCommandList::VulkanRenderCommandList(Renderer* renderer, std::shared_ptr<RenderCommandAllocator> alloc) : RenderCommandList(renderer, alloc)
 {
-	auto context = static_cast<VulkanRenderContext*>(RenderContext::Get());
+	DEFINE_VK_INSTANCE(context);
 
 	VkCommandBufferAllocateInfo info;
 	info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -19,7 +19,7 @@ VulkanRenderCommandList::VulkanRenderCommandList(Renderer* renderer, std::shared
 
 VulkanRenderCommandList::~VulkanRenderCommandList()
 {
-	auto context = static_cast<VulkanRenderContext*>(RenderContext::Get());
+	DEFINE_VK_INSTANCE(context);
 
 	vkFreeCommandBuffers(context->GetVkDevice(), *(static_cast<VkCommandPool*>(m_Alloc->Get())), 1, &command_buffer);
 }
