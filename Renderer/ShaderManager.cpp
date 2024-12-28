@@ -1,19 +1,27 @@
 #include "ShaderManager.h"
 #include <Renderer/Renderer3D/MaterialManager.h>
 #include <FileManager.h>
-#include <platform/OpenGL/OpenGLShaderManager.h>
 #include <json.hpp>
 #include <fstream>
 #include <sstream>
 #include <Renderer/RootSignature.h>
 #include <Core/UnitConverter.h>
+#ifdef OpenGL_API
+#include <platform/OpenGL/OpenGLShaderManager.h>
+#elif defined Vulkan_API
+#include <platform/Vulkan/VulkanShaderManager.h>
+#endif
 
 ShaderManager* ShaderManager::instance = nullptr;
 
 void ShaderManager::Initialize()
 {
 	if (!instance) {
+#ifdef OpenGL_API
 		instance = new OpenGLShaderManager();
+#elif defined Vulkan_API
+		instance = new VulkanShaderManager();
+#endif
 	}
 }
 

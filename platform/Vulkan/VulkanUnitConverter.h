@@ -4,6 +4,8 @@
 #include <stdexcept>
 #include <Vulkan/vulkan.h>
 #include "VulkanRenderContext.h"
+#include "VulkanShaderManager.h"
+#include "shaderc/shaderc.hpp"
 
 class VulkanUnitConverter {
 public:
@@ -201,6 +203,16 @@ public:
 		switch (mode) {
 		case RenderBufferType::UPLOAD:				return VmaAllocationCreateFlagBits::VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT;
 		case RenderBufferType::DEFAULT:				return NULL;
+		default:
+			throw std::runtime_error("Conversion failed");
+		}
+	}
+
+	static shaderc_shader_kind ShaderStageToShadercShaderKind(VulkanShaderStages mode) {
+		switch (mode) {
+		case VulkanShaderStages::FRAGMENT:		return shaderc_shader_kind::shaderc_fragment_shader;
+		case VulkanShaderStages::VERTEX:		return shaderc_shader_kind::shaderc_vertex_shader;
+		case VulkanShaderStages::GEOMETRY:		return shaderc_shader_kind::shaderc_geometry_shader;
 		default:
 			throw std::runtime_error("Conversion failed");
 		}
