@@ -12,9 +12,9 @@ enum class VulkanShaderStages {
 };
 
 struct VulkanShaderSource {
-	VulkanShaderStages type;
-	VkShaderModule module;
-	std::string source;
+	VulkanShaderStages type = VulkanShaderStages::NUM_OF_STAGES;
+	VkShaderModule module = VkShaderModule();
+	std::string source = "";
 };
 
 using VulkanParsedShader = std::vector<VulkanShaderSource>;
@@ -35,7 +35,7 @@ public:
 		id = str;
 	}
 
-	virtual ~VulkanShader() {}
+	virtual ~VulkanShader();
 
 	struct VulkanShaderStage {
 		VkShaderModule stage;

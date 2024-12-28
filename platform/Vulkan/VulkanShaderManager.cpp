@@ -159,9 +159,10 @@ Shader* VulkanShaderManager::CreateShaderFromString_impl(const std::string& sour
 
 void VulkanShader::ResetStage(VulkanShaderStages stage_type)
 {
+	DEFINE_VK_INSTANCE(context);
 	auto& stage = shader_modules[(int)stage_type];
 	if (stage.defined) {
-		throw std::runtime_error("Insert stage destruction here.\n"); // add this later
+		vkDestroyShaderModule(context->GetVkDevice(), stage.stage, NULL);
 	}
 	stage.defined = false;
 }
@@ -176,4 +177,11 @@ void VulkanShader::SetStage(VkShaderModule stage, VulkanShaderStages stage_type)
 VkShaderModule* VulkanShader::GetStage(VulkanShaderStages stage_type)
 {
 	return shader_modules[(int)stage_type].defined ? &shader_modules[(int)stage_type].stage : nullptr;
+}
+
+VulkanShader::~VulkanShader()
+{
+	for (int i = 0; i < (int)VulkanShaderStages::NUM_OF_STAGES; i++) {
+		ResetStage((VulkanShaderStages)i);
+	}
 }
