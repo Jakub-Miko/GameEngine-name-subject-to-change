@@ -6,6 +6,8 @@
 #include <VkBootstrap.h>
 #include <Renderer/RenderContext.h>
 #include <Core/FrameMultiBufferResource.h>
+#define VMA_VULKAN_VERSION 1003000 
+#include <vk_mem_alloc.h>
 
 #define DEFINE_VK_INSTANCE(x) auto x = static_cast<VulkanRenderContext*>(RenderContext::Get());
 
@@ -29,10 +31,14 @@ public:
 	 */
 	void StartNewFrame();
 
+
+
 	/**
 	 * @brief This Insert synchronization to finish the rendering before presenting
 	 */
 	void SignalEndFrame();
+
+	VmaAllocator& GetVmaAllocator() { return allocator;  }
 	uint32_t GetCurrentFramebufferIndex() const { return current_framebuffer; }
 	VkInstance GetVkInstance() const { return vk_instance; }
 	VkSwapchainKHR* GetVkSwapchain() { return &vk_swapchain; }
@@ -60,9 +66,8 @@ private:
 	vkb::Swapchain vkb_swapchain;
 	VkSwapchainKHR vk_swapchain;
 	uint32_t current_framebuffer;
+	VmaAllocator allocator;
 	struct {
-		int last_frame_signaled = 0;
-		std::shared_ptr<RenderFence> latency_frame_fence;
 		FrameMultiBufferResource<VkSemaphore> render_fence;
 		FrameMultiBufferResource<VkSemaphore> present_fence; ///< we normally use timeline semaphores instead of fences, but vkAcquireNextImageKHR only takes binary ones
 	} frame_sync;

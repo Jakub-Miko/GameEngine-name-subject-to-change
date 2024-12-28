@@ -11,13 +11,22 @@ void VulkanRenderCommandQueue::ExecuteRenderCommandLists(std::vector<RenderComma
 		buffers.push_back(*static_cast<VulkanRenderCommandList*>(lists[i])->GetVkCommandBuffer());
 	}
 
+	DEFINE_VK_INSTANCE(context);
+
+	uint64_t value = ++last_buffer_signaled;
+	VkTimelineSemaphoreSubmitInfo submit_sync = {};
+	submit_sync.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
+	submit_sync.signalSemaphoreValueCount = 1;
+	submit_sync.pSignalSemaphoreValues = &value; //should i care ?  https://registry.khronos.org/vulkan/specs/latest/html/vkspec.html#limits-maxTimelineSemaphoreValueDifference
+
+
 	VkSubmitInfo info;
 	info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	info.pNext = NULL;
-	info.commandBufferCount = lists.size();
+	info.pNext = &submit_sync;
+	info.commandBufferCount = buffers.size();
 	info.pCommandBuffers = buffers.data();
-	info.pSignalSemaphores = NULL;
-	info.signalSemaphoreCount = 0;
+	info.pSignalSemaphores = static_cast<VulkanRenderFence*>(command_buffer_fence.get())->GetSemaphore();;
+	info.signalSemaphoreCount = 1;
 	info.pWaitSemaphores = NULL;
 	info.waitSemaphoreCount = 0;
 	info.pWaitDstStageMask = NULL;
@@ -27,13 +36,22 @@ void VulkanRenderCommandQueue::ExecuteRenderCommandLists(std::vector<RenderComma
 
 void VulkanRenderCommandQueue::ExecuteRenderCommandList(RenderCommandList* list)
 {
+	DEFINE_VK_INSTANCE(context);
+	
+	uint64_t value = ++last_buffer_signaled;
+	VkTimelineSemaphoreSubmitInfo submit_sync = {};
+	submit_sync.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
+	submit_sync.signalSemaphoreValueCount = 1;
+	submit_sync.pSignalSemaphoreValues = &value;
+
+	
 	VkSubmitInfo info;
 	info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	info.pNext = NULL;
+	info.pNext = &submit_sync;
 	info.commandBufferCount = 1;
 	info.pCommandBuffers = static_cast<VulkanRenderCommandList*>(list)->GetVkCommandBuffer();
-	info.pSignalSemaphores = NULL;
-	info.signalSemaphoreCount = 0;
+	info.pSignalSemaphores = static_cast<VulkanRenderFence*>(command_buffer_fence.get())->GetSemaphore();;
+	info.signalSemaphoreCount = 1;
 	info.pWaitSemaphores = NULL;
 	info.waitSemaphoreCount = 0;
 	info.pWaitDstStageMask = NULL;
@@ -99,6 +117,11 @@ void VulkanRenderCommandQueue::VkBinarySemaphoreWait(VkSemaphore semaphore, VkPi
 	info.pWaitDstStageMask = &wait_mask;
 
 	vkQueueSubmit(vk_queue, 1, &info, NULL);
+}
+
+VulkanRenderCommandQueue::VulkanRenderCommandQueue(VkQueue queue) : vk_queue(queue), submit_mutex(), command_buffer_fence()
+{
+	command_buffer_fence.reset(RenderFence::CreateFence());
 }
 
 void VulkanRenderCommandQueue::Present()

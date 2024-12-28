@@ -4,6 +4,7 @@
 #include "VulkanRenderContext.h"
 #include "VulkanRenderCommandQueue.h"
 
+
 void VulkanRenderContext::StartNewFrame()
 {
 	GetNextPresentImageIndex();
@@ -52,8 +53,6 @@ std::vector<const char*> VulkanRenderContext::GetExtensions()
 
 void VulkanRenderContext::Destroy()
 {
-	frame_sync.latency_frame_fence.reset();
-	
 
 	for (auto& ref : frame_sync.present_fence.GetAllResource()) {
 		vkDestroySemaphore(vk_device, ref, NULL);
@@ -67,6 +66,8 @@ void VulkanRenderContext::Destroy()
 
 	frame_sync.render_fence.release();
 
+	vmaDestroyAllocator(allocator);
+
 	delete Renderer::Get()->GetCommandQueue();
 	SetRenderQueue(nullptr, RenderQueueTypes::DirectQueue);
 	SetRenderQueue(nullptr, RenderQueueTypes::ComputeQueue);
@@ -78,7 +79,7 @@ void VulkanRenderContext::Destroy()
 }
 
 VulkanRenderContext::VulkanRenderContext() : requested_extensions(), vk_device(), 
-	vkb_device(), vkb_swapchain(), vk_swapchain(), vk_instance(), vkb_instance(), vk_surface()
+	vkb_device(), vkb_swapchain(), vk_swapchain(), vk_instance(), vkb_instance(), vk_surface(), allocator()
 {
 	requested_extensions.reserve(10);
 
@@ -90,8 +91,12 @@ void VulkanRenderContext::Init()
 	vkb::PhysicalDeviceSelector selector(vkb_instance);
 	selector.set_surface(vk_surface);
 
-	auto device = selector.select();
+	VkPhysicalDeviceVulkan12Features features_12;
+	features_12.bufferDeviceAddress = true;
 
+	selector.set_required_features_12(features_12);
+
+	auto device = selector.select();
 	if (!device.has_value()) {
 		throw std::runtime_error(device.error().message());
 	}
@@ -118,8 +123,6 @@ void VulkanRenderContext::Init()
 	SetRenderQueue(queue, RenderQueueTypes::CopyQueue);
 	SetRenderQueue(queue, RenderQueueTypes::ComputeQueue);
 
-	frame_sync.latency_frame_fence.reset(RenderFence::CreateFence());
-
 	VkSemaphoreTypeCreateInfo semaphore_type_info;
 	semaphore_type_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
 	semaphore_type_info.initialValue = 0;
@@ -144,7 +147,14 @@ void VulkanRenderContext::Init()
 		return semaphore;
 		});
 
+	VmaAllocatorCreateInfo allocator_info = {};
+	allocator_info.device = vk_device;
+	allocator_info.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
+	allocator_info.instance = vk_instance;
+	allocator_info.physicalDevice = device.value();
+	allocator_info.vulkanApiVersion = VK_API_VERSION_1_3;
 
+	vmaCreateAllocator(&allocator_info, &allocator);
 
 }
 

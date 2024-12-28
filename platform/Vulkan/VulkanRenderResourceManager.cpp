@@ -1,8 +1,29 @@
 #include "VulkanRenderResourceManager.h"
+#include "VulkanRenderContext.h"
+#include "VulkanUnitConverter.h"
 
-std::shared_ptr<RenderBufferResource> VulkanRenderResourceManager::CreateBuffer(const RenderBufferDescriptor& buffer_desc)
+std::shared_ptr<RenderBufferResource> VulkanRenderResourceManager::CreateBuffer(const RenderBufferDescriptor& buffer_desc, RenderState default_state)
 {
-	return std::shared_ptr<RenderBufferResource>();
+	DEFINE_VK_INSTANCE(context);
+	VmaAllocator& alloc = context->GetVmaAllocator();
+
+	VulkanRenderBufferResource* new_buffer = new VulkanRenderBufferResource(buffer_desc, default_state);
+
+	VkBufferCreateInfo info = {};
+	info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	info.size = buffer_desc.buffer_size;
+	info.usage = VulkanUnitConverter::BufferUsageToVkFlags(buffer_desc.usage);
+
+	VmaAllocationCreateInfo alloc_info = {};
+	alloc_info.usage = VulkanUnitConverter::BufferTypeToVmaUsage(buffer_desc.type);
+	alloc_info.flags = VulkanUnitConverter::BufferTypeToVmaFlags(buffer_desc.type);
+
+	vmaCreateBuffer(alloc, &info, &alloc_info, &new_buffer->buffer, &new_buffer->alloc, NULL);
+	
+	
+	return std::shared_ptr<RenderBufferResource>(new_buffer, [](RenderBufferResource* resource) {
+		static_cast<VulkanRenderResourceManager*>(RenderResourceManager::Get())->ReturnBufferResource(static_cast<VulkanRenderBufferResource*>(resource));
+		});
 }
 
 void VulkanRenderResourceManager::UploadDataToBuffer(RenderCommandList* list, std::shared_ptr<RenderBufferResource> resource, void* data, size_t size, size_t offset)
@@ -87,7 +108,7 @@ void VulkanRenderResourceManager::SetFrameBufferColorAttachment(RenderCommandLis
 {
 }
 
-VulkanRenderResourceManager::VulkanRenderResourceManager()
+VulkanRenderResourceManager::VulkanRenderResourceManager() : buffer_deletion_queue(), buffer_deletion_queue_mutex()
 {
 }
 
@@ -95,8 +116,34 @@ VulkanRenderResourceManager::~VulkanRenderResourceManager()
 {
 }
 
-void VulkanRenderResourceManager::ReturnBufferResource(RenderBufferResource* resource)
+void VulkanRenderResourceManager::FlushDeletions()
 {
+	FlushBufferDeletions();
+}
+
+void VulkanRenderResourceManager::FlushBufferDeletions()
+{
+	DEFINE_VK_INSTANCE(context);
+	VmaAllocator& alloc = context->GetVmaAllocator();
+
+	std::unique_lock<std::mutex> lock(buffer_deletion_queue_mutex);
+	
+	throw std::runtime_error("Need to immplement command buffer timeline\n"); // Temporary
+	
+	uint64_t current_timeline = 0;
+	
+	VulkanRenderBufferResource* resource = nullptr;
+	while ((resource = buffer_deletion_queue.front()) && resource->read_timeline < current_timeline && resource->write_timeline < current_timeline) { //iterate a contiguous block of resources, which have all operations on them completed
+		vmaDestroyBuffer(alloc, resource->buffer, resource->alloc);
+		delete resource;
+		buffer_deletion_queue.pop();
+	}
+}
+
+void VulkanRenderResourceManager::ReturnBufferResource(VulkanRenderBufferResource* resource)
+{
+	std::unique_lock<std::mutex> lock(buffer_deletion_queue_mutex);
+	buffer_deletion_queue.push(resource);
 }
 
 void VulkanRenderResourceManager::ReturnTexture2DResource(RenderTexture2DResource* resource)

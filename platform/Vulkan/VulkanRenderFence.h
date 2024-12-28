@@ -14,6 +14,9 @@ public:
 	virtual bool WaitForValue(int desired_value) override;
 	virtual void Wait() override;
 	virtual int GetValue() override;
+
+
+	VkSemaphore* GetSemaphore() { return &semaphore; }
 private:
 	VulkanRenderFence();
 	virtual ~VulkanRenderFence();

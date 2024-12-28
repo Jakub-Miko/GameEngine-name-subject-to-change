@@ -3,6 +3,7 @@
 #include <Renderer/RendererDefines.h>
 #include <stdexcept>
 #include <Vulkan/vulkan.h>
+#include "VulkanRenderContext.h"
 
 class VulkanUnitConverter {
 public:
@@ -45,7 +46,7 @@ public:
 		return UnitConverter::PrimitiveSize(type);
 	}
 
-	static GLenum TextureFormatToVulkanInternalformat(TextureFormat type) {
+	static VkFormat TextureFormatToVulkanInternalformat(TextureFormat type) {
 		switch (type) {
 		case TextureFormat::RGBA_UNSIGNED_CHAR:				return VK_FORMAT_R8G8B8A8_UINT;
 		case TextureFormat::RGB_UNSIGNED_CHAR:				return VK_FORMAT_R8G8B8_UINT;
@@ -177,6 +178,33 @@ public:
 		}
 	}
 
+	static VkBufferUsageFlags BufferUsageToVkFlags(RenderBufferUsage mode) {
+		switch (mode) {
+		case RenderBufferUsage::CONSTANT_BUFFER:			return VkBufferUsageFlagBits::VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+		case RenderBufferUsage::VERTEX_BUFFER:			return VkBufferUsageFlagBits::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+		case RenderBufferUsage::INDEX_BUFFER:			return VkBufferUsageFlagBits::VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+		default:
+			throw std::runtime_error("Conversion failed");
+		}
+	}
+
+	static VmaMemoryUsage BufferTypeToVmaUsage(RenderBufferType mode) {
+		switch (mode) {
+		case RenderBufferType::UPLOAD:				return VmaMemoryUsage::VMA_MEMORY_USAGE_AUTO_PREFER_HOST;
+		case RenderBufferType::DEFAULT:				return VmaMemoryUsage::VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
+		default:
+			throw std::runtime_error("Conversion failed");
+		}
+	}
+
+	static VmaAllocationCreateFlags BufferTypeToVmaFlags(RenderBufferType mode) {
+		switch (mode) {
+		case RenderBufferType::UPLOAD:				return VmaAllocationCreateFlagBits::VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT;
+		case RenderBufferType::DEFAULT:				return NULL;
+		default:
+			throw std::runtime_error("Conversion failed");
+		}
+	}
 
 };
 

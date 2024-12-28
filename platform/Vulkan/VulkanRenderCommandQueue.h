@@ -1,6 +1,8 @@
 #pragma once
 #include <Renderer/RenderCommandQueue.h>
 #include <vulkan/vulkan.h>
+#include <memory>
+#include <mutex>
 
 class VulkanRenderCommandQueue : public RenderCommandQueue {
 public:
@@ -13,7 +15,7 @@ public:
 	void VkBinarySemaphoreSignal(VkSemaphore semaphore);
 	void VkBinarySemaphoreWait(VkSemaphore semaphore, VkPipelineStageFlags wait_mask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 
-	VulkanRenderCommandQueue(VkQueue queue) : vk_queue(queue) {}
+	VulkanRenderCommandQueue(VkQueue queue);
 
 	VkQueue* GetVkQueue() { return &vk_queue; }
 
@@ -21,4 +23,7 @@ public:
 
 private:
 	VkQueue vk_queue;
+	std::mutex submit_mutex;
+	uint64_t last_buffer_signaled = 0;
+	std::shared_ptr<RenderFence> command_buffer_fence;
 }; 

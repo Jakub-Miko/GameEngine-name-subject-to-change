@@ -4,11 +4,13 @@
 #include <Utilities/MemoryManagement/include/MultiPool.h>
 #include <mutex>
 #include <memory>
+#include <queue>
+#include <mutex>
 
 class VulkanRenderResourceManager : public RenderResourceManager {
 public:
 	friend RenderResourceManager;
-	virtual std::shared_ptr<RenderBufferResource> CreateBuffer(const RenderBufferDescriptor& buffer_desc) override;
+	virtual std::shared_ptr<RenderBufferResource> CreateBuffer(const RenderBufferDescriptor& buffer_desc, RenderState default_state = RenderState::COMMON) override;
 	virtual void UploadDataToBuffer(RenderCommandList* list, std::shared_ptr<RenderBufferResource> resource, void* data, size_t size, size_t offset) override;
 	virtual void ReallocateAndUploadBuffer(RenderCommandList* list, std::shared_ptr<RenderBufferResource> resource, void* data, size_t size) override;
 
@@ -42,12 +44,16 @@ private:
 	VulkanRenderResourceManager();
 	~VulkanRenderResourceManager();
 
-	void ReturnBufferResource(RenderBufferResource* resource);
+	void FlushDeletions();
+	void FlushBufferDeletions();
+
+	void ReturnBufferResource(VulkanRenderBufferResource* resource);
 	void ReturnTexture2DResource(RenderTexture2DResource* resource);
 	void ReturnTexture2DArrayResource(RenderTexture2DArrayResource* resource);
 	void ReturnFrameBufferResource(RenderFrameBufferResource* resource);
 	void ReturnTexture2DCubemapResource(RenderTexture2DCubemapResource* resource);
 
 private:
-
+	std::mutex buffer_deletion_queue_mutex;
+	std::queue<VulkanRenderBufferResource*> buffer_deletion_queue;
 };

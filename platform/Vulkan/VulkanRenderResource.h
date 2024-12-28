@@ -1,10 +1,17 @@
 #pragma once 
 #include <Renderer/RenderResource.h>
 #include <vulkan/vulkan.h>
+#include "VulkanRenderContext.h"
 
 class VulkanRenderResourceManager;
 
-class VulkanRenderBufferResource : public RenderBufferResource {
+class VulkanRendeResourceStateExtension {
+public:
+	uint64_t read_timeline = 0;
+	uint64_t write_timeline = 0;
+};
+
+class VulkanRenderBufferResource : public RenderBufferResource, VulkanRendeResourceStateExtension {
 public:
 	friend VulkanRenderResourceManager;
 
@@ -14,7 +21,7 @@ public:
 	
 
 
-	VulkanRenderBufferResource(const RenderBufferDescriptor& desc, RenderState initial_state = RenderState::UNINITIALIZED, unsigned int render_id = 0)
+	VulkanRenderBufferResource(const RenderBufferDescriptor& desc, RenderState initial_state = RenderState::UNINITIALIZED)
 		: RenderBufferResource(desc,initial_state) {
 
 	}
@@ -24,11 +31,11 @@ public:
 private:
 
 	VkBuffer buffer;
-
+	VmaAllocation alloc;
 };
 
 
-class VulkanTextureSampler : public TextureSampler {
+class VulkanTextureSampler : public TextureSampler, VulkanRendeResourceStateExtension {
 public:
 	friend TextureSampler;
 
@@ -38,7 +45,7 @@ private:
 	VulkanTextureSampler(const TextureSamplerDescritor& desc);
 };
 
-class VulkanRenderTexture2DResource : public RenderTexture2DResource {
+class VulkanRenderTexture2DResource : public RenderTexture2DResource, VulkanRendeResourceStateExtension {
 public:
 	friend VulkanRenderResourceManager;
 
@@ -60,7 +67,7 @@ private:
 
 };
 
-class VulkanRenderTexture2DArrayResource : public RenderTexture2DArrayResource {
+class VulkanRenderTexture2DArrayResource : public RenderTexture2DArrayResource, VulkanRendeResourceStateExtension {
 public:
 	friend VulkanRenderResourceManager;
 
@@ -83,7 +90,7 @@ private:
 
 };
 
-class VulkanRenderTexture2DCubemapResource : public RenderTexture2DCubemapResource {
+class VulkanRenderTexture2DCubemapResource : public RenderTexture2DCubemapResource, VulkanRendeResourceStateExtension {
 public:
 	friend VulkanRenderResourceManager;
 
@@ -106,7 +113,7 @@ private:
 };
 
 
-class VulkanRenderFrameBufferResource : public RenderFrameBufferResource {
+class VulkanRenderFrameBufferResource : public RenderFrameBufferResource, VulkanRendeResourceStateExtension {
 public:
 	friend VulkanRenderResourceManager;
 
