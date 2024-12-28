@@ -3,6 +3,7 @@
 #include <vulkan/vulkan.h>
 #include <memory>
 #include <mutex>
+#include <atomic>
 
 class VulkanRenderCommandQueue : public RenderCommandQueue {
 public:
@@ -22,8 +23,9 @@ public:
 	virtual ~VulkanRenderCommandQueue() {};
 
 private:
+	friend class VulkanRenderContext;
 	VkQueue vk_queue;
 	std::mutex submit_mutex;
-	uint64_t last_buffer_signaled = 0;
+	std::atomic<uint64_t> last_buffer_signaled = 0;
 	std::shared_ptr<RenderFence> command_buffer_fence;
 }; 

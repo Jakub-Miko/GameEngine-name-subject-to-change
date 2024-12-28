@@ -1,6 +1,7 @@
 #include "VulkanRenderResourceManager.h"
 #include "VulkanRenderContext.h"
 #include "VulkanUnitConverter.h"
+#include "VulkanRenderCommandQueue.h"
 
 std::shared_ptr<RenderBufferResource> VulkanRenderResourceManager::CreateBuffer(const RenderBufferDescriptor& buffer_desc, RenderState default_state)
 {
@@ -128,9 +129,7 @@ void VulkanRenderResourceManager::FlushBufferDeletions()
 
 	std::unique_lock<std::mutex> lock(buffer_deletion_queue_mutex);
 	
-	throw std::runtime_error("Need to immplement command buffer timeline\n"); // Temporary
-	
-	uint64_t current_timeline = 0;
+	uint64_t current_timeline = context->GetCurrentGpuTimelineValue();
 	
 	VulkanRenderBufferResource* resource = nullptr;
 	while ((resource = buffer_deletion_queue.front()) && resource->read_timeline < current_timeline && resource->write_timeline < current_timeline) { //iterate a contiguous block of resources, which have all operations on them completed

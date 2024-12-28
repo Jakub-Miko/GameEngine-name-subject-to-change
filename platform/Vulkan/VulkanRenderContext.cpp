@@ -18,6 +18,11 @@ void VulkanRenderContext::SignalEndFrame()
 	vulkan_queue->VkBinarySemaphoreSignal(frame_sync.render_fence.GetResource());
 }
 
+uint64_t VulkanRenderContext::GetCurrentGpuTimelineValue()
+{
+	return static_cast<VulkanRenderCommandQueue*>(Renderer::Get()->GetCommandQueue())->command_buffer_fence->GetValue();
+}
+
 void VulkanRenderContext::RequestExtension(const std::string& extension)
 {
 	auto fnd = std::find(requested_extensions.begin(), requested_extensions.end(), extension);
@@ -91,7 +96,7 @@ void VulkanRenderContext::Init()
 	vkb::PhysicalDeviceSelector selector(vkb_instance);
 	selector.set_surface(vk_surface);
 
-	VkPhysicalDeviceVulkan12Features features_12;
+	VkPhysicalDeviceVulkan12Features features_12 = {};
 	features_12.bufferDeviceAddress = true;
 
 	selector.set_required_features_12(features_12);

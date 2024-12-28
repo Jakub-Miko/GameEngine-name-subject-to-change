@@ -13,13 +13,14 @@ void VulkanRenderCommandQueue::ExecuteRenderCommandLists(std::vector<RenderComma
 
 	DEFINE_VK_INSTANCE(context);
 
+
 	uint64_t value = ++last_buffer_signaled;
 	VkTimelineSemaphoreSubmitInfo submit_sync = {};
 	submit_sync.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
 	submit_sync.signalSemaphoreValueCount = 1;
 	submit_sync.pSignalSemaphoreValues = &value; //should i care ?  https://registry.khronos.org/vulkan/specs/latest/html/vkspec.html#limits-maxTimelineSemaphoreValueDifference
 
-
+	submit_mutex.lock();
 	VkSubmitInfo info;
 	info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	info.pNext = &submit_sync;
@@ -31,7 +32,9 @@ void VulkanRenderCommandQueue::ExecuteRenderCommandLists(std::vector<RenderComma
 	info.waitSemaphoreCount = 0;
 	info.pWaitDstStageMask = NULL;
 
+	submit_mutex.lock();
 	vkQueueSubmit(vk_queue, 1, &info, NULL);
+	submit_mutex.unlock();
 }
 
 void VulkanRenderCommandQueue::ExecuteRenderCommandList(RenderCommandList* list)
@@ -56,7 +59,10 @@ void VulkanRenderCommandQueue::ExecuteRenderCommandList(RenderCommandList* list)
 	info.waitSemaphoreCount = 0;
 	info.pWaitDstStageMask = NULL;
 
+
+	submit_mutex.lock();
 	vkQueueSubmit(vk_queue, 1, &info, NULL);
+	submit_mutex.unlock();
 }
 
 void VulkanRenderCommandQueue::Signal(std::shared_ptr<RenderFence> fence, int num)
