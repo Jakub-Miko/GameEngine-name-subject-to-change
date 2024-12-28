@@ -64,17 +64,16 @@ public:
 		}
 	}
 
-	static VkCompareOp  DepthComparisonModeToVulkanCompareFunc(DepthComparisonMode mode) {
+	static VkCompareOp  DepthFunctionToVulkanCompareFunc(DepthFunction mode) {
 		switch (mode) {
-		case DepthComparisonMode::ALWAYS:					return VK_COMPARE_OP_ALWAYS;
-		case DepthComparisonMode::EQUAL:					return VK_COMPARE_OP_EQUAL;
-		case DepthComparisonMode::GREATER:				return VK_COMPARE_OP_GREATER;
-		case DepthComparisonMode::GREATER_EQUAL:			return VK_COMPARE_OP_GREATER_OR_EQUAL;
-		case DepthComparisonMode::LESS:					return VK_COMPARE_OP_LESS;
-		case DepthComparisonMode::LESS_EQUAL:				return VK_COMPARE_OP_LESS_OR_EQUAL;
-		case DepthComparisonMode::NEVER:					return VK_COMPARE_OP_NEVER;
-		case DepthComparisonMode::NOT_EQUAL:				return VK_COMPARE_OP_NOT_EQUAL;
-		case DepthComparisonMode::DISABLED:					return VK_COMPARE_OP_NEVER;
+		case DepthFunction::ALWAYS:					return VK_COMPARE_OP_ALWAYS;
+		case DepthFunction::EQUAL:					return VK_COMPARE_OP_EQUAL;
+		case DepthFunction::GREATER:				return VK_COMPARE_OP_GREATER;
+		case DepthFunction::GREATER_EQUAL:			return VK_COMPARE_OP_GREATER_OR_EQUAL;
+		case DepthFunction::LESS:					return VK_COMPARE_OP_LESS;
+		case DepthFunction::LESS_EQUAL:				return VK_COMPARE_OP_LESS_OR_EQUAL;
+		case DepthFunction::NEVER:					return VK_COMPARE_OP_NEVER;
+		case DepthFunction::NOT_EQUAL:				return VK_COMPARE_OP_NOT_EQUAL;
 		default:
 			throw std::runtime_error("Conversion failed");
 		}
