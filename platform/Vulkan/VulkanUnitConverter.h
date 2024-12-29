@@ -217,5 +217,16 @@ public:
 		}
 	}
 
+	static VkDescriptorType DescriptorTypeToVkDescriptorType(RootDescriptorType type) {
+		switch (type) {
+		case RootDescriptorType::CONSTANT_BUFFER:		return VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		case RootDescriptorType::TEXTURE_2D:		return VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		case RootDescriptorType::TEXTURE_2D_ARRAY:		return VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		case RootDescriptorType::TEXTURE_2D_CUBEMAP:		return VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		default:
+			throw std::runtime_error("Conversion failed");
+		}
+	}
+
 };
 

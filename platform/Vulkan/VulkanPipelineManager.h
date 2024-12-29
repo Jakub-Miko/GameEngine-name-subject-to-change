@@ -39,6 +39,7 @@ public:
 	virtual std::shared_ptr<Pipeline> CreatePipeline(const PipelineDescriptor& desc) override;
 	
 private:
+
 	virtual ~VulkanPipelineManager() {}
 	VulkanPipelineManager();
 

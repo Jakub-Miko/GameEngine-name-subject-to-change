@@ -98,6 +98,7 @@ void VulkanRenderContext::Init()
 
 	VkPhysicalDeviceVulkan12Features features_12 = {};
 	features_12.bufferDeviceAddress = true;
+	features_12.descriptorIndexing = true;
 
 	selector.set_required_features_12(features_12);
 
