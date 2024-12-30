@@ -35,9 +35,46 @@ void VulkanRenderResourceManager::ReallocateAndUploadBuffer(RenderCommandList* l
 {
 }
 
-std::shared_ptr<RenderTexture2DResource> VulkanRenderResourceManager::CreateTexture(const RenderTexture2DDescriptor& buffer_desc)
+std::shared_ptr<RenderTexture2DResource> VulkanRenderResourceManager::CreateTexture(const RenderTexture2DDescriptor& buffer_desc, RenderState default_state)
 {
-	return std::shared_ptr<RenderTexture2DResource>();
+	DEFINE_VK_INSTANCE(context);
+	VmaAllocator& alloc = context->GetVmaAllocator();
+	
+	VkExtent3D extent;
+	extent.depth = 1;
+	extent.width = buffer_desc.width;
+	extent.height = buffer_desc.height;
+
+	VkImageCreateInfo image_info = {};
+	image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	image_info.arrayLayers = 1;
+	image_info.extent = extent;
+	image_info.format = VulkanUnitConverter::TextureFormatToVulkanInternalformat(buffer_desc.format);
+	image_info.imageType = VkImageType::VK_IMAGE_TYPE_2D;
+	image_info.initialLayout = VulkanUnitConverter::RenderStateToTextureLayout(default_state);
+	image_info.mipLevels = 1; /// @todo Add mipmap spec to descriptor;
+	image_info.sharingMode = VkSharingMode::VK_SHARING_MODE_EXCLUSIVE;
+	image_info.usage = VulkanUnitConverter::TextureUsageToVkTextureUsage(buffer_desc.usage);
+	image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
+	image_info.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
+
+	VmaAllocationCreateInfo alloc_info = {};
+	alloc_info.usage = VmaMemoryUsage::VMA_MEMORY_USAGE_AUTO;
+	alloc_info.flags = NULL;
+
+	VkImage image;
+	VmaAllocation allocation;
+
+	vmaCreateImage(alloc,&image_info,&alloc_info,&image,&allocation,NULL);
+	
+	VulkanRenderTexture2DResource* new_texture = new VulkanRenderTexture2DResource(buffer_desc, default_state);
+
+	new_texture->alloc = allocation;
+	new_texture->texture = image;
+
+	return std::shared_ptr<RenderTexture2DResource>(new_texture, [](RenderTexture2DResource* resource) {
+		static_cast<VulkanRenderResourceManager*>(RenderResourceManager::Get())->ReturnTexture2DResource(static_cast<VulkanRenderTexture2DResource*>(resource));
+		});
 }
 
 void VulkanRenderResourceManager::UploadDataToTexture2D(RenderCommandList* list, std::shared_ptr<RenderTexture2DResource> resource, void* data, size_t width, size_t height, size_t offset_x, size_t offset_y, int level)
@@ -109,7 +146,7 @@ void VulkanRenderResourceManager::SetFrameBufferColorAttachment(RenderCommandLis
 {
 }
 
-VulkanRenderResourceManager::VulkanRenderResourceManager() : buffer_deletion_queue(), buffer_deletion_queue_mutex()
+VulkanRenderResourceManager::VulkanRenderResourceManager() : buffer_deletion_queue(), buffer_deletion_queue_mutex(), texture_deletion_queue(), texture_deletion_queue_mutex()
 {
 }
 
@@ -120,6 +157,7 @@ VulkanRenderResourceManager::~VulkanRenderResourceManager()
 void VulkanRenderResourceManager::FlushDeletions()
 {
 	FlushBufferDeletions();
+	FlushTextureDeletions();
 }
 
 void VulkanRenderResourceManager::FlushBufferDeletions()
@@ -132,10 +170,27 @@ void VulkanRenderResourceManager::FlushBufferDeletions()
 	uint64_t current_timeline = context->GetCurrentGpuTimelineValue();
 	
 	VulkanRenderBufferResource* resource = nullptr;
-	while ((resource = buffer_deletion_queue.front()) && resource->read_timeline < current_timeline && resource->write_timeline < current_timeline) { //iterate a contiguous block of resources, which have all operations on them completed
+	while ((resource = buffer_deletion_queue.front()) && resource->read_timeline < current_timeline && resource->write_timeline < current_timeline) {
 		vmaDestroyBuffer(alloc, resource->buffer, resource->alloc);
 		delete resource;
 		buffer_deletion_queue.pop();
+	}
+}
+
+void VulkanRenderResourceManager::FlushTextureDeletions()
+{
+	DEFINE_VK_INSTANCE(context);
+	VmaAllocator& alloc = context->GetVmaAllocator();
+
+	std::unique_lock<std::mutex> lock(texture_deletion_queue_mutex);
+
+	uint64_t current_timeline = context->GetCurrentGpuTimelineValue();
+
+	VulkanRenderTexture2DResource* resource = nullptr;
+	while ((resource = texture_deletion_queue.front()) && resource->read_timeline < current_timeline && resource->write_timeline < current_timeline) { 
+		vmaDestroyImage(alloc, resource->texture, resource->alloc);
+		delete resource;
+		texture_deletion_queue.pop();
 	}
 }
 
@@ -145,8 +200,10 @@ void VulkanRenderResourceManager::ReturnBufferResource(VulkanRenderBufferResourc
 	buffer_deletion_queue.push(resource);
 }
 
-void VulkanRenderResourceManager::ReturnTexture2DResource(RenderTexture2DResource* resource)
+void VulkanRenderResourceManager::ReturnTexture2DResource(VulkanRenderTexture2DResource* resource)
 {
+	std::unique_lock<std::mutex> lock(texture_deletion_queue_mutex);
+	texture_deletion_queue.push(resource);
 }
 
 void VulkanRenderResourceManager::ReturnTexture2DArrayResource(RenderTexture2DArrayResource* resource)

@@ -115,6 +115,20 @@ public:
 		}
 	}
 
+	static VkImageLayout RenderStateToTextureLayout(RenderState type) {
+		switch (type) {
+		case RenderState::TEXTURE_COLOR_ATTACHMENT:				return VkImageLayout::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		case RenderState::TEXTURE_SAMPLE:						return VkImageLayout::VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL;
+		case RenderState::TEXTURE_GENERAL:						return VkImageLayout::VK_IMAGE_LAYOUT_GENERAL;
+		case RenderState::TEXTURE_TRANSFER_DST:					return VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		case RenderState::TEXTURE_TRANSFER_SRC:					return VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		case RenderState::TEXTURE_DEPTH_STENCIL_ATTACHMENT:		return VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		case RenderState::TEXTURE_DEPTH_SAMPLE:					return VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL;
+		default:
+			throw std::runtime_error("Conversion failed");
+		}
+	}
+
 	static VkCompareOp  DepthFunctionToVulkanCompareFunc(DepthFunction mode) {
 		switch (mode) {
 		case DepthFunction::ALWAYS:					return VK_COMPARE_OP_ALWAYS;
@@ -236,6 +250,26 @@ public:
 		case RenderBufferUsage::CONSTANT_BUFFER:			return VkBufferUsageFlagBits::VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 		case RenderBufferUsage::VERTEX_BUFFER:			return VkBufferUsageFlagBits::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 		case RenderBufferUsage::INDEX_BUFFER:			return VkBufferUsageFlagBits::VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+		default:
+			throw std::runtime_error("Conversion failed");
+		}
+	}
+
+	static VkImageUsageFlags TextureUsageToVkTextureUsage(TextureUsage usage) {
+		switch (usage) {
+		case TextureUsage::COLOR_ATTACHMENT:			return VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		case TextureUsage::COLOR_ATTACHMENT_READABLE:	return VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_SAMPLED_BIT;
+		case TextureUsage::COLOR_ATTACHMENT_WRITABLE:	return VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+		case TextureUsage::DEPTH_ATTACHMENT:			return VkImageUsageFlagBits::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+		case TextureUsage::DEPTH_ATTACHMENT_READABLE:	return VkImageUsageFlagBits::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_SAMPLED_BIT;
+		case TextureUsage::DEPTH_ATTACHMENT_WRITABLE:	return VkImageUsageFlagBits::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+		case TextureUsage::SAMPLE:						return VkImageUsageFlagBits::VK_IMAGE_USAGE_SAMPLED_BIT;
+		case TextureUsage::SAMPLE_WRITABLE:				return VkImageUsageFlagBits::VK_IMAGE_USAGE_SAMPLED_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+		case TextureUsage::TRANSFER:					return VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+		case TextureUsage::STORAGE:						return VkImageUsageFlagBits::VK_IMAGE_USAGE_STORAGE_BIT;
+		case TextureUsage::STORAGE_READABLE:			return VkImageUsageFlagBits::VK_IMAGE_USAGE_STORAGE_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_SAMPLED_BIT;
+		case TextureUsage::STORAGE_WRITABLE:			return VkImageUsageFlagBits::VK_IMAGE_USAGE_STORAGE_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+		case TextureUsage::STORAGE_READABLE_WRITABLE:	return VkImageUsageFlagBits::VK_IMAGE_USAGE_STORAGE_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_SAMPLED_BIT;
 		default:
 			throw std::runtime_error("Conversion failed");
 		}

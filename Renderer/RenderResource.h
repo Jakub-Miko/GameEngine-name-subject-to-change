@@ -154,6 +154,7 @@ struct RenderTexture2DDescriptor {
 	int width, height;
 	TextureFormat format;
 	std::shared_ptr<TextureSampler> sampler = nullptr;
+	TextureUsage usage = TextureUsage::DEFAULT;
 };
 
 class RenderTexture2DResource : public RenderResource {
@@ -179,6 +180,7 @@ struct RenderTexture2DArrayDescriptor {
 	int width, height, num_of_textures;
 	TextureFormat format;
 	std::shared_ptr<TextureSampler> sampler = nullptr;
+	TextureUsage usage = TextureUsage::DEFAULT;
 };
 
 class RenderTexture2DArrayResource : public RenderResource {
@@ -206,6 +208,7 @@ struct RenderTexture2DCubemapDescriptor {
 	int res;
 	TextureFormat format;
 	std::shared_ptr<TextureSampler> sampler = nullptr;
+	TextureUsage usage = TextureUsage::DEFAULT;
 };
 
 class RenderTexture2DCubemapResource : public RenderResource {

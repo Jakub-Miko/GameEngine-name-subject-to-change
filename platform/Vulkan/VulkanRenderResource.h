@@ -54,7 +54,7 @@ public:
 	virtual void UnMap() override;
 
 
-	VulkanRenderTexture2DResource(const RenderTexture2DDescriptor& desc, RenderState initial_state = RenderState::UNINITIALIZED, unsigned int render_id = 0)
+	VulkanRenderTexture2DResource(const RenderTexture2DDescriptor& desc, RenderState initial_state = RenderState::UNINITIALIZED)
 		: RenderTexture2DResource(desc, initial_state) {
 
 	}
@@ -62,9 +62,8 @@ public:
 	virtual ~VulkanRenderTexture2DResource() {}
 
 private:
-
-	VkSampler sampler;
-
+	VkImage texture;
+	VmaAllocation alloc;
 };
 
 class VulkanRenderTexture2DArrayResource : public RenderTexture2DArrayResource, VulkanRendeResourceStateExtension {
