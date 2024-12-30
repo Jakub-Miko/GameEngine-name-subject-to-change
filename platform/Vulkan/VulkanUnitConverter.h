@@ -20,9 +20,60 @@ public:
 		case RenderPrimitiveType::VEC2:				return VK_FORMAT_R32_SFLOAT;
 		case RenderPrimitiveType::VEC3:				return VK_FORMAT_R32_SFLOAT;
 		case RenderPrimitiveType::VEC4:				return VK_FORMAT_R32_SFLOAT;
-		case RenderPrimitiveType::MAT3:				return VK_FORMAT_R32_SFLOAT;
-		case RenderPrimitiveType::MAT4:				return VK_FORMAT_R32_SFLOAT;
 		default: 
+			throw std::runtime_error("Conversion failed");
+		}
+	}
+
+	static VkFormat PrimitiveAndSizeToVulkan(RenderPrimitiveType type, int size) {
+
+		switch (size)
+		{
+		case 1:
+			switch (type) {
+			case RenderPrimitiveType::CHAR:				return VK_FORMAT_R8_SINT;
+			case RenderPrimitiveType::FLOAT:			return VK_FORMAT_R32_SFLOAT;
+			case RenderPrimitiveType::INT:				return VK_FORMAT_R32_SINT;
+			case RenderPrimitiveType::UNSIGNED_CHAR:	return VK_FORMAT_R8_UINT;
+			case RenderPrimitiveType::UNSIGNED_INT:		return VK_FORMAT_R32_UINT;
+			default:
+				throw std::runtime_error("Conversion failed");
+			}
+			break;
+		case 2:
+			switch (type) {
+			case RenderPrimitiveType::CHAR:				return VK_FORMAT_R8G8_SINT;
+			case RenderPrimitiveType::FLOAT:			return VK_FORMAT_R32G32_SFLOAT;
+			case RenderPrimitiveType::INT:				return VK_FORMAT_R32G32_SINT;
+			case RenderPrimitiveType::UNSIGNED_CHAR:	return VK_FORMAT_R8G8_UINT;
+			case RenderPrimitiveType::UNSIGNED_INT:		return VK_FORMAT_R32G32_UINT;
+			default:
+				throw std::runtime_error("Conversion failed");
+			}
+			break;
+		case 3:
+			switch (type) {
+			case RenderPrimitiveType::CHAR:				return VK_FORMAT_R8G8B8_SINT;
+			case RenderPrimitiveType::FLOAT:			return VK_FORMAT_R32G32B32_SFLOAT;
+			case RenderPrimitiveType::INT:				return VK_FORMAT_R32G32B32_SINT;
+			case RenderPrimitiveType::UNSIGNED_CHAR:	return VK_FORMAT_R8G8B8_UINT;
+			case RenderPrimitiveType::UNSIGNED_INT:		return VK_FORMAT_R32G32B32_UINT;
+			default:
+				throw std::runtime_error("Conversion failed");
+			}
+			break;
+		case 4:
+			switch (type) {
+			case RenderPrimitiveType::CHAR:				return VK_FORMAT_R8G8B8A8_SINT;
+			case RenderPrimitiveType::FLOAT:			return VK_FORMAT_R32G32B32A32_SFLOAT;
+			case RenderPrimitiveType::INT:				return VK_FORMAT_R32G32B32A32_SINT;
+			case RenderPrimitiveType::UNSIGNED_CHAR:	return VK_FORMAT_R8G8B8A8_UINT;
+			case RenderPrimitiveType::UNSIGNED_INT:		return VK_FORMAT_R32G32B32A32_UINT;
+			default:
+				throw std::runtime_error("Conversion failed");
+			}
+			break;
+		default:
 			throw std::runtime_error("Conversion failed");
 		}
 	}

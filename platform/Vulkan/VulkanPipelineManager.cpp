@@ -56,13 +56,43 @@ VulkanPipeline::VulkanPipeline(PipelineDescriptor&& desc) : Pipeline(std::move(d
 {
 }
 
+std::vector<VkVertexInputAttributeDescription> GetVertexInputStateFromVertexLayout(const VertexLayout& layout) {
+	std::vector<VkVertexInputAttributeDescription> attributes;
+	attributes.reserve(layout.layout.size());
+	
+	int binding_num = 0;
+	for (auto& element : layout.layout) {
+
+		VkVertexInputAttributeDescription attrib;
+		attrib.binding = 0;
+		attrib.format = VulkanUnitConverter::PrimitiveAndSizeToVulkan(element.type, element.size);
+		attrib.offset = element.offset;
+		attrib.location = attrib.binding;
+		attributes.push_back(attrib);
+	}
+
+	return std::move(attributes);
+}
 
 std::shared_ptr<Pipeline> VulkanPipelineManager::CreatePipeline(const PipelineDescriptor& desc)
 {
 	DEFINE_VK_INSTANCE(context);
 	VkStencilOpState stencil_ops = {};
-
 	VkPipelineLayout layout = static_cast<const VulkanRootSignature*>(&desc.GetSignature())->GetPipelineLayout();
+	
+	std::vector<VkVertexInputAttributeDescription> attributes = GetVertexInputStateFromVertexLayout(*desc.layout);
+
+	VkVertexInputBindingDescription binding;
+	binding.binding = 0;
+	binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+	binding.stride = desc.layout->stride;
+
+	VkPipelineVertexInputStateCreateInfo vertex_input_state = {};
+	vertex_input_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+	vertex_input_state.vertexBindingDescriptionCount = 1;
+	vertex_input_state.pVertexBindingDescriptions = &binding;
+	vertex_input_state.vertexAttributeDescriptionCount = attributes.size();
+	vertex_input_state.pVertexAttributeDescriptions = attributes.data();
 
 	VkPipelineDepthStencilStateCreateInfo depth_stencil = {};
 	depth_stencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
@@ -88,12 +118,12 @@ std::shared_ptr<Pipeline> VulkanPipelineManager::CreatePipeline(const PipelineDe
 
 	VkGraphicsPipelineCreateInfo info = {};
 	info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-	//info.pColorBlendState = ; // generate from framebuffer
-	//info.pVertexInputState = ; // Generate from Vertex layout
-	info.layout = layout; // generate from root signature
+	info.pVertexInputState = &vertex_input_state; // Generate from Vertex layout
+	info.layout = layout; 
 	info.pDepthStencilState = &depth_stencil; 
 	info.pDynamicState = &dynamic_state;
 	info.pInputAssemblyState = &input_assembly;
+	//info.pColorBlendState = ; // generate from framebuffer
 	//info.pMultisampleState = ;
 	//info.pRasterizationState = ;
 	//info.pStages = ;
