@@ -2,6 +2,7 @@
 #include <vulkan/vulkan.h>
 #include "VulkanUnitConverter.h"
 #include "VulkanRootSignature.h"
+#include "VulkanShaderManager.h"
 
 RootBinding VulkanPipeline::GetBindingId(const std::string& name)
 {
@@ -12,43 +13,7 @@ VulkanPipeline::~VulkanPipeline()
 {
 }
 
-void VulkanPipeline::SetConstantBuffer(RootBinding binding_id, std::shared_ptr<RenderBufferResource> buffer)
-{
-}
-
-void VulkanPipeline::SetConstantBuffer(const std::string& semantic_name, std::shared_ptr<RenderBufferResource> buffer)
-{
-}
-
-void VulkanPipeline::SetTexture2D(RootBinding binding_id, std::shared_ptr<RenderTexture2DResource> buffer)
-{
-}
-
-void VulkanPipeline::SetTexture2D(const std::string& semantic_name, std::shared_ptr<RenderTexture2DResource> buffer)
-{
-}
-
-void VulkanPipeline::SetTexture2DArray(const std::string& semantic_name, std::shared_ptr<RenderTexture2DArrayResource> buffer)
-{
-}
-
-void VulkanPipeline::SetTexture2DCubemap(const std::string& semantic_name, std::shared_ptr<RenderTexture2DCubemapResource> buffer)
-{
-}
-
-void VulkanPipeline::BeginVertexContext(std::shared_ptr<RenderBufferResource> vertex_buffer)
-{
-}
-
-void VulkanPipeline::EndVertexContext()
-{
-}
-
-void VulkanPipeline::SetDescriptorTable(const std::string& semantic_name, RenderDescriptorTable table)
-{
-}
-
-VulkanPipeline::VulkanPipeline(const PipelineDescriptor& desc) : Pipeline(desc)
+VulkanPipeline::VulkanPipeline(const PipelineDescriptor& desc, VkPipeline pipeline) : Pipeline(desc), pipeline(pipeline)
 {
 }
 
@@ -79,7 +44,7 @@ std::shared_ptr<Pipeline> VulkanPipelineManager::CreatePipeline(const PipelineDe
 	DEFINE_VK_INSTANCE(context);
 	VkStencilOpState stencil_ops = {};
 	VkPipelineLayout layout = static_cast<const VulkanRootSignature*>(&desc.GetSignature())->GetPipelineLayout();
-	
+
 	std::vector<VkVertexInputAttributeDescription> attributes = GetVertexInputStateFromVertexLayout(*desc.layout);
 
 	VkVertexInputBindingDescription binding;
@@ -104,10 +69,10 @@ std::shared_ptr<Pipeline> VulkanPipelineManager::CreatePipeline(const PipelineDe
 	depth_stencil.stencilTestEnable = false;
 	depth_stencil.flags = NULL;
 
-	VkDynamicState dyn_states[] = {VkDynamicState::VK_DYNAMIC_STATE_SCISSOR, VkDynamicState::VK_DYNAMIC_STATE_VIEWPORT};
+	VkDynamicState dyn_states[] = { VkDynamicState::VK_DYNAMIC_STATE_SCISSOR, VkDynamicState::VK_DYNAMIC_STATE_VIEWPORT };
 
 	VkPipelineDynamicStateCreateInfo dynamic_state = {};
-	dynamic_state.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO; 
+	dynamic_state.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
 	dynamic_state.pDynamicStates = dyn_states;
 	dynamic_state.dynamicStateCount = 2;
 
@@ -116,20 +81,60 @@ std::shared_ptr<Pipeline> VulkanPipelineManager::CreatePipeline(const PipelineDe
 	input_assembly.primitiveRestartEnable = false;
 	input_assembly.topology = VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 
+	VkPipelineMultisampleStateCreateInfo multi_sample_info = {};
+	multi_sample_info.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+	multi_sample_info.alphaToCoverageEnable = false;
+	multi_sample_info.alphaToOneEnable = false;
+	multi_sample_info.sampleShadingEnable = false;
+
+	VkPipelineRasterizationStateCreateInfo raster_info = {};
+	raster_info.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+	raster_info.cullMode = VulkanUnitConverter::CullModeTOVulkanFlags(desc.cull_mode);
+	raster_info.depthClampEnable = false;
+	raster_info.depthBiasEnable = false;
+	raster_info.lineWidth = 1;
+	raster_info.frontFace = VkFrontFace::VK_FRONT_FACE_COUNTER_CLOCKWISE;
+	raster_info.rasterizerDiscardEnable = false;
+	raster_info.polygonMode = VulkanUnitConverter::PrimitivePolygonRenderModetoVulkanEnum(desc.polygon_render_mode);
+
+	VulkanShader* shader = static_cast<VulkanShader*>(desc.shader.get());
+
+	std::vector<VkPipelineShaderStageCreateInfo> stages;
+	int i = 0;
+	for (auto& stage : shader->GetStages()) {
+		if (stage.defined) {
+			VkPipelineShaderStageCreateInfo stage_info = {};
+			stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+			stage_info.pName = "main";
+			stage_info.stage = VulkanUnitConverter::ShaderStageToVkShaderStage((VulkanShaderStages)i);
+			stage_info.module = stage.stage;
+			stages.push_back(stage_info);
+		}
+		i++;
+	}
+
+	VkPipelineColorBlendStateCreateInfo blend_state = {};
+
 	VkGraphicsPipelineCreateInfo info = {};
 	info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-	info.pVertexInputState = &vertex_input_state; // Generate from Vertex layout
+	info.pVertexInputState = &vertex_input_state;
 	info.layout = layout; 
 	info.pDepthStencilState = &depth_stencil; 
 	info.pDynamicState = &dynamic_state;
 	info.pInputAssemblyState = &input_assembly;
-	//info.pColorBlendState = ; // generate from framebuffer
-	//info.pMultisampleState = ;
-	//info.pRasterizationState = ;
-	//info.pStages = ;
-	//info.stageCount = ;
+	info.pMultisampleState = &multi_sample_info;
+	info.pRasterizationState = &raster_info;
+	info.stageCount = stages.size();
+	info.pStages = stages.data();
+	info.pColorBlendState = &blend_state; // generate from framebuffer
 
-	return std::shared_ptr<Pipeline>();
+	VkPipeline pipeline;
+
+	//vkCreateGraphicsPipelines(context->GetVkDevice(), NULL, 1, &info, NULL, &pipeline);
+
+	VulkanPipeline* new_pipeline = new VulkanPipeline(desc, pipeline);
+
+	return std::shared_ptr<Pipeline>(new_pipeline);
 }
 
 VulkanPipelineManager::VulkanPipelineManager()

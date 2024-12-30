@@ -146,6 +146,7 @@ public:
 		switch (type) {
 		case CullMode::BACK:				return VK_CULL_MODE_BACK_BIT;
 		case CullMode::FRONT:				return VK_CULL_MODE_FRONT_BIT;
+		case CullMode::NONE:				return VK_CULL_MODE_NONE;
 		default:
 			throw std::runtime_error("Conversion failed");
 		}
@@ -263,6 +264,16 @@ public:
 		case VulkanShaderStages::FRAGMENT:		return shaderc_shader_kind::shaderc_fragment_shader;
 		case VulkanShaderStages::VERTEX:		return shaderc_shader_kind::shaderc_vertex_shader;
 		case VulkanShaderStages::GEOMETRY:		return shaderc_shader_kind::shaderc_geometry_shader;
+		default:
+			throw std::runtime_error("Conversion failed");
+		}
+	}
+
+	static VkShaderStageFlagBits ShaderStageToVkShaderStage(VulkanShaderStages mode) {
+		switch (mode) {
+		case VulkanShaderStages::FRAGMENT:		return VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT;
+		case VulkanShaderStages::VERTEX:		return VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT;
+		case VulkanShaderStages::GEOMETRY:		return VkShaderStageFlagBits::VK_SHADER_STAGE_GEOMETRY_BIT;
 		default:
 			throw std::runtime_error("Conversion failed");
 		}

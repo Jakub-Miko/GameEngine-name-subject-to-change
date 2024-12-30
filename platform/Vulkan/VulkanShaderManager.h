@@ -42,6 +42,11 @@ public:
 		bool defined = false;
 	};
 
+	const std::array<VulkanShaderStage, (int)VulkanShaderStages::NUM_OF_STAGES>& GetStages() {
+		return shader_modules;
+	}
+
+
 private:
 	std::array<VulkanShaderStage, (int)VulkanShaderStages::NUM_OF_STAGES> shader_modules;
 	std::string id = "";
