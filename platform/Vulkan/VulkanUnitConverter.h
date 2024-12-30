@@ -228,5 +228,16 @@ public:
 		}
 	}
 
+	static RootParameterType DescriptorTypeToVkRootParameterType(RootDescriptorType type) {
+		switch (type) {
+		case RootDescriptorType::CONSTANT_BUFFER:		return RootParameterType::CONSTANT_BUFFER;
+		case RootDescriptorType::TEXTURE_2D:		return RootParameterType::TEXTURE_2D;
+		case RootDescriptorType::TEXTURE_2D_ARRAY:		return RootParameterType::TEXTURE_2D_ARRAY;
+		case RootDescriptorType::TEXTURE_2D_CUBEMAP:		return RootParameterType::TEXTURE_2D_CUBEMAP;
+		default:
+			throw std::runtime_error("Conversion failed");
+		}
+	}
+
 };
 

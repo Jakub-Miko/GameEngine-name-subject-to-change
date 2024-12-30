@@ -6,10 +6,11 @@
 #include <memory>
 #include <vulkan/vulkan.h>
 
-struct ExtraElementInfo {
+struct VulkanDescriptorBinding {
 	RootParameterType type;
 	uint32_t table_binding; ///< which table
-	uint32_t table_index; ///< which index in the table
+	uint32_t table_index = -1; ///< which index in the table(-1 if type is table itself)
+	uint32_t array_index = -1; ///< which index in descriptor array(-1 if not array)
 };
 
 
@@ -19,16 +20,16 @@ struct ExtraElementInfo {
 class VulkanRootSignature : public RootSignature {
 public:
 	friend RootSignature;
-	int GetUniformBlockBindingId(const std::string& name) const ;
-	int GetTextureSlot(const std::string& name) const;
-
-	uint32_t GetTableBinding(const std::string& name) const;
-
+	VulkanDescriptorBinding GetDescriptorBinding(const std::string& name) const;
+	VkPipelineLayout GetPipelineLayout() const { return layout; }
 private:
-	virtual ~VulkanRootSignature() {}
+	virtual ~VulkanRootSignature();
 	VkDescriptorSetLayout CreateDescriptorTableParams(const RootDescriptorTable& table, uint32_t table_id, const std::string& name);
 	VulkanRootSignature(const RootSignatureDescriptor& descriptor);
 
+
 private:
-	std::unordered_map<std::string, ExtraElementInfo> parameters;
+	std::unordered_map<std::string, VulkanDescriptorBinding> parameters;
+	std::vector<VkDescriptorSetLayout> table_layouts;
+	VkPipelineLayout layout;
 };
