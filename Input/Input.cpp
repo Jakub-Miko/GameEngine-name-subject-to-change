@@ -1,6 +1,8 @@
 #include "Input.h"
 #if defined OpenGL_API
 #include <platform/GLFW/GlfwInput.h>
+#elif defined Vulkan_API
+#include <platform/GLFW/GlfwInput.h>
 #endif
 
 Input* Input::instance = nullptr;
@@ -10,7 +12,10 @@ void Input::Init()
 	if (!instance) {
 	#if defined OpenGL_API
 		instance = new GlfwInput();
+	#elif defined Vulkan_API
+		instance = new GlfwInput();
 	#endif
+
 	}
 }
 
