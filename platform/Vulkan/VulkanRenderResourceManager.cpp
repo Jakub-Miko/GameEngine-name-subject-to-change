@@ -114,7 +114,7 @@ void VulkanRenderResourceManager::UploadDataToTexture2DCubemap(RenderCommandList
 
 std::shared_ptr<RenderFrameBufferResource> VulkanRenderResourceManager::CreateFrameBuffer(const RenderFrameBufferDescriptor& buffer_desc)
 {
-	return std::shared_ptr<RenderFrameBufferResource>();
+	return std::shared_ptr<RenderFrameBufferResource>(new VulkanRenderFrameBufferResource(buffer_desc));
 }
 
 void VulkanRenderResourceManager::CreateConstantBufferDescriptor(const RenderDescriptorTable& table, int index, std::shared_ptr<RenderBufferResource> resource)

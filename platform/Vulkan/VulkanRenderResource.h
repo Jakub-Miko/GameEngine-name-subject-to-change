@@ -114,7 +114,7 @@ private:
 };
 
 
-class VulkanRenderFrameBufferResource : public RenderFrameBufferResource, VulkanRendeResourceStateExtension {
+class VulkanRenderFrameBufferResource : public RenderFrameBufferResource {
 public:
 	friend VulkanRenderResourceManager;
 
@@ -133,8 +133,5 @@ public:
 	virtual ~VulkanRenderFrameBufferResource() {}
 
 private:
-
-	
-	VkFramebuffer framebuffer;
 
 };
