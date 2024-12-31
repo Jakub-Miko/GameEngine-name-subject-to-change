@@ -14,7 +14,11 @@ VulkanRenderCommandList::VulkanRenderCommandList(Renderer* renderer, std::shared
 	info.commandBufferCount = 1;
 
 	vkAllocateCommandBuffers(context->GetVkDevice(), &info, &command_buffer);
+	
+	VkCommandBufferBeginInfo begin_info = {};
+	begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
+	vkBeginCommandBuffer(command_buffer, &begin_info);
 }
 
 VulkanRenderCommandList::~VulkanRenderCommandList()

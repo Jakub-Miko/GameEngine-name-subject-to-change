@@ -112,7 +112,7 @@
 #end
 
 #Vertex //--------------------------------------------------
-#version 410
+#version 430
 
 layout(location = 0) in vec3 position;
 layout(location = 1) in vec3 normal;
@@ -123,13 +123,13 @@ layout(location = 3) in vec2 uv0;
 out vec4 out_normal;
 out vec2 uvs;
 
-uniform conf
+layout(set = 0, binding = 0) uniform conf
 {
 	mat4 mvp_matrix;
 	mat4 model;
 };
 
-uniform mat
+layout(set = 0, binding = 1) uniform mat
 {
 	vec4 sun_direction;
 	vec4 color;
@@ -145,15 +145,15 @@ void main() {
 
 #end
 #Fragment //------------------------------------------------
-#version 410
+#version 430
 
-uniform conf
+layout(set = 0, binding = 0) uniform conf
 {
 	mat4 mvp_matrix;
 	mat4 model;
 };
 
-uniform mat
+layout(set = 0, binding = 1) uniform mat
 {
 	vec4 sun_direction;
 	vec4 color;
@@ -165,8 +165,8 @@ in vec2 uvs;
 
 out vec4 out_color;
 
-uniform sampler2D Texture_First;
-uniform sampler2D Texture_Second;
+layout(set = 1, binding = 0)uniform sampler2D Texture_First;
+layout(set = 1, binding = 1)uniform sampler2D Texture_Second;
 
 void main() {
 	//out_color = abs(out_normal);

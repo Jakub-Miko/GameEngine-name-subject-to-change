@@ -10,7 +10,7 @@
 }
 #end
 #Vertex //--------------------------------------------------
-#version 410
+#version 430
 
 in vec4 position;
 in vec4 normal;
@@ -34,7 +34,7 @@ void main() {
 
 #end
 #Fragment //------------------------------------------------
-#version 410
+#version 430
 
 uniform conf 
 {

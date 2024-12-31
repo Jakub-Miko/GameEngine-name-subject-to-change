@@ -10,7 +10,7 @@
 #end
 
 #Vertex //--------------------------------------------------
-#version 410
+#version 430
 
 layout(location = 0) in vec3 position;
 layout(location = 1) in vec3 normal;
@@ -18,7 +18,7 @@ layout(location = 2) in vec3 tangent;
 layout(location = 3) in vec2 uv;
 
 
-uniform mvp{
+layout(set = 0, binding = 0) uniform mvp{
 	mat4 model;
 	mat4 mvp_matrix[6];
 	vec4 light_pos;
@@ -33,7 +33,7 @@ void main() {
 
 #end
 #Geometry //--------------------------------------------------
-#version 410
+#version 430
 layout(triangles, invocations = 6) in;
 layout(triangle_strip, max_vertices = 3) out;
 
@@ -62,7 +62,7 @@ void main() {
 
 
 #Fragment //------------------------------------------------
-#version 410
+#version 430
 
 
 in float pos;

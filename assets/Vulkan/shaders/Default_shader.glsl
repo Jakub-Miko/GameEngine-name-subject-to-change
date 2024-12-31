@@ -1,5 +1,5 @@
 #Vertex //--------------------------------------------------
-#version 410
+#version 430
 
 in vec2 pos;
 in vec2 uv;
@@ -20,7 +20,7 @@ void main() {
 
 #end
 #Fragment //------------------------------------------------
-#version 410
+#version 430
 
 out vec4 color;
 

@@ -15,8 +15,8 @@ VulkanRootSignature::VulkanRootSignature(const RootSignatureDescriptor& descript
 
 	uint32_t table_id = 0;
 	parameters.reserve(descriptor.parameters.size());
-
-	int global_descriptors = 0;
+	table_layouts.push_back(VkDescriptorSetLayout());
+	int global_descriptors = 1;
 
 	for (auto desc : descriptor.parameters) {
 		switch (desc.type)
@@ -43,9 +43,7 @@ VulkanRootSignature::VulkanRootSignature(const RootSignatureDescriptor& descript
 
 
 
-	if (global_table.size() > 0) {
-		table_layouts.push_back(CreateDescriptorTableParams(global_table, table_id++, "global"));
-	}
+	table_layouts[0] = CreateDescriptorTableParams(global_table, 0, "global");
 	info.setLayoutCount = table_layouts.size();
 	info.pSetLayouts = table_layouts.data();
 
@@ -88,6 +86,7 @@ VkDescriptorSetLayout VulkanRootSignature::CreateDescriptorTableParams(const Roo
 			VkDescriptorSetLayoutBinding vk_binding = {};
 			vk_binding.descriptorCount = binding.size;
 			vk_binding.descriptorType = type;
+			vk_binding.stageFlags = VkShaderStageFlagBits::VK_SHADER_STAGE_ALL;
 			vk_binding.binding = range_binding_id++;
 			bindings.push_back(vk_binding);
 
@@ -103,6 +102,7 @@ VkDescriptorSetLayout VulkanRootSignature::CreateDescriptorTableParams(const Roo
 				VkDescriptorSetLayoutBinding vk_binding = {};
 				vk_binding.descriptorCount = 1;
 				vk_binding.descriptorType = type;
+				vk_binding.stageFlags = VkShaderStageFlagBits::VK_SHADER_STAGE_ALL;
 				vk_binding.binding = range_binding_id++;
 				bindings.push_back(vk_binding);
 

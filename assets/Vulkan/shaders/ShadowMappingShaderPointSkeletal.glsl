@@ -14,7 +14,7 @@
 #end
 
 #Vertex //--------------------------------------------------
-#version 410
+#version 430
 
 layout(location = 0) in uvec4 bone_ids;
 layout(location = 1) in vec4 bone_weights;
@@ -23,14 +23,14 @@ layout(location = 3) in vec3 normal;
 layout(location = 4) in vec3 tangent;
 layout(location = 5) in vec2 uv;
 
-uniform mvp{
+layout(set = 0, binding = 0) uniform mvp{
 	mat4 model;
 	mat4 mvp_matrix[6];
 	vec4 light_pos;
 	float far_plane;
 };
 
-uniform bones{
+layout(set = 0, binding = 1) uniform bones{
 	mat4 bone_matricies[100];
 	uint valid;
 };
@@ -53,7 +53,7 @@ void main() {
 
 #end
 #Geometry //--------------------------------------------------
-#version 410
+#version 430
 layout(triangles, invocations = 6) in;
 layout(triangle_strip, max_vertices = 3) out;
 
@@ -82,7 +82,7 @@ void main() {
 
 
 #Fragment //------------------------------------------------
-#version 410
+#version 430
 
 
 in float pos;

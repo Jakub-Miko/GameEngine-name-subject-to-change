@@ -14,7 +14,7 @@
 #end
 
 #Vertex //--------------------------------------------------
-#version 410
+#version 430
 
 layout(location = 0) in vec2 position;
 layout(location = 1) in vec2 uv;
@@ -29,12 +29,12 @@ void main() {
 
 #end
 #Fragment //------------------------------------------------
-#version 410
+#version 430
 
 in vec2 uv_fragment;
 
-uniform sampler2D Color;
-uniform sampler2D Depth;
+layout(set = 0, binding = 0) uniform sampler2D Color;
+layout(set = 0, binding = 1) uniform sampler2D Depth;
 
 out vec4 color_out;
 

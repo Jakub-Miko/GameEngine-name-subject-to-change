@@ -69,21 +69,21 @@
 #end
 
 #Vertex //--------------------------------------------------
-#version 410
+#version 430
 
 layout(location = 0) in vec3 position;
 layout(location = 1) in vec3 normal;
 layout(location = 2) in vec3 tangent;
 layout(location = 3) in vec2 uv;
 
-uniform conf{
+layout(set = 0, binding = 0) uniform conf{
 	mat4 inverse_view;
 	mat4 inverse_projection;
 	float depth_constant_a;
 	float depth_constant_b;
 };
 
-uniform light_props{
+layout(set = 0, binding = 1) uniform light_props{
 	vec4 Light_Color;
 	vec2 pixel_size;
 };
@@ -99,16 +99,16 @@ void main() {
 
 #end
 #Fragment //------------------------------------------------
-#version 410
+#version 430
 
 layout(location = 0) out vec4 color_out;
 
-uniform sampler2D Color;
-uniform sampler2D Normal;
-uniform sampler2D Roughness;
-uniform sampler2D DepthBuffer;
-uniform samplerCube Diffuse;
-uniform samplerCube Specular;
+layout(set = 1, binding = 0)uniform sampler2D Color;
+layout(set = 1, binding = 1)uniform sampler2D Normal;
+layout(set = 1, binding = 2)uniform sampler2D Roughness;
+layout(set = 1, binding = 3)uniform sampler2D DepthBuffer;
+layout(set = 0, binding = 2)uniform samplerCube Diffuse;
+layout(set = 0, binding = 3)uniform samplerCube Specular;
 
 uniform conf{
 	mat4 inverse_view;

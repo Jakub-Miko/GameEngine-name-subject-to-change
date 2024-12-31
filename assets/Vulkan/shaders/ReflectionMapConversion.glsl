@@ -14,7 +14,7 @@
 #end
 
 #Vertex //--------------------------------------------------
-#version 410
+#version 430
 
 layout(location = 0) in vec3 position;
 layout(location = 1) in vec3 normal;
@@ -34,13 +34,13 @@ void main() {
 
 #end
 #Geometry //--------------------------------------------------
-#version 410
+#version 430
 layout(triangles, invocations = 6) in;
 layout(triangle_strip, max_vertices = 3) out;
 
 out vec3 pos;
 
-uniform mvp{
+layout(set = 0, binding = 0) uniform mvp{
 	mat4 mvp_matrix[6];
 };
 
@@ -60,9 +60,9 @@ void main() {
 
 
 #Fragment //------------------------------------------------
-#version 410
+#version 430
 
-uniform sampler2D in_tex;
+layout(set = 0, binding = 1) uniform sampler2D in_tex;
 
 layout(location = 0) out vec4 specular;
 layout(location = 1) out vec4 diffuse;

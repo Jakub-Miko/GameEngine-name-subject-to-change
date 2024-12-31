@@ -91,7 +91,7 @@
 #end
 
 #Vertex //--------------------------------------------------
-#version 410
+#version 430
 
 layout(location = 0) in vec3 position;
 layout(location = 1) in vec3 normal;
@@ -103,12 +103,12 @@ out vec3 pos_fragment;
 out vec3 normal_fragment;
 out mat3 TBN;
 
-uniform mvp{
+layout(set = 0, binding = 0) uniform mvp{
 	mat4 mvp_matrix;
 	mat4 view_model_matrix;
 };
 
-uniform material{
+layout(set = 0, binding = 1) uniform material{
 	vec4 Base_Color;
 	float roughness_bias;
 	float roughness_gain;
@@ -130,7 +130,7 @@ void main() {
 
 #end
 #Fragment //------------------------------------------------
-#version 410
+#version 430
 
 in vec2 uv_fragment;
 in vec3 pos_fragment;
@@ -141,9 +141,9 @@ layout(location = 0) out vec4 color_out;
 layout(location = 1) out vec4 normal_out;
 layout(location = 2) out float roughness_out;
 
-uniform sampler2D Color;
-uniform sampler2D Normal;
-uniform sampler2D Roughness;
+layout(set = 1, binding = 0) uniform sampler2D Color;
+layout(set = 1, binding = 1) uniform sampler2D Normal;
+layout(set = 1, binding = 2) uniform sampler2D Roughness;
 
 uniform material{
 	vec4 Base_Color;
