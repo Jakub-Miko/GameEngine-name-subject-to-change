@@ -32,11 +32,35 @@ std::vector<VkVertexInputAttributeDescription> GetVertexInputStateFromVertexLayo
 		attrib.binding = 0;
 		attrib.format = VulkanUnitConverter::PrimitiveAndSizeToVulkan(element.type, element.size);
 		attrib.offset = element.offset;
-		attrib.location = attrib.binding;
+		attrib.location = binding_num++;
 		attributes.push_back(attrib);
 	}
 
-	return std::move(attributes);
+	return attributes;
+}
+
+std::vector<VkPipelineColorBlendAttachmentState> GetBlendState(const PipelineDescriptor& desc) {	
+	std::vector<VkPipelineColorBlendAttachmentState> blend_attachments;
+	blend_attachments.reserve(desc.framebuffer_format.color_attachemt_formats.size());
+
+	VkPipelineColorBlendAttachmentState global_attachment;
+	global_attachment.colorBlendOp = VulkanUnitConverter::BlendEquationToVulkanEnum(desc.blend_equation);
+	global_attachment.alphaBlendOp = VulkanUnitConverter::BlendEquationToVulkanEnum(desc.blend_equation);
+	global_attachment.blendEnable = (bool)(desc.flags & PipelineFlags::ENABLE_BLEND);
+	global_attachment.colorWriteMask = VkColorComponentFlagBits::VK_COLOR_COMPONENT_R_BIT | VkColorComponentFlagBits::VK_COLOR_COMPONENT_G_BIT |
+		VkColorComponentFlagBits::VK_COLOR_COMPONENT_B_BIT | VkColorComponentFlagBits::VK_COLOR_COMPONENT_A_BIT;
+	global_attachment.dstAlphaBlendFactor = VulkanUnitConverter::BlendFunctiontoVkBlendFactor(desc.blend_functions.dstAlpha);
+	global_attachment.srcAlphaBlendFactor = VulkanUnitConverter::BlendFunctiontoVkBlendFactor(desc.blend_functions.srcAlpha);
+	global_attachment.dstColorBlendFactor = VulkanUnitConverter::BlendFunctiontoVkBlendFactor(desc.blend_functions.dstRGB);
+	global_attachment.srcColorBlendFactor = VulkanUnitConverter::BlendFunctiontoVkBlendFactor(desc.blend_functions.srcRGB);
+
+	for (auto& attachment : desc.framebuffer_format.color_attachemt_formats) {
+		VkPipelineColorBlendAttachmentState col_attachment = global_attachment;
+		blend_attachments.push_back(col_attachment);
+	}
+
+	return blend_attachments;
+
 }
 
 std::shared_ptr<Pipeline> VulkanPipelineManager::CreatePipeline(const PipelineDescriptor& desc)
@@ -86,6 +110,7 @@ std::shared_ptr<Pipeline> VulkanPipelineManager::CreatePipeline(const PipelineDe
 	multi_sample_info.alphaToCoverageEnable = false;
 	multi_sample_info.alphaToOneEnable = false;
 	multi_sample_info.sampleShadingEnable = false;
+	multi_sample_info.rasterizationSamples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
 
 	VkPipelineRasterizationStateCreateInfo raster_info = {};
 	raster_info.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
@@ -113,24 +138,51 @@ std::shared_ptr<Pipeline> VulkanPipelineManager::CreatePipeline(const PipelineDe
 		i++;
 	}
 
-	VkPipelineColorBlendStateCreateInfo blend_state = {};
+	std::vector<VkPipelineColorBlendAttachmentState> blend_state_attachments = GetBlendState(desc);
+
+	VkPipelineColorBlendStateCreateInfo blend_state;
+	blend_state.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+	blend_state.attachmentCount = blend_state_attachments.size();
+	blend_state.pAttachments = blend_state_attachments.data();
+	blend_state.logicOpEnable = false;
+
+
+	VkPipelineRenderingCreateInfo dynamic_render_info = {};
+	dynamic_render_info.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
+	dynamic_render_info.colorAttachmentCount = desc.framebuffer_format.color_attachemt_formats.size();
+
+	std::vector<VkFormat> framebuffer_formats;
+	framebuffer_formats.reserve(dynamic_render_info.colorAttachmentCount);
+	for (auto& format : desc.framebuffer_format.color_attachemt_formats) {
+		framebuffer_formats.push_back(VulkanUnitConverter::TextureFormatToVulkanInternalformat(format.format));
+	}
+
+	dynamic_render_info.pColorAttachmentFormats = framebuffer_formats.data();
+	dynamic_render_info.depthAttachmentFormat = VulkanUnitConverter::TextureFormatToVulkanInternalformat(desc.framebuffer_format.depth_attachemt_format.format);
+
+	VkPipelineViewportStateCreateInfo viewport_state = {};
+	viewport_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+	viewport_state.viewportCount = 1;
+	viewport_state.scissorCount = 1;
 
 	VkGraphicsPipelineCreateInfo info = {};
 	info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 	info.pVertexInputState = &vertex_input_state;
 	info.layout = layout; 
 	info.pDepthStencilState = &depth_stencil; 
+	info.pViewportState = &viewport_state;
 	info.pDynamicState = &dynamic_state;
 	info.pInputAssemblyState = &input_assembly;
 	info.pMultisampleState = &multi_sample_info;
 	info.pRasterizationState = &raster_info;
 	info.stageCount = stages.size();
 	info.pStages = stages.data();
-	info.pColorBlendState = &blend_state; // generate from framebuffer
+	info.pColorBlendState = &blend_state;
+	info.pNext = &dynamic_render_info;
 
 	VkPipeline pipeline;
 
-	//vkCreateGraphicsPipelines(context->GetVkDevice(), NULL, 1, &info, NULL, &pipeline);
+	vkCreateGraphicsPipelines(context->GetVkDevice(), VK_NULL_HANDLE, 1, &info, NULL, &pipeline);
 
 	VulkanPipeline* new_pipeline = new VulkanPipeline(desc, pipeline);
 

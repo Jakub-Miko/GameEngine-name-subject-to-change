@@ -5,7 +5,7 @@
   "default_scene": "asset:Demo.scene",
   "root_path": "../",
   "local_asset_path": "assets/",
-  "render_api_path": "assets/OpenGL/",
+  "render_api_path": "assets/Vulkan/",
   "engine_asset_path": "assets/",
   "temp_path": "temp/",
   "resolution_X": 2560,

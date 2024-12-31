@@ -101,6 +101,7 @@ VkShaderModule VulkanShaderManager::CompileShaderStage(VulkanShaderStages type, 
 	shaderc_compiler_release(compiler);
 	shaderc_compile_options_release(options);
 
+	return module;
 }
 
 VulkanParsedShader VulkanShaderManager::LinkShader(VulkanParsedShader shader)

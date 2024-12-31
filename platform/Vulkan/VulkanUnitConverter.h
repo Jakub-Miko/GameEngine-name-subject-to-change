@@ -99,17 +99,18 @@ public:
 		return UnitConverter::PrimitiveSize(type);
 	}
 
-	static VkFormat TextureFormatToVulkanInternalformat(TextureFormat type) {
+	static VkFormat TextureFormatToVulkanInternalformat(TextureFormat type, bool normalized = true) {
 		switch (type) {
-		case TextureFormat::RGBA_UNSIGNED_CHAR:				return VK_FORMAT_R8G8B8A8_UINT;
-		case TextureFormat::RGB_UNSIGNED_CHAR:				return VK_FORMAT_R8G8B8_UINT;
+		case TextureFormat::RGBA_UNSIGNED_CHAR:				return normalized ? VK_FORMAT_R8G8B8A8_UNORM : VK_FORMAT_R8G8B8A8_UINT;
+		case TextureFormat::RGB_UNSIGNED_CHAR:				return normalized ? VK_FORMAT_R8G8B8A8_UNORM : VK_FORMAT_R8G8B8A8_UINT; //vulkan doesnt support RGB only RGBA for allignment reasons
 		case TextureFormat::DEPTH24_STENCIL8_UNSIGNED_CHAR:	return VK_FORMAT_D24_UNORM_S8_UINT;
-		case TextureFormat::RGB_32FLOAT:					return VK_FORMAT_R32G32B32_SFLOAT;
+		case TextureFormat::RGB_32FLOAT:					return VK_FORMAT_R32G32B32A32_SFLOAT;
 		case TextureFormat::RGBA_32FLOAT:					return VK_FORMAT_R32G32B32A32_SFLOAT;
 		case TextureFormat::R_UNSIGNED_INT:					return VK_FORMAT_R32_UINT;
-		case TextureFormat::R_UNSIGNED_CHAR:                return VK_FORMAT_R8_UINT;
+		case TextureFormat::R_UNSIGNED_CHAR:                return normalized ? VK_FORMAT_R8_UNORM : VK_FORMAT_R8_UINT;
 		case TextureFormat::R_UNSIGNED_CHAR_NORM:           return VK_FORMAT_R8_UNORM;
 		case TextureFormat::R_8FLOAT:						return VK_FORMAT_R8_UNORM;
+		case TextureFormat::UNDEFINED:						return VK_FORMAT_UNDEFINED;
 		default:
 			throw std::runtime_error("Conversion failed");
 		}

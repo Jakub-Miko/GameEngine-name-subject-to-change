@@ -99,8 +99,14 @@ void VulkanRenderContext::Init()
 	VkPhysicalDeviceVulkan12Features features_12 = {};
 	features_12.bufferDeviceAddress = true;
 	features_12.descriptorIndexing = true;
+	features_12.timelineSemaphore = true;
+
+	VkPhysicalDeviceFeatures features = {};
+	features.geometryShader = true;
 
 	selector.set_required_features_12(features_12);
+
+	selector.set_required_features(features);
 
 	auto device = selector.select();
 	if (!device.has_value()) {

@@ -51,7 +51,7 @@ std::shared_ptr<RenderTexture2DResource> VulkanRenderResourceManager::CreateText
 	image_info.extent = extent;
 	image_info.format = VulkanUnitConverter::TextureFormatToVulkanInternalformat(buffer_desc.format);
 	image_info.imageType = VkImageType::VK_IMAGE_TYPE_2D;
-	image_info.initialLayout = VulkanUnitConverter::RenderStateToTextureLayout(default_state);
+	image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	image_info.mipLevels = 1; /// @todo Add mipmap spec to descriptor;
 	image_info.sharingMode = VkSharingMode::VK_SHARING_MODE_EXCLUSIVE;
 	image_info.usage = VulkanUnitConverter::TextureUsageToVkTextureUsage(buffer_desc.usage);

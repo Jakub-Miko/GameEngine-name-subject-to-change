@@ -24,6 +24,19 @@ struct PipelineBlendFunctions {
 
 };
 
+struct FramebufferFormat {
+	struct ColorAttachmentFormat {
+		TextureFormat format = TextureFormat::RGBA_32FLOAT;
+	};
+
+	struct DepthAttachmentFormat {
+		TextureFormat format = TextureFormat::UNDEFINED;
+	};
+
+	std::vector<ColorAttachmentFormat> color_attachemt_formats = std::vector<ColorAttachmentFormat>();
+	DepthAttachmentFormat depth_attachemt_format = DepthAttachmentFormat();
+};
+
 struct PipelineDescriptor {
 	
 	friend class Pipeline;
@@ -31,7 +44,8 @@ struct PipelineDescriptor {
 	PipelineDescriptor() = default;
 
 	PipelineDescriptor(const PipelineDescriptor& desc) : layout(desc.layout), shader(desc.shader), viewport(desc.viewport), scissor_rect(desc.scissor_rect),
-		flags(desc.flags), polygon_render_mode(desc.polygon_render_mode), blend_functions(desc.blend_functions), blend_equation(desc.blend_equation), cull_mode(desc.cull_mode), depth_function(desc.depth_function), enable_depth_clip(desc.enable_depth_clip)
+		flags(desc.flags), polygon_render_mode(desc.polygon_render_mode), blend_functions(desc.blend_functions), 
+		blend_equation(desc.blend_equation), cull_mode(desc.cull_mode), depth_function(desc.depth_function), enable_depth_clip(desc.enable_depth_clip), framebuffer_format(desc.framebuffer_format)
 	{
 
 	}
@@ -95,6 +109,7 @@ public:
 	BlendEquation blend_equation = BlendEquation::ADD;
 	DepthFunction depth_function = DepthFunction::LESS;
 	CullMode cull_mode = CullMode::NONE;
+	FramebufferFormat framebuffer_format = FramebufferFormat();
 	PrimitivePolygonRenderMode polygon_render_mode = PrimitivePolygonRenderMode::DEFAULT;
 	bool enable_depth_clip = true;
 };
