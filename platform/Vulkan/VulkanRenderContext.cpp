@@ -107,6 +107,14 @@ void VulkanRenderContext::Init()
 	VkPhysicalDeviceFeatures features = {};
 	features.geometryShader = true;
 
+	VkPhysicalDeviceCustomBorderColorFeaturesEXT custom_sampler_border = {};
+	custom_sampler_border.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_FEATURES_EXT;
+	custom_sampler_border.customBorderColors = true;
+	custom_sampler_border.customBorderColorWithoutFormat = true;
+
+	selector.add_required_extension_features(custom_sampler_border);
+	
+	selector.add_required_extension("VK_EXT_custom_border_color");
 	selector.set_required_features_12(features_12);
 
 	selector.set_required_features(features);

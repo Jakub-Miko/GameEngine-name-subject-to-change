@@ -1,4 +1,5 @@
 #include "VulkanRenderResource.h"
+#include "VulkanUnitConverter.h"
 #include <stdexcept>
 
 void* VulkanRenderBufferResource::Map()
@@ -25,8 +26,40 @@ void VulkanRenderTexture2DResource::UnMap()
 
 
 
-VulkanTextureSampler::VulkanTextureSampler(const TextureSamplerDescritor& desc) : TextureSampler(desc)
+VulkanTextureSampler::~VulkanTextureSampler()
 {
+	DEFINE_VK_INSTANCE(context);
+	vkDestroySampler(context->GetVkDevice(), sampler, NULL);
+}
+
+VulkanTextureSampler::VulkanTextureSampler(const TextureSamplerDescritor& desc) : TextureSampler(desc), sampler()
+{
+	VkSamplerCustomBorderColorCreateInfoEXT border_color = {};
+	border_color.sType = VK_STRUCTURE_TYPE_SAMPLER_CUSTOM_BORDER_COLOR_CREATE_INFO_EXT;
+	border_color.format = VK_FORMAT_UNDEFINED;
+	border_color.customBorderColor = VkClearColorValue{ *glm::value_ptr(desc.border_color) };
+
+	VkSamplerCreateInfo info = {};
+	info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+	info.addressModeU = VulkanUnitConverter::TextureAddressModeToVulkanAddressMode(desc.AddressMode_U);
+	info.addressModeV = VulkanUnitConverter::TextureAddressModeToVulkanAddressMode(desc.AddressMode_V);
+	info.addressModeW = VulkanUnitConverter::TextureAddressModeToVulkanAddressMode(desc.AddressMode_W);
+	info.anisotropyEnable = desc.enable_anisotropy;
+	info.borderColor = VK_BORDER_COLOR_FLOAT_CUSTOM_EXT;
+	info.compareEnable = desc.comparison_mode != DepthComparisonMode::DISABLED;
+	info.compareOp = VulkanUnitConverter::DepthComparisonModeToVulkanCompareFunc(desc.comparison_mode);
+	info.magFilter = VulkanUnitConverter::TextureFilterToMinMagFilter(desc.filter);
+	info.minFilter = VulkanUnitConverter::TextureFilterToMinMagFilter(desc.filter);
+	info.maxAnisotropy = 1.0f;
+	info.maxLod = desc.max_LOD;
+	info.minLod = desc.min_LOD;
+	info.mipLodBias = desc.LOD_bias;
+	info.mipmapMode = VulkanUnitConverter::TextureFilterToMipFilter(desc.filter);
+	info.unnormalizedCoordinates = false;
+	info.pNext = &border_color;
+	
+	DEFINE_VK_INSTANCE(context);
+	vkCreateSampler(context->GetVkDevice(), &info, NULL, &sampler);
 
 }
 

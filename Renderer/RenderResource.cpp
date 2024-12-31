@@ -1,9 +1,17 @@
 #include "RenderResource.h"
+#ifdef OpenGL_API
 #include <platform/OpenGL/OpenGLRenderResource.h>
+#elif defined Vulkan_API
+#include <platform/Vulkan/VulkanRenderResource.h>
+#endif
 
 std::shared_ptr<TextureSampler> TextureSampler::CreateSampler(const TextureSamplerDescritor& desc)
 {
+#ifdef OpenGL_API
 	return std::shared_ptr<OpenGLTextureSampler>(new OpenGLTextureSampler(desc));
+#elif defined Vulkan_API
+	return std::shared_ptr<VulkanTextureSampler>(new VulkanTextureSampler(desc));
+#endif
 }
 
 std::shared_ptr<RenderTexture2DResource> RenderFrameBufferDescriptor::GetColorAttachmentAsTexture(int index)

@@ -76,7 +76,7 @@ struct TextureSamplerDescritor {
 	float LOD_bias = 0;
 	float min_LOD = 0;
 	float max_LOD = 15;
-
+	bool enable_anisotropy = false;
 
 	bool operator==(const TextureSamplerDescritor& other)const
 	{

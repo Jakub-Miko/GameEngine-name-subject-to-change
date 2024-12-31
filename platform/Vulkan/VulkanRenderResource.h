@@ -35,14 +35,16 @@ private:
 };
 
 
-class VulkanTextureSampler : public TextureSampler, VulkanRendeResourceStateExtension {
+class VulkanTextureSampler : public TextureSampler {
 public:
 	friend TextureSampler;
 
-	virtual ~VulkanTextureSampler() {}
+	virtual ~VulkanTextureSampler();
 
 private:
 	VulkanTextureSampler(const TextureSamplerDescritor& desc);
+
+	VkSampler sampler;
 };
 
 class VulkanRenderTexture2DResource : public RenderTexture2DResource, VulkanRendeResourceStateExtension {
