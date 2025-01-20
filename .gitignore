@@ -8,3 +8,4 @@
 /CMakeCache.txt
 /temp/*
 /docs/html
+/dependencies/glew/glew.pc
