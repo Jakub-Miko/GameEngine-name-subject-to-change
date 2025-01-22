@@ -86,12 +86,12 @@ public:
 
 	}
 
-	virtual ~VulkanRenderTexture2DArrayResource() {}
+	virtual ~VulkanRenderTexture2DArrayResource();
 
 private:
 
 	VkImage image;
-
+	VmaAllocation alloc;
 };
 
 class VulkanRenderTexture2DCubemapResource : public RenderTexture2DCubemapResource, VulkanRenderResource {

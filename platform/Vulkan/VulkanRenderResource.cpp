@@ -98,6 +98,13 @@ void VulkanRenderTexture2DArrayResource::UnMap()
 	throw std::runtime_error("Not Implemented");
 }
 
+VulkanRenderTexture2DArrayResource::~VulkanRenderTexture2DArrayResource()
+{
+	DEFINE_VK_INSTANCE(context);
+	VmaAllocator& allocator = context->GetVmaAllocator();
+	vmaDestroyImage(allocator, image, alloc);
+}
+
 
 
 void* VulkanRenderTexture2DCubemapResource::Map()

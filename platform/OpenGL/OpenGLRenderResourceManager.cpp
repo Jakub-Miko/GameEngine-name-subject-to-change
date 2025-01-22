@@ -163,7 +163,7 @@ std::shared_ptr<RenderTexture2DResource> OpenGLRenderResourceManager::CreateText
 	}
 }
 
-std::shared_ptr<RenderTexture2DArrayResource> OpenGLRenderResourceManager::CreateTextureArray(const RenderTexture2DArrayDescriptor& buffer_desc)
+std::shared_ptr<RenderTexture2DArrayResource> OpenGLRenderResourceManager::CreateTextureArray(const RenderTexture2DArrayDescriptor& buffer_desc, RenderState default_state)
 {
 	if (!buffer_desc.sampler) {
 		throw std::runtime_error("Sampler wasn't supplied to the texture");

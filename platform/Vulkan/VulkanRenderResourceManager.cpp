@@ -100,9 +100,52 @@ std::shared_ptr<RenderTexture2DResource> VulkanRenderResourceManager::CreateText
 	return std::shared_ptr<RenderTexture2DResource>();
 }
 
-std::shared_ptr<RenderTexture2DArrayResource> VulkanRenderResourceManager::CreateTextureArray(const RenderTexture2DArrayDescriptor& buffer_desc)
+std::shared_ptr<RenderTexture2DArrayResource> VulkanRenderResourceManager::CreateTextureArray(const RenderTexture2DArrayDescriptor& buffer_desc, RenderState default_state)
 {
-	return std::shared_ptr<RenderTexture2DArrayResource>();
+	DEFINE_VK_INSTANCE(context);
+	VmaAllocator& alloc = context->GetVmaAllocator();
+
+	VkExtent3D extent;
+	extent.depth = 1;
+	extent.width = buffer_desc.width;
+	extent.height = buffer_desc.height;
+
+	TextureUsage usage = buffer_desc.usage;
+	if (usage == TextureUsage::DEFAULT) {
+		usage = VulkanUnitConverter::TextureFormatToVulkanDefaultImageUsage(buffer_desc.format);
+	}
+
+	VkImageCreateInfo image_info = {};
+	image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	image_info.arrayLayers = buffer_desc.num_of_textures;
+	image_info.extent = extent;
+	image_info.format = VulkanUnitConverter::TextureFormatToVulkanInternalformat(buffer_desc.format);
+	image_info.imageType = VkImageType::VK_IMAGE_TYPE_2D;
+	image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	image_info.mipLevels = 1; /// @todo Add mipmap spec to descriptor;
+	image_info.sharingMode = VkSharingMode::VK_SHARING_MODE_EXCLUSIVE;
+	image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
+	image_info.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
+	image_info.usage = VulkanUnitConverter::TextureUsageToVkTextureUsage(usage);
+
+
+	VmaAllocationCreateInfo alloc_info = {};
+	alloc_info.usage = VmaMemoryUsage::VMA_MEMORY_USAGE_AUTO;
+	alloc_info.flags = NULL;
+
+	VkImage image;
+	VmaAllocation allocation;
+
+	vmaCreateImage(alloc, &image_info, &alloc_info, &image, &allocation, NULL);
+
+	VulkanRenderTexture2DArrayResource* new_texture = new VulkanRenderTexture2DArrayResource(buffer_desc, default_state);
+
+	new_texture->alloc = allocation;
+	new_texture->image = image;
+
+	return std::shared_ptr<RenderTexture2DArrayResource>(new_texture, [](RenderTexture2DArrayResource* resource) {
+		static_cast<VulkanRenderResourceManager*>(RenderResourceManager::Get())->ReturnResource(static_cast<VulkanRenderTexture2DArrayResource*>(resource));
+		});
 }
 
 void VulkanRenderResourceManager::UploadDataToTexture2DArray(RenderCommandList* list, std::shared_ptr<RenderTexture2DArrayResource> resource, int layer, void* data, size_t width, size_t height, size_t offset_x, size_t offset_y, int level)
