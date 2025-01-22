@@ -302,7 +302,7 @@ void OpenGLRenderResourceManager::UploadDataToTexture2DArray(RenderCommandList* 
 	static_cast<OpenGLRenderCommandList*>(list)->UpdateTexture2DArrayResource(resource, layer, level, allocated, width, height, offset_x, offset_y);
 }
 
-std::shared_ptr<RenderTexture2DCubemapResource> OpenGLRenderResourceManager::CreateTextureCubemap(const RenderTexture2DCubemapDescriptor& buffer_desc)
+std::shared_ptr<RenderTexture2DCubemapResource> OpenGLRenderResourceManager::CreateTextureCubemap(const RenderTexture2DCubemapDescriptor& buffer_desc,RenderState default_state)
 {
 	if (!buffer_desc.sampler) {
 		throw std::runtime_error("Sampler wasn't supplied to the texture");

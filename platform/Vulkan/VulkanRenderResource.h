@@ -5,13 +5,16 @@
 
 class VulkanRenderResourceManager;
 
-class VulkanRendeResourceStateExtension {
+class VulkanRenderResource {
 public:
+	VulkanRenderResource() = default;
+	virtual ~VulkanRenderResource() {};
+
 	uint64_t read_timeline = 0;
 	uint64_t write_timeline = 0;
 };
 
-class VulkanRenderBufferResource : public RenderBufferResource, VulkanRendeResourceStateExtension {
+class VulkanRenderBufferResource : public RenderBufferResource, VulkanRenderResource {
 public:
 	friend VulkanRenderResourceManager;
 
@@ -26,7 +29,7 @@ public:
 
 	}
 
-	~VulkanRenderBufferResource() {}
+	~VulkanRenderBufferResource();
 
 private:
 
@@ -47,7 +50,7 @@ private:
 	VkSampler sampler;
 };
 
-class VulkanRenderTexture2DResource : public RenderTexture2DResource, VulkanRendeResourceStateExtension {
+class VulkanRenderTexture2DResource : public RenderTexture2DResource, VulkanRenderResource {
 public:
 	friend VulkanRenderResourceManager;
 
@@ -61,14 +64,14 @@ public:
 
 	}
 
-	virtual ~VulkanRenderTexture2DResource() {}
+	virtual ~VulkanRenderTexture2DResource();
 
 private:
-	VkImage texture;
+	VkImage image;
 	VmaAllocation alloc;
 };
 
-class VulkanRenderTexture2DArrayResource : public RenderTexture2DArrayResource, VulkanRendeResourceStateExtension {
+class VulkanRenderTexture2DArrayResource : public RenderTexture2DArrayResource, VulkanRenderResource {
 public:
 	friend VulkanRenderResourceManager;
 
@@ -91,7 +94,7 @@ private:
 
 };
 
-class VulkanRenderTexture2DCubemapResource : public RenderTexture2DCubemapResource, VulkanRendeResourceStateExtension {
+class VulkanRenderTexture2DCubemapResource : public RenderTexture2DCubemapResource, VulkanRenderResource {
 public:
 	friend VulkanRenderResourceManager;
 
@@ -105,12 +108,12 @@ public:
 
 	}
 
-	~VulkanRenderTexture2DCubemapResource() {}
+	~VulkanRenderTexture2DCubemapResource();
 
 private:
 
 	VkImage image;
-
+	VmaAllocation alloc;
 };
 
 

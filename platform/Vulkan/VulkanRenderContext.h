@@ -44,6 +44,7 @@ public:
 	VkInstance GetVkInstance() const { return vk_instance; }
 	VkSwapchainKHR* GetVkSwapchain() { return &vk_swapchain; }
 	VkDevice GetVkDevice() const { return vk_device; }
+	vkb::Swapchain GetVkbSwapchain() const { return vkb_swapchain; }
 	vkb::Device GetVkbDevice() const { return vkb_device; }
 	void SetSurface(VkSurfaceKHR surface) { vk_surface = surface; }
 	VkSemaphore GetVkRenderSemaphore() { return frame_sync.render_fence.GetResource(); };
@@ -66,7 +67,7 @@ private:
 	VkSurfaceKHR vk_surface;
 	vkb::Swapchain vkb_swapchain;
 	VkSwapchainKHR vk_swapchain;
-	uint32_t current_framebuffer;
+	uint32_t current_framebuffer = 0;
 	VmaAllocator allocator;
 	struct {
 		FrameMultiBufferResource<VkSemaphore> render_fence;

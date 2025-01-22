@@ -23,7 +23,7 @@ public:
 	virtual void UploadDataToTexture2DArray(RenderCommandList* list, std::shared_ptr<RenderTexture2DArrayResource> resource, int layer, void* data, size_t width, size_t height,
 		size_t offset_x, size_t offset_y, int level = 0) override;
 
-	virtual std::shared_ptr<RenderTexture2DCubemapResource> CreateTextureCubemap(const RenderTexture2DCubemapDescriptor& buffer_desc) override;
+	virtual std::shared_ptr<RenderTexture2DCubemapResource> CreateTextureCubemap(const RenderTexture2DCubemapDescriptor& buffer_desc, RenderState default_state = RenderState::TEXTURE_SAMPLE) override;
 	virtual void UploadDataToTexture2DCubemap(RenderCommandList* list, std::shared_ptr<RenderTexture2DCubemapResource> resource, CubemapFace face, void* data, size_t width, size_t height,
 		size_t offset_x, size_t offset_y, int level = 0) override;
 

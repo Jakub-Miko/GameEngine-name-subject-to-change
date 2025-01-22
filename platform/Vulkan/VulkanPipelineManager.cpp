@@ -30,7 +30,7 @@ std::vector<VkVertexInputAttributeDescription> GetVertexInputStateFromVertexLayo
 
 		VkVertexInputAttributeDescription attrib;
 		attrib.binding = 0;
-		attrib.format = VulkanUnitConverter::PrimitiveAndSizeToVulkan(element.type, element.size);
+		attrib.format = VulkanUnitConverter::PrimitiveAndSizeToVulkan(element.type, element.size, element.normalized);
 		attrib.offset = element.offset;
 		attrib.location = binding_num++;
 		attributes.push_back(attrib);

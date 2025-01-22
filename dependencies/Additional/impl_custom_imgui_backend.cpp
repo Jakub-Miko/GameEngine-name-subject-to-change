@@ -90,56 +90,8 @@ static void ResetState(ImDrawData* data, int width, int height) {
 }
 
 static void CreateShaders() {
-    const char* shader_glsl_410_core =
-        R"(
-        #RootSignature
-        {
-        	"RootSignature": [
-        		{
-        			"name" : "conf",
-        			"type" : "constant_buffer"
-        		},
-                {
-        			"name" : "Texture",
-        			"type" : "texture_2D"
-        		}
-        
-        	]
-        }
-        #end
-        )"        
-        "#Vertex //--------------------------------------------------\n"
-        "#version 410\n"
-        "\n"
-        "uniform conf "
-        "{\n"
-        "   mat4 ProjMtx;\n"
-        "};\n"
-        "layout (location = 0) in vec2 Position;\n"
-        "layout (location = 1) in vec2 UV;\n"
-        "layout (location = 2) in vec4 Color;\n"
-        "out vec2 Frag_UV;\n"
-        "out vec4 Frag_Color;\n"
-        "void main()\n"
-        "{\n"
-        "    Frag_UV = UV;\n"
-        "    Frag_Color = Color;\n"
-        "    gl_Position = ProjMtx * vec4(Position.xy,0,1);\n"
-        "}\n"
-        "#end\n"
-        "#Fragment //------------------------------------------------\n"
-        "#version 410\n"
-        "in vec2 Frag_UV;\n"
-        "in vec4 Frag_Color;\n"
-        "uniform sampler2D Texture[1];"
-        "layout (location = 0) out vec4 Out_Color;\n"
-        "void main()\n"
-        "{\n"
-        "    Out_Color = Frag_Color * texture(Texture[0], Frag_UV.st);\n"
-        "}\n"
-        "#end\n";
 
-    auto shader = ShaderManager::Get()->CreateShaderFromString(shader_glsl_410_core);
+    auto shader = ShaderManager::Get()->GetShader("shaders/Imgui_shader.glsl");;
 
     impl_custom_imgui_backend::GetBackendData()->shader = shader;
 }

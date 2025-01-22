@@ -23,7 +23,7 @@ std::shared_ptr<RenderBufferResource> VulkanRenderResourceManager::CreateBuffer(
 	
 	
 	return std::shared_ptr<RenderBufferResource>(new_buffer, [](RenderBufferResource* resource) {
-		static_cast<VulkanRenderResourceManager*>(RenderResourceManager::Get())->ReturnBufferResource(static_cast<VulkanRenderBufferResource*>(resource));
+		static_cast<VulkanRenderResourceManager*>(RenderResourceManager::Get())->ReturnResource(static_cast<VulkanRenderBufferResource*>(resource));
 		});
 }
 
@@ -76,10 +76,10 @@ std::shared_ptr<RenderTexture2DResource> VulkanRenderResourceManager::CreateText
 	VulkanRenderTexture2DResource* new_texture = new VulkanRenderTexture2DResource(buffer_desc, default_state);
 
 	new_texture->alloc = allocation;
-	new_texture->texture = image;
+	new_texture->image = image;
 
 	return std::shared_ptr<RenderTexture2DResource>(new_texture, [](RenderTexture2DResource* resource) {
-		static_cast<VulkanRenderResourceManager*>(RenderResourceManager::Get())->ReturnTexture2DResource(static_cast<VulkanRenderTexture2DResource*>(resource));
+		static_cast<VulkanRenderResourceManager*>(RenderResourceManager::Get())->ReturnResource(static_cast<VulkanRenderTexture2DResource*>(resource));
 		});
 }
 
@@ -109,9 +109,53 @@ void VulkanRenderResourceManager::UploadDataToTexture2DArray(RenderCommandList* 
 {
 }
 
-std::shared_ptr<RenderTexture2DCubemapResource> VulkanRenderResourceManager::CreateTextureCubemap(const RenderTexture2DCubemapDescriptor& buffer_desc)
+std::shared_ptr<RenderTexture2DCubemapResource> VulkanRenderResourceManager::CreateTextureCubemap(const RenderTexture2DCubemapDescriptor& buffer_desc, RenderState default_state)
 {
-	return std::shared_ptr<RenderTexture2DCubemapResource>();
+	DEFINE_VK_INSTANCE(context);
+	VmaAllocator& alloc = context->GetVmaAllocator();
+
+	VkExtent3D extent;
+	extent.depth = 1;
+	extent.width = buffer_desc.res;
+	extent.height = buffer_desc.res;
+
+	TextureUsage usage = buffer_desc.usage;
+	if (usage == TextureUsage::DEFAULT) {
+		usage = VulkanUnitConverter::TextureFormatToVulkanDefaultImageUsage(buffer_desc.format);
+	}
+
+	VkImageCreateInfo image_info = {};
+	image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	image_info.arrayLayers = 6;
+	image_info.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+	image_info.extent = extent;
+	image_info.format = VulkanUnitConverter::TextureFormatToVulkanInternalformat(buffer_desc.format);
+	image_info.imageType = VkImageType::VK_IMAGE_TYPE_2D;
+	image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	image_info.mipLevels = 1; /// @todo Add mipmap spec to descriptor;
+	image_info.sharingMode = VkSharingMode::VK_SHARING_MODE_EXCLUSIVE;
+	image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
+	image_info.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
+	image_info.usage = VulkanUnitConverter::TextureUsageToVkTextureUsage(usage);
+
+
+	VmaAllocationCreateInfo alloc_info = {};
+	alloc_info.usage = VmaMemoryUsage::VMA_MEMORY_USAGE_AUTO;
+	alloc_info.flags = NULL;
+
+	VkImage image;
+	VmaAllocation allocation;
+
+	vmaCreateImage(alloc, &image_info, &alloc_info, &image, &allocation, NULL);
+
+	VulkanRenderTexture2DCubemapResource* new_texture = new VulkanRenderTexture2DCubemapResource(buffer_desc, default_state);
+
+	new_texture->alloc = allocation;
+	new_texture->image = image;
+
+	return std::shared_ptr<RenderTexture2DCubemapResource>(new_texture, [](RenderTexture2DCubemapResource* resource) {
+		static_cast<VulkanRenderResourceManager*>(RenderResourceManager::Get())->ReturnResource(static_cast<VulkanRenderTexture2DCubemapResource*>(resource));
+		});
 }
 
 void VulkanRenderResourceManager::UploadDataToTexture2DCubemap(RenderCommandList* list, std::shared_ptr<RenderTexture2DCubemapResource> resource, CubemapFace face, void* data, size_t width, size_t height, size_t offset_x, size_t offset_y, int level)
@@ -152,7 +196,7 @@ void VulkanRenderResourceManager::SetFrameBufferColorAttachment(RenderCommandLis
 {
 }
 
-VulkanRenderResourceManager::VulkanRenderResourceManager() : buffer_deletion_queue(), buffer_deletion_queue_mutex(), texture_deletion_queue(), texture_deletion_queue_mutex()
+VulkanRenderResourceManager::VulkanRenderResourceManager() : deletion_queue(), deletion_queue_mutex()
 {
 }
 
@@ -162,64 +206,22 @@ VulkanRenderResourceManager::~VulkanRenderResourceManager()
 
 void VulkanRenderResourceManager::FlushDeletions()
 {
-	FlushBufferDeletions();
-	FlushTextureDeletions();
-}
-
-void VulkanRenderResourceManager::FlushBufferDeletions()
-{
 	DEFINE_VK_INSTANCE(context);
 	VmaAllocator& alloc = context->GetVmaAllocator();
 
-	std::unique_lock<std::mutex> lock(buffer_deletion_queue_mutex);
-	
-	uint64_t current_timeline = context->GetCurrentGpuTimelineValue();
-	
-	VulkanRenderBufferResource* resource = nullptr;
-	while ((resource = buffer_deletion_queue.front()) && resource->read_timeline < current_timeline && resource->write_timeline < current_timeline) {
-		vmaDestroyBuffer(alloc, resource->buffer, resource->alloc);
-		delete resource;
-		buffer_deletion_queue.pop();
-	}
-}
-
-void VulkanRenderResourceManager::FlushTextureDeletions()
-{
-	DEFINE_VK_INSTANCE(context);
-	VmaAllocator& alloc = context->GetVmaAllocator();
-
-	std::unique_lock<std::mutex> lock(texture_deletion_queue_mutex);
+	std::unique_lock<std::mutex> lock(deletion_queue_mutex);
 
 	uint64_t current_timeline = context->GetCurrentGpuTimelineValue();
 
-	VulkanRenderTexture2DResource* resource = nullptr;
-	while ((resource = texture_deletion_queue.front()) && resource->read_timeline < current_timeline && resource->write_timeline < current_timeline) { 
-		vmaDestroyImage(alloc, resource->texture, resource->alloc);
+	VulkanRenderResource* resource = nullptr;
+	while ((resource = deletion_queue.front()) && resource->read_timeline < current_timeline && resource->write_timeline < current_timeline) {
 		delete resource;
-		texture_deletion_queue.pop();
 	}
+
 }
 
-void VulkanRenderResourceManager::ReturnBufferResource(VulkanRenderBufferResource* resource)
+void VulkanRenderResourceManager::ReturnResource(VulkanRenderResource* resource)
 {
-	std::unique_lock<std::mutex> lock(buffer_deletion_queue_mutex);
-	buffer_deletion_queue.push(resource);
-}
-
-void VulkanRenderResourceManager::ReturnTexture2DResource(VulkanRenderTexture2DResource* resource)
-{
-	std::unique_lock<std::mutex> lock(texture_deletion_queue_mutex);
-	texture_deletion_queue.push(resource);
-}
-
-void VulkanRenderResourceManager::ReturnTexture2DArrayResource(RenderTexture2DArrayResource* resource)
-{
-}
-
-void VulkanRenderResourceManager::ReturnFrameBufferResource(RenderFrameBufferResource* resource)
-{
-}
-
-void VulkanRenderResourceManager::ReturnTexture2DCubemapResource(RenderTexture2DCubemapResource* resource)
-{
+	std::unique_lock<std::mutex> lock(deletion_queue_mutex);
+	deletion_queue.push(resource);
 }

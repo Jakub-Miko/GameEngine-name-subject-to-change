@@ -37,7 +37,7 @@ public:
 		}
 	}
 
-	static VkFormat PrimitiveAndSizeToVulkan(RenderPrimitiveType type, int size) {
+	static VkFormat PrimitiveAndSizeToVulkan(RenderPrimitiveType type, int size, bool normalized = false) {
 
 		switch (size)
 		{
@@ -46,7 +46,7 @@ public:
 			case RenderPrimitiveType::CHAR:				return VK_FORMAT_R8_SINT;
 			case RenderPrimitiveType::FLOAT:			return VK_FORMAT_R32_SFLOAT;
 			case RenderPrimitiveType::INT:				return VK_FORMAT_R32_SINT;
-			case RenderPrimitiveType::UNSIGNED_CHAR:	return VK_FORMAT_R8_UINT;
+			case RenderPrimitiveType::UNSIGNED_CHAR:	return normalized ? VK_FORMAT_R8_UNORM : VK_FORMAT_R8_UINT;
 			case RenderPrimitiveType::UNSIGNED_INT:		return VK_FORMAT_R32_UINT;
 			default:
 				throw std::runtime_error("Conversion failed");
@@ -57,7 +57,7 @@ public:
 			case RenderPrimitiveType::CHAR:				return VK_FORMAT_R8G8_SINT;
 			case RenderPrimitiveType::FLOAT:			return VK_FORMAT_R32G32_SFLOAT;
 			case RenderPrimitiveType::INT:				return VK_FORMAT_R32G32_SINT;
-			case RenderPrimitiveType::UNSIGNED_CHAR:	return VK_FORMAT_R8G8_UINT;
+			case RenderPrimitiveType::UNSIGNED_CHAR:	return normalized ? VK_FORMAT_R8G8_UNORM : VK_FORMAT_R8G8_UINT;
 			case RenderPrimitiveType::UNSIGNED_INT:		return VK_FORMAT_R32G32_UINT;
 			default:
 				throw std::runtime_error("Conversion failed");
@@ -68,7 +68,7 @@ public:
 			case RenderPrimitiveType::CHAR:				return VK_FORMAT_R8G8B8_SINT;
 			case RenderPrimitiveType::FLOAT:			return VK_FORMAT_R32G32B32_SFLOAT;
 			case RenderPrimitiveType::INT:				return VK_FORMAT_R32G32B32_SINT;
-			case RenderPrimitiveType::UNSIGNED_CHAR:	return VK_FORMAT_R8G8B8_UINT;
+			case RenderPrimitiveType::UNSIGNED_CHAR:	return normalized ? VK_FORMAT_R8G8B8_UNORM : VK_FORMAT_R8G8B8_UINT;;
 			case RenderPrimitiveType::UNSIGNED_INT:		return VK_FORMAT_R32G32B32_UINT;
 			default:
 				throw std::runtime_error("Conversion failed");
@@ -79,7 +79,7 @@ public:
 			case RenderPrimitiveType::CHAR:				return VK_FORMAT_R8G8B8A8_SINT;
 			case RenderPrimitiveType::FLOAT:			return VK_FORMAT_R32G32B32A32_SFLOAT;
 			case RenderPrimitiveType::INT:				return VK_FORMAT_R32G32B32A32_SINT;
-			case RenderPrimitiveType::UNSIGNED_CHAR:	return VK_FORMAT_R8G8B8A8_UINT;
+			case RenderPrimitiveType::UNSIGNED_CHAR:	return normalized ? VK_FORMAT_R8G8B8A8_UNORM : VK_FORMAT_R8G8B8A8_UINT;
 			case RenderPrimitiveType::UNSIGNED_INT:		return VK_FORMAT_R32G32B32A32_UINT;
 			default:
 				throw std::runtime_error("Conversion failed");
