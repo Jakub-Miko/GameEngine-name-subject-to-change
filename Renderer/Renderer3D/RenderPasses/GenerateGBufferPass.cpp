@@ -50,7 +50,7 @@ void GenerateGBufferPass::InitPostProcessingPassData() {
 	roughness_texture_desc.sampler = sampler;
 
 	RenderTexture2DDescriptor depth_desc;
-	depth_desc.format = TextureFormat::DEPTH24_STENCIL8_UNSIGNED_CHAR;
+	depth_desc.format = TextureFormat::DEFAULT_DEPTH;
 	depth_desc.height = Application::Get()->GetWindow()->GetProperties().resolution_y;
 	depth_desc.width = Application::Get()->GetWindow()->GetProperties().resolution_x;
 	depth_desc.sampler = sampler;

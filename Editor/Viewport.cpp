@@ -35,7 +35,7 @@ Viewport::Viewport()
     auto color_at = RenderResourceManager::Get()->CreateTexture(color_desc);
 
     RenderTexture2DDescriptor depth_desc;
-    depth_desc.format = TextureFormat::DEPTH24_STENCIL8_UNSIGNED_CHAR;
+    depth_desc.format = TextureFormat::DEFAULT_DEPTH;
     depth_desc.height = viewport_resolution_y;
     depth_desc.width = viewport_resolution_x;
     depth_desc.sampler = fb_sampler;

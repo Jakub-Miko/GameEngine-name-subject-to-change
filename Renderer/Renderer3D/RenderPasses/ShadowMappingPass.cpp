@@ -64,7 +64,7 @@ void ShadowMappingPass::InitShadowComponent(Entity ent, LightType light_type)
 	framebuffer_desc.color_attachments = {};
 	if (light_type == LightType::DIRECTIONAL) {
 		RenderTexture2DArrayDescriptor desc;
-		desc.format = TextureFormat::DEPTH24_STENCIL8_UNSIGNED_CHAR;
+		desc.format = TextureFormat::DEFAULT_DEPTH;
 		desc.height = shadow_comp.res_y;
 		desc.width = shadow_comp.res_x;
 		desc.num_of_textures = HARD_CODE_CASCADES;
@@ -86,7 +86,7 @@ void ShadowMappingPass::InitShadowComponent(Entity ent, LightType light_type)
 		RenderTexture2DCubemapDescriptor depth_text_desc;
 		shadow_comp.res_y = shadow_comp.res_x;
 		depth_text_desc.res = shadow_comp.res_x;
-		depth_text_desc.format = TextureFormat::DEPTH24_STENCIL8_UNSIGNED_CHAR;
+		depth_text_desc.format = TextureFormat::DEFAULT_DEPTH;
 		depth_text_desc.sampler = data->depth_sampler_point;
 
 		auto depth_text = RenderResourceManager::Get()->CreateTextureCubemap(depth_text_desc);

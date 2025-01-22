@@ -45,6 +45,11 @@ std::shared_ptr<RenderTexture2DResource> VulkanRenderResourceManager::CreateText
 	extent.width = buffer_desc.width;
 	extent.height = buffer_desc.height;
 
+	TextureUsage usage = buffer_desc.usage;
+	if (usage == TextureUsage::DEFAULT) {
+		usage = VulkanUnitConverter::TextureFormatToVulkanDefaultImageUsage(buffer_desc.format);
+	}
+
 	VkImageCreateInfo image_info = {};
 	image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 	image_info.arrayLayers = 1;
@@ -54,9 +59,10 @@ std::shared_ptr<RenderTexture2DResource> VulkanRenderResourceManager::CreateText
 	image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	image_info.mipLevels = 1; /// @todo Add mipmap spec to descriptor;
 	image_info.sharingMode = VkSharingMode::VK_SHARING_MODE_EXCLUSIVE;
-	image_info.usage = VulkanUnitConverter::TextureUsageToVkTextureUsage(buffer_desc.usage);
 	image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
 	image_info.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
+	image_info.usage = VulkanUnitConverter::TextureUsageToVkTextureUsage(usage);
+	
 
 	VmaAllocationCreateInfo alloc_info = {};
 	alloc_info.usage = VmaMemoryUsage::VMA_MEMORY_USAGE_AUTO;

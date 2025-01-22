@@ -8,7 +8,19 @@
 #include "shaderc/shaderc.hpp"
 
 class VulkanUnitConverter {
+private:
+	static VulkanUnitConverter* instance;
+	VulkanUnitConverter();
+
+private:
+	VkFormat default_depth_format = VkFormat::VK_FORMAT_D32_SFLOAT;
+	VkFormat default_depth_stencil_format = VkFormat::VK_FORMAT_D32_SFLOAT_S8_UINT;
+	VkFormat default_color_format = VkFormat::VK_FORMAT_R8G8B8A8_UNORM;
+
 public:
+	static void Init();
+	static void Shutdown();
+	static VulkanUnitConverter* Get();
 
 	static VkFormat PrimitiveToVulkan(RenderPrimitiveType type) {
 		switch (type) {
@@ -111,6 +123,26 @@ public:
 		case TextureFormat::R_UNSIGNED_CHAR_NORM:           return VK_FORMAT_R8_UNORM;
 		case TextureFormat::R_8FLOAT:						return VK_FORMAT_R8_UNORM;
 		case TextureFormat::UNDEFINED:						return VK_FORMAT_UNDEFINED;
+		case TextureFormat::DEFAULT_DEPTH:					return instance->default_depth_format;
+		case TextureFormat::DEFAULT_DEPTH_STENCIL:			return instance->default_depth_stencil_format;
+		default:
+			throw std::runtime_error("Conversion failed");
+		}
+	}
+
+	static TextureUsage TextureFormatToVulkanDefaultImageUsage(TextureFormat type) {
+		switch (type) {
+		case TextureFormat::RGBA_UNSIGNED_CHAR:				return TextureUsage::SAMPLE_WRITABLE;
+		case TextureFormat::RGB_UNSIGNED_CHAR:				return TextureUsage::SAMPLE_WRITABLE; //vulkan doesnt support RGB only RGBA for allignment reasons
+		case TextureFormat::DEPTH24_STENCIL8_UNSIGNED_CHAR:	return TextureUsage::DEPTH_ATTACHMENT;
+		case TextureFormat::RGB_32FLOAT:					return TextureUsage::SAMPLE_WRITABLE;
+		case TextureFormat::RGBA_32FLOAT:					return TextureUsage::SAMPLE_WRITABLE;
+		case TextureFormat::R_UNSIGNED_INT:					return TextureUsage::SAMPLE_WRITABLE;
+		case TextureFormat::R_UNSIGNED_CHAR:                return TextureUsage::SAMPLE_WRITABLE;
+		case TextureFormat::R_UNSIGNED_CHAR_NORM:           return TextureUsage::SAMPLE_WRITABLE;
+		case TextureFormat::R_8FLOAT:						return TextureUsage::SAMPLE_WRITABLE;
+		case TextureFormat::DEFAULT_DEPTH:					return TextureUsage::DEPTH_ATTACHMENT;
+		case TextureFormat::DEFAULT_DEPTH_STENCIL:			return TextureUsage::DEPTH_ATTACHMENT;
 		default:
 			throw std::runtime_error("Conversion failed");
 		}
@@ -279,7 +311,6 @@ public:
 		case TextureUsage::COLOR_ATTACHMENT_WRITABLE:	return VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 		case TextureUsage::DEPTH_ATTACHMENT:			return VkImageUsageFlagBits::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 		case TextureUsage::DEPTH_ATTACHMENT_READABLE:	return VkImageUsageFlagBits::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_SAMPLED_BIT;
-		case TextureUsage::DEPTH_ATTACHMENT_WRITABLE:	return VkImageUsageFlagBits::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 		case TextureUsage::SAMPLE:						return VkImageUsageFlagBits::VK_IMAGE_USAGE_SAMPLED_BIT;
 		case TextureUsage::SAMPLE_WRITABLE:				return VkImageUsageFlagBits::VK_IMAGE_USAGE_SAMPLED_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 		case TextureUsage::TRANSFER:					return VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT;

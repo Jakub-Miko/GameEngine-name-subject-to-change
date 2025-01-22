@@ -3,7 +3,7 @@
 #include <stdexcept>
 #include "VulkanRenderContext.h"
 #include "VulkanRenderCommandQueue.h"
-
+#include "VulkanUnitConverter.h"
 
 void VulkanRenderContext::StartNewFrame()
 {
@@ -58,7 +58,7 @@ std::vector<const char*> VulkanRenderContext::GetExtensions()
 
 void VulkanRenderContext::Destroy()
 {
-
+	VulkanUnitConverter::Shutdown();
 	for (auto& ref : frame_sync.present_fence.GetAllResource()) {
 		vkDestroySemaphore(vk_device, ref, NULL);
 	}
@@ -179,6 +179,7 @@ void VulkanRenderContext::Init()
 	allocator_info.vulkanApiVersion = VK_API_VERSION_1_3;
 
 	vmaCreateAllocator(&allocator_info, &allocator);
+	VulkanUnitConverter::Init();
 
 }
 
