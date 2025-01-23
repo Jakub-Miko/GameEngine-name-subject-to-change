@@ -22,6 +22,10 @@ struct RenderBufferDescriptor {
 	const RenderBufferUsage usage;
 };
 
+class RenderResourceExtension {
+
+};
+
 class RenderResource {
 public:
 	RenderResource(RenderState state) : render_state(state) {}
@@ -38,6 +42,7 @@ public:
 		render_state.store(state);
 	}
 
+	virtual RenderResourceExtension* GetExtensionData() { return nullptr; };
 	virtual RenderResourceType GetResourceType() = 0;
 	virtual void* Map() = 0;
 	virtual void UnMap() = 0;

@@ -6,6 +6,8 @@ class VulkanRenderCommandList : public RenderCommandList
 {
 public:
     friend Renderer;
+    friend class VulkanRenderResourceManager;
+    friend class VulkanRenderCommandQueue;
 
     VulkanRenderCommandList(Renderer* renderer, std::shared_ptr<RenderCommandAllocator> alloc);
     virtual ~VulkanRenderCommandList();
@@ -36,4 +38,16 @@ public:
 
 private:
     VkCommandBuffer command_buffer;
+
+    enum class VulkanCommandListDependencyType {
+        WRITE, READ
+    };
+
+    struct VulkanCommandListDependency {
+        VulkanCommandListDependencyType type;
+        std::shared_ptr<RenderResource> resource;
+    };
+
+    std::vector<VulkanCommandListDependency> command_list_dependencies;
+
 };

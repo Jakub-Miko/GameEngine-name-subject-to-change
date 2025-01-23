@@ -2,6 +2,7 @@
 #include "VulkanRenderContext.h"
 #include "VulkanUnitConverter.h"
 #include "VulkanRenderCommandQueue.h"
+#include "VulkanRenderCommandList.h"
 #include "Core/algorithm.h"
 
 std::shared_ptr<RenderBufferResource> VulkanRenderResourceManager::CreateBuffer(const RenderBufferDescriptor& buffer_desc, RenderState default_state)
@@ -33,6 +34,35 @@ std::shared_ptr<RenderBufferResource> VulkanRenderResourceManager::CreateBuffer(
 
 void VulkanRenderResourceManager::UploadDataToBuffer(RenderCommandList* list, std::shared_ptr<RenderBufferResource> resource, void* data, size_t size, size_t offset)
 {
+	DEFINE_VK_INSTANCE(context);
+	auto alloc = context->GetVmaAllocator();
+	VulkanRenderBufferResource* buffer = static_cast<VulkanRenderBufferResource*>(resource.get());
+	VulkanRenderCommandList* vk_command_list = static_cast<VulkanRenderCommandList*>(list);
+
+	if (buffer->descriptor.buffer_size < size + offset) {
+		throw std::runtime_error("Attempted to upload data to a buffer of invalid size, check the size and offset of the data.\n");
+	}
+
+	if (buffer->descriptor.type == RenderBufferType::UPLOAD) {
+		vmaCopyMemoryToAllocation(alloc, data, buffer->alloc, offset, size);
+		return;
+	}
+
+	auto staging_buffer = GetStagingBuffer(size);
+
+	VulkanRenderBufferResource* vk_staging_buffer = static_cast<VulkanRenderBufferResource*>(staging_buffer.get());
+
+	vmaCopyMemoryToAllocation(alloc, data, vk_staging_buffer->alloc, 0, size);
+
+	VkBufferCopy copy = {};
+	copy.dstOffset = offset;
+	copy.size = size;
+	copy.srcOffset = 0;
+
+	vkCmdCopyBuffer(vk_command_list->command_buffer, vk_staging_buffer->buffer, buffer->buffer, 1, &copy);
+
+	vk_command_list->command_list_dependencies.push_back({ VulkanRenderCommandList::VulkanCommandListDependencyType::WRITE, resource });
+	vk_command_list->command_list_dependencies.push_back({ VulkanRenderCommandList::VulkanCommandListDependencyType::WRITE, staging_buffer });
 }
 
 void VulkanRenderResourceManager::ReallocateAndUploadBuffer(RenderCommandList* list, std::shared_ptr<RenderBufferResource> resource, void* data, size_t size)

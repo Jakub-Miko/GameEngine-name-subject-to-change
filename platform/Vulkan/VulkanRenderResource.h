@@ -5,16 +5,16 @@
 
 class VulkanRenderResourceManager;
 
-class VulkanRenderResource {
+class VulkanRenderResource : public RenderResourceExtension {
 public:
 	VulkanRenderResource() = default;
 	virtual ~VulkanRenderResource() {};
 
 	uint64_t read_timeline = 0;
-	uint64_t write_timeline = 0;
+	uint64_t write_timeline = 0; 
 };
 
-class VulkanRenderBufferResource : public RenderBufferResource, VulkanRenderResource {
+class VulkanRenderBufferResource : public RenderBufferResource, public VulkanRenderResource {
 public:
 	friend VulkanRenderResourceManager;
 
@@ -30,6 +30,8 @@ public:
 	}
 
 	~VulkanRenderBufferResource();
+
+	virtual RenderResourceExtension* GetExtensionData() override { return static_cast<RenderResourceExtension*>(this); };
 
 private:
 
@@ -50,7 +52,7 @@ private:
 	VkSampler sampler;
 };
 
-class VulkanRenderTexture2DResource : public RenderTexture2DResource, VulkanRenderResource {
+class VulkanRenderTexture2DResource : public RenderTexture2DResource, public VulkanRenderResource {
 public:
 	friend VulkanRenderResourceManager;
 
@@ -64,6 +66,8 @@ public:
 
 	}
 
+	virtual RenderResourceExtension* GetExtensionData() override { return static_cast<RenderResourceExtension*>(this); };
+
 	virtual ~VulkanRenderTexture2DResource();
 
 private:
@@ -71,7 +75,7 @@ private:
 	VmaAllocation alloc;
 };
 
-class VulkanRenderTexture2DArrayResource : public RenderTexture2DArrayResource, VulkanRenderResource {
+class VulkanRenderTexture2DArrayResource : public RenderTexture2DArrayResource, public VulkanRenderResource {
 public:
 	friend VulkanRenderResourceManager;
 
@@ -79,7 +83,7 @@ public:
 
 	virtual void UnMap() override;
 
-
+	virtual RenderResourceExtension* GetExtensionData() override { return static_cast<RenderResourceExtension*>(this); };
 
 	VulkanRenderTexture2DArrayResource(const RenderTexture2DArrayDescriptor& desc, RenderState initial_state = RenderState::UNINITIALIZED, unsigned int render_id = 0)
 		: RenderTexture2DArrayResource(desc, initial_state) {
@@ -94,7 +98,7 @@ private:
 	VmaAllocation alloc;
 };
 
-class VulkanRenderTexture2DCubemapResource : public RenderTexture2DCubemapResource, VulkanRenderResource {
+class VulkanRenderTexture2DCubemapResource : public RenderTexture2DCubemapResource, public VulkanRenderResource {
 public:
 	friend VulkanRenderResourceManager;
 
@@ -102,6 +106,7 @@ public:
 
 	virtual void UnMap() override;
 
+	virtual RenderResourceExtension* GetExtensionData() override { return static_cast<RenderResourceExtension*>(this); };
 
 	VulkanRenderTexture2DCubemapResource(const RenderTexture2DCubemapDescriptor& desc, RenderState initial_state = RenderState::UNINITIALIZED, unsigned int render_id = 0)
 		: RenderTexture2DCubemapResource(desc, initial_state) {

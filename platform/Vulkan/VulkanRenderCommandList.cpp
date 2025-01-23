@@ -2,7 +2,7 @@
 #include "VulkanRenderCommandAllocator.h"
 #include "VulkanRenderContext.h"
 
-VulkanRenderCommandList::VulkanRenderCommandList(Renderer* renderer, std::shared_ptr<RenderCommandAllocator> alloc) : RenderCommandList(renderer, alloc)
+VulkanRenderCommandList::VulkanRenderCommandList(Renderer* renderer, std::shared_ptr<RenderCommandAllocator> alloc) : RenderCommandList(renderer, alloc), command_list_dependencies()
 {
 	DEFINE_VK_INSTANCE(context);
 

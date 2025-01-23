@@ -1,15 +1,20 @@
 #include "VulkanRenderResource.h"
 #include "VulkanUnitConverter.h"
+#include "vulkan/vulkan.h"
 #include <stdexcept>
 
 void* VulkanRenderBufferResource::Map()
 {
-	throw std::runtime_error("Not Implemented");
+	DEFINE_VK_INSTANCE(context);
+	void* data;
+	vmaMapMemory(context->GetVmaAllocator(), alloc, &data);
+	return data;
 }
 
 void VulkanRenderBufferResource::UnMap()
 {
-	throw std::runtime_error("Not Implemented");
+	DEFINE_VK_INSTANCE(context);
+	vmaUnmapMemory(context->GetVmaAllocator(), alloc);
 }
 
 VulkanRenderBufferResource::~VulkanRenderBufferResource()

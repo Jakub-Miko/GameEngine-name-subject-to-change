@@ -2,6 +2,7 @@
 #include "VulkanRenderCommandList.h"
 #include "VulkanRenderContext.h"
 #include "VulkanRenderFence.h"
+#include "VulkanRenderResource.h"
 
 void VulkanRenderCommandQueue::ExecuteRenderCommandLists(std::vector<RenderCommandList*>& lists)
 {
@@ -33,6 +34,28 @@ void VulkanRenderCommandQueue::ExecuteRenderCommandLists(std::vector<RenderComma
 	info.pWaitDstStageMask = NULL;
 
 	submit_mutex.lock();
+
+	for (auto list : lists) {
+		VulkanRenderResource* resource;
+		VulkanRenderCommandList* vk_command_list = static_cast<VulkanRenderCommandList*>(list);
+		for (auto& dependency : vk_command_list->command_list_dependencies) {
+			resource = static_cast<VulkanRenderResource*>(dependency.resource->GetExtensionData());
+			switch (dependency.type)
+			{
+			case VulkanRenderCommandList::VulkanCommandListDependencyType::READ:
+				resource->read_timeline = value;
+				break;
+			case VulkanRenderCommandList::VulkanCommandListDependencyType::WRITE:
+				resource->read_timeline = value;
+				resource->write_timeline = value;
+				break;
+			default:
+				throw std::runtime_error("Invalid dependency type.\n");
+			}
+		}
+	}
+
+
 	vkQueueSubmit(vk_queue, 1, &info, NULL);
 	submit_mutex.unlock();
 }
@@ -40,7 +63,8 @@ void VulkanRenderCommandQueue::ExecuteRenderCommandLists(std::vector<RenderComma
 void VulkanRenderCommandQueue::ExecuteRenderCommandList(RenderCommandList* list)
 {
 	DEFINE_VK_INSTANCE(context);
-	vkEndCommandBuffer(*static_cast<VulkanRenderCommandList*>(list)->GetVkCommandBuffer());
+	VulkanRenderCommandList* vk_command_list = static_cast<VulkanRenderCommandList*>(list);
+	vkEndCommandBuffer(*vk_command_list->GetVkCommandBuffer());
 	uint64_t value = ++last_buffer_signaled;
 	VkTimelineSemaphoreSubmitInfo submit_sync = {};
 	submit_sync.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
@@ -52,7 +76,7 @@ void VulkanRenderCommandQueue::ExecuteRenderCommandList(RenderCommandList* list)
 	info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	info.pNext = &submit_sync;
 	info.commandBufferCount = 1;
-	info.pCommandBuffers = static_cast<VulkanRenderCommandList*>(list)->GetVkCommandBuffer();
+	info.pCommandBuffers = vk_command_list->GetVkCommandBuffer();
 	info.pSignalSemaphores = static_cast<VulkanRenderFence*>(command_buffer_fence.get())->GetSemaphore();;
 	info.signalSemaphoreCount = 1;
 	info.pWaitSemaphores = NULL;
@@ -61,6 +85,24 @@ void VulkanRenderCommandQueue::ExecuteRenderCommandList(RenderCommandList* list)
 
 
 	submit_mutex.lock();
+	
+	VulkanRenderResource* resource;
+	for (auto& dependency : vk_command_list->command_list_dependencies) {
+		resource = static_cast<VulkanRenderResource*>(dependency.resource->GetExtensionData());
+		switch (dependency.type)
+		{
+		case VulkanRenderCommandList::VulkanCommandListDependencyType::READ:
+			resource->read_timeline = value;
+			break;
+		case VulkanRenderCommandList::VulkanCommandListDependencyType::WRITE:
+			resource->read_timeline = value;
+			resource->write_timeline = value;
+			break;
+		default:
+			throw std::runtime_error("Invalid dependency type.\n");
+		}
+	}
+
 	vkQueueSubmit(vk_queue, 1, &info, NULL);
 	submit_mutex.unlock();
 }
