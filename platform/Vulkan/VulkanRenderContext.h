@@ -39,6 +39,7 @@ public:
 	void SignalEndFrame();
 
 	uint64_t GetCurrentGpuTimelineValue();
+	uint64_t GetCurrentCpuTimelineValue();
 	VmaAllocator& GetVmaAllocator() { return allocator;  }
 	uint32_t GetCurrentFramebufferIndex() const { return current_framebuffer; }
 	VkInstance GetVkInstance() const { return vk_instance; }

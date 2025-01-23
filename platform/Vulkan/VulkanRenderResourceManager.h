@@ -5,10 +5,14 @@
 #include <mutex>
 #include <memory>
 #include <queue>
+#include <map>
 #include <mutex>
 
 class VulkanRenderResourceManager : public RenderResourceManager {
 public:
+
+	virtual void Update() override;
+
 	friend RenderResourceManager;
 	virtual std::shared_ptr<RenderBufferResource> CreateBuffer(const RenderBufferDescriptor& buffer_desc, RenderState default_state = RenderState::COMMON) override;
 	virtual void UploadDataToBuffer(RenderCommandList* list, std::shared_ptr<RenderBufferResource> resource, void* data, size_t size, size_t offset) override;
@@ -40,15 +44,25 @@ public:
 	virtual void CopyFrameBufferDepthAttachment(RenderCommandList* list, std::shared_ptr<RenderFrameBufferResource> source_frame_buffer, std::shared_ptr<RenderFrameBufferResource> destination_frame_buffer) override;
 	virtual void SetFrameBufferColorAttachment(RenderCommandList* list, std::shared_ptr<RenderFrameBufferResource> framebuffer, std::shared_ptr<RenderResource> new_attachment, int index = 0, int level = 0) override;
 
+	std::shared_ptr<RenderBufferResource> GetStagingBuffer(size_t size);
+
 private:
 	VulkanRenderResourceManager();
 	~VulkanRenderResourceManager();
 
 	void FlushDeletions();
-
 	void ReturnResource(VulkanRenderResource* resource);
+	void ReturnStagingBufferResource(VulkanRenderBufferResource* resource);
+	void ClearStagingBuffers();
 
 private:
+	struct deletion_item {
+		VulkanRenderResource* resource = nullptr;
+		bool staging = false;
+	};
+
 	std::mutex deletion_queue_mutex;
-	std::queue<VulkanRenderResource*> deletion_queue;
+	std::queue<deletion_item> deletion_queue;
+	std::mutex staging_buffer_map_mutex;
+	std::map<size_t, RenderBufferResource*> staging_buffer_map;
 };

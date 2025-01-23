@@ -17,6 +17,8 @@ public:
 	static RenderResourceManager* Get();
 	static void Shutdown();
 
+	virtual void Update() {};
+
 	virtual std::shared_ptr<RenderBufferResource> CreateBuffer(const RenderBufferDescriptor& buffer_desc, RenderState default_state = RenderState::COMMON ) = 0;
 	virtual void UploadDataToBuffer(RenderCommandList* list, std::shared_ptr<RenderBufferResource> resource, void* data, size_t size, size_t offset) = 0;
 	virtual void ReallocateAndUploadBuffer(RenderCommandList* list, std::shared_ptr<RenderBufferResource> resource, void* data, size_t size) = 0;

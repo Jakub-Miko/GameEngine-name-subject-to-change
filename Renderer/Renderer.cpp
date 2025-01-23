@@ -131,6 +131,7 @@ void Renderer::Create()
 
 void Renderer::Update(float delta_time)
 {
+    RenderResourceManager::Get()->Update();
     auto primary = Application::GetWorld().GetPrimaryEntity();
     if (primary == Entity() || !Application::GetWorld().EntityExists(primary) || !Application::GetWorld().HasComponent<CameraComponent>(primary)) {
         Application::GetWorld().SetPrimaryEntity(Entity());

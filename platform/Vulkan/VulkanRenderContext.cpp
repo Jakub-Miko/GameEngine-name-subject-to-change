@@ -23,6 +23,11 @@ uint64_t VulkanRenderContext::GetCurrentGpuTimelineValue()
 	return static_cast<VulkanRenderCommandQueue*>(Renderer::Get()->GetCommandQueue())->command_buffer_fence->GetValue();
 }
 
+uint64_t VulkanRenderContext::GetCurrentCpuTimelineValue()
+{
+	return static_cast<VulkanRenderCommandQueue*>(Renderer::Get()->GetCommandQueue())->last_buffer_signaled;
+}
+
 void VulkanRenderContext::RequestExtension(const std::string& extension)
 {
 	auto fnd = std::find(requested_extensions.begin(), requested_extensions.end(), extension);
