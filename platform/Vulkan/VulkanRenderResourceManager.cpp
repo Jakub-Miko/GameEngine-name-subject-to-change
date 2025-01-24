@@ -5,12 +5,14 @@
 #include "VulkanRenderCommandList.h"
 #include "Core/algorithm.h"
 
-std::shared_ptr<RenderBufferResource> VulkanRenderResourceManager::CreateBuffer(const RenderBufferDescriptor& buffer_desc, RenderState default_state)
+
+void VulkanRenderResourceManager::CreateBuffer_internal(VulkanRenderBufferResource* buffer, const RenderBufferDescriptor& buffer_desc, RenderState default_state)
 {
 	DEFINE_VK_INSTANCE(context);
 	VmaAllocator& alloc = context->GetVmaAllocator();
 
-	VulkanRenderBufferResource* new_buffer = new VulkanRenderBufferResource(buffer_desc, default_state);
+	buffer->descriptor = buffer_desc;
+	buffer->render_state = default_state;
 
 	VkBufferCreateInfo info = {};
 	info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -21,12 +23,21 @@ std::shared_ptr<RenderBufferResource> VulkanRenderResourceManager::CreateBuffer(
 	alloc_info.usage = VulkanUnitConverter::BufferTypeToVmaUsage(buffer_desc.type);
 	alloc_info.flags = VulkanUnitConverter::BufferTypeToVmaFlags(buffer_desc.type);
 
-	vmaCreateBuffer(alloc, &info, &alloc_info, &new_buffer->buffer, &new_buffer->alloc, NULL);
-	
+	vmaCreateBuffer(alloc, &info, &alloc_info, &buffer->buffer, &buffer->alloc, NULL);
+
 	uint64_t timeline = context->GetCurrentCpuTimelineValue();
-	new_buffer->read_timeline = timeline;
-	new_buffer->write_timeline = timeline;
-	
+	buffer->read_timeline = timeline;
+	buffer->write_timeline = timeline;
+}
+
+std::shared_ptr<RenderBufferResource> VulkanRenderResourceManager::CreateBuffer(const RenderBufferDescriptor& buffer_desc, RenderState default_state)
+{
+	DEFINE_VK_INSTANCE(context);
+	VmaAllocator& alloc = context->GetVmaAllocator();
+
+	VulkanRenderBufferResource* new_buffer = new VulkanRenderBufferResource();
+	CreateBuffer_internal(new_buffer, buffer_desc, default_state);
+
 	return std::shared_ptr<RenderBufferResource>(new_buffer, [](RenderBufferResource* resource) {
 		static_cast<VulkanRenderResourceManager*>(RenderResourceManager::Get())->ReturnResource(static_cast<VulkanRenderBufferResource*>(resource));
 		});
@@ -67,6 +78,18 @@ void VulkanRenderResourceManager::UploadDataToBuffer(RenderCommandList* list, st
 
 void VulkanRenderResourceManager::ReallocateAndUploadBuffer(RenderCommandList* list, std::shared_ptr<RenderBufferResource> resource, void* data, size_t size)
 {
+	DEFINE_VK_INSTANCE(context);
+	VulkanRenderBufferResource* buffer = static_cast<VulkanRenderBufferResource*>(resource.get());
+
+	RenderBufferDescriptor new_desc = buffer->descriptor;
+	new_desc.buffer_size = size;
+
+	VulkanRenderBufferResource* new_buffer = new VulkanRenderBufferResource();
+	CreateBuffer_internal(new_buffer, new_desc, RenderState::COMMON);
+
+	*buffer = std::move(*new_buffer);
+
+	UploadDataToBuffer(list, resource, data, size, 0);
 }
 
 std::shared_ptr<RenderTexture2DResource> VulkanRenderResourceManager::CreateTexture(const RenderTexture2DDescriptor& buffer_desc, RenderState default_state)
@@ -305,22 +328,8 @@ std::shared_ptr<RenderBufferResource> VulkanRenderResourceManager::GetStagingBuf
 
 	RenderBufferDescriptor buffer_desc(size, RenderBufferType::UPLOAD, RenderBufferUsage::STAGING);
 
-	VulkanRenderBufferResource* new_buffer = new VulkanRenderBufferResource(buffer_desc, RenderState::COMMON);
-
-	VkBufferCreateInfo info = {};
-	info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-	info.size = buffer_desc.buffer_size;
-	info.usage = VulkanUnitConverter::BufferUsageToVkFlags(buffer_desc.usage);
-
-	VmaAllocationCreateInfo alloc_info = {};
-	alloc_info.usage = VulkanUnitConverter::BufferTypeToVmaUsage(buffer_desc.type);
-	alloc_info.flags = VulkanUnitConverter::BufferTypeToVmaFlags(buffer_desc.type);
-
-	vmaCreateBuffer(alloc, &info, &alloc_info, &new_buffer->buffer, &new_buffer->alloc, NULL);
-
-	uint64_t timeline = context->GetCurrentCpuTimelineValue();
-	new_buffer->read_timeline = timeline;
-	new_buffer->write_timeline = timeline;
+	VulkanRenderBufferResource* new_buffer = new VulkanRenderBufferResource();
+	CreateBuffer_internal(new_buffer, buffer_desc, RenderState::COMMON);
 	
 	return std::shared_ptr<RenderBufferResource>(new_buffer, [](RenderBufferResource* resource) {
 		static_cast<VulkanRenderResourceManager*>(RenderResourceManager::Get())->ReturnStagingBufferResource(static_cast<VulkanRenderBufferResource*>(resource));
@@ -341,6 +350,7 @@ VulkanRenderResourceManager::~VulkanRenderResourceManager()
 {
 	ClearStagingBuffers();
 }
+
 
 void VulkanRenderResourceManager::FlushDeletions()
 {

@@ -44,14 +44,16 @@ public:
 	virtual void CopyFrameBufferDepthAttachment(RenderCommandList* list, std::shared_ptr<RenderFrameBufferResource> source_frame_buffer, std::shared_ptr<RenderFrameBufferResource> destination_frame_buffer) override;
 	virtual void SetFrameBufferColorAttachment(RenderCommandList* list, std::shared_ptr<RenderFrameBufferResource> framebuffer, std::shared_ptr<RenderResource> new_attachment, int index = 0, int level = 0) override;
 
+	void ReturnResource(VulkanRenderResource* resource);
+
 	std::shared_ptr<RenderBufferResource> GetStagingBuffer(size_t size);
 
 private:
 	VulkanRenderResourceManager();
 	~VulkanRenderResourceManager();
 
+	void CreateBuffer_internal(VulkanRenderBufferResource* buffer, const RenderBufferDescriptor& buffer_desc, RenderState default_state = RenderState::UNINITIALIZED);
 	void FlushDeletions();
-	void ReturnResource(VulkanRenderResource* resource);
 	void ReturnStagingBufferResource(VulkanRenderBufferResource* resource);
 	void ClearStagingBuffers();
 

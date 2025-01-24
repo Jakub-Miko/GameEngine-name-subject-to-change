@@ -16,10 +16,11 @@ public:
 };
 
 struct RenderBufferDescriptor {
+	RenderBufferDescriptor() = default;
 	RenderBufferDescriptor(size_t size, RenderBufferType type, RenderBufferUsage usage) : buffer_size(size), type(type), usage(usage) {}
-	const size_t buffer_size;
-	const RenderBufferType type = RenderBufferType::DEFAULT;
-	const RenderBufferUsage usage;
+	size_t buffer_size = 0;
+	RenderBufferType type = RenderBufferType::DEFAULT;
+	RenderBufferUsage usage = RenderBufferUsage::CONSTANT_BUFFER;
 };
 
 class RenderResourceExtension {
@@ -31,15 +32,11 @@ public:
 	RenderResource(RenderState state) : render_state(state) {}
 
 	RenderState GetRenderState() const {
-		return render_state.load();
-	}
-
-	std::atomic<RenderState>& GetRenderStateAtomic() {
 		return render_state;
 	}
 
 	void SetRenderState(RenderState state) {
-		render_state.store(state);
+		render_state = state;
 	}
 
 	virtual RenderResourceExtension* GetExtensionData() { return nullptr; };
@@ -50,7 +47,7 @@ public:
 	virtual ~RenderResource() {};
 
 protected:
-	std::atomic<RenderState> render_state = RenderState::UNINITIALIZED;
+	RenderState render_state = RenderState::UNINITIALIZED;
 
 };
 

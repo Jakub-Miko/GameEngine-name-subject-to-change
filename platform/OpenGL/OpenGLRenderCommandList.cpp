@@ -208,8 +208,7 @@ void OpenGLRenderCommandList::RefreshVertexContext()
 void OpenGLRenderCommandList::UpdateBufferResource(std::shared_ptr<RenderBufferResource> resource, void* data, size_t size, size_t offset)
 {
     auto command = OpenGLRenderCommandAdapter([resource, data, size, offset]() {
-        RenderState state = RenderState::COMMON;
-        resource->GetRenderStateAtomic().compare_exchange_strong(state, RenderState::WRITE);
+        RenderState state = resource->GetRenderState();
         if (state == RenderState::COMMON) {
             if ((offset + size) > resource->GetBufferDescriptor().buffer_size) {
                 throw std::runtime_error("Buffer out of range.");
@@ -217,7 +216,6 @@ void OpenGLRenderCommandList::UpdateBufferResource(std::shared_ptr<RenderBufferR
             glBindBuffer(GL_COPY_WRITE_BUFFER, static_cast<OpenGLRenderBufferResource*>(resource.get())->GetRenderId());
             glBufferSubData(GL_COPY_WRITE_BUFFER, offset, size, data);
             glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
-            resource->SetRenderState(RenderState::COMMON);
             delete[] static_cast<char*>(data);
         }
         else {
@@ -231,13 +229,11 @@ void OpenGLRenderCommandList::UpdateBufferResource(std::shared_ptr<RenderBufferR
 void OpenGLRenderCommandList::UpdateBufferResourceAndReallocate(std::shared_ptr<RenderBufferResource> resource, void* data, size_t size)
 {
     auto command = OpenGLRenderCommandAdapter([resource, data, size]() {
-        RenderState state = RenderState::COMMON;
-        resource->GetRenderStateAtomic().compare_exchange_strong(state, RenderState::WRITE);
+        RenderState state = resource->GetRenderState();
         if (state == RenderState::COMMON) {
             glBindBuffer(GL_COPY_WRITE_BUFFER, static_cast<OpenGLRenderBufferResource*>(resource.get())->GetRenderId());
             glBufferData(GL_COPY_WRITE_BUFFER, size, data, resource->GetBufferDescriptor().type == RenderBufferType::DEFAULT ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW);
             glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
-            resource->SetRenderState(RenderState::COMMON);
             delete[] static_cast<char*>(data);
         }
         else {
@@ -251,8 +247,7 @@ void OpenGLRenderCommandList::UpdateBufferResourceAndReallocate(std::shared_ptr<
 void OpenGLRenderCommandList::UpdateTexture2DResource(std::shared_ptr<RenderTexture2DResource> resource,int level, void* data, size_t width, size_t height, size_t offset_x, size_t offset_y)
 {
     auto command = OpenGLRenderCommandAdapter([resource, data, width, height, offset_x, offset_y, level]() {
-        RenderState state = RenderState::COMMON;
-        resource->GetRenderStateAtomic().compare_exchange_strong(state, RenderState::WRITE);
+        RenderState state = resource->GetRenderState();
         if (state == RenderState::COMMON) {
             if ((offset_x + width) > resource->GetBufferDescriptor().width || (offset_y + height) > resource->GetBufferDescriptor().height) {
                 throw std::runtime_error("Buffer out of range.");
@@ -263,7 +258,6 @@ void OpenGLRenderCommandList::UpdateTexture2DResource(std::shared_ptr<RenderText
 
 
             glBindTexture(GL_TEXTURE_2D, 0);
-            resource->SetRenderState(RenderState::COMMON);
             delete[] static_cast<char*>(data);
         }
         else {
@@ -277,8 +271,7 @@ void OpenGLRenderCommandList::UpdateTexture2DResource(std::shared_ptr<RenderText
 void OpenGLRenderCommandList::UpdateTexture2DArrayResource(std::shared_ptr<RenderTexture2DArrayResource> resource, int layer, int level, void* data, size_t width, size_t height, size_t offset_x, size_t offset_y)
 {
     auto command = OpenGLRenderCommandAdapter([resource, layer, data, width, height, offset_x, offset_y, level]() {
-        RenderState state = RenderState::COMMON;
-        resource->GetRenderStateAtomic().compare_exchange_strong(state, RenderState::WRITE);
+        RenderState state = resource->GetRenderState();
         if (state == RenderState::COMMON) {
             if ((offset_x + width) > resource->GetBufferDescriptor().width || (offset_y + height) > resource->GetBufferDescriptor().height || layer >= resource->GetBufferDescriptor().num_of_textures) {
                 throw std::runtime_error("Buffer out of range.");
@@ -289,7 +282,6 @@ void OpenGLRenderCommandList::UpdateTexture2DArrayResource(std::shared_ptr<Rende
 
 
             glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
-            resource->SetRenderState(RenderState::COMMON);
             delete[] static_cast<char*>(data);
         }
         else {
@@ -322,8 +314,7 @@ void OpenGLRenderCommandList::CopyFrameBufferDepthAttachment(std::shared_ptr<Ren
 void OpenGLRenderCommandList::UpdateTexture2DCubemapResource(std::shared_ptr<RenderTexture2DCubemapResource> resource, CubemapFace layer, int level, void* data, size_t width, size_t height, size_t offset_x, size_t offset_y)
 {
     auto command = OpenGLRenderCommandAdapter([resource, layer, data, width, height, offset_x, offset_y, level]() {
-        RenderState state = RenderState::COMMON;
-        resource->GetRenderStateAtomic().compare_exchange_strong(state, RenderState::WRITE);
+        RenderState state = resource->GetRenderState();
         if (state == RenderState::COMMON) {
             if ((offset_x + width) > resource->GetBufferDescriptor().res || (offset_y + height) > resource->GetBufferDescriptor().res) {
                 throw std::runtime_error("Buffer out of range.");
@@ -334,7 +325,6 @@ void OpenGLRenderCommandList::UpdateTexture2DCubemapResource(std::shared_ptr<Ren
 
 
             glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
-            resource->SetRenderState(RenderState::COMMON);
             delete[] static_cast<char*>(data);
         }
         else {

@@ -1,4 +1,5 @@
 #include "VulkanRenderResource.h"
+#include "VulkanRenderResourceManager.h"
 #include "VulkanUnitConverter.h"
 #include "vulkan/vulkan.h"
 #include <stdexcept>
@@ -17,8 +18,46 @@ void VulkanRenderBufferResource::UnMap()
 	vmaUnmapMemory(context->GetVmaAllocator(), alloc);
 }
 
+VulkanRenderBufferResource::VulkanRenderBufferResource(VulkanRenderBufferResource&& ref) : RenderBufferResource(ref.descriptor, ref.render_state), VulkanRenderResource()
+{
+	read_timeline = ref.read_timeline;
+	write_timeline = ref.write_timeline;
+	alloc = ref.alloc;
+	buffer = ref.buffer;
+
+	ref.alloc = VmaAllocation();
+	ref.buffer = VkBuffer();
+	ref.write_timeline = -1;
+	ref.read_timeline = -1;
+}
+
+VulkanRenderBufferResource& VulkanRenderBufferResource::operator=(VulkanRenderBufferResource&& ref)
+{
+	if (write_timeline != -1) {
+		VulkanRenderResource* temp = new VulkanRenderResource(std::move(*this));
+		static_cast<VulkanRenderResourceManager*>(RenderResourceManager::Get())->ReturnResource(temp);
+	}
+	
+	read_timeline = ref.read_timeline;
+	write_timeline = ref.write_timeline;
+	alloc = ref.alloc;
+	buffer = ref.buffer;
+	descriptor = ref.descriptor;
+	render_state = ref.render_state;
+
+	ref.alloc = VmaAllocation();
+	ref.buffer = VkBuffer();
+	ref.write_timeline = -1;
+	ref.read_timeline = -1;
+
+	return *this;
+}
+
 VulkanRenderBufferResource::~VulkanRenderBufferResource()
 {
+	if (write_timeline == -1)
+		return;
+
 	DEFINE_VK_INSTANCE(context);
 	VmaAllocator& allocator = context->GetVmaAllocator();
 	vmaDestroyBuffer(allocator, buffer, alloc);
