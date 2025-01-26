@@ -6,6 +6,8 @@
 
 void VulkanRenderCommandQueue::ExecuteRenderCommandLists(std::vector<RenderCommandList*>& lists)
 {
+	throw std::runtime_error("Not implemented.\n");
+	
 	std::vector<VkCommandBuffer> buffers;
 	buffers.reserve(lists.size());
 	for (int i = 0; i < lists.size(); i++) {
@@ -40,8 +42,8 @@ void VulkanRenderCommandQueue::ExecuteRenderCommandLists(std::vector<RenderComma
 		VulkanRenderResource* resource;
 		VulkanRenderCommandList* vk_command_list = static_cast<VulkanRenderCommandList*>(list);
 		for (auto& dependency : vk_command_list->command_list_dependencies) {
-			resource = static_cast<VulkanRenderResource*>(dependency.resource->GetExtensionData());
-			switch (dependency.type)
+			resource = static_cast<VulkanRenderResource*>(dependency.first->GetExtensionData());
+			switch (dependency.second.type)
 			{
 			case VulkanRenderCommandList::VulkanCommandListDependencyType::READ:
 				timeline_requirement = std::max(resource->write_timeline, timeline_requirement); // On read we need to wait for all writes to finish, we dont care about other reads
@@ -96,9 +98,15 @@ void VulkanRenderCommandQueue::ExecuteRenderCommandList(RenderCommandList* list)
 	uint64_t timeline_requirement = 0; 
 	VulkanRenderResource* resource;
 	for (auto& dependency : vk_command_list->command_list_dependencies) {
-		resource = static_cast<VulkanRenderResource*>(dependency.resource->GetExtensionData());
+		resource = static_cast<VulkanRenderResource*>(dependency.first->GetExtensionData());
 
-		switch (dependency.type)
+		if (dependency.second.expected_state != RenderState::UNINITIALIZED) { // If we allow uninitialed resource then accept the resource
+			if (dependency.second.expected_state != dependency.first->GetRenderState()) { // If we don't the resource must be in the default state
+				throw std::runtime_error("Attempted to read an uninitialized resource or the resource change type between command recording and command list submit.\n");
+			}
+		} 
+
+		switch (dependency.second.type)
 		{
 		case VulkanRenderCommandList::VulkanCommandListDependencyType::READ:
 			timeline_requirement = std::max(resource->write_timeline, timeline_requirement); // On read we need to wait for all writes to finish, we dont care about other reads
@@ -111,6 +119,9 @@ void VulkanRenderCommandQueue::ExecuteRenderCommandList(RenderCommandList* list)
 		default:
 			throw std::runtime_error("Invalid dependency type.\n");
 		}
+
+		dependency.first->SetRenderState(resource->GetDefaultState()); // Change the resource back to its default state, this also serves to mark the resource initialized
+
 	}
 
 	if (timeline_requirement > context->GetCurrentGpuTimelineValue()) { // we need to wait until the timeline requirement is met before executing this command list
@@ -190,23 +201,23 @@ VulkanRenderCommandQueue::VulkanRenderCommandQueue(VkQueue queue) : vk_queue(que
 void VulkanRenderCommandQueue::Present()
 {
 	DEFINE_VK_INSTANCE(context);
-	context->SignalEndFrame();
-	auto semaphore = context->GetVkRenderSemaphore();
+	context->SignalEndFrame(); // Send a Signalcommand  to the semaphore for all render tasks performed in this frame, the semaphore will be signaled when all render tasks in this frame finish.
+	auto semaphore = context->GetVkRenderSemaphore(); // The semaphore mentioned above
 
-	uint32_t index = context->GetCurrentFramebufferIndex();
+	uint32_t index = context->GetCurrentFramebufferIndex(); // Get the index of the framebuffer for this frame
 
 	VkPresentInfoKHR presentInfo;
 	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 	presentInfo.pNext = NULL;
 	presentInfo.waitSemaphoreCount = 1;
 	presentInfo.pWaitSemaphores = &semaphore;
-	presentInfo.pSwapchains = context->GetVkSwapchain();
+	presentInfo.pSwapchains = context->GetVkSwapchain(); // wait for rendering in this frame to finish before presenting it 
 	presentInfo.swapchainCount = 1;
 	presentInfo.pImageIndices = &index;
 
-	vkQueuePresentKHR(vk_queue, &presentInfo);
+	vkQueuePresentKHR(vk_queue, &presentInfo); //Present
 
-	context->StartNewFrame();
+	context->StartNewFrame(); // Gets the swapchain image for the next frame
 
 }
 

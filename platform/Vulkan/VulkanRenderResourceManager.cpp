@@ -6,13 +6,13 @@
 #include "Core/algorithm.h"
 
 
-void VulkanRenderResourceManager::CreateBuffer_internal(VulkanRenderBufferResource* buffer, const RenderBufferDescriptor& buffer_desc, RenderState default_state)
+void VulkanRenderResourceManager::CreateBuffer_internal(VulkanRenderBufferResource* buffer, const RenderBufferDescriptor& buffer_desc)
 {
 	DEFINE_VK_INSTANCE(context);
 	VmaAllocator& alloc = context->GetVmaAllocator();
 
 	buffer->descriptor = buffer_desc;
-	buffer->render_state = default_state;
+	buffer->render_state = buffer_desc.type == RenderBufferType::UPLOAD ? RenderState::COMMON : RenderState::UNINITIALIZED;
 
 	VkBufferCreateInfo info = {};
 	info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -30,13 +30,13 @@ void VulkanRenderResourceManager::CreateBuffer_internal(VulkanRenderBufferResour
 	buffer->write_timeline = timeline;
 }
 
-std::shared_ptr<RenderBufferResource> VulkanRenderResourceManager::CreateBuffer(const RenderBufferDescriptor& buffer_desc, RenderState default_state)
+std::shared_ptr<RenderBufferResource> VulkanRenderResourceManager::CreateBuffer(const RenderBufferDescriptor& buffer_desc)
 {
 	DEFINE_VK_INSTANCE(context);
 	VmaAllocator& alloc = context->GetVmaAllocator();
 
 	VulkanRenderBufferResource* new_buffer = new VulkanRenderBufferResource();
-	CreateBuffer_internal(new_buffer, buffer_desc, default_state);
+	CreateBuffer_internal(new_buffer, buffer_desc);
 
 	return std::shared_ptr<RenderBufferResource>(new_buffer, [](RenderBufferResource* resource) {
 		static_cast<VulkanRenderResourceManager*>(RenderResourceManager::Get())->ReturnResource(static_cast<VulkanRenderBufferResource*>(resource));
@@ -54,10 +54,12 @@ void VulkanRenderResourceManager::UploadDataToBuffer(RenderCommandList* list, st
 		throw std::runtime_error("Attempted to upload data to a buffer of invalid size, check the size and offset of the data.\n");
 	}
 
-	if (buffer->descriptor.type == RenderBufferType::UPLOAD) {
-		vmaCopyMemoryToAllocation(alloc, data, buffer->alloc, offset, size);
-		return;
-	}
+	// For now handle upload resources by using staging buffers, since we need asynchronous uploads
+	//if (buffer->descriptor.type == RenderBufferType::UPLOAD) {
+	//	throw std::runtime_error("Unexpected behaviour might occur when asynchronously uploading to upload resources\n");
+	//	vmaCopyMemoryToAllocation(alloc, data, buffer->alloc, offset, size);
+	//	return;
+	//}
 
 	auto staging_buffer = GetStagingBuffer(size);
 
@@ -72,24 +74,36 @@ void VulkanRenderResourceManager::UploadDataToBuffer(RenderCommandList* list, st
 
 	vkCmdCopyBuffer(vk_command_list->command_buffer, vk_staging_buffer->buffer, buffer->buffer, 1, &copy);
 
-	vk_command_list->command_list_dependencies.push_back({ VulkanRenderCommandList::VulkanCommandListDependencyType::WRITE, resource });
-	vk_command_list->command_list_dependencies.push_back({ VulkanRenderCommandList::VulkanCommandListDependencyType::WRITE, staging_buffer });
+	VulkanRenderCommandList::VulkanCommandListDependency dep_resource;
+	dep_resource.type = VulkanRenderCommandList::VulkanCommandListDependencyType::WRITE;
+	dep_resource.current_state = RenderState::COMMON;
+	dep_resource.expected_state = RenderState::UNINITIALIZED;
+
+	VulkanRenderCommandList::VulkanCommandListDependency dep_staging;
+	dep_staging.type = VulkanRenderCommandList::VulkanCommandListDependencyType::WRITE;
+	dep_staging.current_state = RenderState::COMMON;
+	dep_staging.expected_state = RenderState::COMMON;
+
+	vk_command_list->AddDependency(resource, dep_resource);
+	vk_command_list->AddDependency(staging_buffer, dep_staging);
 }
 
 void VulkanRenderResourceManager::ReallocateAndUploadBuffer(RenderCommandList* list, std::shared_ptr<RenderBufferResource> resource, void* data, size_t size)
 {
-	DEFINE_VK_INSTANCE(context);
+	throw std::runtime_error("ReallocateAndUploadBuffer has been removed, since it violates resource management requirements.\n");
+	
+	/*DEFINE_VK_INSTANCE(context);
 	VulkanRenderBufferResource* buffer = static_cast<VulkanRenderBufferResource*>(resource.get());
 
 	RenderBufferDescriptor new_desc = buffer->descriptor;
 	new_desc.buffer_size = size;
 
 	VulkanRenderBufferResource* new_buffer = new VulkanRenderBufferResource();
-	CreateBuffer_internal(new_buffer, new_desc, RenderState::COMMON);
+	CreateBuffer_internal(new_buffer, new_desc);
 
 	*buffer = std::move(*new_buffer);
 
-	UploadDataToBuffer(list, resource, data, size, 0);
+	UploadDataToBuffer(list, resource, data, size, 0);*/
 }
 
 std::shared_ptr<RenderTexture2DResource> VulkanRenderResourceManager::CreateTexture(const RenderTexture2DDescriptor& buffer_desc, RenderState default_state)
@@ -329,7 +343,7 @@ std::shared_ptr<RenderBufferResource> VulkanRenderResourceManager::GetStagingBuf
 	RenderBufferDescriptor buffer_desc(size, RenderBufferType::UPLOAD, RenderBufferUsage::STAGING);
 
 	VulkanRenderBufferResource* new_buffer = new VulkanRenderBufferResource();
-	CreateBuffer_internal(new_buffer, buffer_desc, RenderState::COMMON);
+	CreateBuffer_internal(new_buffer, buffer_desc);
 	
 	return std::shared_ptr<RenderBufferResource>(new_buffer, [](RenderBufferResource* resource) {
 		static_cast<VulkanRenderResourceManager*>(RenderResourceManager::Get())->ReturnStagingBufferResource(static_cast<VulkanRenderBufferResource*>(resource));
@@ -370,6 +384,7 @@ void VulkanRenderResourceManager::FlushDeletions()
 			staging_buffer_map.insert(std::make_pair(buffer->descriptor.buffer_size, buffer));
 		}
 		else {
+			resource.resource->DestroyResource();
 			delete resource.resource;
 		}
 		deletion_queue.pop();
@@ -381,6 +396,47 @@ void VulkanRenderResourceManager::ReturnResource(VulkanRenderResource* resource)
 {
 	std::unique_lock<std::mutex> lock(deletion_queue_mutex);
 	deletion_queue.push({ resource , false});
+}
+
+void VulkanRenderResourceManager::BufferFlushAndMakeAvailable(RenderCommandList* list, std::shared_ptr<RenderBufferResource> buffer, PipelineStage write_scope, PipelineStage read_scope)
+{
+	VkBufferMemoryBarrier2 barrier = {};
+	barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;
+	barrier.srcStageMask = VulkanUnitConverter::PipelineStageToVulkanPipelineStage(write_scope);
+	barrier.dstStageMask = VulkanUnitConverter::PipelineStageToVulkanPipelineStage(read_scope);
+	barrier.srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT;
+	barrier.dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT;
+	barrier.buffer = static_cast<VulkanRenderBufferResource*>(buffer.get())->buffer;
+	barrier.size = VK_WHOLE_SIZE;
+
+	VkDependencyInfo info = {};
+	info.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+	info.bufferMemoryBarrierCount = 1;
+	info.pBufferMemoryBarriers = &barrier;
+
+	vkCmdPipelineBarrier2(static_cast<VulkanRenderCommandList*>(list)->command_buffer, &info);
+
+}
+
+void VulkanRenderResourceManager::TransitionImage(RenderCommandList* list, std::shared_ptr<VulkanRenderTextureResource> image, VkImageSubresourceRange range, RenderState source_state, RenderState target_state, PipelineStage source_scope, PipelineStage target_scope)
+{
+
+	VkImageMemoryBarrier2 barrier = {};
+	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
+	barrier.srcStageMask = VulkanUnitConverter::PipelineStageToVulkanPipelineStage(source_scope);
+	barrier.dstStageMask = VulkanUnitConverter::PipelineStageToVulkanPipelineStage(target_scope);
+	barrier.srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT;
+	barrier.dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT;
+	barrier.image = image->GetImage();
+	barrier.subresourceRange = range;
+
+
+	VkDependencyInfo info = {};
+	info.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+	info.imageMemoryBarrierCount = 1;
+	info.pImageMemoryBarriers = &barrier;
+
+	vkCmdPipelineBarrier2(static_cast<VulkanRenderCommandList*>(list)->command_buffer, &info);
 }
 
 void VulkanRenderResourceManager::ReturnStagingBufferResource(VulkanRenderBufferResource* resource)
@@ -396,4 +452,19 @@ void VulkanRenderResourceManager::ClearStagingBuffers()
 		delete iter.second;
 	}
 	staging_buffer_map.clear();
+}
+
+VulkanRenderTexture2DResource* VulkanRenderResourceManager::CreateNonManagedTexture(VkImage image, RenderTexture2DDescriptor desc, RenderState default_state)
+{
+	DEFINE_VK_INSTANCE(context);
+	uint64_t timeline = context->GetCurrentCpuTimelineValue();
+
+	VulkanRenderTexture2DResource* texture = new VulkanRenderTexture2DResource(desc, default_state);
+
+	texture->alloc = VmaAllocation();
+	texture->image = image;
+	texture->read_timeline = timeline;
+	texture->write_timeline = timeline;
+
+	return texture;
 }

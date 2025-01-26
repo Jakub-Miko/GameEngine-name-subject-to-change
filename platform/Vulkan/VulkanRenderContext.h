@@ -60,6 +60,7 @@ protected:
 private:
 	VulkanRenderContext();
 	friend RenderContext;
+	friend class VulkanRenderCommandList;
 	std::vector<std::string> requested_extensions;
 	VkInstance vk_instance;
 	vkb::Instance vkb_instance;
@@ -68,6 +69,7 @@ private:
 	VkSurfaceKHR vk_surface;
 	vkb::Swapchain vkb_swapchain;
 	VkSwapchainKHR vk_swapchain;
+	std::vector<std::shared_ptr<RenderFrameBufferResource>> default_framebuffers;
 	uint32_t current_framebuffer = 0;
 	VmaAllocator allocator;
 	struct {

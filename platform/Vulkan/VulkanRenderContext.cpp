@@ -3,13 +3,22 @@
 #include <stdexcept>
 #include "VulkanRenderContext.h"
 #include "VulkanRenderCommandQueue.h"
+#include "VulkanRenderResourceManager.h"
+#include "VulkanRenderCommandList.h"
+#include "Application.h"
+#include "Window.h"
 #include "VulkanUnitConverter.h"
 
 void VulkanRenderContext::StartNewFrame()
 {
-	GetNextPresentImageIndex();
+	GetNextPresentImageIndex(); // Get the a swapchain image index for the upcoming frame, this signals the present_fence of the next image after the image becomes available
 	auto vulkan_queue = static_cast<VulkanRenderCommandQueue*>(Renderer::Get()->GetCommandQueue());
-	vulkan_queue->VkBinarySemaphoreWait(frame_sync.present_fence.GetNextResource());
+	vulkan_queue->VkBinarySemaphoreWait(frame_sync.present_fence.GetNextResource()); //Waits until the image is available so rendering can begin on it 
+	auto list = static_cast<VulkanRenderCommandList*>(Renderer::Get()->GetRenderCommandList());
+	auto vk_command_buffer = list->GetVkCommandBuffer();
+
+
+	vulkan_queue->ExecuteRenderCommandList(list);
 }
 
 void VulkanRenderContext::SignalEndFrame()
@@ -146,6 +155,7 @@ void VulkanRenderContext::Init()
 	vkb_swapchain = swapchain_result.value();
 	vk_swapchain = vkb_swapchain.swapchain;
 
+
 	VulkanRenderCommandQueue* queue = new VulkanRenderCommandQueue(vkb_device.get_queue(vkb::QueueType::graphics).value());
 
 	SetRenderQueue(queue, RenderQueueTypes::DirectQueue);
@@ -185,6 +195,42 @@ void VulkanRenderContext::Init()
 
 	vmaCreateAllocator(&allocator_info, &allocator);
 	VulkanUnitConverter::Init();
+
+	auto resource_manager = static_cast<VulkanRenderResourceManager*>(RenderResourceManager::Get());
+	auto props = Application::Get()->GetWindow()->GetProperties();
+
+	RenderTexture2DDescriptor swapchain_image_desc;
+	swapchain_image_desc.format = TextureFormat::UNDEFINED; // This image is never accesed by the user so the descriptor contents are not important 
+	swapchain_image_desc.height = props.resolution_y;
+	swapchain_image_desc.width = props.resolution_x;
+	swapchain_image_desc.sampler = nullptr;
+	swapchain_image_desc.usage = TextureUsage::COLOR_ATTACHMENT;
+
+	RenderTexture2DDescriptor depth_desc;
+	depth_desc.format = TextureFormat::DEFAULT_DEPTH;
+	depth_desc.height = props.resolution_y;
+	depth_desc.width = props.resolution_x;
+	depth_desc.sampler = nullptr;
+	depth_desc.usage = TextureUsage::DEPTH_ATTACHMENT;
+
+	std::vector<RenderFrameBufferDescriptor::RenderFrameBufferAttachment> swapchain_images;
+	swapchain_images.reserve(vkb_swapchain.get_images().value().size());
+	for (auto& image : vkb_swapchain.get_images().value()) {
+		RenderTexture2DResource* texture = resource_manager->CreateNonManagedTexture(image, swapchain_image_desc, RenderState::TEXTURE_COLOR_ATTACHMENT);
+		std::shared_ptr<RenderTexture2DResource> color_texture = std::shared_ptr<RenderTexture2DResource>(texture);
+		RenderFrameBufferDescriptor::RenderFrameBufferAttachment attachment;
+		attachment.level = 0;
+		attachment.resource = color_texture;
+		auto depth_buffer = resource_manager->CreateTexture(depth_desc);
+		RenderFrameBufferDescriptor default_framebuf;
+		default_framebuf.color_attachments = { {0, color_texture } };
+		default_framebuf.depth_stencil_attachment = { 0, depth_buffer };
+		auto framebuffer = resource_manager->CreateFrameBuffer(default_framebuf);
+		default_framebuffers.push_back(framebuffer);
+	}
+
+
+	StartNewFrame();
 
 }
 

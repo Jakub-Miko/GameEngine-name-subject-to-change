@@ -14,7 +14,9 @@ public:
 	virtual void Update() override;
 
 	friend RenderResourceManager;
-	virtual std::shared_ptr<RenderBufferResource> CreateBuffer(const RenderBufferDescriptor& buffer_desc, RenderState default_state = RenderState::COMMON) override;
+	friend class VulkanRenderContext;
+
+	virtual std::shared_ptr<RenderBufferResource> CreateBuffer(const RenderBufferDescriptor& buffer_desc) override;
 	virtual void UploadDataToBuffer(RenderCommandList* list, std::shared_ptr<RenderBufferResource> resource, void* data, size_t size, size_t offset) override;
 	virtual void ReallocateAndUploadBuffer(RenderCommandList* list, std::shared_ptr<RenderBufferResource> resource, void* data, size_t size) override;
 
@@ -46,16 +48,23 @@ public:
 
 	void ReturnResource(VulkanRenderResource* resource);
 
+	void BufferFlushAndMakeAvailable(RenderCommandList* list, std::shared_ptr<RenderBufferResource> buffer, PipelineStage write_scope = PipelineStage::PIPELINE_BOTTOM, PipelineStage read_scope = PipelineStage::PIPELINE_TOP);
+
+	void TransitionImage(RenderCommandList* list, std::shared_ptr<VulkanRenderTextureResource> image, VkImageSubresourceRange range, RenderState source_state, RenderState target_state, PipelineStage source_scope = PipelineStage::PIPELINE_BOTTOM, PipelineStage target_scope = PipelineStage::PIPELINE_TOP);
+
 	std::shared_ptr<RenderBufferResource> GetStagingBuffer(size_t size);
 
 private:
 	VulkanRenderResourceManager();
 	~VulkanRenderResourceManager();
 
-	void CreateBuffer_internal(VulkanRenderBufferResource* buffer, const RenderBufferDescriptor& buffer_desc, RenderState default_state = RenderState::UNINITIALIZED);
+	void CreateBuffer_internal(VulkanRenderBufferResource* buffer, const RenderBufferDescriptor& buffer_desc);
 	void FlushDeletions();
 	void ReturnStagingBufferResource(VulkanRenderBufferResource* resource);
 	void ClearStagingBuffers();
+
+	//Creates a texture object from a VkImage which is not managed by the resource manager (used mainly for swapchain textures)
+	VulkanRenderTexture2DResource* CreateNonManagedTexture(VkImage image, RenderTexture2DDescriptor desc, RenderState default_state = RenderState::TEXTURE_SAMPLE);
 
 private:
 	struct deletion_item {

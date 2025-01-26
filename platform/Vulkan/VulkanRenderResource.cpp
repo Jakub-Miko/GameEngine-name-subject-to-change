@@ -18,42 +18,12 @@ void VulkanRenderBufferResource::UnMap()
 	vmaUnmapMemory(context->GetVmaAllocator(), alloc);
 }
 
-VulkanRenderBufferResource::VulkanRenderBufferResource(VulkanRenderBufferResource&& ref) : RenderBufferResource(ref.descriptor, ref.render_state), VulkanRenderResource()
-{
-	read_timeline = ref.read_timeline;
-	write_timeline = ref.write_timeline;
-	alloc = ref.alloc;
-	buffer = ref.buffer;
-
-	ref.alloc = VmaAllocation();
-	ref.buffer = VkBuffer();
-	ref.write_timeline = -1;
-	ref.read_timeline = -1;
-}
-
-VulkanRenderBufferResource& VulkanRenderBufferResource::operator=(VulkanRenderBufferResource&& ref)
-{
-	if (write_timeline != -1) {
-		VulkanRenderResource* temp = new VulkanRenderResource(std::move(*this));
-		static_cast<VulkanRenderResourceManager*>(RenderResourceManager::Get())->ReturnResource(temp);
-	}
-	
-	read_timeline = ref.read_timeline;
-	write_timeline = ref.write_timeline;
-	alloc = ref.alloc;
-	buffer = ref.buffer;
-	descriptor = ref.descriptor;
-	render_state = ref.render_state;
-
-	ref.alloc = VmaAllocation();
-	ref.buffer = VkBuffer();
-	ref.write_timeline = -1;
-	ref.read_timeline = -1;
-
-	return *this;
-}
-
 VulkanRenderBufferResource::~VulkanRenderBufferResource()
+{
+
+}
+
+void VulkanRenderBufferResource::DestroyResource()
 {
 	if (write_timeline == -1)
 		return;
@@ -76,6 +46,11 @@ void VulkanRenderTexture2DResource::UnMap()
 }
 
 VulkanRenderTexture2DResource::~VulkanRenderTexture2DResource()
+{
+
+}
+
+void VulkanRenderTexture2DResource::DestroyResource()
 {
 	DEFINE_VK_INSTANCE(context);
 	VmaAllocator& allocator = context->GetVmaAllocator();
@@ -142,11 +117,16 @@ void VulkanRenderTexture2DArrayResource::UnMap()
 	throw std::runtime_error("Not Implemented");
 }
 
-VulkanRenderTexture2DArrayResource::~VulkanRenderTexture2DArrayResource()
+void VulkanRenderTexture2DArrayResource::DestroyResource()
 {
 	DEFINE_VK_INSTANCE(context);
 	VmaAllocator& allocator = context->GetVmaAllocator();
 	vmaDestroyImage(allocator, image, alloc);
+}
+
+VulkanRenderTexture2DArrayResource::~VulkanRenderTexture2DArrayResource()
+{
+
 }
 
 
@@ -161,10 +141,14 @@ void VulkanRenderTexture2DCubemapResource::UnMap()
 	throw std::runtime_error("Not Implemented");
 }
 
-VulkanRenderTexture2DCubemapResource::~VulkanRenderTexture2DCubemapResource()
+void VulkanRenderTexture2DCubemapResource::DestroyResource()
 {
 	DEFINE_VK_INSTANCE(context);
 	VmaAllocator& allocator = context->GetVmaAllocator();
 	vmaDestroyImage(allocator, image, alloc);
+}
+
+VulkanRenderTexture2DCubemapResource::~VulkanRenderTexture2DCubemapResource()
+{
 }
 

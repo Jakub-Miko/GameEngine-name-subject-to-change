@@ -1,10 +1,22 @@
 #pragma once
 #include <Renderer/RenderCommandList.h>
+#include <unordered_map>
 #include <vulkan/vulkan.h>
 
 class VulkanRenderCommandList : public RenderCommandList
 {
 public:
+    enum class VulkanCommandListDependencyType : char {
+        WRITE, READ, INVALID
+    };
+
+    struct VulkanCommandListDependency {
+        VulkanCommandListDependencyType type;
+        VulkanCommandListDependencyType previous_access;
+        RenderState expected_state = RenderState::COMMON;
+        RenderState current_state = RenderState::COMMON;
+    };
+
     friend Renderer;
     friend class VulkanRenderResourceManager;
     friend class VulkanRenderCommandQueue;
@@ -36,18 +48,12 @@ public:
 
     VkCommandBuffer* GetVkCommandBuffer() { return &command_buffer; }
 
+    VulkanCommandListDependency AddDependency(std::shared_ptr<RenderResource> dep_resource ,VulkanCommandListDependency dep); //Adds or updates a dependency, and returns the previous dependency state
+    VulkanCommandListDependency GetDependency(std::shared_ptr<RenderResource> dep_resource); //Gets the previous dependency if present
+
 private:
     VkCommandBuffer command_buffer;
 
-    enum class VulkanCommandListDependencyType {
-        WRITE, READ
-    };
-
-    struct VulkanCommandListDependency {
-        VulkanCommandListDependencyType type;
-        std::shared_ptr<RenderResource> resource;
-    };
-
-    std::vector<VulkanCommandListDependency> command_list_dependencies;
-
+    std::unordered_map<std::shared_ptr<RenderResource>, VulkanCommandListDependency> command_list_dependencies;
+    std::shared_ptr<RenderFrameBufferResource> current_framebuffer = nullptr;
 };

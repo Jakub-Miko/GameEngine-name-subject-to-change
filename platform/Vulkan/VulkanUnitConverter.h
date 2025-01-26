@@ -130,6 +130,25 @@ public:
 		}
 	}
 
+	static bool IsTextureFormatDepth(TextureFormat type) {
+		switch (type) {
+		case TextureFormat::RGBA_UNSIGNED_CHAR:				return false;
+		case TextureFormat::RGB_UNSIGNED_CHAR:				return false;
+		case TextureFormat::DEPTH24_STENCIL8_UNSIGNED_CHAR:	return true;
+		case TextureFormat::RGB_32FLOAT:					return false;
+		case TextureFormat::RGBA_32FLOAT:					return false;
+		case TextureFormat::R_UNSIGNED_INT:					return false;
+		case TextureFormat::R_UNSIGNED_CHAR:                return false;
+		case TextureFormat::R_UNSIGNED_CHAR_NORM:           return false;
+		case TextureFormat::R_8FLOAT:						return false;
+		case TextureFormat::UNDEFINED:						return false;
+		case TextureFormat::DEFAULT_DEPTH:					return true;
+		case TextureFormat::DEFAULT_DEPTH_STENCIL:			return true;
+		default:
+			throw std::runtime_error("Conversion failed");
+		}
+	}
+
 	static TextureUsage TextureFormatToVulkanDefaultImageUsage(TextureFormat type) {
 		switch (type) {
 		case TextureFormat::RGBA_UNSIGNED_CHAR:				return TextureUsage::SAMPLE_WRITABLE;
@@ -159,6 +178,22 @@ public:
 		case RenderState::TEXTURE_DEPTH_SAMPLE:					return VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL;
 		default:
 			throw std::runtime_error("Conversion failed");
+		}
+	}
+
+	static VkPipelineStageFlagBits2 PipelineStageToVulkanPipelineStage(PipelineStage stage) {
+		switch (stage)
+		{
+		case PipelineStage::PIPELINE_TOP:						return VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT;
+		case PipelineStage::PIPELINE_BOTTOM:					return VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT;
+		case PipelineStage::FRAGMENT_SHADER:					return VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
+		case PipelineStage::VERTEX_SHADER:						return VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT;
+		case PipelineStage::GEOMETRY_SHADER:					return VK_PIPELINE_STAGE_2_GEOMETRY_SHADER_BIT;
+		case PipelineStage::COMPUTE_SHADER:						return VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
+		case PipelineStage::HOST:								return VK_PIPELINE_STAGE_2_HOST_BIT;
+		case PipelineStage::CLEAR:								return VK_PIPELINE_STAGE_2_CLEAR_BIT;
+		default:
+			throw std::runtime_error("Conversion failed.");
 		}
 	}
 

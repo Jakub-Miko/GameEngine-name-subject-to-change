@@ -10,7 +10,6 @@ enum class RenderState : unsigned char
 	TEXTURE_DEPTH_SAMPLE = 13
 };
 
-
 enum class RenderBufferType : unsigned char
 {
 	DEFAULT = 0, UPLOAD = 1
@@ -41,6 +40,10 @@ enum class TextureUsage : unsigned char
 	STORAGE_WRITABLE = STORAGE | TRANSFER,
 	STORAGE_READABLE_WRITABLE = STORAGE | SAMPLE | TRANSFER
 
+};
+
+enum class PipelineStage : char {
+	PIPELINE_TOP, PIPELINE_BOTTOM, FRAGMENT_SHADER, VERTEX_SHADER, GEOMETRY_SHADER, COMPUTE_SHADER, HOST, CLEAR, 
 };
 
 enum class PipelineFlags : uint32_t {
