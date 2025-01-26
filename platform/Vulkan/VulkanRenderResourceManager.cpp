@@ -74,13 +74,13 @@ void VulkanRenderResourceManager::UploadDataToBuffer(RenderCommandList* list, st
 
 	vkCmdCopyBuffer(vk_command_list->command_buffer, vk_staging_buffer->buffer, buffer->buffer, 1, &copy);
 
-	VulkanRenderCommandList::VulkanCommandListDependency dep_resource;
-	dep_resource.type = VulkanRenderCommandList::VulkanCommandListDependencyType::WRITE;
+	VulkanCommandListDependency dep_resource;
+	dep_resource.type = VulkanCommandListDependencyType::WRITE;
 	dep_resource.current_state = RenderState::COMMON;
 	dep_resource.expected_state = RenderState::UNINITIALIZED;
 
-	VulkanRenderCommandList::VulkanCommandListDependency dep_staging;
-	dep_staging.type = VulkanRenderCommandList::VulkanCommandListDependencyType::WRITE;
+	VulkanCommandListDependency dep_staging;
+	dep_staging.type = VulkanCommandListDependencyType::WRITE;
 	dep_staging.current_state = RenderState::COMMON;
 	dep_staging.expected_state = RenderState::COMMON;
 
@@ -90,7 +90,7 @@ void VulkanRenderResourceManager::UploadDataToBuffer(RenderCommandList* list, st
 
 void VulkanRenderResourceManager::ReallocateAndUploadBuffer(RenderCommandList* list, std::shared_ptr<RenderBufferResource> resource, void* data, size_t size)
 {
-	throw std::runtime_error("ReallocateAndUploadBuffer has been removed, since it violates resource management requirements.\n");
+	//throw std::runtime_error("ReallocateAndUploadBuffer has been removed, since it violates resource management requirements.\n");
 	
 	/*DEFINE_VK_INSTANCE(context);
 	VulkanRenderBufferResource* buffer = static_cast<VulkanRenderBufferResource*>(resource.get());
@@ -350,19 +350,42 @@ std::shared_ptr<RenderBufferResource> VulkanRenderResourceManager::GetStagingBuf
 		});
 }
 
+VulkanDependencyHandler* VulkanRenderResourceManager::GetDependencyHandler()
+{
+	std::lock_guard<std::mutex> lock(dependency_handler_mutex);
+	if (!dependency_handlers.empty()) {
+		auto temp = dependency_handlers.back();
+		dependency_handlers.pop_back();
+		return temp;
+	}
+
+	return new DefaultVulkanDependencyHandler();
+}
+
+void VulkanRenderResourceManager::ReturnDependencyHandler(VulkanDependencyHandler* handler)
+{
+	std::lock_guard<std::mutex> lock(dependency_handler_mutex);
+	handler->Reset();
+	dependency_handlers.push_back(handler);
+}
+
 void VulkanRenderResourceManager::Update()
 {
 	FlushDeletions();
 
 }
 
-VulkanRenderResourceManager::VulkanRenderResourceManager() : deletion_queue(), deletion_queue_mutex(), staging_buffer_map() , staging_buffer_map_mutex()
+VulkanRenderResourceManager::VulkanRenderResourceManager() : deletion_queue(), deletion_queue_mutex(), staging_buffer_map() , staging_buffer_map_mutex(), 
+	dependency_handlers(), dependency_handler_mutex()
 {
 }
 
 VulkanRenderResourceManager::~VulkanRenderResourceManager()
 {
 	ClearStagingBuffers();
+	for (auto handler : dependency_handlers) {
+		delete handler;
+	}
 }
 
 
@@ -398,14 +421,15 @@ void VulkanRenderResourceManager::ReturnResource(VulkanRenderResource* resource)
 	deletion_queue.push({ resource , false});
 }
 
-void VulkanRenderResourceManager::BufferFlushAndMakeAvailable(RenderCommandList* list, std::shared_ptr<RenderBufferResource> buffer, PipelineStage write_scope, PipelineStage read_scope)
+void VulkanRenderResourceManager::BufferBarrier(RenderCommandList* list, std::shared_ptr<RenderBufferResource> buffer, bool make_memory_available,
+	PipelineStage write_scope, PipelineStage read_scope)
 {
 	VkBufferMemoryBarrier2 barrier = {};
 	barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;
 	barrier.srcStageMask = VulkanUnitConverter::PipelineStageToVulkanPipelineStage(write_scope);
 	barrier.dstStageMask = VulkanUnitConverter::PipelineStageToVulkanPipelineStage(read_scope);
-	barrier.srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT;
-	barrier.dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT;
+	barrier.srcAccessMask = make_memory_available ? VK_ACCESS_2_MEMORY_WRITE_BIT : VK_ACCESS_2_NONE;
+	barrier.dstAccessMask = make_memory_available ? VK_ACCESS_2_MEMORY_READ_BIT : VK_ACCESS_2_NONE;
 	barrier.buffer = static_cast<VulkanRenderBufferResource*>(buffer.get())->buffer;
 	barrier.size = VK_WHOLE_SIZE;
 

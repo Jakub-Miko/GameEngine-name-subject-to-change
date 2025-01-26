@@ -3,19 +3,61 @@
 #include <unordered_map>
 #include <vulkan/vulkan.h>
 
+enum class VulkanCommandListDependencyType : char {
+    WRITE, READ, INVALID
+};
+
+struct VulkanCommandListDependency {
+    VulkanCommandListDependency(VulkanCommandListDependencyType type, RenderState current_state, RenderState expected_state) 
+        : type(type),previous_access(type), expected_state(expected_state), current_state(current_state) {}
+
+    VulkanCommandListDependency() = default;
+
+    VulkanCommandListDependencyType type = VulkanCommandListDependencyType::INVALID;
+    VulkanCommandListDependencyType previous_access = VulkanCommandListDependencyType::INVALID;
+    RenderState expected_state = RenderState::COMMON;
+    RenderState current_state = RenderState::COMMON;
+};
+
+struct VulkanCommandListDependencyExtra { //Used to tell Render Resource manager some extra information for the sake of optimizations
+    PipelineStage source_stage = PipelineStage::PIPELINE_BOTTOM;
+    PipelineStage target_stage = PipelineStage::PIPELINE_TOP;
+};
+
+class VulkanDependencyHandler {
+public:
+    struct VulkanDependencyHandlerFeedback {
+        uint64_t timeline_wait;
+    };
+
+    virtual VulkanCommandListDependency AddDependency(RenderCommandList* list, std::shared_ptr<RenderResource> resource, 
+        VulkanCommandListDependency dependency, VulkanCommandListDependencyExtra extra = VulkanCommandListDependencyExtra()) = 0;
+    virtual VulkanCommandListDependency GetDependency(std::shared_ptr<RenderResource> resource) = 0;
+    virtual VulkanDependencyHandlerFeedback FinalizeDependencies(RenderCommandList* list, uint64_t new_timeline_value) = 0;
+    virtual void Reset() = 0;
+};
+
+class DefaultVulkanDependencyHandler : public VulkanDependencyHandler {
+public:
+    DefaultVulkanDependencyHandler() : dependencies(), non_dependent_resources() {}
+
+    virtual VulkanCommandListDependency AddDependency(RenderCommandList* list, std::shared_ptr<RenderResource> resource, 
+        VulkanCommandListDependency dependency, VulkanCommandListDependencyExtra extra = VulkanCommandListDependencyExtra()) override;
+    virtual VulkanCommandListDependency GetDependency(std::shared_ptr<RenderResource> resource) override;
+    virtual VulkanDependencyHandlerFeedback FinalizeDependencies(RenderCommandList* list, uint64_t new_timeline_value) override;
+    virtual void Reset() override;
+
+private:
+    std::unordered_map<std::shared_ptr<RenderResource>, VulkanCommandListDependency> dependencies;
+    std::vector<std::shared_ptr<RenderResource>> non_dependent_resources; //Resource which dont have dependencies but their references need to be held until submision to prevent their destruction
+};
+
+
+
+
 class VulkanRenderCommandList : public RenderCommandList
 {
 public:
-    enum class VulkanCommandListDependencyType : char {
-        WRITE, READ, INVALID
-    };
-
-    struct VulkanCommandListDependency {
-        VulkanCommandListDependencyType type;
-        VulkanCommandListDependencyType previous_access;
-        RenderState expected_state = RenderState::COMMON;
-        RenderState current_state = RenderState::COMMON;
-    };
 
     friend Renderer;
     friend class VulkanRenderResourceManager;
@@ -54,6 +96,6 @@ public:
 private:
     VkCommandBuffer command_buffer;
 
-    std::unordered_map<std::shared_ptr<RenderResource>, VulkanCommandListDependency> command_list_dependencies;
+    VulkanDependencyHandler* dependency_handler;
     std::shared_ptr<RenderFrameBufferResource> current_framebuffer = nullptr;
 };

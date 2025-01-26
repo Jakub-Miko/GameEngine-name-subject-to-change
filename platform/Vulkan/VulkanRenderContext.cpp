@@ -117,6 +117,7 @@ void VulkanRenderContext::Init()
 
 	VkPhysicalDeviceVulkan13Features features_13 = {};
 	features_13.dynamicRendering = true;
+	features_13.synchronization2 = true;
 
 	VkPhysicalDeviceFeatures features = {};
 	features.geometryShader = true;

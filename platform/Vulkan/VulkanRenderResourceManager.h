@@ -1,5 +1,6 @@
 #pragma once
 #include <Renderer/RenderResourceManager.h>
+#include <platform/Vulkan/VulkanRenderCommandList.h>
 #include "VulkanRenderResource.h"
 #include <Utilities/MemoryManagement/include/MultiPool.h>
 #include <mutex>
@@ -48,11 +49,15 @@ public:
 
 	void ReturnResource(VulkanRenderResource* resource);
 
-	void BufferFlushAndMakeAvailable(RenderCommandList* list, std::shared_ptr<RenderBufferResource> buffer, PipelineStage write_scope = PipelineStage::PIPELINE_BOTTOM, PipelineStage read_scope = PipelineStage::PIPELINE_TOP);
+	void BufferBarrier(RenderCommandList* list, std::shared_ptr<RenderBufferResource> buffer, bool make_memory_available = true,
+		PipelineStage write_scope = PipelineStage::PIPELINE_BOTTOM, PipelineStage read_scope = PipelineStage::PIPELINE_TOP);
 
 	void TransitionImage(RenderCommandList* list, std::shared_ptr<VulkanRenderTextureResource> image, VkImageSubresourceRange range, RenderState source_state, RenderState target_state, PipelineStage source_scope = PipelineStage::PIPELINE_BOTTOM, PipelineStage target_scope = PipelineStage::PIPELINE_TOP);
 
 	std::shared_ptr<RenderBufferResource> GetStagingBuffer(size_t size);
+
+	VulkanDependencyHandler* GetDependencyHandler();
+	void ReturnDependencyHandler(VulkanDependencyHandler* handler);
 
 private:
 	VulkanRenderResourceManager();
@@ -66,6 +71,8 @@ private:
 	//Creates a texture object from a VkImage which is not managed by the resource manager (used mainly for swapchain textures)
 	VulkanRenderTexture2DResource* CreateNonManagedTexture(VkImage image, RenderTexture2DDescriptor desc, RenderState default_state = RenderState::TEXTURE_SAMPLE);
 
+
+
 private:
 	struct deletion_item {
 		VulkanRenderResource* resource = nullptr;
@@ -76,4 +83,6 @@ private:
 	std::queue<deletion_item> deletion_queue;
 	std::mutex staging_buffer_map_mutex;
 	std::map<size_t, RenderBufferResource*> staging_buffer_map;
+	std::mutex dependency_handler_mutex;
+	std::vector<VulkanDependencyHandler*> dependency_handlers;
 };

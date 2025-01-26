@@ -8,64 +8,64 @@ void VulkanRenderCommandQueue::ExecuteRenderCommandLists(std::vector<RenderComma
 {
 	throw std::runtime_error("Not implemented.\n");
 	
-	std::vector<VkCommandBuffer> buffers;
-	buffers.reserve(lists.size());
-	for (int i = 0; i < lists.size(); i++) {
-		buffers.push_back(*static_cast<VulkanRenderCommandList*>(lists[i])->GetVkCommandBuffer());
-		vkEndCommandBuffer(*static_cast<VulkanRenderCommandList*>(lists[i])->GetVkCommandBuffer());
-	}
+	//std::vector<VkCommandBuffer> buffers;
+	//buffers.reserve(lists.size());
+	//for (int i = 0; i < lists.size(); i++) {
+	//	buffers.push_back(*static_cast<VulkanRenderCommandList*>(lists[i])->GetVkCommandBuffer());
+	//	vkEndCommandBuffer(*static_cast<VulkanRenderCommandList*>(lists[i])->GetVkCommandBuffer());
+	//}
 
-	DEFINE_VK_INSTANCE(context);
+	//DEFINE_VK_INSTANCE(context);
 
 
-	uint64_t value = ++last_buffer_signaled;
-	VkTimelineSemaphoreSubmitInfo submit_sync = {};
-	submit_sync.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
-	submit_sync.signalSemaphoreValueCount = 1;
-	submit_sync.pSignalSemaphoreValues = &value; //should i care ?  https://registry.khronos.org/vulkan/specs/latest/html/vkspec.html#limits-maxTimelineSemaphoreValueDifference
+	//uint64_t value = ++last_buffer_signaled;
+	//VkTimelineSemaphoreSubmitInfo submit_sync = {};
+	//submit_sync.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
+	//submit_sync.signalSemaphoreValueCount = 1;
+	//submit_sync.pSignalSemaphoreValues = &value; //should i care ?  https://registry.khronos.org/vulkan/specs/latest/html/vkspec.html#limits-maxTimelineSemaphoreValueDifference
 
-	VkSubmitInfo info;
-	info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	info.pNext = &submit_sync;
-	info.commandBufferCount = buffers.size();
-	info.pCommandBuffers = buffers.data();
-	info.pSignalSemaphores = static_cast<VulkanRenderFence*>(command_buffer_fence.get())->GetSemaphore();;
-	info.signalSemaphoreCount = 1;
-	info.pWaitSemaphores = NULL;
-	info.waitSemaphoreCount = 0;
-	info.pWaitDstStageMask = NULL;
+	//VkSubmitInfo info;
+	//info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	//info.pNext = &submit_sync;
+	//info.commandBufferCount = buffers.size();
+	//info.pCommandBuffers = buffers.data();
+	//info.pSignalSemaphores = static_cast<VulkanRenderFence*>(command_buffer_fence.get())->GetSemaphore();;
+	//info.signalSemaphoreCount = 1;
+	//info.pWaitSemaphores = NULL;
+	//info.waitSemaphoreCount = 0;
+	//info.pWaitDstStageMask = NULL;
 
-	submit_mutex.lock();
+	//submit_mutex.lock();
 
-	uint64_t timeline_requirement = 0;
-	for (auto list : lists) {
-		VulkanRenderResource* resource;
-		VulkanRenderCommandList* vk_command_list = static_cast<VulkanRenderCommandList*>(list);
-		for (auto& dependency : vk_command_list->command_list_dependencies) {
-			resource = static_cast<VulkanRenderResource*>(dependency.first->GetExtensionData());
-			switch (dependency.second.type)
-			{
-			case VulkanRenderCommandList::VulkanCommandListDependencyType::READ:
-				timeline_requirement = std::max(resource->write_timeline, timeline_requirement); // On read we need to wait for all writes to finish, we dont care about other reads
-				resource->read_timeline = value;
-				break;
-			case VulkanRenderCommandList::VulkanCommandListDependencyType::WRITE:
-				timeline_requirement = std::max(std::max(resource->write_timeline, resource->read_timeline), timeline_requirement); // On write we need to wait for reads as well
-				resource->write_timeline = value;
-				break;
-			default:
-				throw std::runtime_error("Invalid dependency type.\n");
-			}
-		}
-	}
+	//uint64_t timeline_requirement = 0;
+	//for (auto list : lists) {
+	//	VulkanRenderResource* resource;
+	//	VulkanRenderCommandList* vk_command_list = static_cast<VulkanRenderCommandList*>(list);
+	//	for (auto& dependency : vk_command_list->command_list_dependencies) {
+	//		resource = static_cast<VulkanRenderResource*>(dependency.first->GetExtensionData());
+	//		switch (dependency.second.type)
+	//		{
+	//		case VulkanRenderCommandList::VulkanCommandListDependencyType::READ:
+	//			timeline_requirement = std::max(resource->write_timeline, timeline_requirement); // On read we need to wait for all writes to finish, we dont care about other reads
+	//			resource->read_timeline = value;
+	//			break;
+	//		case VulkanRenderCommandList::VulkanCommandListDependencyType::WRITE:
+	//			timeline_requirement = std::max(std::max(resource->write_timeline, resource->read_timeline), timeline_requirement); // On write we need to wait for reads as well
+	//			resource->write_timeline = value;
+	//			break;
+	//		default:
+	//			throw std::runtime_error("Invalid dependency type.\n");
+	//		}
+	//	}
+	//}
 
-	if (timeline_requirement > context->GetCurrentGpuTimelineValue()) { // we need to wait until the timeline requirement is met before executing this command list
-		submit_sync.waitSemaphoreValueCount = 1;
-		submit_sync.pWaitSemaphoreValues = &timeline_requirement;
-	}
+	//if (timeline_requirement > context->GetCurrentGpuTimelineValue()) { // we need to wait until the timeline requirement is met before executing this command list
+	//	submit_sync.waitSemaphoreValueCount = 1;
+	//	submit_sync.pWaitSemaphoreValues = &timeline_requirement;
+	//}
 
-	vkQueueSubmit(vk_queue, 1, &info, NULL);
-	submit_mutex.unlock();
+	//vkQueueSubmit(vk_queue, 1, &info, NULL);
+	//submit_mutex.unlock();
 }
 
 void VulkanRenderCommandQueue::ExecuteRenderCommandList(RenderCommandList* list)
@@ -95,38 +95,11 @@ void VulkanRenderCommandQueue::ExecuteRenderCommandList(RenderCommandList* list)
 
 	submit_mutex.lock();
 	
-	uint64_t timeline_requirement = 0; 
-	VulkanRenderResource* resource;
-	for (auto& dependency : vk_command_list->command_list_dependencies) {
-		resource = static_cast<VulkanRenderResource*>(dependency.first->GetExtensionData());
+	auto sync = vk_command_list->dependency_handler->FinalizeDependencies(vk_command_list, value);
 
-		if (dependency.second.expected_state != RenderState::UNINITIALIZED) { // If we allow uninitialed resource then accept the resource
-			if (dependency.second.expected_state != dependency.first->GetRenderState()) { // If we don't the resource must be in the default state
-				throw std::runtime_error("Attempted to read an uninitialized resource or the resource change type between command recording and command list submit.\n");
-			}
-		} 
-
-		switch (dependency.second.type)
-		{
-		case VulkanRenderCommandList::VulkanCommandListDependencyType::READ:
-			timeline_requirement = std::max(resource->write_timeline, timeline_requirement); // On read we need to wait for all writes to finish, we dont care about other reads
-			resource->read_timeline = value;
-			break;
-		case VulkanRenderCommandList::VulkanCommandListDependencyType::WRITE:
-			timeline_requirement = std::max(std::max(resource->write_timeline, resource->read_timeline), timeline_requirement); // On write we need to wait for reads as well
-			resource->write_timeline = value;
-			break;
-		default:
-			throw std::runtime_error("Invalid dependency type.\n");
-		}
-
-		dependency.first->SetRenderState(resource->GetDefaultState()); // Change the resource back to its default state, this also serves to mark the resource initialized
-
-	}
-
-	if (timeline_requirement > context->GetCurrentGpuTimelineValue()) { // we need to wait until the timeline requirement is met before executing this command list
+	if (sync.timeline_wait > context->GetCurrentGpuTimelineValue()) { // we need to wait until the timeline requirement is met before executing this command list
 		submit_sync.waitSemaphoreValueCount = 1;
-		submit_sync.pWaitSemaphoreValues = &timeline_requirement;
+		submit_sync.pWaitSemaphoreValues = &sync.timeline_wait;
 	}
 
 	vkQueueSubmit(vk_queue, 1, &info, NULL);
