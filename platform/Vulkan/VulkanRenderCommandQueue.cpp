@@ -179,7 +179,7 @@ void VulkanRenderCommandQueue::Present()
 
 	uint32_t index = context->GetCurrentFramebufferIndex(); // Get the index of the framebuffer for this frame
 
-	VkPresentInfoKHR presentInfo;
+	VkPresentInfoKHR presentInfo = {};
 	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 	presentInfo.pNext = NULL;
 	presentInfo.waitSemaphoreCount = 1;

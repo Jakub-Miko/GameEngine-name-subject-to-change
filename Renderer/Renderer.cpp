@@ -132,7 +132,7 @@ void Renderer::Create()
 void Renderer::Update(float delta_time)
 {
     RenderResourceManager::Get()->Update();
-    auto primary = Application::GetWorld().GetPrimaryEntity();
+   /* auto primary = Application::GetWorld().GetPrimaryEntity();
     if (primary == Entity() || !Application::GetWorld().EntityExists(primary) || !Application::GetWorld().HasComponent<CameraComponent>(primary)) {
         Application::GetWorld().SetPrimaryEntity(Entity());
         Application::GetWorld().CheckCamera();
@@ -151,7 +151,7 @@ void Renderer::Update(float delta_time)
     
     Renderer3D::Get()->Update(delta_time);
     TextRenderer::Get()->UpdateLoadedFonts();
-    TextRenderer::Get()->TextRenderSystem();
+    TextRenderer::Get()->TextRenderSystem();*/
 }
 
 void Renderer::ReuseAllocator(RenderCommandAllocator* alloc)
