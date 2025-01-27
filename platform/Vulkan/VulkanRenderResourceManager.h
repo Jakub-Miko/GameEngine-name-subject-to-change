@@ -3,6 +3,7 @@
 #include <platform/Vulkan/VulkanRenderCommandList.h>
 #include "VulkanRenderResource.h"
 #include <Utilities/MemoryManagement/include/MultiPool.h>
+#include "VulkanRenderCommandList.h"
 #include <mutex>
 #include <memory>
 #include <queue>
@@ -49,10 +50,13 @@ public:
 
 	void ReturnResource(VulkanRenderResource* resource);
 
-	void BufferBarrier(RenderCommandList* list, std::shared_ptr<RenderBufferResource> buffer, bool make_memory_available = true,
-		PipelineStage write_scope = PipelineStage::PIPELINE_BOTTOM, PipelineStage read_scope = PipelineStage::PIPELINE_TOP);
+	void BufferBarrier(RenderCommandList* list, std::shared_ptr<RenderBufferResource> buffer,
+		PipelineStage write_scope = PipelineStage::ALL_STAGES, PipelineStage read_scope = PipelineStage::ALL_STAGES,
+		VulkanCommandListDependencyType src_access = VulkanCommandListDependencyType::READ, VulkanCommandListDependencyType dst_access = VulkanCommandListDependencyType::WRITE);
 
-	void TransitionImage(RenderCommandList* list, VulkanRenderTextureResource* image, VkImageSubresourceRange range, RenderState source_state, RenderState target_state, bool make_memory_available = true ,PipelineStage source_scope = PipelineStage::PIPELINE_BOTTOM, PipelineStage target_scope = PipelineStage::PIPELINE_TOP);
+	void TransitionImage(RenderCommandList* list, VulkanRenderTextureResource* image, VkImageSubresourceRange range, RenderState source_state, RenderState target_state,
+		PipelineStage source_scope = PipelineStage::ALL_STAGES, PipelineStage target_scope = PipelineStage::ALL_STAGES, 
+		VulkanCommandListDependencyType src_access = VulkanCommandListDependencyType::READ, VulkanCommandListDependencyType dst_access = VulkanCommandListDependencyType::WRITE);
 
 	std::shared_ptr<RenderBufferResource> GetStagingBuffer(size_t size);
 

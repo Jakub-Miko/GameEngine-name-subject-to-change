@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <Vulkan/vulkan.h>
 #include "VulkanRenderContext.h"
+#include "VulkanRenderCommandList.h"
 #include "VulkanShaderManager.h"
 #include "shaderc/shaderc.hpp"
 
@@ -33,6 +34,16 @@ public:
 		case RenderPrimitiveType::VEC3:				return VK_FORMAT_R32_SFLOAT;
 		case RenderPrimitiveType::VEC4:				return VK_FORMAT_R32_SFLOAT;
 		default: 
+			throw std::runtime_error("Conversion failed");
+		}
+	}
+
+	static VkAccessFlagBits2 DependencyToVkAccess(VulkanCommandListDependencyType dependency) {
+		switch (dependency) {
+		case VulkanCommandListDependencyType::READ:				return VK_ACCESS_2_MEMORY_READ_BIT;
+		case VulkanCommandListDependencyType::WRITE:			return VK_ACCESS_2_MEMORY_WRITE_BIT;
+		case VulkanCommandListDependencyType::INVALID:			return VK_ACCESS_2_NONE;
+		default:
 			throw std::runtime_error("Conversion failed");
 		}
 	}
@@ -185,8 +196,7 @@ public:
 	static VkPipelineStageFlagBits2 PipelineStageToVulkanPipelineStage(PipelineStage stage) {
 		switch (stage)
 		{
-		case PipelineStage::PIPELINE_TOP:						return VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT;
-		case PipelineStage::PIPELINE_BOTTOM:					return VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT;
+		case PipelineStage::ALL_STAGES:							return VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
 		case PipelineStage::FRAGMENT_SHADER:					return VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
 		case PipelineStage::VERTEX_SHADER:						return VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT;
 		case PipelineStage::GEOMETRY_SHADER:					return VK_PIPELINE_STAGE_2_GEOMETRY_SHADER_BIT;

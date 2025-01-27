@@ -20,8 +20,8 @@ struct VulkanCommandListDependency {
 };
 
 struct VulkanCommandListDependencyExtra { //Used to tell Render Resource manager some extra information for the sake of optimizations
-    PipelineStage source_stage = PipelineStage::PIPELINE_BOTTOM;
-    PipelineStage target_stage = PipelineStage::PIPELINE_TOP;
+    PipelineStage source_stage = PipelineStage::ALL_STAGES;
+    PipelineStage target_stage = PipelineStage::ALL_STAGES;
 };
 
 class VulkanDependencyHandler {
@@ -51,8 +51,6 @@ private:
     std::unordered_map<std::shared_ptr<RenderResource>, VulkanCommandListDependency> dependencies;
     std::vector<std::shared_ptr<RenderResource>> non_dependent_resources; //Resource which dont have dependencies but their references need to be held until submision to prevent their destruction
 };
-
-
 
 
 class VulkanRenderCommandList : public RenderCommandList

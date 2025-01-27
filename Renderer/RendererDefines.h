@@ -51,7 +51,7 @@ inline TextureUsage operator&(const TextureUsage& flags_1, const TextureUsage& f
 }
 
 enum class PipelineStage : char {
-	PIPELINE_TOP, PIPELINE_BOTTOM, FRAGMENT_SHADER, VERTEX_SHADER, GEOMETRY_SHADER, COMPUTE_SHADER, HOST, CLEAR, 
+	ALL_STAGES, FRAGMENT_SHADER, VERTEX_SHADER, GEOMETRY_SHADER, COMPUTE_SHADER, HOST, CLEAR, 
 };
 
 enum class PipelineFlags : uint32_t {

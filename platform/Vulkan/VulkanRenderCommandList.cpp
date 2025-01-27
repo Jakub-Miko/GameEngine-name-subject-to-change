@@ -189,10 +189,10 @@ VulkanCommandListDependency DefaultVulkanDependencyHandler::AddDependency(Render
 		
 		VulkanRenderBufferResource* vk_resource = static_cast<VulkanRenderBufferResource*>(resource.get());
 		if (current_dep.previous_access == VulkanCommandListDependencyType::WRITE && dependency.type == VulkanCommandListDependencyType::READ) { //Synchronize and Make Data available
-			manager->BufferBarrier(list, std::static_pointer_cast<RenderBufferResource>(resource), true, extra.source_stage, extra.target_stage);
+			manager->BufferBarrier(list, std::static_pointer_cast<RenderBufferResource>(resource), extra.source_stage, extra.target_stage, current_dep.type, dependency.type);
 		}
 		else if (current_dep.previous_access != VulkanCommandListDependencyType::READ || dependency.type != VulkanCommandListDependencyType::READ) { // for write after write, or write affter read, no visibility operations are required, but we must ensure ordering
-			manager->BufferBarrier(list, std::static_pointer_cast<RenderBufferResource>(resource), false, extra.source_stage, extra.target_stage);
+			manager->BufferBarrier(list, std::static_pointer_cast<RenderBufferResource>(resource), extra.source_stage, extra.target_stage, current_dep.type, dependency.type);
 		}
 		break;
 	}
@@ -201,13 +201,11 @@ VulkanCommandListDependency DefaultVulkanDependencyHandler::AddDependency(Render
 	case RenderResourceType::RenderTexture2DCubemapResource:
 	{
 		// In the first access, execution and memory_barrier are always false, but we may need to transition the image.
-		VulkanRenderTextureResource* vk_resource = static_cast<VulkanRenderTextureResource*>(resource->GetExtensionData());
-		bool transition = current_dep.current_state != dependency.current_state; // if the requested type differs then change it.
-		bool execution_barrier = current_dep.previous_access != VulkanCommandListDependencyType::READ || dependency.type != VulkanCommandListDependencyType::READ; // if the requested type differs then change it.
-		bool memory_barrier = current_dep.previous_access == VulkanCommandListDependencyType::WRITE && dependency.type == VulkanCommandListDependencyType::READ; // if we need to read after write then use a memory barrier
-
 		RenderState source = current_dep.type == VulkanCommandListDependencyType::INVALID ? resource->GetRenderState() : current_dep.current_state;
-		memory_barrier |= transition; //transition is a write
+
+		VulkanRenderTextureResource* vk_resource = static_cast<VulkanRenderTextureResource*>(resource->GetExtensionData());
+		bool transition = source != dependency.current_state; // if the requested type differs then change it.
+		bool execution_barrier = current_dep.previous_access != VulkanCommandListDependencyType::READ || dependency.type != VulkanCommandListDependencyType::READ; // if the requested type differs then change it.
 
 		VkImageSubresourceRange range;
 		range.aspectMask = VulkanUnitConverter::IsTextureFormatDepth(vk_resource->GetFormat()) ? VkImageAspectFlagBits::VK_IMAGE_ASPECT_DEPTH_BIT : VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT;
@@ -216,9 +214,9 @@ VulkanCommandListDependency DefaultVulkanDependencyHandler::AddDependency(Render
 		range.layerCount = VK_REMAINING_ARRAY_LAYERS;
 		range.levelCount = VK_REMAINING_MIP_LEVELS;
 
-		if (transition || memory_barrier || execution_barrier) {
-			manager->TransitionImage(list, vk_resource, range, source, dependency.current_state, memory_barrier,
-				extra.source_stage, extra.target_stage);
+		if (transition || execution_barrier) {
+			manager->TransitionImage(list, vk_resource, range, source, dependency.current_state,
+				extra.source_stage, extra.target_stage, current_dep.type, dependency.type);
 		}
 
 		break;
@@ -285,7 +283,7 @@ DefaultVulkanDependencyHandler::VulkanDependencyHandlerFeedback DefaultVulkanDep
 				range.layerCount = VK_REMAINING_ARRAY_LAYERS;
 				range.levelCount = VK_REMAINING_MIP_LEVELS;
 				
-				manager->TransitionImage(list, texture, range, dependency.second.current_state, texture->default_state, false, PipelineStage::PIPELINE_TOP, PipelineStage::PIPELINE_BOTTOM);
+				manager->TransitionImage(list, texture, range, dependency.second.current_state, texture->default_state, PipelineStage::ALL_STAGES, PipelineStage::ALL_STAGES);
 			}
 		}
 	}

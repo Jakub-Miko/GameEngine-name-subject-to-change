@@ -424,15 +424,16 @@ void VulkanRenderResourceManager::ReturnResource(VulkanRenderResource* resource)
 	deletion_queue.push({ resource , false});
 }
 
-void VulkanRenderResourceManager::BufferBarrier(RenderCommandList* list, std::shared_ptr<RenderBufferResource> buffer, bool make_memory_available,
-	PipelineStage write_scope, PipelineStage read_scope)
+void VulkanRenderResourceManager::BufferBarrier(RenderCommandList* list, std::shared_ptr<RenderBufferResource> buffer,
+	PipelineStage write_scope, PipelineStage read_scope, 
+	VulkanCommandListDependencyType src_access , VulkanCommandListDependencyType dst_access)
 {
 	VkBufferMemoryBarrier2 barrier = {};
 	barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;
 	barrier.srcStageMask = VulkanUnitConverter::PipelineStageToVulkanPipelineStage(write_scope);
 	barrier.dstStageMask = VulkanUnitConverter::PipelineStageToVulkanPipelineStage(read_scope);
-	barrier.srcAccessMask = make_memory_available ? VK_ACCESS_2_MEMORY_WRITE_BIT : VK_ACCESS_2_NONE;
-	barrier.dstAccessMask = make_memory_available ? VK_ACCESS_2_MEMORY_READ_BIT : VK_ACCESS_2_NONE;
+	barrier.srcAccessMask = VulkanUnitConverter::DependencyToVkAccess(src_access);
+	barrier.dstAccessMask = VulkanUnitConverter::DependencyToVkAccess(dst_access);
 	barrier.buffer = static_cast<VulkanRenderBufferResource*>(buffer.get())->buffer;
 	barrier.size = VK_WHOLE_SIZE;
 
@@ -445,20 +446,25 @@ void VulkanRenderResourceManager::BufferBarrier(RenderCommandList* list, std::sh
 
 }
 
-void VulkanRenderResourceManager::TransitionImage(RenderCommandList* list, VulkanRenderTextureResource* image, VkImageSubresourceRange range,
-	RenderState source_state, RenderState target_state, bool make_memory_available,  PipelineStage source_scope, PipelineStage target_scope)
+void VulkanRenderResourceManager::TransitionImage(RenderCommandList* list, VulkanRenderTextureResource* image, VkImageSubresourceRange range, RenderState source_state, RenderState target_state,
+	PipelineStage source_scope, PipelineStage target_scope,
+	VulkanCommandListDependencyType src_access, VulkanCommandListDependencyType dst_access)
 {
 	VkImageMemoryBarrier2 barrier = {};
 	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
 	barrier.srcStageMask = VulkanUnitConverter::PipelineStageToVulkanPipelineStage(source_scope);
 	barrier.dstStageMask = VulkanUnitConverter::PipelineStageToVulkanPipelineStage(target_scope);
-	barrier.srcAccessMask = make_memory_available ? VK_ACCESS_2_MEMORY_WRITE_BIT : VK_ACCESS_2_NONE;
-	barrier.dstAccessMask = make_memory_available ? VK_ACCESS_2_MEMORY_READ_BIT : VK_ACCESS_2_NONE;
+	barrier.srcAccessMask = VulkanUnitConverter::DependencyToVkAccess(src_access);
+	barrier.dstAccessMask = VulkanUnitConverter::DependencyToVkAccess(dst_access);
 	barrier.image = image->GetImage();
 	barrier.subresourceRange = range;
 	barrier.oldLayout = VulkanUnitConverter::RenderStateToTextureLayout(source_state);
 	barrier.newLayout = VulkanUnitConverter::RenderStateToTextureLayout(target_state);
 
+	if (source_state != target_state) {
+		barrier.srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT | VK_ACCESS_2_MEMORY_READ_BIT;
+		barrier.dstAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT | VK_ACCESS_2_MEMORY_READ_BIT;
+	}
 
 	VkDependencyInfo info = {};
 	info.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
