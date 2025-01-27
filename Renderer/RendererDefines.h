@@ -42,6 +42,14 @@ enum class TextureUsage : unsigned char
 
 };
 
+inline TextureUsage operator|(const TextureUsage& flags_1, const TextureUsage& flags_2) {
+	return (TextureUsage)((unsigned char)flags_1 | (unsigned char)flags_2);
+}
+
+inline TextureUsage operator&(const TextureUsage& flags_1, const TextureUsage& flags_2) {
+	return (TextureUsage)((unsigned char)flags_1 & (unsigned char)flags_2);
+}
+
 enum class PipelineStage : char {
 	PIPELINE_TOP, PIPELINE_BOTTOM, FRAGMENT_SHADER, VERTEX_SHADER, GEOMETRY_SHADER, COMPUTE_SHADER, HOST, CLEAR, 
 };

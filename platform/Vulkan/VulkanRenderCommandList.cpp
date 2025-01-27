@@ -4,7 +4,7 @@
 #include "VulkanRenderContext.h"
 #include "VulkanRenderResourceManager.h"
 
-VulkanRenderCommandList::VulkanRenderCommandList(Renderer* renderer, std::shared_ptr<RenderCommandAllocator> alloc) : RenderCommandList(renderer, alloc), dependency_handler()
+VulkanRenderCommandList::VulkanRenderCommandList(Renderer* renderer, std::shared_ptr<RenderCommandAllocator> alloc) : RenderCommandList(renderer, alloc), dependency_handler(), current_framebuffer(nullptr)
 {
 	DEFINE_VK_INSTANCE(context);
 
@@ -21,8 +21,6 @@ VulkanRenderCommandList::VulkanRenderCommandList(Renderer* renderer, std::shared
 	
 	VkCommandBufferBeginInfo begin_info = {};
 	begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-	SetDefaultRenderTarget();
 
 	vkBeginCommandBuffer(command_buffer, &begin_info);
 }
@@ -75,7 +73,40 @@ void VulkanRenderCommandList::SetDefaultRenderTarget()
 
 void VulkanRenderCommandList::Clear()
 {
+	VulkanCommandListDependency dep(VulkanCommandListDependencyType::WRITE, RenderState::TEXTURE_TRANSFER_DST, RenderState::UNINITIALIZED);
+	auto& desc = current_framebuffer->GetBufferDescriptor();
+	VkClearColorValue clear{ {0,0,0,0} };
+	VkClearDepthStencilValue clear_depth { 1.0,0 };
+	if (current_framebuffer) {
+		for (auto color_attachment : desc.color_attachments) {
+			auto vk_res = static_cast<VulkanRenderTextureResource*>(color_attachment.resource->GetExtensionData());
+			dependency_handler->AddDependency(this, color_attachment.resource, dep);
+			VkImageSubresourceRange range;
+			range.aspectMask = VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT;
+			range.baseArrayLayer = 0;
+			range.layerCount = VK_REMAINING_ARRAY_LAYERS;
+			range.baseMipLevel = color_attachment.level;
+			range.levelCount = 1;
 
+			vkCmdClearColorImage(command_buffer, vk_res->GetImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clear, 1, &range);
+
+		}
+
+		auto vk_depth_res = static_cast<VulkanRenderTextureResource*>(desc.depth_stencil_attachment.resource->GetExtensionData());
+		dependency_handler->AddDependency(this, desc.depth_stencil_attachment.resource, dep);
+		VkImageSubresourceRange range;
+		range.aspectMask = VkImageAspectFlagBits::VK_IMAGE_ASPECT_DEPTH_BIT;
+		range.baseArrayLayer = 0;
+		range.layerCount = VK_REMAINING_ARRAY_LAYERS;
+		range.baseMipLevel = desc.depth_stencil_attachment.level;
+		range.levelCount = 1;
+
+		vkCmdClearDepthStencilImage(command_buffer, vk_depth_res->GetImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clear_depth, 1, &range);
+
+	}
+	else {
+		throw std::runtime_error("No Render target was set for the clear operation.\n");
+	}
 }
 
 void VulkanRenderCommandList::SetIndexBuffer(std::shared_ptr<RenderBufferResource> buffer)
@@ -175,7 +206,9 @@ VulkanCommandListDependency DefaultVulkanDependencyHandler::AddDependency(Render
 		bool execution_barrier = current_dep.previous_access != VulkanCommandListDependencyType::READ || dependency.type != VulkanCommandListDependencyType::READ; // if the requested type differs then change it.
 		bool memory_barrier = current_dep.previous_access == VulkanCommandListDependencyType::WRITE && dependency.type == VulkanCommandListDependencyType::READ; // if we need to read after write then use a memory barrier
 
-		
+		RenderState source = current_dep.type == VulkanCommandListDependencyType::INVALID ? resource->GetRenderState() : current_dep.current_state;
+		memory_barrier |= transition; //transition is a write
+
 		VkImageSubresourceRange range;
 		range.aspectMask = VulkanUnitConverter::IsTextureFormatDepth(vk_resource->GetFormat()) ? VkImageAspectFlagBits::VK_IMAGE_ASPECT_DEPTH_BIT : VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT;
 		range.baseArrayLayer = 0;
@@ -184,7 +217,7 @@ VulkanCommandListDependency DefaultVulkanDependencyHandler::AddDependency(Render
 		range.levelCount = VK_REMAINING_MIP_LEVELS;
 
 		if (transition || memory_barrier || execution_barrier) {
-			manager->TransitionImage(list, vk_resource, range, current_dep.current_state, dependency.current_state, memory_barrier,
+			manager->TransitionImage(list, vk_resource, range, source, dependency.current_state, memory_barrier,
 				extra.source_stage, extra.target_stage);
 		}
 

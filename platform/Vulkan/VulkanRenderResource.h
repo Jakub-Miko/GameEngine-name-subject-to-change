@@ -31,6 +31,7 @@ public:
 	virtual bool IsTexture() override { return true; };
 	virtual VkImage GetImage() = 0;
 	virtual TextureFormat GetFormat() = 0;
+	virtual TextureUsage GetUsage() = 0;
 	virtual uint32_t GetArrayLayerCount() = 0;
 };
 
@@ -101,6 +102,8 @@ public:
 
 	virtual uint32_t GetArrayLayerCount() override { return 1; };
 
+	virtual TextureUsage GetUsage() override { return descriptor.usage; };
+
 private:
 	virtual ~VulkanRenderTexture2DResource();
 	virtual void DestroyResource() override;
@@ -128,6 +131,7 @@ public:
 
 	virtual uint32_t GetArrayLayerCount() override { return descriptor.num_of_textures; };
 
+	virtual TextureUsage GetUsage() override { return descriptor.usage; };
 
 private:
 	VulkanRenderTexture2DArrayResource(const RenderTexture2DArrayDescriptor& desc, RenderState initial_state = RenderState::UNINITIALIZED, unsigned int render_id = 0)
@@ -156,6 +160,8 @@ public:
 	virtual TextureFormat GetFormat() override { return descriptor.format; };
 
 	virtual uint32_t GetArrayLayerCount() override { return 6; };
+
+	virtual TextureUsage GetUsage() override { return descriptor.usage; };
 
 private:
 	VulkanRenderTexture2DCubemapResource(const RenderTexture2DCubemapDescriptor& desc, RenderState initial_state = RenderState::UNINITIALIZED, unsigned int render_id = 0)

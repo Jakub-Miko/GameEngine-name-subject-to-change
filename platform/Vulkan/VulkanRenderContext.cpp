@@ -15,8 +15,9 @@ void VulkanRenderContext::StartNewFrame()
 	auto vulkan_queue = static_cast<VulkanRenderCommandQueue*>(Renderer::Get()->GetCommandQueue());
 	vulkan_queue->VkBinarySemaphoreWait(frame_sync.present_fence.GetNextResource()); //Waits until the image is available so rendering can begin on it 
 	auto list = static_cast<VulkanRenderCommandList*>(Renderer::Get()->GetRenderCommandList());
-	auto vk_command_buffer = list->GetVkCommandBuffer();
 
+	list->SetDefaultRenderTarget();
+	list->Clear();
 
 	vulkan_queue->ExecuteRenderCommandList(list);
 }
@@ -24,7 +25,41 @@ void VulkanRenderContext::StartNewFrame()
 void VulkanRenderContext::SignalEndFrame()
 {
 	auto vulkan_queue = static_cast<VulkanRenderCommandQueue*>(Renderer::Get()->GetCommandQueue());
+	auto manager = static_cast<VulkanRenderResourceManager*>(RenderResourceManager::Get());
+	auto list = static_cast<VulkanRenderCommandList*>(Renderer::Get()->GetRenderCommandList());
+	auto vk_command_buffer = list->GetVkCommandBuffer();
+
+	auto attachment = static_cast<VulkanRenderTextureResource*>(default_framebuffers[current_framebuffer]->GetBufferDescriptor().color_attachments[0].resource->GetExtensionData());
+	VkImageSubresourceRange range;
+	range.aspectMask = VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT;
+	range.baseArrayLayer = 0;
+	range.baseMipLevel = 0;
+	range.levelCount = 1;
+	range.layerCount = 1;
+
+
+	VkImageMemoryBarrier2 barrier = {};
+	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
+	barrier.srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+	barrier.dstStageMask = VK_PIPELINE_STAGE_2_NONE;
+	barrier.srcAccessMask = VK_ACCESS_2_NONE;
+	barrier.dstAccessMask = VK_ACCESS_2_NONE;
+	barrier.image = attachment->GetImage();
+	barrier.subresourceRange = range;
+	barrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	barrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+
+	VkDependencyInfo info = {};
+	info.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+	info.imageMemoryBarrierCount = 1;
+	info.pImageMemoryBarriers = &barrier;
+
+	vkCmdPipelineBarrier2(*vk_command_buffer, &info);
+
+	vulkan_queue->ExecuteRenderCommandList(list);
 	vulkan_queue->VkBinarySemaphoreSignal(frame_sync.render_fence.GetResource());
+
 }
 
 uint64_t VulkanRenderContext::GetCurrentGpuTimelineValue()
@@ -149,6 +184,7 @@ void VulkanRenderContext::Init()
 	vk_device = vkb_device.device;
 
 	vkb::SwapchainBuilder swapchain_builder(vkb_device);
+	swapchain_builder.add_image_usage_flags(VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 	auto swapchain_result = swapchain_builder.build();
 	if (!swapchain_result.has_value()) {
 		throw std::runtime_error(swapchain_result.error().message());
@@ -222,7 +258,7 @@ void VulkanRenderContext::Init()
 		RenderFrameBufferDescriptor::RenderFrameBufferAttachment attachment;
 		attachment.level = 0;
 		attachment.resource = color_texture;
-		auto depth_buffer = resource_manager->CreateTexture(depth_desc);
+		auto depth_buffer = resource_manager->CreateTexture(depth_desc, RenderState::TEXTURE_DEPTH_STENCIL_ATTACHMENT);
 		RenderFrameBufferDescriptor default_framebuf;
 		default_framebuf.color_attachments = { {0, color_texture } };
 		default_framebuf.depth_stencil_attachment = { 0, depth_buffer };

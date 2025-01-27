@@ -72,7 +72,6 @@ void VulkanRenderCommandQueue::ExecuteRenderCommandList(RenderCommandList* list)
 {
 	DEFINE_VK_INSTANCE(context);
 	VulkanRenderCommandList* vk_command_list = static_cast<VulkanRenderCommandList*>(list);
-	vkEndCommandBuffer(*vk_command_list->GetVkCommandBuffer());
 	uint64_t value = ++last_buffer_signaled;
 	VkTimelineSemaphoreSubmitInfo submit_sync = {};
 
@@ -101,6 +100,7 @@ void VulkanRenderCommandQueue::ExecuteRenderCommandList(RenderCommandList* list)
 		submit_sync.waitSemaphoreValueCount = 1;
 		submit_sync.pWaitSemaphoreValues = &sync.timeline_wait;
 	}
+	vkEndCommandBuffer(*vk_command_list->GetVkCommandBuffer());
 
 	vkQueueSubmit(vk_queue, 1, &info, NULL);
 	submit_mutex.unlock();

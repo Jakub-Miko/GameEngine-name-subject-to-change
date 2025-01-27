@@ -72,8 +72,6 @@ void VulkanRenderResourceManager::UploadDataToBuffer(RenderCommandList* list, st
 	copy.size = size;
 	copy.srcOffset = 0;
 
-	vkCmdCopyBuffer(vk_command_list->command_buffer, vk_staging_buffer->buffer, buffer->buffer, 1, &copy);
-
 	VulkanCommandListDependency dep_resource;
 	dep_resource.type = VulkanCommandListDependencyType::WRITE;
 	dep_resource.current_state = RenderState::COMMON;
@@ -83,9 +81,11 @@ void VulkanRenderResourceManager::UploadDataToBuffer(RenderCommandList* list, st
 	dep_staging.type = VulkanCommandListDependencyType::WRITE;
 	dep_staging.current_state = RenderState::COMMON;
 	dep_staging.expected_state = RenderState::COMMON;
-
 	vk_command_list->AddDependency(resource, dep_resource);
 	vk_command_list->AddDependency(staging_buffer, dep_staging);
+	vkCmdCopyBuffer(vk_command_list->command_buffer, vk_staging_buffer->buffer, buffer->buffer, 1, &copy);
+
+
 }
 
 void VulkanRenderResourceManager::ReallocateAndUploadBuffer(RenderCommandList* list, std::shared_ptr<RenderBufferResource> resource, void* data, size_t size)
@@ -144,10 +144,11 @@ std::shared_ptr<RenderTexture2DResource> VulkanRenderResourceManager::CreateText
 
 	vmaCreateImage(alloc,&image_info,&alloc_info,&image,&allocation,NULL);
 	
-	VulkanRenderTexture2DResource* new_texture = new VulkanRenderTexture2DResource(buffer_desc, default_state);
+	VulkanRenderTexture2DResource* new_texture = new VulkanRenderTexture2DResource(buffer_desc, RenderState::UNINITIALIZED);
 
 	new_texture->alloc = allocation;
 	new_texture->image = image;
+	new_texture->default_state = default_state;
 
 	uint64_t timeline = context->GetCurrentCpuTimelineValue();
 	new_texture->read_timeline = timeline;
@@ -213,10 +214,11 @@ std::shared_ptr<RenderTexture2DArrayResource> VulkanRenderResourceManager::Creat
 
 	vmaCreateImage(alloc, &image_info, &alloc_info, &image, &allocation, NULL);
 
-	VulkanRenderTexture2DArrayResource* new_texture = new VulkanRenderTexture2DArrayResource(buffer_desc, default_state);
+	VulkanRenderTexture2DArrayResource* new_texture = new VulkanRenderTexture2DArrayResource(buffer_desc, RenderState::UNINITIALIZED);
 
 	new_texture->alloc = allocation;
 	new_texture->image = image;
+	new_texture->default_state = default_state;
 
 	uint64_t timeline = context->GetCurrentCpuTimelineValue();
 	new_texture->read_timeline = timeline;
@@ -270,10 +272,11 @@ std::shared_ptr<RenderTexture2DCubemapResource> VulkanRenderResourceManager::Cre
 
 	vmaCreateImage(alloc, &image_info, &alloc_info, &image, &allocation, NULL);
 
-	VulkanRenderTexture2DCubemapResource* new_texture = new VulkanRenderTexture2DCubemapResource(buffer_desc, default_state);
+	VulkanRenderTexture2DCubemapResource* new_texture = new VulkanRenderTexture2DCubemapResource(buffer_desc, RenderState::UNINITIALIZED);
 
 	new_texture->alloc = allocation;
 	new_texture->image = image;
+	new_texture->default_state = default_state;
 
 	uint64_t timeline = context->GetCurrentCpuTimelineValue();
 	new_texture->read_timeline = timeline;
@@ -453,6 +456,8 @@ void VulkanRenderResourceManager::TransitionImage(RenderCommandList* list, Vulka
 	barrier.dstAccessMask = make_memory_available ? VK_ACCESS_2_MEMORY_READ_BIT : VK_ACCESS_2_NONE;
 	barrier.image = image->GetImage();
 	barrier.subresourceRange = range;
+	barrier.oldLayout = VulkanUnitConverter::RenderStateToTextureLayout(source_state);
+	barrier.newLayout = VulkanUnitConverter::RenderStateToTextureLayout(target_state);
 
 
 	VkDependencyInfo info = {};
@@ -478,17 +483,18 @@ void VulkanRenderResourceManager::ClearStagingBuffers()
 	staging_buffer_map.clear();
 }
 
-VulkanRenderTexture2DResource* VulkanRenderResourceManager::CreateNonManagedTexture(VkImage image, RenderTexture2DDescriptor desc, RenderState default_state)
+VulkanRenderTexture2DResource* VulkanRenderResourceManager::CreateNonManagedTexture(VkImage image, RenderTexture2DDescriptor desc, RenderState default_state, RenderState initial_state)
 {
 	DEFINE_VK_INSTANCE(context);
 	uint64_t timeline = context->GetCurrentCpuTimelineValue();
 
-	VulkanRenderTexture2DResource* texture = new VulkanRenderTexture2DResource(desc, default_state);
+	VulkanRenderTexture2DResource* texture = new VulkanRenderTexture2DResource(desc, initial_state);
 
 	texture->alloc = VmaAllocation();
 	texture->image = image;
 	texture->read_timeline = timeline;
 	texture->write_timeline = timeline;
+	texture->default_state = default_state;
 
 	return texture;
 }

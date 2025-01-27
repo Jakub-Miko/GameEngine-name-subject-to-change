@@ -176,6 +176,7 @@ public:
 		case RenderState::TEXTURE_TRANSFER_SRC:					return VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		case RenderState::TEXTURE_DEPTH_STENCIL_ATTACHMENT:		return VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 		case RenderState::TEXTURE_DEPTH_SAMPLE:					return VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL;
+		case RenderState::UNINITIALIZED:						return VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED;
 		default:
 			throw std::runtime_error("Conversion failed");
 		}
@@ -342,11 +343,11 @@ public:
 
 	static VkImageUsageFlags TextureUsageToVkTextureUsage(TextureUsage usage) {
 		switch (usage) {
-		case TextureUsage::COLOR_ATTACHMENT:			return VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-		case TextureUsage::COLOR_ATTACHMENT_READABLE:	return VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_SAMPLED_BIT;
+		case TextureUsage::COLOR_ATTACHMENT:			return VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+		case TextureUsage::COLOR_ATTACHMENT_READABLE:	return VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_SAMPLED_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 		case TextureUsage::COLOR_ATTACHMENT_WRITABLE:	return VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-		case TextureUsage::DEPTH_ATTACHMENT:			return VkImageUsageFlagBits::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-		case TextureUsage::DEPTH_ATTACHMENT_READABLE:	return VkImageUsageFlagBits::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_SAMPLED_BIT;
+		case TextureUsage::DEPTH_ATTACHMENT:			return VkImageUsageFlagBits::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+		case TextureUsage::DEPTH_ATTACHMENT_READABLE:	return VkImageUsageFlagBits::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_SAMPLED_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 		case TextureUsage::SAMPLE:						return VkImageUsageFlagBits::VK_IMAGE_USAGE_SAMPLED_BIT;
 		case TextureUsage::SAMPLE_WRITABLE:				return VkImageUsageFlagBits::VK_IMAGE_USAGE_SAMPLED_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 		case TextureUsage::TRANSFER:					return VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT;

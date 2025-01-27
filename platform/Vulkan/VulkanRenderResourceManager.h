@@ -69,7 +69,7 @@ private:
 	void ClearStagingBuffers();
 
 	//Creates a texture object from a VkImage which is not managed by the resource manager (used mainly for swapchain textures)
-	VulkanRenderTexture2DResource* CreateNonManagedTexture(VkImage image, RenderTexture2DDescriptor desc, RenderState default_state = RenderState::TEXTURE_SAMPLE);
+	VulkanRenderTexture2DResource* CreateNonManagedTexture(VkImage image, RenderTexture2DDescriptor desc, RenderState default_state = RenderState::TEXTURE_SAMPLE, RenderState initial_state = RenderState::UNINITIALIZED);
 
 
 
