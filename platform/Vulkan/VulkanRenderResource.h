@@ -10,7 +10,7 @@ public:
 	VulkanRenderResource() = default;
 	virtual ~VulkanRenderResource() {};
 	virtual RenderState GetDefaultState() { return RenderState::COMMON;  };
-
+	virtual bool IsTexture() override { return false;  };
 
 	uint64_t read_timeline = 0;
 	uint64_t write_timeline = 0; 
@@ -28,8 +28,10 @@ class VulkanRenderTextureResource : public VulkanRenderResource {
 public:
 	RenderState default_state = RenderState::UNINITIALIZED;
 	virtual RenderState GetDefaultState() override { return default_state; };
+	virtual bool IsTexture() override { return true; };
 	virtual VkImage GetImage() = 0;
 	virtual TextureFormat GetFormat() = 0;
+	virtual uint32_t GetArrayLayerCount() = 0;
 };
 
 class VulkanRenderBufferResource : public RenderBufferResource, public VulkanRenderResource {
@@ -97,6 +99,7 @@ public:
 
 	virtual RenderResourceExtension* GetExtensionData() override { return static_cast<RenderResourceExtension*>(this); };
 
+	virtual uint32_t GetArrayLayerCount() override { return 1; };
 
 private:
 	virtual ~VulkanRenderTexture2DResource();
@@ -122,6 +125,8 @@ public:
 	virtual VkImage GetImage() override { return image; };
 
 	virtual TextureFormat GetFormat() override { return descriptor.format; };
+
+	virtual uint32_t GetArrayLayerCount() override { return descriptor.num_of_textures; };
 
 
 private:
@@ -150,6 +155,7 @@ public:
 
 	virtual TextureFormat GetFormat() override { return descriptor.format; };
 
+	virtual uint32_t GetArrayLayerCount() override { return 6; };
 
 private:
 	VulkanRenderTexture2DCubemapResource(const RenderTexture2DCubemapDescriptor& desc, RenderState initial_state = RenderState::UNINITIALIZED, unsigned int render_id = 0)

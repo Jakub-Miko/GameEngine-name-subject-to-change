@@ -24,7 +24,8 @@ struct RenderBufferDescriptor {
 };
 
 class RenderResourceExtension {
-
+public:
+	virtual bool IsTexture() { return false; };
 };
 
 class RenderResource {

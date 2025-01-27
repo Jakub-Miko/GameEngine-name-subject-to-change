@@ -1,5 +1,6 @@
 #include "VulkanRenderCommandList.h"
 #include "VulkanRenderCommandAllocator.h"
+#include "VulkanUnitConverter.h"
 #include "VulkanRenderContext.h"
 #include "VulkanRenderResourceManager.h"
 
@@ -145,20 +146,48 @@ VulkanCommandListDependency DefaultVulkanDependencyHandler::AddDependency(Render
 		dependency.previous_access = dependency.type;
 		dependencies.insert(std::make_pair(resource, dependency));
 		current_dep = VulkanCommandListDependency(VulkanCommandListDependencyType::INVALID, RenderState::EMPTY, RenderState::EMPTY);
-		return current_dep; // if this is the first access, then external synchronization is handled by the timeline values during finalization
 	}
 
 	switch (resource->GetResourceType())
 	{
 	case RenderResourceType::RenderBufferResource:
 	{
+		if (current_dep.type == VulkanCommandListDependencyType::INVALID) {
+			break; // First access to a buffer resource is implicityly synchronized and all memory is always visible so we dont need to do anything
+		}
+		
 		VulkanRenderBufferResource* vk_resource = static_cast<VulkanRenderBufferResource*>(resource.get());
 		if (current_dep.previous_access == VulkanCommandListDependencyType::WRITE && dependency.type == VulkanCommandListDependencyType::READ) { //Synchronize and Make Data available
 			manager->BufferBarrier(list, std::static_pointer_cast<RenderBufferResource>(resource), true, extra.source_stage, extra.target_stage);
 		}
 		else if (current_dep.previous_access != VulkanCommandListDependencyType::READ || dependency.type != VulkanCommandListDependencyType::READ) { // for write after write, or write affter read, no visibility operations are required, but we must ensure ordering
-			manager->BufferBarrier(list, std::static_pointer_cast<RenderBufferResource>(resource), false);
+			manager->BufferBarrier(list, std::static_pointer_cast<RenderBufferResource>(resource), false, extra.source_stage, extra.target_stage);
 		}
+		break;
+	}
+	case RenderResourceType::RenderTexture2DResource:
+	case RenderResourceType::RenderTexture2DArrayResource:
+	case RenderResourceType::RenderTexture2DCubemapResource:
+	{
+		// In the first access, execution and memory_barrier are always false, but we may need to transition the image.
+		VulkanRenderTextureResource* vk_resource = static_cast<VulkanRenderTextureResource*>(resource->GetExtensionData());
+		bool transition = current_dep.current_state != dependency.current_state; // if the requested type differs then change it.
+		bool execution_barrier = current_dep.previous_access != VulkanCommandListDependencyType::READ || dependency.type != VulkanCommandListDependencyType::READ; // if the requested type differs then change it.
+		bool memory_barrier = current_dep.previous_access == VulkanCommandListDependencyType::WRITE && dependency.type == VulkanCommandListDependencyType::READ; // if we need to read after write then use a memory barrier
+
+		
+		VkImageSubresourceRange range;
+		range.aspectMask = VulkanUnitConverter::IsTextureFormatDepth(vk_resource->GetFormat()) ? VkImageAspectFlagBits::VK_IMAGE_ASPECT_DEPTH_BIT : VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT;
+		range.baseArrayLayer = 0;
+		range.baseMipLevel = 0;
+		range.layerCount = VK_REMAINING_ARRAY_LAYERS;
+		range.levelCount = VK_REMAINING_MIP_LEVELS;
+
+		if (transition || memory_barrier || execution_barrier) {
+			manager->TransitionImage(list, vk_resource, range, current_dep.current_state, dependency.current_state, memory_barrier,
+				extra.source_stage, extra.target_stage);
+		}
+
 		break;
 	}
 	default:
@@ -187,6 +216,7 @@ DefaultVulkanDependencyHandler::VulkanDependencyHandlerFeedback DefaultVulkanDep
 	uint64_t timeline_requirement = 0;
 	VulkanRenderResource* resource;
 	VulkanRenderCommandList* vk_command_list = static_cast<VulkanRenderCommandList*>(list);
+	auto manager = static_cast<VulkanRenderResourceManager*>(RenderResourceManager::Get());
 	for (auto& dependency : dependencies) {
 		resource = static_cast<VulkanRenderResource*>(dependency.first->GetExtensionData());
 
@@ -212,6 +242,19 @@ DefaultVulkanDependencyHandler::VulkanDependencyHandlerFeedback DefaultVulkanDep
 
 		dependency.first->SetRenderState(resource->GetDefaultState()); // Change the resource back to its default state, this also serves to mark the resource initialized
 
+		if (dependency.first->GetExtensionData()->IsTexture()) {
+			auto texture = static_cast<VulkanRenderTextureResource*>(dependency.first->GetExtensionData());
+			if (texture->default_state != dependency.second.current_state) {
+				VkImageSubresourceRange range;
+				range.aspectMask = VulkanUnitConverter::IsTextureFormatDepth(texture->GetFormat()) ? VkImageAspectFlagBits::VK_IMAGE_ASPECT_DEPTH_BIT : VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT;
+				range.baseArrayLayer = 0;
+				range.baseMipLevel = 0;
+				range.layerCount = VK_REMAINING_ARRAY_LAYERS;
+				range.levelCount = VK_REMAINING_MIP_LEVELS;
+				
+				manager->TransitionImage(list, texture, range, dependency.second.current_state, texture->default_state, false, PipelineStage::PIPELINE_TOP, PipelineStage::PIPELINE_BOTTOM);
+			}
+		}
 	}
 
 	VulkanDependencyHandlerFeedback feedback;

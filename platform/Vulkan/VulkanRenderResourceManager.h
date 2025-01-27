@@ -52,7 +52,7 @@ public:
 	void BufferBarrier(RenderCommandList* list, std::shared_ptr<RenderBufferResource> buffer, bool make_memory_available = true,
 		PipelineStage write_scope = PipelineStage::PIPELINE_BOTTOM, PipelineStage read_scope = PipelineStage::PIPELINE_TOP);
 
-	void TransitionImage(RenderCommandList* list, std::shared_ptr<VulkanRenderTextureResource> image, VkImageSubresourceRange range, RenderState source_state, RenderState target_state, PipelineStage source_scope = PipelineStage::PIPELINE_BOTTOM, PipelineStage target_scope = PipelineStage::PIPELINE_TOP);
+	void TransitionImage(RenderCommandList* list, VulkanRenderTextureResource* image, VkImageSubresourceRange range, RenderState source_state, RenderState target_state, bool make_memory_available = true ,PipelineStage source_scope = PipelineStage::PIPELINE_BOTTOM, PipelineStage target_scope = PipelineStage::PIPELINE_TOP);
 
 	std::shared_ptr<RenderBufferResource> GetStagingBuffer(size_t size);
 

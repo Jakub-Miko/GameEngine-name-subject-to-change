@@ -442,15 +442,15 @@ void VulkanRenderResourceManager::BufferBarrier(RenderCommandList* list, std::sh
 
 }
 
-void VulkanRenderResourceManager::TransitionImage(RenderCommandList* list, std::shared_ptr<VulkanRenderTextureResource> image, VkImageSubresourceRange range, RenderState source_state, RenderState target_state, PipelineStage source_scope, PipelineStage target_scope)
+void VulkanRenderResourceManager::TransitionImage(RenderCommandList* list, VulkanRenderTextureResource* image, VkImageSubresourceRange range,
+	RenderState source_state, RenderState target_state, bool make_memory_available,  PipelineStage source_scope, PipelineStage target_scope)
 {
-
 	VkImageMemoryBarrier2 barrier = {};
 	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
 	barrier.srcStageMask = VulkanUnitConverter::PipelineStageToVulkanPipelineStage(source_scope);
 	barrier.dstStageMask = VulkanUnitConverter::PipelineStageToVulkanPipelineStage(target_scope);
-	barrier.srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT;
-	barrier.dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT;
+	barrier.srcAccessMask = make_memory_available ? VK_ACCESS_2_MEMORY_WRITE_BIT : VK_ACCESS_2_NONE;
+	barrier.dstAccessMask = make_memory_available ? VK_ACCESS_2_MEMORY_READ_BIT : VK_ACCESS_2_NONE;
 	barrier.image = image->GetImage();
 	barrier.subresourceRange = range;
 
