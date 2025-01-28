@@ -341,7 +341,7 @@ std::shared_ptr<RenderBufferResource> VulkanRenderResourceManager::GetStagingBuf
 	}
 	lock.unlock();
 
-	size = std::min((size_t)256, RoundUpToPowerOfTwo(size));
+	size = std::max((size_t)256, RoundUpToPowerOfTwo(size));
 
 	RenderBufferDescriptor buffer_desc(size, RenderBufferType::UPLOAD, RenderBufferUsage::STAGING);
 

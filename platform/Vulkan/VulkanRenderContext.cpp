@@ -15,6 +15,37 @@ void VulkanRenderContext::StartNewFrame()
 	auto vulkan_queue = static_cast<VulkanRenderCommandQueue*>(Renderer::Get()->GetCommandQueue());
 	vulkan_queue->VkBinarySemaphoreWait(frame_sync.present_fence.GetNextResource()); //Waits until the image is available so rendering can begin on it 
 	auto list = static_cast<VulkanRenderCommandList*>(Renderer::Get()->GetRenderCommandList());
+	auto vk_command_buffer = list->GetVkCommandBuffer();
+
+	auto attachment = static_cast<VulkanRenderTextureResource*>(default_framebuffers[current_framebuffer]->GetBufferDescriptor().color_attachments[0].resource->GetExtensionData());
+	VkImageSubresourceRange range;
+	range.aspectMask = VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT;
+	range.baseArrayLayer = 0;
+	range.baseMipLevel = 0;
+	range.levelCount = 1;
+	range.layerCount = 1;
+
+
+	VkImageMemoryBarrier2 barrier = {};
+	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
+	barrier.srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+	barrier.dstStageMask = VK_PIPELINE_STAGE_2_NONE;
+	barrier.srcAccessMask = VK_ACCESS_2_NONE;
+	barrier.dstAccessMask = VK_ACCESS_2_NONE;
+	barrier.image = attachment->GetImage();
+	barrier.subresourceRange = range;
+	barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	barrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+
+	VkDependencyInfo info = {};
+	info.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+	info.imageMemoryBarrierCount = 1;
+	info.pImageMemoryBarriers = &barrier;
+
+	vkCmdPipelineBarrier2(*vk_command_buffer, &info);
+	
+	
 
 	list->SetDefaultRenderTarget();
 	list->Clear();
