@@ -101,6 +101,8 @@ void VulkanRenderCommandQueue::ExecuteRenderCommandList(RenderCommandList* list)
 		submit_sync.waitSemaphoreValueCount = 1;
 		submit_sync.pWaitSemaphoreValues = &sync.timeline_wait;
 	}
+
+	vk_command_list->OutsideRenderPass(); // Make sure to end the render pass before submission;
 	vkEndCommandBuffer(*vk_command_list->GetVkCommandBuffer());
 
 	vkQueueSubmit(vk_queue, 1, &info, NULL);

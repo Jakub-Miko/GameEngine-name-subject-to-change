@@ -8,6 +8,8 @@ enum class VulkanCommandListDependencyType : char {
     WRITE, READ, INVALID
 };
 
+class VulkanRenderCommandList;
+
 struct VulkanCommandListDependency {
     VulkanCommandListDependency(VulkanCommandListDependencyType type, RenderState current_state, RenderState expected_state) 
         : type(type),previous_access(type), expected_state(expected_state), current_state(current_state) {}
@@ -31,7 +33,7 @@ public:
         uint64_t timeline_wait;
     };
 
-    virtual VulkanCommandListDependency AddDependency(RenderCommandList* list, std::shared_ptr<RenderResource> resource, 
+    virtual VulkanCommandListDependency AddDependency(VulkanRenderCommandList* list, std::shared_ptr<RenderResource> resource,
         VulkanCommandListDependency dependency, VulkanCommandListDependencyExtra extra = VulkanCommandListDependencyExtra()) = 0;
     virtual VulkanCommandListDependency GetDependency(std::shared_ptr<RenderResource> resource) = 0;
     virtual VulkanDependencyHandlerFeedback FinalizeDependencies(RenderCommandList* list, uint64_t new_timeline_value) = 0;
@@ -42,7 +44,7 @@ class DefaultVulkanDependencyHandler : public VulkanDependencyHandler {
 public:
     DefaultVulkanDependencyHandler() : dependencies(), non_dependent_resources() {}
 
-    virtual VulkanCommandListDependency AddDependency(RenderCommandList* list, std::shared_ptr<RenderResource> resource, 
+    virtual VulkanCommandListDependency AddDependency(VulkanRenderCommandList* list, std::shared_ptr<RenderResource> resource,
         VulkanCommandListDependency dependency, VulkanCommandListDependencyExtra extra = VulkanCommandListDependencyExtra()) override;
     virtual VulkanCommandListDependency GetDependency(std::shared_ptr<RenderResource> resource) override;
     virtual VulkanDependencyHandlerFeedback FinalizeDependencies(RenderCommandList* list, uint64_t new_timeline_value) override;
@@ -92,10 +94,20 @@ public:
     VulkanCommandListDependency AddDependency(std::shared_ptr<RenderResource> dep_resource ,VulkanCommandListDependency dep); //Adds or updates a dependency, and returns the previous dependency state
     VulkanCommandListDependency GetDependency(std::shared_ptr<RenderResource> dep_resource); //Gets the previous dependency if present
 
+    bool IsRenderPassActive() { return render_pass_active; }
+
+    //Ensure the renderpass is active
+    void InsideRenderPass();
+
+
+    //Ensure the renderpass is inactive
+    void OutsideRenderPass();
+
 private:
     VkCommandBuffer command_buffer;
 
     VulkanDependencyHandler* dependency_handler;
     std::shared_ptr<RenderFrameBufferResource> current_framebuffer = nullptr;
     std::shared_ptr<Pipeline> current_pipeline = nullptr;
+    bool render_pass_active = false;
 };

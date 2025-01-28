@@ -246,7 +246,7 @@ struct RenderFrameBufferDescriptor {
 
 	struct RenderFrameBufferAttachment {
 		int level = 0;
-		std::shared_ptr<RenderResource> resource;
+		std::shared_ptr<RenderResource> resource = nullptr;
 	};
 
 	std::vector<RenderFrameBufferAttachment> color_attachments;

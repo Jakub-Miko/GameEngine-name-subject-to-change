@@ -36,6 +36,7 @@ VulkanRenderCommandList::~VulkanRenderCommandList()
 
 void VulkanRenderCommandList::SetPipeline(std::shared_ptr<Pipeline> pipeline)
 {
+
 	current_pipeline = pipeline;
 	auto vulkan_pipeline = static_cast<VulkanPipeline*>(pipeline.get());
 	auto vk_pipeline = vulkan_pipeline->GetVkPipeline();
@@ -68,17 +69,20 @@ void VulkanRenderCommandList::SetTexture2DCubemap(const std::string& semantic_na
 
 void VulkanRenderCommandList::SetRenderTarget(std::shared_ptr<RenderFrameBufferResource> framebuffer)
 {
+	OutsideRenderPass(); // if a render pass was active, end it, so we can set a new framebuffer and the next rendering command will resume it
 	current_framebuffer = framebuffer;
 }
 
 void VulkanRenderCommandList::SetDefaultRenderTarget()
 {
 	DEFINE_VK_INSTANCE(context);
+	OutsideRenderPass(); // if a render pass was active, end it, so we can set a new framebuffer and the next rendering command will resume it
 	current_framebuffer = context->default_framebuffers[context->current_framebuffer];
 }
 
 void VulkanRenderCommandList::Clear()
 {
+	OutsideRenderPass();
 	VulkanCommandListDependency dep(VulkanCommandListDependencyType::WRITE, RenderState::TEXTURE_TRANSFER_DST, RenderState::UNINITIALIZED);
 	auto& desc = current_framebuffer->GetBufferDescriptor();
 	VkClearColorValue clear{ {0,0,0,0} };
@@ -165,7 +169,31 @@ VulkanCommandListDependency VulkanRenderCommandList::GetDependency(std::shared_p
 	return dependency_handler->GetDependency(dep_resource);
 }
 
-VulkanCommandListDependency DefaultVulkanDependencyHandler::AddDependency(RenderCommandList* list, std::shared_ptr<RenderResource> resource, 
+void VulkanRenderCommandList::InsideRenderPass()
+{
+	if (!render_pass_active) {
+		if (!current_framebuffer) {
+			throw std::runtime_error("A valid render target needs to be set before submitting rendering commands.\n");
+		}
+
+		VkRenderingInfo info = static_cast<VulkanRenderFrameBufferResource*>(current_framebuffer.get())->GetRenderingInfo();
+
+		vkCmdBeginRendering(command_buffer, &info);
+
+		render_pass_active = true;
+	}
+}
+
+void VulkanRenderCommandList::OutsideRenderPass()
+{
+	if (render_pass_active) {
+		vkCmdEndRendering(command_buffer);
+	}
+}
+
+// If this works, i'll name it the GOD FUNCTION, since basically performs most if not all implicit synchronization.
+// Also in a year since writing this, only god will know whats going on here
+VulkanCommandListDependency DefaultVulkanDependencyHandler::AddDependency(VulkanRenderCommandList* list, std::shared_ptr<RenderResource> resource, 
 	VulkanCommandListDependency dependency,VulkanCommandListDependencyExtra extra)
 {
 	auto fnd = dependencies.find(resource);
@@ -195,9 +223,11 @@ VulkanCommandListDependency DefaultVulkanDependencyHandler::AddDependency(Render
 		
 		VulkanRenderBufferResource* vk_resource = static_cast<VulkanRenderBufferResource*>(resource.get());
 		if (current_dep.previous_access == VulkanCommandListDependencyType::WRITE && dependency.type == VulkanCommandListDependencyType::READ) { //Synchronize and Make Data available
+			list->OutsideRenderPass(); // Emiting a barrier pauses a rendering pass
 			manager->BufferBarrier(list, std::static_pointer_cast<RenderBufferResource>(resource), extra.source_stage, extra.target_stage, current_dep.type, dependency.type);
 		}
 		else if (current_dep.previous_access != VulkanCommandListDependencyType::READ || dependency.type != VulkanCommandListDependencyType::READ) { // for write after write, or write affter read, no visibility operations are required, but we must ensure ordering
+			list->OutsideRenderPass(); // Emiting a barrier pauses a rendering pass
 			manager->BufferBarrier(list, std::static_pointer_cast<RenderBufferResource>(resource), extra.source_stage, extra.target_stage, current_dep.type, dependency.type);
 		}
 		break;
@@ -213,14 +243,16 @@ VulkanCommandListDependency DefaultVulkanDependencyHandler::AddDependency(Render
 		bool transition = source != dependency.current_state; // if the requested type differs then change it.
 		bool execution_barrier = current_dep.previous_access != VulkanCommandListDependencyType::READ || dependency.type != VulkanCommandListDependencyType::READ; // if the requested type differs then change it.
 
-		VkImageSubresourceRange range;
-		range.aspectMask = VulkanUnitConverter::IsTextureFormatDepth(vk_resource->GetFormat()) ? VkImageAspectFlagBits::VK_IMAGE_ASPECT_DEPTH_BIT : VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT;
-		range.baseArrayLayer = 0;
-		range.baseMipLevel = 0;
-		range.layerCount = VK_REMAINING_ARRAY_LAYERS;
-		range.levelCount = VK_REMAINING_MIP_LEVELS;
 
 		if (transition || execution_barrier) {
+			VkImageSubresourceRange range;
+			range.aspectMask = VulkanUnitConverter::IsTextureFormatDepth(vk_resource->GetFormat()) ? VkImageAspectFlagBits::VK_IMAGE_ASPECT_DEPTH_BIT : VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT;
+			range.baseArrayLayer = 0;
+			range.baseMipLevel = 0;
+			range.layerCount = VK_REMAINING_ARRAY_LAYERS;
+			range.levelCount = VK_REMAINING_MIP_LEVELS;
+
+			list->OutsideRenderPass(); // Emiting a barrier pauses a rendering pass
 			manager->TransitionImage(list, vk_resource, range, source, dependency.current_state,
 				extra.source_stage, extra.target_stage, current_dep.type, dependency.type);
 		}

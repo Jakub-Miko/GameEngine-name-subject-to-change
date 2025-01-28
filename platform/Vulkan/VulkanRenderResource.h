@@ -32,6 +32,7 @@ public:
 	virtual VkImageView GetImageView() = 0;
 	virtual VkImage GetImage() = 0;
 	virtual TextureFormat GetFormat() = 0;
+	virtual glm::uvec2 GetResolution() = 0;
 	virtual TextureUsage GetUsage() = 0;
 	virtual uint32_t GetArrayLayerCount() = 0;
 };
@@ -107,6 +108,8 @@ public:
 
 	virtual VkImageView GetImageView() override { return view;  }
 
+	virtual glm::uvec2 GetResolution() override { return { descriptor.width, descriptor.height }; };
+
 private:
 	virtual ~VulkanRenderTexture2DResource();
 	virtual void DestroyResource() override;
@@ -138,6 +141,8 @@ public:
 	virtual TextureUsage GetUsage() override { return descriptor.usage; };
 
 	virtual VkImageView GetImageView() override { return view; }
+
+	virtual glm::uvec2 GetResolution() override { return { descriptor.width, descriptor.height }; };
 
 private:
 	VulkanRenderTexture2DArrayResource(const RenderTexture2DArrayDescriptor& desc, RenderState initial_state = RenderState::UNINITIALIZED, unsigned int render_id = 0)
@@ -172,6 +177,8 @@ public:
 
 	virtual VkImageView GetImageView() override { return view; }
 
+	virtual glm::uvec2 GetResolution() override { return { descriptor.res, descriptor.res }; };
+
 private:
 	VulkanRenderTexture2DCubemapResource(const RenderTexture2DCubemapDescriptor& desc, RenderState initial_state = RenderState::UNINITIALIZED, unsigned int render_id = 0)
 		: RenderTexture2DCubemapResource(desc, initial_state) {
@@ -194,17 +201,15 @@ public:
 
 	virtual void UnMap() override;
 
-
-
 	VulkanRenderFrameBufferResource(const VulkanRenderFrameBufferResource& other) = delete;
 
-	VulkanRenderFrameBufferResource(const RenderFrameBufferDescriptor& desc, RenderState initial_state = RenderState::UNINITIALIZED, unsigned int render_id = 0)
-		: RenderFrameBufferResource(desc, initial_state) {
+	VulkanRenderFrameBufferResource(const RenderFrameBufferDescriptor& desc, RenderState initial_state = RenderState::UNINITIALIZED, unsigned int render_id = 0);
 
-	}
+	VkRenderingInfo& GetRenderingInfo() { return rendering_info;  }
 
 	virtual ~VulkanRenderFrameBufferResource() {}
 
 private:
-
+	std::vector<VkRenderingAttachmentInfo> attachment_info_store; //index 0 is depth, other are color
+	VkRenderingInfo rendering_info;
 };
