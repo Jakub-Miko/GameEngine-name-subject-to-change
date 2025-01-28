@@ -9,6 +9,7 @@
 #include <queue>
 #include <map>
 #include <mutex>
+#include <variant>
 
 class VulkanRenderResourceManager : public RenderResourceManager {
 public:
@@ -62,6 +63,7 @@ public:
 
 	VulkanDependencyHandler* GetDependencyHandler();
 	void ReturnDependencyHandler(VulkanDependencyHandler* handler);
+	void ReturnCommandList(RenderCommandList* list, uint64_t deletion_timeline);
 
 private:
 	VulkanRenderResourceManager();
@@ -78,15 +80,23 @@ private:
 
 
 private:
+	enum class deletion_item_type : char {
+		RESOURCE, STAGING_BUFFER, COMMAND_BUFFER
+	};
+
 	struct deletion_item {
-		VulkanRenderResource* resource = nullptr;
-		bool staging = false;
+		union {
+			VulkanRenderResource* resource;
+			RenderCommandList* list;
+		};
+		uint64_t deletion_timeline;
+		deletion_item_type type = deletion_item_type::RESOURCE;
 	};
 
 	std::mutex deletion_queue_mutex;
 	std::queue<deletion_item> deletion_queue;
 	std::mutex staging_buffer_map_mutex;
-	std::map<size_t, RenderBufferResource*> staging_buffer_map;
+	std::multimap<size_t, RenderBufferResource*> staging_buffer_map;
 	std::mutex dependency_handler_mutex;
 	std::vector<VulkanDependencyHandler*> dependency_handlers;
 };

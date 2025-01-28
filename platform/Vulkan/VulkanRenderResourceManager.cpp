@@ -341,7 +341,7 @@ std::shared_ptr<RenderBufferResource> VulkanRenderResourceManager::GetStagingBuf
 	}
 	lock.unlock();
 
-	size = RoundUpToPowerOfTwo(size);
+	size = std::min((size_t)256, RoundUpToPowerOfTwo(size));
 
 	RenderBufferDescriptor buffer_desc(size, RenderBufferType::UPLOAD, RenderBufferUsage::STAGING);
 
@@ -370,6 +370,16 @@ void VulkanRenderResourceManager::ReturnDependencyHandler(VulkanDependencyHandle
 	std::lock_guard<std::mutex> lock(dependency_handler_mutex);
 	handler->Reset();
 	dependency_handlers.push_back(handler);
+}
+
+void VulkanRenderResourceManager::ReturnCommandList(RenderCommandList* list, uint64_t deletion_timeline)
+{
+	std::unique_lock<std::mutex> lock(deletion_queue_mutex);
+	deletion_item item;
+	item.list = list;
+	item.type = deletion_item_type::COMMAND_BUFFER;
+	item.deletion_timeline = deletion_timeline;
+	deletion_queue.push(item);
 }
 
 void VulkanRenderResourceManager::Update()
@@ -403,16 +413,30 @@ void VulkanRenderResourceManager::FlushDeletions()
 	uint64_t current_timeline = context->GetCurrentGpuTimelineValue();
 
 	deletion_item resource;
-	while (!deletion_queue.empty() && (resource = deletion_queue.front()).resource && resource.resource->read_timeline < current_timeline && resource.resource->write_timeline < current_timeline) {
-		if(resource.staging) {
-			VulkanRenderBufferResource* buffer = static_cast<VulkanRenderBufferResource*>(resource.resource);
-
-			staging_buffer_map.insert(std::make_pair(buffer->descriptor.buffer_size, buffer));
-		}
-		else {
+	while (!deletion_queue.empty() && (resource = deletion_queue.front()).resource && resource.deletion_timeline < current_timeline) {
+		switch (resource.type)
+		{
+		case deletion_item_type::RESOURCE:
 			resource.resource->DestroyResource();
 			delete resource.resource;
+			break;
+		case deletion_item_type::STAGING_BUFFER:
+		{
+			VulkanRenderBufferResource* buffer = static_cast<VulkanRenderBufferResource*>(resource.resource);
+			staging_buffer_map.insert(std::make_pair(buffer->descriptor.buffer_size, buffer));
+			break;
 		}
+		case deletion_item_type::COMMAND_BUFFER:
+		{
+			lock.unlock();
+			delete resource.list;
+			lock.lock();
+		}
+		break;
+		default:
+			throw std::runtime_error("Invalid deletion type.\n");
+		}
+		
 		deletion_queue.pop();
 	}
 
@@ -420,8 +444,11 @@ void VulkanRenderResourceManager::FlushDeletions()
 
 void VulkanRenderResourceManager::ReturnResource(VulkanRenderResource* resource)
 {
-	std::unique_lock<std::mutex> lock(deletion_queue_mutex);
-	deletion_queue.push({ resource , false});
+	deletion_item item;
+	item.resource = resource;
+	item.type = deletion_item_type::RESOURCE;
+	item.deletion_timeline = std::max(resource->read_timeline, resource->write_timeline);
+	deletion_queue.push(item);
 }
 
 void VulkanRenderResourceManager::BufferBarrier(RenderCommandList* list, std::shared_ptr<RenderBufferResource> buffer,
@@ -477,7 +504,11 @@ void VulkanRenderResourceManager::TransitionImage(RenderCommandList* list, Vulka
 void VulkanRenderResourceManager::ReturnStagingBufferResource(VulkanRenderBufferResource* resource)
 {
 	std::unique_lock<std::mutex> lock(deletion_queue_mutex);
-	deletion_queue.push({ resource , true });
+	deletion_item item;
+	item.resource = resource;
+	item.type = deletion_item_type::STAGING_BUFFER;
+	item.deletion_timeline = std::max(resource->read_timeline, resource->write_timeline);
+	deletion_queue.push(item);
 }
 
 void VulkanRenderResourceManager::ClearStagingBuffers()

@@ -370,7 +370,12 @@ void Editor::Run()
 		impl_custom_imgui_platform::UpdatePlatformWindows();
 			
 	}
-#endif
+#elif defined Vulkan_API
+
+	ImGui::UpdatePlatformWindows();
+	ImGui::RenderPlatformWindowsDefault();
+
+#endif 
 
 }
 

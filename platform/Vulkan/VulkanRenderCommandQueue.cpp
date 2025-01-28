@@ -3,6 +3,7 @@
 #include "VulkanRenderContext.h"
 #include "VulkanRenderFence.h"
 #include "VulkanRenderResource.h"
+#include "VulkanRenderResourceManager.h"
 
 void VulkanRenderCommandQueue::ExecuteRenderCommandLists(std::vector<RenderCommandList*>& lists)
 {
@@ -104,6 +105,7 @@ void VulkanRenderCommandQueue::ExecuteRenderCommandList(RenderCommandList* list)
 
 	vkQueueSubmit(vk_queue, 1, &info, NULL);
 	submit_mutex.unlock();
+	static_cast<VulkanRenderResourceManager*>(RenderResourceManager::Get())->ReturnCommandList(list, value);
 }
 
 void VulkanRenderCommandQueue::Signal(std::shared_ptr<RenderFence> fence, int num)
