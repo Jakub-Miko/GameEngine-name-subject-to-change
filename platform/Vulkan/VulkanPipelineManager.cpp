@@ -140,7 +140,7 @@ std::shared_ptr<Pipeline> VulkanPipelineManager::CreatePipeline(const PipelineDe
 
 	std::vector<VkPipelineColorBlendAttachmentState> blend_state_attachments = GetBlendState(desc);
 
-	VkPipelineColorBlendStateCreateInfo blend_state;
+	VkPipelineColorBlendStateCreateInfo blend_state = {};
 	blend_state.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
 	blend_state.attachmentCount = blend_state_attachments.size();
 	blend_state.pAttachments = blend_state_attachments.data();
