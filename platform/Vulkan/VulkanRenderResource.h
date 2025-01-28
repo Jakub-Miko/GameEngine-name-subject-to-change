@@ -29,6 +29,7 @@ public:
 	RenderState default_state = RenderState::UNINITIALIZED;
 	virtual RenderState GetDefaultState() override { return default_state; };
 	virtual bool IsTexture() override { return true; };
+	virtual VkImageView GetImageView() = 0;
 	virtual VkImage GetImage() = 0;
 	virtual TextureFormat GetFormat() = 0;
 	virtual TextureUsage GetUsage() = 0;
@@ -104,6 +105,8 @@ public:
 
 	virtual TextureUsage GetUsage() override { return descriptor.usage; };
 
+	virtual VkImageView GetImageView() override { return view;  }
+
 private:
 	virtual ~VulkanRenderTexture2DResource();
 	virtual void DestroyResource() override;
@@ -112,6 +115,7 @@ private:
 
 	}
 	VkImage image;
+	VkImageView view;
 	VmaAllocation alloc;
 };
 
@@ -133,6 +137,8 @@ public:
 
 	virtual TextureUsage GetUsage() override { return descriptor.usage; };
 
+	virtual VkImageView GetImageView() override { return view; }
+
 private:
 	VulkanRenderTexture2DArrayResource(const RenderTexture2DArrayDescriptor& desc, RenderState initial_state = RenderState::UNINITIALIZED, unsigned int render_id = 0)
 		: RenderTexture2DArrayResource(desc, initial_state) {
@@ -142,6 +148,7 @@ private:
 	virtual ~VulkanRenderTexture2DArrayResource();
 
 	VkImage image;
+	VkImageView view;
 	VmaAllocation alloc;
 };
 
@@ -163,6 +170,8 @@ public:
 
 	virtual TextureUsage GetUsage() override { return descriptor.usage; };
 
+	virtual VkImageView GetImageView() override { return view; }
+
 private:
 	VulkanRenderTexture2DCubemapResource(const RenderTexture2DCubemapDescriptor& desc, RenderState initial_state = RenderState::UNINITIALIZED, unsigned int render_id = 0)
 		: RenderTexture2DCubemapResource(desc, initial_state) {
@@ -172,6 +181,7 @@ private:
 	~VulkanRenderTexture2DCubemapResource();
 
 	VkImage image;
+	VkImageView view;
 	VmaAllocation alloc;
 };
 

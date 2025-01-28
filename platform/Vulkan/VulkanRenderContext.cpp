@@ -282,9 +282,16 @@ void VulkanRenderContext::Init()
 	depth_desc.usage = TextureUsage::DEPTH_ATTACHMENT;
 
 	std::vector<RenderFrameBufferDescriptor::RenderFrameBufferAttachment> swapchain_images;
-	swapchain_images.reserve(vkb_swapchain.get_images().value().size());
-	for (auto& image : vkb_swapchain.get_images().value()) {
-		RenderTexture2DResource* texture = resource_manager->CreateNonManagedTexture(image, swapchain_image_desc, RenderState::TEXTURE_COLOR_ATTACHMENT);
+	auto images = vkb_swapchain.get_images().value();
+	auto views = vkb_swapchain.get_image_views().value();
+
+	swapchain_images.reserve(images.size());
+	int swapchain_size = images.size();
+	for (int i = 0; i < swapchain_size; i++) {
+		auto image = images[i];
+		auto view = views[i];
+
+		RenderTexture2DResource* texture = resource_manager->CreateNonManagedTexture(image, view, swapchain_image_desc, RenderState::TEXTURE_COLOR_ATTACHMENT);
 		std::shared_ptr<RenderTexture2DResource> color_texture = std::shared_ptr<RenderTexture2DResource>(texture);
 		RenderFrameBufferDescriptor::RenderFrameBufferAttachment attachment;
 		attachment.level = 0;

@@ -55,6 +55,7 @@ void VulkanRenderTexture2DResource::DestroyResource()
 	DEFINE_VK_INSTANCE(context);
 	VmaAllocator& allocator = context->GetVmaAllocator();
 	vmaDestroyImage(allocator, image, alloc);
+	vkDestroyImageView(context->GetVkDevice(), view, NULL);
 }
 
 
@@ -122,6 +123,7 @@ void VulkanRenderTexture2DArrayResource::DestroyResource()
 	DEFINE_VK_INSTANCE(context);
 	VmaAllocator& allocator = context->GetVmaAllocator();
 	vmaDestroyImage(allocator, image, alloc);
+	vkDestroyImageView(context->GetVkDevice(), view, NULL);
 }
 
 VulkanRenderTexture2DArrayResource::~VulkanRenderTexture2DArrayResource()
@@ -146,6 +148,7 @@ void VulkanRenderTexture2DCubemapResource::DestroyResource()
 	DEFINE_VK_INSTANCE(context);
 	VmaAllocator& allocator = context->GetVmaAllocator();
 	vmaDestroyImage(allocator, image, alloc);
+	vkDestroyImageView(context->GetVkDevice(), view, NULL);
 }
 
 VulkanRenderTexture2DCubemapResource::~VulkanRenderTexture2DCubemapResource()

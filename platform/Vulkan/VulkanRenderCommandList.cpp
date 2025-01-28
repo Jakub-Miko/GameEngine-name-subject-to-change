@@ -2,9 +2,11 @@
 #include "VulkanRenderCommandAllocator.h"
 #include "VulkanUnitConverter.h"
 #include "VulkanRenderContext.h"
+#include "VulkanPipelineManager.h"
 #include "VulkanRenderResourceManager.h"
 
-VulkanRenderCommandList::VulkanRenderCommandList(Renderer* renderer, std::shared_ptr<RenderCommandAllocator> alloc) : RenderCommandList(renderer, alloc), dependency_handler(), current_framebuffer(nullptr)
+VulkanRenderCommandList::VulkanRenderCommandList(Renderer* renderer, std::shared_ptr<RenderCommandAllocator> alloc) : RenderCommandList(renderer, alloc), dependency_handler(),
+	current_framebuffer(nullptr), current_pipeline(nullptr)
 {
 	DEFINE_VK_INSTANCE(context);
 
@@ -34,6 +36,10 @@ VulkanRenderCommandList::~VulkanRenderCommandList()
 
 void VulkanRenderCommandList::SetPipeline(std::shared_ptr<Pipeline> pipeline)
 {
+	current_pipeline = pipeline;
+	auto vulkan_pipeline = static_cast<VulkanPipeline*>(pipeline.get());
+	auto vk_pipeline = vulkan_pipeline->GetVkPipeline();
+	vkCmdBindPipeline(command_buffer, VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS, *vk_pipeline);
 }
 
 void VulkanRenderCommandList::Execute()

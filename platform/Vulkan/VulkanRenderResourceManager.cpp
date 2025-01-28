@@ -140,15 +140,35 @@ std::shared_ptr<RenderTexture2DResource> VulkanRenderResourceManager::CreateText
 	alloc_info.flags = NULL;
 
 	VkImage image;
+	VkImageView view;
 	VmaAllocation allocation;
 
 	vmaCreateImage(alloc,&image_info,&alloc_info,&image,&allocation,NULL);
 	
+	VkImageSubresourceRange range = {};
+	range.baseArrayLayer = 0;
+	range.baseMipLevel = 0;
+	range.layerCount = VK_REMAINING_ARRAY_LAYERS;
+	range.levelCount = VK_REMAINING_MIP_LEVELS;
+	range.aspectMask = VulkanUnitConverter::IsTextureFormatDepth(buffer_desc.format) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+
+	VkImageViewCreateInfo view_info = {};
+	view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	view_info.components = { VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY };
+	view_info.format = image_info.format;
+	view_info.image = image;
+	view_info.subresourceRange = range;
+	view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+
+	vkCreateImageView(context->GetVkDevice(), &view_info, NULL, &view);
+
+
 	VulkanRenderTexture2DResource* new_texture = new VulkanRenderTexture2DResource(buffer_desc, RenderState::UNINITIALIZED);
 
 	new_texture->alloc = allocation;
 	new_texture->image = image;
 	new_texture->default_state = default_state;
+	new_texture->view = view;
 
 	uint64_t timeline = context->GetCurrentCpuTimelineValue();
 	new_texture->read_timeline = timeline;
@@ -210,15 +230,34 @@ std::shared_ptr<RenderTexture2DArrayResource> VulkanRenderResourceManager::Creat
 	alloc_info.flags = NULL;
 
 	VkImage image;
+	VkImageView view;
 	VmaAllocation allocation;
 
 	vmaCreateImage(alloc, &image_info, &alloc_info, &image, &allocation, NULL);
+
+	VkImageSubresourceRange range = {};
+	range.baseArrayLayer = 0;
+	range.baseMipLevel = 0;
+	range.layerCount = VK_REMAINING_ARRAY_LAYERS;
+	range.levelCount = VK_REMAINING_MIP_LEVELS;
+	range.aspectMask = VulkanUnitConverter::IsTextureFormatDepth(buffer_desc.format) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+
+	VkImageViewCreateInfo view_info = {};
+	view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	view_info.components = { VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY };
+	view_info.format = image_info.format;
+	view_info.image = image;
+	view_info.subresourceRange = range;
+	view_info.viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+
+	vkCreateImageView(context->GetVkDevice(), &view_info, NULL, &view);
 
 	VulkanRenderTexture2DArrayResource* new_texture = new VulkanRenderTexture2DArrayResource(buffer_desc, RenderState::UNINITIALIZED);
 
 	new_texture->alloc = allocation;
 	new_texture->image = image;
 	new_texture->default_state = default_state;
+	new_texture->view = view;
 
 	uint64_t timeline = context->GetCurrentCpuTimelineValue();
 	new_texture->read_timeline = timeline;
@@ -268,15 +307,34 @@ std::shared_ptr<RenderTexture2DCubemapResource> VulkanRenderResourceManager::Cre
 	alloc_info.flags = NULL;
 
 	VkImage image;
+	VkImageView view;
 	VmaAllocation allocation;
 
 	vmaCreateImage(alloc, &image_info, &alloc_info, &image, &allocation, NULL);
+
+	VkImageSubresourceRange range = {};
+	range.baseArrayLayer = 0;
+	range.baseMipLevel = 0;
+	range.layerCount = VK_REMAINING_ARRAY_LAYERS;
+	range.levelCount = VK_REMAINING_MIP_LEVELS;
+	range.aspectMask = VulkanUnitConverter::IsTextureFormatDepth(buffer_desc.format) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+
+	VkImageViewCreateInfo view_info = {};
+	view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	view_info.components = { VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY };
+	view_info.format = image_info.format;
+	view_info.image = image;
+	view_info.subresourceRange = range;
+	view_info.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
+
+	vkCreateImageView(context->GetVkDevice(), &view_info, NULL, &view);
 
 	VulkanRenderTexture2DCubemapResource* new_texture = new VulkanRenderTexture2DCubemapResource(buffer_desc, RenderState::UNINITIALIZED);
 
 	new_texture->alloc = allocation;
 	new_texture->image = image;
 	new_texture->default_state = default_state;
+	new_texture->view = view;
 
 	uint64_t timeline = context->GetCurrentCpuTimelineValue();
 	new_texture->read_timeline = timeline;
@@ -520,7 +578,7 @@ void VulkanRenderResourceManager::ClearStagingBuffers()
 	staging_buffer_map.clear();
 }
 
-VulkanRenderTexture2DResource* VulkanRenderResourceManager::CreateNonManagedTexture(VkImage image, RenderTexture2DDescriptor desc, RenderState default_state, RenderState initial_state)
+VulkanRenderTexture2DResource* VulkanRenderResourceManager::CreateNonManagedTexture(VkImage image, VkImageView view, RenderTexture2DDescriptor desc, RenderState default_state, RenderState initial_state)
 {
 	DEFINE_VK_INSTANCE(context);
 	uint64_t timeline = context->GetCurrentCpuTimelineValue();
@@ -532,6 +590,7 @@ VulkanRenderTexture2DResource* VulkanRenderResourceManager::CreateNonManagedText
 	texture->read_timeline = timeline;
 	texture->write_timeline = timeline;
 	texture->default_state = default_state;
+	texture->view = view;
 
 	return texture;
 }
