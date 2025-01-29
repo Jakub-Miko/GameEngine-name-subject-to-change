@@ -49,6 +49,8 @@ void VulkanRenderResourceManager::UploadDataToBuffer(RenderCommandList* list, st
 	auto alloc = context->GetVmaAllocator();
 	VulkanRenderBufferResource* buffer = static_cast<VulkanRenderBufferResource*>(resource.get());
 	VulkanRenderCommandList* vk_command_list = static_cast<VulkanRenderCommandList*>(list);
+	vk_command_list->OutsideRenderPass();
+
 
 	if (buffer->descriptor.buffer_size < size + offset) {
 		throw std::runtime_error("Attempted to upload data to a buffer of invalid size, check the size and offset of the data.\n");
@@ -181,6 +183,52 @@ std::shared_ptr<RenderTexture2DResource> VulkanRenderResourceManager::CreateText
 
 void VulkanRenderResourceManager::UploadDataToTexture2D(RenderCommandList* list, std::shared_ptr<RenderTexture2DResource> resource, void* data, size_t width, size_t height, size_t offset_x, size_t offset_y, int level)
 {
+	DEFINE_VK_INSTANCE(context);
+	auto alloc = context->GetVmaAllocator();
+	VulkanRenderTextureResource* texture = static_cast<VulkanRenderTextureResource*>(resource->GetExtensionData());
+	VulkanRenderCommandList* vk_command_list = static_cast<VulkanRenderCommandList*>(list);
+	vk_command_list->OutsideRenderPass();
+
+	auto res = texture->GetResolution();
+	auto size = VulkanUnitConverter::TextureFormatToTexelSize(texture->GetFormat()) * res.x * res.y;
+
+	if (res.x < width + offset_x || res.y < height + offset_y) {
+		throw std::runtime_error("Attempted to upload data to a buffer of invalid size, check the size and offset of the data.\n");
+	}
+
+	auto staging_buffer = GetStagingBuffer(size);
+
+	VulkanRenderBufferResource* vk_staging_buffer = static_cast<VulkanRenderBufferResource*>(staging_buffer.get());
+
+	vmaCopyMemoryToAllocation(alloc, data, vk_staging_buffer->alloc, 0, size);
+
+	VkImageSubresourceLayers layers = {};
+	layers.aspectMask = VulkanUnitConverter::IsTextureFormatDepth(texture->GetFormat()) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+	layers.baseArrayLayer = 0;
+	layers.mipLevel = level;
+	layers.layerCount = 1;
+
+	VkBufferImageCopy copy = {};
+	copy.bufferOffset = 0;
+	copy.bufferRowLength = 0;
+	copy.bufferImageHeight = 0;
+	copy.imageExtent = { res.x, res.y, 1 };
+	copy.imageOffset = { 0,0,0 };
+	copy.imageSubresource = layers;
+
+	VulkanCommandListDependency dep_resource;
+	dep_resource.type = VulkanCommandListDependencyType::WRITE;
+	dep_resource.current_state = RenderState::TEXTURE_TRANSFER_DST;
+	dep_resource.expected_state = RenderState::UNINITIALIZED;
+
+	VulkanCommandListDependency dep_staging;
+	dep_staging.type = VulkanCommandListDependencyType::WRITE;
+	dep_staging.current_state = RenderState::COMMON;
+	dep_staging.expected_state = RenderState::COMMON;
+
+	vk_command_list->AddDependency(resource, dep_resource);
+	vk_command_list->AddDependency(staging_buffer, dep_staging);
+	vkCmdCopyBufferToImage(*vk_command_list->GetVkCommandBuffer(), vk_staging_buffer->buffer, texture->GetImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
 }
 
 void VulkanRenderResourceManager::GenerateMIPs(RenderCommandList* list, std::shared_ptr<RenderTexture2DResource> resource)
