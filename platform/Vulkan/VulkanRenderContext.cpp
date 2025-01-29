@@ -25,7 +25,6 @@ void VulkanRenderContext::StartNewFrame()
 	range.levelCount = 1;
 	range.layerCount = 1;
 
-
 	VkImageMemoryBarrier2 barrier = {};
 	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
 	barrier.srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
@@ -113,8 +112,96 @@ void VulkanRenderContext::RequestExtension(const std::string& extension)
 
 uint32_t VulkanRenderContext::GetNextPresentImageIndex()
 {
-	vkAcquireNextImageKHR(vk_device, vk_swapchain, 30000000000,frame_sync.present_fence.GetNextResource(), NULL, &current_framebuffer); // timeout 30 seconds
+	auto code = vkAcquireNextImageKHR(vk_device, vk_swapchain, 30000000000,frame_sync.present_fence.GetNextResource(), NULL, &current_framebuffer); // timeout 30 seconds
+	if (code == VK_ERROR_OUT_OF_DATE_KHR) {
+		RecreateSwapchain();
+		vkAcquireNextImageKHR(vk_device, vk_swapchain, 30000000000, frame_sync.present_fence.GetNextResource(), NULL, &current_framebuffer);
+	}
 	return current_framebuffer;
+}
+
+void VulkanRenderContext::CreateSwapchain()
+{
+	VkSemaphoreTypeCreateInfo semaphore_type_info;
+	semaphore_type_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
+	semaphore_type_info.initialValue = 0;
+	semaphore_type_info.pNext = NULL;
+	semaphore_type_info.semaphoreType = VK_SEMAPHORE_TYPE_BINARY;
+
+	VkSemaphoreCreateInfo semaphore_info;
+	semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+	semaphore_info.pNext = &semaphore_type_info;
+	semaphore_info.flags = NULL;
+
+	vkb::SwapchainBuilder swapchain_builder(vkb_device);
+	swapchain_builder.add_image_usage_flags(VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+	auto swapchain_result = swapchain_builder.build();
+	if (!swapchain_result.has_value()) {
+		throw std::runtime_error(swapchain_result.error().message());
+	}
+	vkb_swapchain = swapchain_result.value();
+	vk_swapchain = vkb_swapchain.swapchain;
+
+	frame_sync.present_fence = FrameMultiBufferResource<VkSemaphore>([&semaphore_info, this]() {
+		VkSemaphore semaphore;
+		vkCreateSemaphore(vk_device, &semaphore_info, NULL, &semaphore);
+		return semaphore;
+		});
+
+
+	auto resource_manager = static_cast<VulkanRenderResourceManager*>(RenderResourceManager::Get());
+	auto props = Application::Get()->GetWindow()->GetProperties();
+
+	RenderTexture2DDescriptor swapchain_image_desc;
+	swapchain_image_desc.format = TextureFormat::UNDEFINED; // This image is never accesed by the user so the descriptor contents are not important 
+	swapchain_image_desc.height = props.resolution_y;
+	swapchain_image_desc.width = props.resolution_x;
+	swapchain_image_desc.sampler = nullptr;
+	swapchain_image_desc.usage = TextureUsage::COLOR_ATTACHMENT;
+
+	RenderTexture2DDescriptor depth_desc;
+	depth_desc.format = TextureFormat::DEFAULT_DEPTH;
+	depth_desc.height = props.resolution_y;
+	depth_desc.width = props.resolution_x;
+	depth_desc.sampler = nullptr;
+	depth_desc.usage = TextureUsage::DEPTH_ATTACHMENT;
+
+	std::vector<RenderFrameBufferDescriptor::RenderFrameBufferAttachment> swapchain_images;
+	auto images = vkb_swapchain.get_images().value();
+	auto views = vkb_swapchain.get_image_views().value();
+
+	swapchain_images.reserve(images.size());
+	int swapchain_size = images.size();
+	for (int i = 0; i < swapchain_size; i++) {
+		auto image = images[i];
+		auto view = views[i];
+
+		RenderTexture2DResource* texture = resource_manager->CreateNonManagedTexture(image, view, swapchain_image_desc, RenderState::TEXTURE_COLOR_ATTACHMENT);
+		std::shared_ptr<RenderTexture2DResource> color_texture = std::shared_ptr<RenderTexture2DResource>(texture);
+		RenderFrameBufferDescriptor::RenderFrameBufferAttachment attachment;
+		attachment.level = 0;
+		attachment.resource = color_texture;
+		auto depth_buffer = resource_manager->CreateTexture(depth_desc, RenderState::TEXTURE_DEPTH_STENCIL_ATTACHMENT);
+		RenderFrameBufferDescriptor default_framebuf;
+		default_framebuf.color_attachments = { {0, color_texture } };
+		default_framebuf.depth_stencil_attachment = { 0, depth_buffer };
+		auto framebuffer = resource_manager->CreateFrameBuffer(default_framebuf);
+		default_framebuffers.push_back(framebuffer);
+	}
+
+}
+
+void VulkanRenderContext::RecreateSwapchain()
+{
+	for (auto& ref : frame_sync.present_fence.GetAllResource()) {
+		vkDestroySemaphore(vk_device, ref, NULL);
+	}
+
+	vkb::destroy_swapchain(vkb_swapchain);
+
+	default_framebuffers.clear();
+
+	CreateSwapchain();
 }
 
 void VulkanRenderContext::RequestExtensions(const char** extensions, int count)
@@ -213,22 +300,14 @@ void VulkanRenderContext::Init()
 	}
 	vkb_device = device_result.value();
 	vk_device = vkb_device.device;
-
-	vkb::SwapchainBuilder swapchain_builder(vkb_device);
-	swapchain_builder.add_image_usage_flags(VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT);
-	auto swapchain_result = swapchain_builder.build();
-	if (!swapchain_result.has_value()) {
-		throw std::runtime_error(swapchain_result.error().message());
-	}
-	vkb_swapchain = swapchain_result.value();
-	vk_swapchain = vkb_swapchain.swapchain;
-
+	
 
 	VulkanRenderCommandQueue* queue = new VulkanRenderCommandQueue(vkb_device.get_queue(vkb::QueueType::graphics).value());
 
 	SetRenderQueue(queue, RenderQueueTypes::DirectQueue);
 	SetRenderQueue(queue, RenderQueueTypes::CopyQueue);
 	SetRenderQueue(queue, RenderQueueTypes::ComputeQueue);
+
 
 	VkSemaphoreTypeCreateInfo semaphore_type_info;
 	semaphore_type_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
@@ -241,12 +320,6 @@ void VulkanRenderContext::Init()
 	semaphore_info.pNext = &semaphore_type_info;
 	semaphore_info.flags = NULL;
 
-
-	frame_sync.present_fence = FrameMultiBufferResource<VkSemaphore>([&semaphore_info,this]() {
-		VkSemaphore semaphore;
-		vkCreateSemaphore(vk_device, &semaphore_info, NULL, &semaphore);
-		return semaphore;
-		});
 
 	frame_sync.render_fence = FrameMultiBufferResource<VkSemaphore>([&semaphore_info, this]() {
 		VkSemaphore semaphore;
@@ -264,46 +337,7 @@ void VulkanRenderContext::Init()
 	vmaCreateAllocator(&allocator_info, &allocator);
 	VulkanUnitConverter::Init();
 
-	auto resource_manager = static_cast<VulkanRenderResourceManager*>(RenderResourceManager::Get());
-	auto props = Application::Get()->GetWindow()->GetProperties();
-
-	RenderTexture2DDescriptor swapchain_image_desc;
-	swapchain_image_desc.format = TextureFormat::UNDEFINED; // This image is never accesed by the user so the descriptor contents are not important 
-	swapchain_image_desc.height = props.resolution_y;
-	swapchain_image_desc.width = props.resolution_x;
-	swapchain_image_desc.sampler = nullptr;
-	swapchain_image_desc.usage = TextureUsage::COLOR_ATTACHMENT;
-
-	RenderTexture2DDescriptor depth_desc;
-	depth_desc.format = TextureFormat::DEFAULT_DEPTH;
-	depth_desc.height = props.resolution_y;
-	depth_desc.width = props.resolution_x;
-	depth_desc.sampler = nullptr;
-	depth_desc.usage = TextureUsage::DEPTH_ATTACHMENT;
-
-	std::vector<RenderFrameBufferDescriptor::RenderFrameBufferAttachment> swapchain_images;
-	auto images = vkb_swapchain.get_images().value();
-	auto views = vkb_swapchain.get_image_views().value();
-
-	swapchain_images.reserve(images.size());
-	int swapchain_size = images.size();
-	for (int i = 0; i < swapchain_size; i++) {
-		auto image = images[i];
-		auto view = views[i];
-
-		RenderTexture2DResource* texture = resource_manager->CreateNonManagedTexture(image, view, swapchain_image_desc, RenderState::TEXTURE_COLOR_ATTACHMENT);
-		std::shared_ptr<RenderTexture2DResource> color_texture = std::shared_ptr<RenderTexture2DResource>(texture);
-		RenderFrameBufferDescriptor::RenderFrameBufferAttachment attachment;
-		attachment.level = 0;
-		attachment.resource = color_texture;
-		auto depth_buffer = resource_manager->CreateTexture(depth_desc, RenderState::TEXTURE_DEPTH_STENCIL_ATTACHMENT);
-		RenderFrameBufferDescriptor default_framebuf;
-		default_framebuf.color_attachments = { {0, color_texture } };
-		default_framebuf.depth_stencil_attachment = { 0, depth_buffer };
-		auto framebuffer = resource_manager->CreateFrameBuffer(default_framebuf);
-		default_framebuffers.push_back(framebuffer);
-	}
-
+	CreateSwapchain();
 
 	StartNewFrame();
 

@@ -56,6 +56,9 @@ public:
 
 protected:
 	uint32_t GetNextPresentImageIndex();
+	void CreateSwapchain();
+	void RecreateSwapchain();
+
 	virtual void Destroy() override;
 
 private:
@@ -76,5 +79,6 @@ private:
 	struct {
 		FrameMultiBufferResource<VkSemaphore> render_fence;
 		FrameMultiBufferResource<VkSemaphore> present_fence; ///< we normally use timeline semaphores instead of fences, but vkAcquireNextImageKHR only takes binary ones
+
 	} frame_sync;
 };
