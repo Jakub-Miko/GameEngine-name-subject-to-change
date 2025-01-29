@@ -7,6 +7,7 @@
 #include <fstream>
 #include <FileManager.h>
 #include <Renderer/PipelineManager.h>
+#include "RenderContext.h"
 
 
 
@@ -32,7 +33,14 @@ void TextureManager::MakeTextureFromImage(const std::string& input_image_path, c
     if (!stbi_is_hdr(input_image_path.c_str())) {
 
         int x, y, ch;
-        unsigned char* image = stbi_load(input_image_path.c_str(), &x, &y, &ch, 0);
+        
+        //In Vulkan, force rgb images into rgba format
+        stbi_info(input_image_path.c_str(), &x, &y, &ch);
+        int n = 0;
+        if (ch == 3)
+            n = 4;
+
+        unsigned char* image = stbi_load(input_image_path.c_str(), &x, &y, &ch, n);
         if (!image) {
             throw std::runtime_error(stbi_failure_reason());
         }
@@ -43,7 +51,7 @@ void TextureManager::MakeTextureFromImage(const std::string& input_image_path, c
         }
         auto desc = sampler;
 
-        output_file << "texture_info\n";
+        output_file << "texture_info_vulkan_format\n";
         output_file << x << " " << y << " " << ch << "\n";
         output_file << "ldr\n";
         output_file << "sampler\n";
@@ -64,7 +72,14 @@ void TextureManager::MakeTextureFromImage(const std::string& input_image_path, c
     }
     else {
         int x, y, ch;
-        float* image = stbi_loadf(input_image_path.c_str(), &x, &y, &ch, 0);
+
+        //In Vulkan, force rgb images into rgba format
+        stbi_info(input_image_path.c_str(), &x, &y, &ch);
+        int n = 0;
+        if (ch == 3)
+            n = 4;
+
+        float* image = stbi_loadf(input_image_path.c_str(), &x, &y, &ch, n);
         if (!image) {
             throw std::runtime_error(stbi_failure_reason());
         }
@@ -75,7 +90,7 @@ void TextureManager::MakeTextureFromImage(const std::string& input_image_path, c
         }
         auto desc = sampler;
 
-        output_file << "texture_info\n";
+        output_file << "texture_info_vulkan_format\n";
         output_file << x << " " << y << " " << ch << "\n";
         output_file << "hdr\n";
         output_file << "sampler\n";
@@ -111,6 +126,69 @@ Future<void> TextureManager::MakeTextureFromImageAsync(const std::string& input_
     return task->GetFuture();
 }
 
+unsigned char* LoadAndConvertToVulkan(std::ifstream& file, texture_data texture, bool is_hdr, const std::string& path) {
+    std::string check;
+    char* data;
+    int size;
+    int real_channels = texture.channels == 3 ? 4 : texture.channels; //We dont support rgb aithout alpha in vulkan;
+    int real_length = texture.channels * texture.res_x * texture.res_y;
+    int old_size;
+    int stride_y, stride_x, old_stride_x, old_stride_y;
+    if (!is_hdr) {
+        size = real_channels * texture.res_x * texture.res_y;
+        old_size = texture.channels * texture.res_x * texture.res_y;
+        stride_y = real_channels * texture.res_x;
+        old_stride_y = texture.channels * texture.res_x;
+        stride_x = real_channels;
+        old_stride_x = texture.channels;
+        data = new char[size];
+    }
+    else {
+        size = real_channels * texture.res_x * texture.res_y * sizeof(float);
+        old_size = texture.channels * texture.res_x * texture.res_y * sizeof(float);
+        stride_y = real_channels * texture.res_x * sizeof(float);
+        old_stride_y = texture.channels * texture.res_x * sizeof(float);
+        stride_x = real_channels * sizeof(float);
+        old_stride_x = texture.channels * sizeof(float);
+        data = new char[size];
+    }
+
+    auto start_pos = file.tellg();
+    memset(data, 0, size);
+    for (int y = texture.res_y - 1; y >= 0; y--) {
+        file.seekg(start_pos + std::streamoff(y* old_stride_y));
+        for (int x = 0; x < texture.res_x; x++) {
+            file.read(&data[(texture.res_y - 1 - y) * stride_y + x * stride_x], old_stride_x);
+        }
+    }
+
+    file.seekg(start_pos + std::streamoff(old_size), std::ios_base::beg);
+
+    file >> check;
+    if (check != "end") throw std::runtime_error("Invalid format on file: " + path);
+    return (unsigned char*)data;
+}
+
+unsigned char* LoadWithoutConversion(std::ifstream& file, texture_data texture, bool is_hdr, const std::string& path) {
+    std::string check;
+    char* data;
+    int size;
+    if (!is_hdr) {
+        size = texture.channels * texture.res_x * texture.res_y;
+        data = new char[size];
+    }
+    else {
+        size = texture.channels * texture.res_x * texture.res_y * sizeof(float);
+        data = new char[size];
+    }
+
+    file.read(data, size);
+    file >> check;
+    if (check != "end") throw std::runtime_error("Invalid format on file: " + path);
+    return (unsigned char*)data;
+}
+
+
 std::shared_ptr<RenderTexture2DResource> TextureManager::LoadTextureFromFile(const std::string& file_path_in, bool generate_mips)
 {
     std::string file_path = FileManager::Get()->GetPath(file_path_in);
@@ -137,7 +215,9 @@ std::shared_ptr<RenderTexture2DResource> TextureManager::LoadTextureFromFile(con
 
     //Parse the stread into texture_data structure.
     input_file >> check;
-    if (check != "texture_info") throw std::runtime_error("Invalid format on file: " + file_path);
+    bool is_vulkan_format = check == "texture_info_vulkan_format";
+    bool is_vulkan_context = RenderContext::Get()->IsVulkanContext();
+    if (check != "texture_info" && !is_vulkan_format) throw std::runtime_error("Invalid format on file: " + file_path);
     input_file >> texture.res_x >> texture.res_y >> texture.channels;
     input_file >> check;
     if (check == "hdr") {
@@ -163,24 +243,17 @@ std::shared_ptr<RenderTexture2DResource> TextureManager::LoadTextureFromFile(con
 
     input_file >> check;
     if (check != "texture") throw std::runtime_error("Invalid format on file: " + file_path);
-    if (!is_hdr) {
 
-        int size = texture.channels * texture.res_x * texture.res_y;
-        char* data = new char[size];
-        input_file.get();
-        input_file.read(data, size);
-        input_file >> check;
-        if (check != "end") throw std::runtime_error("Invalid format on file: " + file_path);
-        texture.tex_data = (unsigned char*)data;
+    input_file.get();
+
+    if ((is_vulkan_format && is_vulkan_context) || (!is_vulkan_format && !is_vulkan_context)) {
+        texture.tex_data = LoadWithoutConversion(input_file, texture, is_hdr, file_path);
+    }
+    else if (!is_vulkan_format && is_vulkan_context) {
+        texture.tex_data = LoadAndConvertToVulkan(input_file, texture, is_hdr, file_path);
     }
     else {
-        int size = texture.channels * texture.res_x * texture.res_y * sizeof(float);
-        char* data = new char[size];
-        input_file.get();
-        input_file.read(data, size);
-        input_file >> check;
-        if (check != "end") throw std::runtime_error("Invalid format on file: " + file_path);
-        texture.tex_data = (unsigned char*)data;
+        throw std::runtime_error("Cannot load vulkan data into opengl, please use vulkan if possible.\n");
     }
     
     //Check if an identical sampler already exists. If not Create it.
@@ -198,10 +271,20 @@ std::shared_ptr<RenderTexture2DResource> TextureManager::LoadTextureFromFile(con
     //Create the texture, upload data into it and optionally generate mip maps.
     RenderTexture2DDescriptor texture_desc;
     if (!is_hdr) {
-        texture_desc.format = texture.channels == 3 ? TextureFormat::RGB_UNSIGNED_CHAR : TextureFormat::RGBA_UNSIGNED_CHAR;
+        if (is_vulkan_context) {
+            texture_desc.format = TextureFormat::RGBA_UNSIGNED_CHAR;
+        }
+        else {
+            texture_desc.format = texture.channels == 3 ? TextureFormat::RGB_UNSIGNED_CHAR : TextureFormat::RGBA_UNSIGNED_CHAR;
+        }
     }
     else {
-        texture_desc.format = TextureFormat::RGB_32FLOAT;
+        if (is_vulkan_context) {
+            texture_desc.format = TextureFormat::RGBA_32FLOAT;
+        }
+        else {
+            texture_desc.format = TextureFormat::RGB_32FLOAT;
+        }
     }
     texture_desc.height = texture.res_y;
     texture_desc.width = texture.res_x;

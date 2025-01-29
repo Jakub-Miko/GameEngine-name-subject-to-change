@@ -18,6 +18,7 @@ public:
 	virtual void PreInit() override;
 	virtual void StartShutdown()override;
 	virtual ~VulkanRenderContext() override;
+	virtual bool IsVulkanContext() override { return true; };
 	void InstanceInit();
 
 	VulkanRenderContext(const VulkanRenderContext& ref) = delete;

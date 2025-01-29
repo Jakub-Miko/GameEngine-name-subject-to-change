@@ -134,7 +134,9 @@ void VulkanRenderCommandQueue::Signal(std::shared_ptr<RenderFence> fence, int nu
 	info.waitSemaphoreCount = 0;
 	info.pWaitDstStageMask = NULL;
 
+	submit_mutex.lock();
 	vkQueueSubmit(vk_queue, 1, &info, NULL);
+	submit_mutex.unlock();
 }
 
 void VulkanRenderCommandQueue::VkBinarySemaphoreSignal(VkSemaphore semaphore)
@@ -151,7 +153,9 @@ void VulkanRenderCommandQueue::VkBinarySemaphoreSignal(VkSemaphore semaphore)
 	info.waitSemaphoreCount = 0;
 	info.pWaitDstStageMask = NULL;
 
+	submit_mutex.lock();
 	vkQueueSubmit(vk_queue, 1, &info, NULL);
+	submit_mutex.unlock();
 }
 
 void VulkanRenderCommandQueue::VkBinarySemaphoreWait(VkSemaphore semaphore, VkPipelineStageFlags wait_mask)
@@ -167,7 +171,9 @@ void VulkanRenderCommandQueue::VkBinarySemaphoreWait(VkSemaphore semaphore, VkPi
 	info.waitSemaphoreCount = 1;
 	info.pWaitDstStageMask = &wait_mask;
 
+	submit_mutex.lock();
 	vkQueueSubmit(vk_queue, 1, &info, NULL);
+	submit_mutex.unlock();
 }
 
 VulkanRenderCommandQueue::VulkanRenderCommandQueue(VkQueue queue) : vk_queue(queue), submit_mutex(), command_buffer_fence()
@@ -192,7 +198,9 @@ void VulkanRenderCommandQueue::Present()
 	presentInfo.swapchainCount = 1;
 	presentInfo.pImageIndices = &index;
 
+	submit_mutex.lock();
 	vkQueuePresentKHR(vk_queue, &presentInfo); //Present
+	submit_mutex.unlock();
 
 	context->StartNewFrame(); // Gets the swapchain image for the next frame
 

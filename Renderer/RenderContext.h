@@ -12,6 +12,8 @@ public:
 	RenderContext& operator=(const RenderContext& ref) = delete;
 	RenderContext& operator=(RenderContext&& ref) = delete;
 
+	virtual bool IsVulkanContext() { return false; };
+
 	virtual void StartShutdown() = 0;
 	virtual ~RenderContext() {};
 
