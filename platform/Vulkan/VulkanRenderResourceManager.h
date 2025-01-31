@@ -64,6 +64,7 @@ public:
 	VulkanDependencyHandler* GetDependencyHandler();
 	void ReturnDependencyHandler(VulkanDependencyHandler* handler);
 	void ReturnCommandList(RenderCommandList* list, uint64_t deletion_timeline);
+	void ReturnDescriptorAllocation(RenderDescriptorAllocation* allocation, uint64_t deletion_timeline);
 
 private:
 	VulkanRenderResourceManager();
@@ -81,13 +82,14 @@ private:
 
 private:
 	enum class deletion_item_type : char {
-		RESOURCE, STAGING_BUFFER, COMMAND_BUFFER
+		RESOURCE, STAGING_BUFFER, COMMAND_BUFFER, DESCRIPTOR_ALLOCATION
 	};
 
 	struct deletion_item {
 		union {
 			VulkanRenderResource* resource;
 			RenderCommandList* list;
+			RenderDescriptorAllocation* descriptor_allocation;
 		};
 		uint64_t deletion_timeline;
 		deletion_item_type type = deletion_item_type::RESOURCE;

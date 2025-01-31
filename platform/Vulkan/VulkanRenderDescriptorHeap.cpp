@@ -1,7 +1,8 @@
 #include "VulkanRenderDescriptorHeap.h"
 #include "VulkanUnitConverter.h"
+#include "VulkanRenderResourceManager.h"
 
-VulkanRenderDescriptorHeap::VulkanRenderDescriptorHeap(MaterialLayout& layout_in) : layout(), heap_blocks()
+VulkanRenderDescriptorHeap::VulkanRenderDescriptorHeap(MaterialLayout& layout_in) : layout(), heap_blocks(), heap_mutex()
 {
 	DEFINE_VK_INSTANCE(context);
 
@@ -73,22 +74,72 @@ VulkanRenderDescriptorHeap::VulkanRenderDescriptorHeap(MaterialLayout& layout_in
 	set_layout.pBindings = bindings.data();
 	vkCreateDescriptorSetLayout(context->GetVkDevice(), &set_layout, NULL, &layout);
 
-	heap_blocks.emplace_back(VulkanRenderDescriptorHeapBlock(pool_sizes));
+	heap_blocks.emplace_back(this, 128);
 }
 
 VulkanRenderDescriptorHeap::~VulkanRenderDescriptorHeap()
 {
+	FlushDescriptorDeallocations(-1);
 	DEFINE_VK_INSTANCE(context);
 	vkDestroyDescriptorSetLayout(context->GetVkDevice(), layout, NULL);
 }
 
 RenderDescriptorAllocationHandle VulkanRenderDescriptorHeap::Allocate(size_t num_of_descriptors)
 {
-	
+	std::lock_guard<std::mutex> lock(heap_mutex);
+	auto original_attempt = current_block;
+	VulkanRenderDescriptorAllocation* alloc;
+	if (!free_vector.empty()) {
+		alloc = free_vector.back();
+		free_vector.pop_back();
+	}
+	else {
+		while (!(alloc = (VulkanRenderDescriptorAllocation*)heap_blocks[current_block].Allocate(layout))) {
+			current_block = current_block - 1 < 0 ? heap_blocks.size() - 1 : current_block - 1; //subtract and wrap-around (modulo is weird for negative numbers), we subtract so we try the biggest pools first
+			if (original_attempt == current_block) { // if we came back to the original attempt, we allocate a new pool with twice the size
+				heap_blocks.emplace_back(this, heap_blocks.back().GetSize() * 2); //
+				current_block = heap_blocks.size() - 1;
+				alloc = (VulkanRenderDescriptorAllocation*)heap_blocks[current_block].Allocate(layout);
+			}
+		}
+
+		if (!alloc) { // At this point if we dont have a valid allocation something went wrong
+			throw std::runtime_error("Descriptor allocation failed.\n");
+		}
+	}
+
+	RenderDescriptorAllocationHandle handle = RenderDescriptorAllocationHandle(alloc, [](RenderDescriptorAllocation* alloc) {
+		static_cast<VulkanRenderResourceManager*>(RenderResourceManager::Get())->ReturnDescriptorAllocation(alloc, static_cast<VulkanRenderDescriptorAllocation*>(alloc)->timeline);
+		});
 
 
 }
 
 void VulkanRenderDescriptorHeap::FlushDescriptorDeallocations(uint32_t frame_number)
 {
+	std::lock_guard<std::mutex> lock(heap_mutex);
+	DEFINE_VK_INSTANCE(context);
+	for (auto alloc : free_vector) {
+		vkFreeDescriptorSets(context->GetVkDevice(), alloc->allocating_heap_block->GetPool(), 1, &alloc->descritor_set);
+		delete alloc;
+	}
+}
+
+void VulkanRenderDescriptorHeap::ReturnAllocation(VulkanRenderDescriptorAllocation* alloc)
+{
+	std::lock_guard<std::mutex> lock(heap_mutex);
+	if (free_vector.size() <= VK_MAX_DESCRIPTOR_FREEVECTOR_SIZE) {
+		free_vector.push_back(alloc);
+	}
+	else {
+		DestroyAlloc(alloc);
+	}
+
+}
+
+void VulkanRenderDescriptorHeap::DestroyAlloc(VulkanRenderDescriptorAllocation* alloc)
+{
+	DEFINE_VK_INSTANCE(context);
+	vkFreeDescriptorSets(context->GetVkDevice(), alloc->allocating_heap_block->GetPool(), 1, &alloc->descritor_set);
+	delete alloc;
 }

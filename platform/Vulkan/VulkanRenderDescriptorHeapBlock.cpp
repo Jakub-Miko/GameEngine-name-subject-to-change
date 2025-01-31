@@ -1,7 +1,8 @@
 #include "VulkanRenderDescriptorHeapBlock.h"
 #include "VulkanRenderContext.h"
+#include "VulkanRenderDescriptorHeap.h"
 
-VulkanRenderDescriptorHeapBlock::VulkanRenderDescriptorHeapBlock(size_t size) : pool()
+VulkanRenderDescriptorHeapBlock::VulkanRenderDescriptorHeapBlock(size_t size) : pool(), size(size)
 {
 	DEFINE_VK_INSTANCE(context);
 	
@@ -24,7 +25,7 @@ VulkanRenderDescriptorHeapBlock::VulkanRenderDescriptorHeapBlock(size_t size) : 
 
 }
 
-VulkanRenderDescriptorHeapBlock::VulkanRenderDescriptorHeapBlock(const std::vector<VkDescriptorPoolSize>& pool_sizes, size_t max_sets)
+VulkanRenderDescriptorHeapBlock::VulkanRenderDescriptorHeapBlock(VulkanRenderDescriptorHeap* originating_heap, size_t max_sets) : originating_heap(originating_heap)
 {
 	DEFINE_VK_INSTANCE(context);
 
@@ -32,8 +33,8 @@ VulkanRenderDescriptorHeapBlock::VulkanRenderDescriptorHeapBlock(const std::vect
 	info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 	info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT | VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT;
 	info.maxSets = max_sets;
-	info.poolSizeCount = pool_sizes.size();
-	info.pPoolSizes = pool_sizes.data();
+	info.poolSizeCount = originating_heap->GetPoolSizes().size();
+	info.pPoolSizes = originating_heap->GetPoolSizes().data();
 
 	vkCreateDescriptorPool(context->GetVkDevice(), &info, NULL, &pool);
 }
@@ -61,6 +62,9 @@ RenderDescriptorAllocation* VulkanRenderDescriptorHeapBlock::Allocate(VkDescript
 	VulkanRenderDescriptorAllocation* alloc = new VulkanRenderDescriptorAllocation();
 
 	auto result = vkAllocateDescriptorSets(context->GetVkDevice(), &info, &alloc->descritor_set);
+
+	alloc->allocating_heap_block = this;
+	alloc->timeline = context->GetCurrentCpuTimelineValue();
 
 	if (result != VK_SUCCESS) {
 		delete alloc;

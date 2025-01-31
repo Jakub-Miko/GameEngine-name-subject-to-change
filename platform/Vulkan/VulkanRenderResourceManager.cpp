@@ -2,6 +2,7 @@
 #include "VulkanRenderContext.h"
 #include "VulkanUnitConverter.h"
 #include "VulkanRenderCommandQueue.h"
+#include "VulkanRenderDescriptorHeap.h"
 #include "VulkanRenderCommandList.h"
 #include "Core/algorithm.h"
 
@@ -488,6 +489,16 @@ void VulkanRenderResourceManager::ReturnCommandList(RenderCommandList* list, uin
 	deletion_queue.push(item);
 }
 
+void VulkanRenderResourceManager::ReturnDescriptorAllocation(RenderDescriptorAllocation* allocation,  uint64_t deletion_timeline)
+{
+	std::unique_lock<std::mutex> lock(deletion_queue_mutex);
+	deletion_item item;
+	item.descriptor_allocation = allocation;
+	item.type = deletion_item_type::DESCRIPTOR_ALLOCATION;
+	item.deletion_timeline = deletion_timeline;
+	deletion_queue.push(item);
+}
+
 void VulkanRenderResourceManager::Update()
 {
 	FlushDeletions();
@@ -537,6 +548,11 @@ void VulkanRenderResourceManager::FlushDeletions()
 			lock.unlock();
 			delete resource.list;
 			lock.lock();
+		}
+		case deletion_item_type::DESCRIPTOR_ALLOCATION:
+		{
+			auto allocation = (VulkanRenderDescriptorAllocation*)resource.descriptor_allocation;
+			((VulkanRenderDescriptorHeapBlock*)allocation->allocating_heap_block)->GetOriginatingHeap()->ReturnAllocation(allocation);
 		}
 		break;
 		default:
