@@ -267,6 +267,7 @@ void VulkanRenderContext::Init()
 	features_12.bufferDeviceAddress = true;
 	features_12.descriptorIndexing = true;
 	features_12.timelineSemaphore = true;
+	features_12.scalarBlockLayout = true;
 
 	VkPhysicalDeviceVulkan13Features features_13 = {};
 	features_13.dynamicRendering = true;

@@ -9,66 +9,52 @@
 
 class Shader;
 
+enum MaterialLayoutItemType : char {
+    SCALAR = 0, VEC2 = 1, VEC3 = 2, VEC4 = 3, TEXTURE = 4, MAT3 = 5, MAT4 = 6, INT = 7, TEXTURE_2D_ARRAY = 8, TEXTURE_2D_CUBEMAP = 9, INVALID_PARAMETER = -1
+};
+
+struct MaterialLayoutItem {
+    std::string name;
+    MaterialLayoutItemType type = INVALID_PARAMETER;
+    union { // This is filled in by the constructor of the RenderDescriptorHeap, which handles allocations and layouts
+        uint32_t set_binding;
+        uint32_t constant_buffer_offset;
+    };
+};
+
+struct MaterialLayout {
+    std::vector<MaterialLayoutItem> layout_items;
+    uint32_t const_buffer_size = 0; //0 if not constant buffer exists
+};
+
 class MaterialTemplate {
 public:
-    enum MaterialTemplateParameterType : char {
-        SCALAR = 0, VEC2 = 1, VEC3 = 2, VEC4 = 3, TEXTURE = 4, MAT3 = 5, MAT4 = 6, INT = 7, TEXTURE_2D_ARRAY = 8, TEXTURE_2D_CUBEMAP = 9, INVALID_PARAMETER = -1
-    };
-    
-    
-    struct MaterialTemplateParameter {
-        std::string name;
-        union {
-            uint32_t descriptor_table_id = -1;
-            uint32_t primitive_size;
-        };
-        uint32_t index = -1;
-        uint32_t constant_buffer_offset = -1;
-        MaterialTemplateParameterType type = INVALID_PARAMETER;
-    };
-
     MaterialTemplate() : material_parameters(), material_parameters_map() {}
-    MaterialTemplate(std::shared_ptr<Shader> shader);
-    MaterialTemplate(const MaterialTemplate& other) : material_parameters(other.material_parameters), material_parameters_map(material_parameters_map), shader_wk(other.GetShader()) {}
+    MaterialTemplate(const MaterialLayout& layout);
+    MaterialTemplate(const MaterialTemplate& other) : material_parameters(other.material_parameters), material_parameters_map(material_parameters_map) {}
     MaterialTemplate& operator=(const MaterialTemplate& other) {;
         material_parameters = other.material_parameters;
         material_parameters_map = other.material_parameters_map;
-        shader_wk = other.GetShader();
         return *this;
     }
 
     ~MaterialTemplate();
 
-    std::shared_ptr<Shader> GetShader() const {
-        return shader_wk.lock();
-    }
-
-    const MaterialTemplateParameter& GetMaterialTemplateParameter(const std::string& name) const;
+    const MaterialLayoutItem& GetMaterialTemplateParameter(const std::string& name) const;
 
     int GetMaterialTemplateParameterIndex(const std::string& name) const;
 
-    const std::vector<MaterialTemplateParameter>& GetMaterialTemplateParameters() const {
+    const MaterialLayout& GetMaterialTemplateParameters() const {
         return material_parameters;
     }
 
-    const RootSignature& GetRootSignature() const;
-
-    int GetTableOrBufferSize(int index);
-
 private:
-    void CreateParameter(const MaterialTemplateParameter& parameter);
-    void AddTexture2DParameter(const RootSignatureDescriptorElement& element, int index, uint32_t table = -1);
-    void AddTexture2DArrayParameter(const RootSignatureDescriptorElement& element, int index, uint32_t table = -1);
-    void AddTexture2DCubemapParameter(const RootSignatureDescriptorElement& element, int index, uint32_t table = -1);
-    void AddDescriptorTableParameter(const RootSignatureDescriptorElement& element, int index);
-    void AddConstantBufferParameter(const RootSignatureDescriptorElement& element, int index, uint32_t table = -1);
-    std::weak_ptr<Shader> shader_wk; // Need to use weak_ptr since default materials are owned by their own shader which causes cyclic references
-    std::vector<MaterialTemplateParameter> material_parameters;
-    std::unordered_map<int, int> buffer_and_descriptor_table_sizes;
+    std::unique_ptr<RenderDescriptorHeap> material_allocator;
+    MaterialLayout material_parameters;
     std::unordered_map<std::string, size_t> material_parameters_map;
 };
 
-class Material : public std::enable_shared_from_this<Material>{
+class Material {
 public:
 
     Material() = default;
@@ -87,22 +73,15 @@ public:
         OK = 0, ERROR = 1, UNINITIALIZED = 2
     };
 
-    struct MaterialResource {
-        int index = -1;
-        material_resource_type resource;
-        bool is_table = false;
-    };
-
     enum class MaterialParameter_flags : char {
         DIRTY = 1,
-        TABLE = 2,
-        DEFAULT = 4
+        DEFAULT = 2
     };
 
     struct MaterialParameter {
         material_parameter_type resource;
         std::string name;
-        MaterialTemplate::MaterialTemplateParameterType type;
+        MaterialLayoutItemType type;
         MaterialParameter_flags flags = MaterialParameter_flags(0);
 
         bool IsDirty() const;
@@ -141,10 +120,10 @@ private:
 #endif
     Material(std::shared_ptr<MaterialTemplate> material_template);
     void UpdateValues(RenderCommandList* command_list);
+
     std::string material_path = "";
     std::shared_ptr<MaterialTemplate> material_template = nullptr;
     std::vector<MaterialParameter> parameters = std::vector<MaterialParameter>();
-    std::vector<MaterialResource> resources = std::vector<MaterialResource>();
     Material_status status = Material_status::ERROR;
 };
 

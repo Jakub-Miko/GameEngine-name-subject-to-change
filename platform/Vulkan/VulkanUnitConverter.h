@@ -7,6 +7,7 @@
 #include "VulkanRenderCommandList.h"
 #include "VulkanShaderManager.h"
 #include "shaderc/shaderc.hpp"
+#include "Renderer/Renderer3D/MaterialManager.h"
 
 class VulkanUnitConverter {
 private:
@@ -35,6 +36,45 @@ public:
 		case RenderPrimitiveType::VEC4:				return VK_FORMAT_R32_SFLOAT;
 		default: 
 			throw std::runtime_error("Conversion failed");
+		}
+	}
+
+	static VkDescriptorType  MaterialLayoutItemTypeToDescritorType(MaterialLayoutItemType type, bool& is_uniform) {
+		switch (type) {
+		case MaterialLayoutItemType::INT:					
+		case MaterialLayoutItemType::MAT3:					
+		case MaterialLayoutItemType::MAT4:					
+		case MaterialLayoutItemType::SCALAR:				
+		case MaterialLayoutItemType::VEC2:					
+		case MaterialLayoutItemType::VEC3:					
+		case MaterialLayoutItemType::VEC4:					
+			is_uniform = true; 
+			return VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		case MaterialLayoutItemType::TEXTURE:				
+		case MaterialLayoutItemType::TEXTURE_2D_ARRAY:		
+		case MaterialLayoutItemType::TEXTURE_2D_CUBEMAP:	
+			is_uniform = false; 
+			return VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		default:
+			throw std::runtime_error("Conversion failed");
+		}
+	}
+
+	//According to scalar alignment rules
+	static uint32_t MaterialLayoutItemTypeToSize(MaterialLayoutItemType type, bool& is_uniform) {
+		switch (type) {
+		case MaterialLayoutItemType::INT:						return sizeof(int);
+		case MaterialLayoutItemType::MAT3:						return sizeof(float)*9;
+		case MaterialLayoutItemType::MAT4:						return sizeof(float)*16;
+		case MaterialLayoutItemType::SCALAR:					return sizeof(float);
+		case MaterialLayoutItemType::VEC2:						return sizeof(float) * 2;
+		case MaterialLayoutItemType::VEC3:						return sizeof(float) * 3;
+		case MaterialLayoutItemType::VEC4:						return sizeof(float) * 4;
+		case MaterialLayoutItemType::TEXTURE:					return -1;
+		case MaterialLayoutItemType::TEXTURE_2D_ARRAY:			return -1;
+		case MaterialLayoutItemType::TEXTURE_2D_CUBEMAP:		return -1;
+		default:												
+			throw std::runtime_error("Conversion failed");		
 		}
 	}
 

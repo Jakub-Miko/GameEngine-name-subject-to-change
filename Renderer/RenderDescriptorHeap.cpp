@@ -23,8 +23,3 @@ RenderDescriptorAllocationHandle RenderDescriptorHeap::Allocate(size_t num_of_de
 		throw std::runtime_error("Allocation failed");
 	}
 }
-
-void RenderDescriptorHeap::FlushDescriptorDeallocations(uint32_t frame_number)
-{
-	descriptor_block->FlushDescriptorDeallocations(frame_number);
-}
