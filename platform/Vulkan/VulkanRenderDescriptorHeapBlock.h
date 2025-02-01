@@ -25,7 +25,7 @@ public:
 
 	VulkanRenderDescriptorHeapBlock(const VulkanRenderDescriptorHeapBlock& other) = delete; 
 
-	VulkanRenderDescriptorHeapBlock(VulkanRenderDescriptorHeapBlock&& other) noexcept; //alloc for used with std::vector to allow reallocation 
+	VulkanRenderDescriptorHeapBlock(VulkanRenderDescriptorHeapBlock&& other) = delete;
 
 	virtual RenderDescriptorAllocation* Allocate(size_t num_of_descriptors) override;
 

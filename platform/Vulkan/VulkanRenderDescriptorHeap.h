@@ -15,7 +15,7 @@ public:
 	VulkanRenderDescriptorHeap& operator=(const VulkanRenderDescriptorHeap& ref) = delete;
 	virtual ~VulkanRenderDescriptorHeap();
 
-	virtual RenderDescriptorAllocationHandle Allocate(size_t num_of_descriptors);
+	virtual RenderDescriptorAllocationHandle Allocate() override;
 	virtual void FlushDescriptorDeallocations(uint32_t frame_number);
 
 	void ReturnAllocation(VulkanRenderDescriptorAllocation* alloc);
@@ -29,7 +29,8 @@ public:
 private:
 	VkDescriptorSetLayout layout;
 	std::mutex heap_mutex;
-	std::vector<VulkanRenderDescriptorHeapBlock> heap_blocks;
+	std::vector<std::unique_ptr<VulkanRenderDescriptorHeapBlock>> heap_blocks;
+
 	std::vector<VkDescriptorPoolSize> pool_sizes;
 	std::vector<VulkanRenderDescriptorAllocation*> free_vector;
 	uint32_t current_block = 0;

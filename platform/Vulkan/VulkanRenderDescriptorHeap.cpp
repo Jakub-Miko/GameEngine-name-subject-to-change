@@ -74,7 +74,7 @@ VulkanRenderDescriptorHeap::VulkanRenderDescriptorHeap(MaterialLayout& layout_in
 	set_layout.pBindings = bindings.data();
 	vkCreateDescriptorSetLayout(context->GetVkDevice(), &set_layout, NULL, &layout);
 
-	heap_blocks.emplace_back(this, 128);
+	heap_blocks.emplace_back(std::make_unique<VulkanRenderDescriptorHeapBlock>(this, 128));
 }
 
 VulkanRenderDescriptorHeap::~VulkanRenderDescriptorHeap()
@@ -84,7 +84,7 @@ VulkanRenderDescriptorHeap::~VulkanRenderDescriptorHeap()
 	vkDestroyDescriptorSetLayout(context->GetVkDevice(), layout, NULL);
 }
 
-RenderDescriptorAllocationHandle VulkanRenderDescriptorHeap::Allocate(size_t num_of_descriptors)
+RenderDescriptorAllocationHandle VulkanRenderDescriptorHeap::Allocate()
 {
 	std::lock_guard<std::mutex> lock(heap_mutex);
 	auto original_attempt = current_block;
@@ -94,12 +94,12 @@ RenderDescriptorAllocationHandle VulkanRenderDescriptorHeap::Allocate(size_t num
 		free_vector.pop_back();
 	}
 	else {
-		while (!(alloc = (VulkanRenderDescriptorAllocation*)heap_blocks[current_block].Allocate(layout))) {
+		while (!(alloc = (VulkanRenderDescriptorAllocation*)heap_blocks[current_block]->Allocate(layout))) {
 			current_block = current_block - 1 < 0 ? heap_blocks.size() - 1 : current_block - 1; //subtract and wrap-around (modulo is weird for negative numbers), we subtract so we try the biggest pools first
 			if (original_attempt == current_block) { // if we came back to the original attempt, we allocate a new pool with twice the size
-				heap_blocks.emplace_back(this, heap_blocks.back().GetSize() * 2); //
+				heap_blocks.emplace_back(std::make_unique<VulkanRenderDescriptorHeapBlock>(this, heap_blocks.back()->GetSize() * 2)); //
 				current_block = heap_blocks.size() - 1;
-				alloc = (VulkanRenderDescriptorAllocation*)heap_blocks[current_block].Allocate(layout);
+				alloc = (VulkanRenderDescriptorAllocation*)heap_blocks[current_block]->Allocate(layout);
 			}
 		}
 

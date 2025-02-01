@@ -79,6 +79,23 @@ namespace nlohmann {
 		}
 	};
 
+	template <>
+	struct adl_serializer<glm::mat3> {
+		static void to_json(json& j, const glm::mat3& mat) {
+			const float* mat3_rep = glm::value_ptr(mat);
+			for (int i = 0; i < 9; i++) {
+				j.push_back(mat3_rep[i]);
+			}
+		}
+
+		static void from_json(const json& j, glm::mat3& mat) {
+			float* mat3_rep = glm::value_ptr(mat);
+			for (int i = 0; i < 9; i++) {
+				mat3_rep[i] = j[i].get<float>();
+			}
+		}
+	};
+
 }
 
 class UnitConverter {

@@ -12,6 +12,33 @@
 #include <json.hpp>
 #include <Renderer/ShaderManager.h>
 
+#ifdef Vulkan_API
+#include <platform/Vulkan/VulkanRenderDescriptorHeap.h>
+#endif
+
+
+NLOHMANN_JSON_SERIALIZE_ENUM(MaterialLayoutItemType, {
+	{MaterialLayoutItemType::INT , "int"},
+	{MaterialLayoutItemType::INT , "INT"},
+	{MaterialLayoutItemType::MAT3 , "mat3"},
+	{MaterialLayoutItemType::MAT3 , "MAT3"},
+	{MaterialLayoutItemType::MAT4 , "mat4"},
+	{MaterialLayoutItemType::MAT4 , "MAT"},
+	{MaterialLayoutItemType::VEC2 , "vec2"},
+	{MaterialLayoutItemType::VEC3 , "vec3"},
+	{MaterialLayoutItemType::VEC4 , "vec4"},
+	{MaterialLayoutItemType::VEC2 , "VEC2"},
+	{MaterialLayoutItemType::VEC3 , "VEC3"},
+	{MaterialLayoutItemType::VEC4 , "VEC4"},
+	{MaterialLayoutItemType::SCALAR , "scalar"},
+	{MaterialLayoutItemType::SCALAR , "SCALAR"},
+	{MaterialLayoutItemType::TEXTURE , "texture"},
+	{MaterialLayoutItemType::TEXTURE , "TEXTURE"},
+	{MaterialLayoutItemType::TEXTURE_2D_ARRAY , "texture_array"},
+	{MaterialLayoutItemType::TEXTURE_2D_CUBEMAP , "texture_cubemap"},
+	{MaterialLayoutItemType::CONSTANT_BUFFER , "constant_buffer"}
+	})
+
 MaterialManager* MaterialManager::instance = nullptr;
 
 void MaterialManager::Init()
@@ -81,50 +108,51 @@ std::shared_ptr<Material> MaterialManager::ParseMaterialFromFile(const std::stri
 	return mat;
 }
 
-std::shared_ptr<Material> MaterialManager::ParseMaterialFromString(const std::string& string, std::shared_ptr<Shader> shader_spec)
+std::shared_ptr<Material> MaterialManager::ParseMaterialFromString(const std::string& string, std::shared_ptr<MaterialTemplate> material_template)
 {
 	using namespace nlohmann;
 	json material_json = json::parse(string);
-	std::shared_ptr<MaterialTemplate> mat_template;
-	if (shader_spec == nullptr) {
-		if (!material_json.contains("shader")) throw std::runtime_error("Material format undefined");
-		std::string shader_path = material_json["shader"].get<std::string>();
-		auto fnd_template = material_templates.find(shader_path);
+	if (material_template == nullptr) {
+		if (!material_json.contains("material_template")) throw std::runtime_error("Material format undefined, must provide a material_template name");
+		std::string material_template_name = material_json["material_template"].get<std::string>();
+		auto fnd_template = material_templates.find(material_template_name);
 		if (fnd_template != material_templates.end()) {
-			mat_template = fnd_template->second;
+			material_template = fnd_template->second;
 		}
 		else {
-			mat_template = std::make_shared<MaterialTemplate>(ShaderManager::Get()->GetShader(shader_path));
-			material_templates.insert(std::make_pair(shader_path, mat_template));
+			throw std::runtime_error("Material format undefined, the provided material_template is invalid, make sure to load the material template before using its materials");
 		}
 	}
-	else {
 
-		//If we explicitly specify the shader the lifetime need to be manager by the function.
-		mat_template = std::make_shared<MaterialTemplate>(shader_spec);
-	}
-
-	std::shared_ptr<Material> material = std::shared_ptr<Material>(new Material(mat_template));
+	std::shared_ptr<Material> material = std::shared_ptr<Material>(new Material(material_template));
 	if (!material_json.contains("parameters") || (!material_json["parameters"].is_array() && !material_json["parameters"].is_null())) throw std::runtime_error("Material file must contain a parameters list");
 	if (!material_json["parameters"].is_null()) {
 		for (auto& parameter : material_json["parameters"]) {
-			std::string type = parameter["type"].get<std::string>();
-			if (type == "SCALAR") {
-				material->SetParameter<float>(parameter["name"].get<std::string>(), parameter["value"].get<float>());
-			}
-			else if (type == "VEC2") {
-				material->SetParameter<glm::vec2>(parameter["name"].get<std::string>(), parameter["value"].get<glm::vec2>());
-			}
-			else if (type == "VEC3") {
-				material->SetParameter<glm::vec3>(parameter["name"].get<std::string>(), parameter["value"].get<glm::vec3>());
-			}
-			else if (type == "VEC4") {
-				material->SetParameter<glm::vec4>(parameter["name"].get<std::string>(), parameter["value"].get<glm::vec4>());
-			}
-			else if (type == "INT") {
+			auto type = parameter["type"].get<MaterialLayoutItemType>();
+			switch (type)
+			{
+			case MaterialLayoutItemType::INT:
 				material->SetParameter<int>(parameter["name"].get<std::string>(), parameter["value"].get<int>());
-			}
-			else if (type == "TEXTURE") {
+				break;
+			case MaterialLayoutItemType::MAT3:
+				material->SetParameter<glm::mat3>(parameter["name"].get<std::string>(), parameter["value"].get<glm::mat3>());
+				break;
+			case MaterialLayoutItemType::MAT4:
+				material->SetParameter<glm::mat4>(parameter["name"].get<std::string>(), parameter["value"].get<glm::mat4>());
+				break;
+			case MaterialLayoutItemType::SCALAR:
+				material->SetParameter<float>(parameter["name"].get<std::string>(), parameter["value"].get<float>());
+				break;
+			case MaterialLayoutItemType::VEC2:
+				material->SetParameter<glm::vec2>(parameter["name"].get<std::string>(), parameter["value"].get<glm::vec2>());
+				break;
+			case MaterialLayoutItemType::VEC3:
+				material->SetParameter<glm::vec3>(parameter["name"].get<std::string>(), parameter["value"].get<glm::vec3>());
+				break;
+			case MaterialLayoutItemType::VEC4:
+				material->SetParameter<glm::vec4>(parameter["name"].get<std::string>(), parameter["value"].get<glm::vec4>());
+				break;
+			case MaterialLayoutItemType::TEXTURE:
 				if (parameter["value"].get<std::string>().empty()) {
 					if (parameter.contains("default_normal") && parameter["default_normal"].get<bool>()) {
 						material->SetParameter(parameter["name"].get<std::string>(), TextureManager::Get()->GetDefaultNormalTexture());
@@ -136,487 +164,335 @@ std::shared_ptr<Material> MaterialManager::ParseMaterialFromString(const std::st
 				else {
 					material->SetTexture(parameter["name"].get<std::string>(), parameter["value"].get<std::string>());
 				}
+			default:
+				throw std::runtime_error("Invalid material type.\n");
 			}
 		}
 	}
 	material->material_path = "";
+	material->UpdateValues();
 	return material;
 }
 
-void MaterialManager::SerializeMaterial(const std::string& filepath, std::shared_ptr<Material> material)
-{
-	using namespace nlohmann;
-	std::ofstream file(FileManager::Get()->GetPath(filepath));
-	if (!file.is_open()) throw std::runtime_error("File " + FileManager::Get()->GetPath(filepath) + " could not be opened");
-	
-	
-	json json_object;
-	json& parameters = json_object["parameters"];
-	for (auto& param : material->parameters) {
-		std::string texture;
-		if (bool(param.flags & Material::MaterialParameter_flags::DEFAULT)) continue;
-		json parameter_json = json::object();
-		parameter_json["name"] = param.name;
-		switch (param.type)
-		{
-		case MaterialTemplate::MaterialTemplateParameterType::INT:
-			parameter_json["type"] = "INT";
-			parameter_json["value"] = std::get<int>(param.resource);
-			break;
-		case MaterialTemplate::MaterialTemplateParameterType::SCALAR:
-			parameter_json["type"] = "SCALAR";
-			parameter_json["value"] = std::get<float>(param.resource);
-			break;
-		case MaterialTemplate::MaterialTemplateParameterType::VEC2:
-			parameter_json["type"] = "VEC2";
-			parameter_json["value"] = std::get<glm::vec2>(param.resource);
-			break;
-		case MaterialTemplate::MaterialTemplateParameterType::VEC3:
-			parameter_json["type"] = "VEC3";
-			parameter_json["value"] = std::get<glm::vec3>(param.resource);
-			break;
-		case MaterialTemplate::MaterialTemplateParameterType::VEC4:
-			parameter_json["type"] = "VEC4";
-			parameter_json["value"] = std::get<glm::vec4>(param.resource);
-			break;
-		case MaterialTemplate::MaterialTemplateParameterType::TEXTURE:
-			parameter_json["type"] = "TEXTURE";
-			texture = std::get<Material::Texture_type>(param.resource).path;
-			if (texture.empty()) throw std::runtime_error("Filepath to a texture could not be found during material serialization.");
-			parameter_json["value"] = texture;
-			break;
-		default:
-			throw std::runtime_error("Invalid type during material serialization");
-		}
-		parameters.push_back(parameter_json);
-	}
-	json_object["shader"] = material->material_template->GetShader()->GetPath();
-	std::string json_dump = json_object.dump();
+//void MaterialManager::SerializeMaterial(const std::string& filepath, std::shared_ptr<Material> material)
+//{
+//	using namespace nlohmann;
+//	std::ofstream file(FileManager::Get()->GetPath(filepath));
+//	if (!file.is_open()) throw std::runtime_error("File " + FileManager::Get()->GetPath(filepath) + " could not be opened");
+//	
+//	
+//	json json_object;
+//	json& parameters = json_object["parameters"];
+//	for (auto& param : material->parameters) {
+//		std::string texture;
+//		if (bool(param.flags & Material::MaterialParameter_flags::DEFAULT)) continue;
+//		json parameter_json = json::object();
+//		parameter_json["name"] = param.name;
+//		switch (param.type)
+//		{
+//		case MaterialTemplate::MaterialTemplateParameterType::INT:
+//			parameter_json["type"] = "INT";
+//			parameter_json["value"] = std::get<int>(param.resource);
+//			break;
+//		case MaterialTemplate::MaterialTemplateParameterType::SCALAR:
+//			parameter_json["type"] = "SCALAR";
+//			parameter_json["value"] = std::get<float>(param.resource);
+//			break;
+//		case MaterialTemplate::MaterialTemplateParameterType::VEC2:
+//			parameter_json["type"] = "VEC2";
+//			parameter_json["value"] = std::get<glm::vec2>(param.resource);
+//			break;
+//		case MaterialTemplate::MaterialTemplateParameterType::VEC3:
+//			parameter_json["type"] = "VEC3";
+//			parameter_json["value"] = std::get<glm::vec3>(param.resource);
+//			break;
+//		case MaterialTemplate::MaterialTemplateParameterType::VEC4:
+//			parameter_json["type"] = "VEC4";
+//			parameter_json["value"] = std::get<glm::vec4>(param.resource);
+//			break;
+//		case MaterialTemplate::MaterialTemplateParameterType::TEXTURE:
+//			parameter_json["type"] = "TEXTURE";
+//			texture = std::get<Material::Texture_type>(param.resource).path;
+//			if (texture.empty()) throw std::runtime_error("Filepath to a texture could not be found during material serialization.");
+//			parameter_json["value"] = texture;
+//			break;
+//		default:
+//			throw std::runtime_error("Invalid type during material serialization");
+//		}
+//		parameters.push_back(parameter_json);
+//	}
+//	json_object["shader"] = material->material_template->GetShader()->GetPath();
+//	std::string json_dump = json_object.dump();
+//
+//	file << json_dump;
+//
+//	file.close();
+//}
+//
+//std::shared_ptr<Material> MaterialManager::CreateEmptyMaterial(const std::string& filepath_in, std::shared_ptr<Shader> shader)
+//{
+//	std::string file_path = FileManager::Get()->GetPath(filepath_in);
+//	std::shared_ptr<Material> mat = CreateMaterial(shader->GetPath());
+//	mat->material_path = filepath_in;
+//	SerializeMaterial(filepath_in, mat);
+//	std::lock_guard<std::mutex> lock(material_mutex);
+//	materials.insert(std::make_pair(file_path, mat));
+//	return mat;
+//}
+//
+//void Material::SetMaterial(RenderCommandList* command_list, std::shared_ptr<Pipeline> pipeline)
+//{
+//	UpdateValues(command_list);
+//	auto& sig = material_template->GetRootSignature().GetDescriptor().parameters;
+//	for (auto& resource : resources) {
+//		if (resource.is_table) {
+//			command_list->SetDescriptorTable(sig[resource.index].name, std::get<FrameMultiBufferResource<RenderDescriptorTable>>(resource.resource).GetResource());
+//		}
+//		else {
+//			command_list->SetConstantBuffer(sig[resource.index].name, std::get<std::shared_ptr<RenderBufferResource>>(resource.resource));
+//		}
+//	}
+//	for (auto& parameter : parameters) {
+//		if (parameter.type == MaterialTemplate::MaterialTemplateParameterType::TEXTURE && parameter.IsDirty()) {
+//			command_list->SetTexture2D(parameter.name, std::get<Texture_type>(parameter.resource).texture);
+//		} else if (parameter.type == MaterialTemplate::MaterialTemplateParameterType::TEXTURE_2D_ARRAY && parameter.IsDirty()) {
+//			command_list->SetTexture2DArray(parameter.name, std::get<std::shared_ptr<RenderTexture2DArrayResource>>(parameter.resource));
+//		} else if (parameter.type == MaterialTemplate::MaterialTemplateParameterType::TEXTURE_2D_CUBEMAP && parameter.IsDirty()) {
+//			command_list->SetTexture2DCubemap(parameter.name, std::get<std::shared_ptr<RenderTexture2DCubemapResource>>(parameter.resource));
+//		}
+//	}
+//
+//}
+//
+//void Material::UpdateValues(RenderCommandList* command_list)
+//{
+//	for (auto& parameter : parameters) {
+//		auto& param_info = material_template->GetMaterialTemplateParameter(parameter.name);
+//		if (param_info.descriptor_table_id != -1) {
+//			if (parameter.type == MaterialTemplate::TEXTURE) {
+//				if (param_info.descriptor_table_id != -1) {
+//					auto res_fnd = std::find_if(resources.begin(), resources.end(), [&param_info](const MaterialResource& res) {return res.index == param_info.descriptor_table_id; });
+//					if (res_fnd != resources.end()) {
+//						RenderResourceManager::Get()->CreateTexture2DDescriptor(std::get<FrameMultiBufferResource<RenderDescriptorTable>>(res_fnd->resource).GetResource(),
+//							param_info.index, std::get<Texture_type>(parameter.resource).texture);
+//						parameter.flags &= ~MaterialParameter_flags::DIRTY;
+//					}
+//					else {
+//						throw std::runtime_error("Descriptor table for parameter " + parameter.name + " not found");
+//					}
+//				}
+//			}
+//			else if (parameter.type == MaterialTemplate::TEXTURE_2D_ARRAY) {
+//				if (param_info.descriptor_table_id != -1) {
+//					auto res_fnd = std::find_if(resources.begin(), resources.end(), [&param_info](const MaterialResource& res) {return res.index == param_info.descriptor_table_id; });
+//					if (res_fnd != resources.end()) {
+//						RenderResourceManager::Get()->CreateTexture2DArrayDescriptor(std::get<FrameMultiBufferResource<RenderDescriptorTable>>(res_fnd->resource).GetResource(),
+//							param_info.index, std::get<std::shared_ptr<RenderTexture2DArrayResource>>(parameter.resource));
+//						parameter.flags &= ~MaterialParameter_flags::DIRTY;
+//					}
+//					else {
+//						throw std::runtime_error("Descriptor table for parameter " + parameter.name + " not found");
+//					}
+//				}
+//			}
+//			else if (parameter.type == MaterialTemplate::TEXTURE_2D_CUBEMAP) {
+//				if (param_info.descriptor_table_id != -1) {
+//					auto res_fnd = std::find_if(resources.begin(), resources.end(), [&param_info](const MaterialResource& res) {return res.index == param_info.descriptor_table_id; });
+//					if (res_fnd != resources.end()) {
+//						RenderResourceManager::Get()->CreateTexture2DCubemapDescriptor(std::get<FrameMultiBufferResource<RenderDescriptorTable>>(res_fnd->resource).GetResource(),
+//							param_info.index, std::get<std::shared_ptr<RenderTexture2DCubemapResource>>(parameter.resource));
+//						parameter.flags &= ~MaterialParameter_flags::DIRTY;
+//					}
+//					else {
+//						throw std::runtime_error("Descriptor table for parameter " + parameter.name + " not found");
+//					}
+//				}
+//			} else if(parameter.IsDirty()) {
+//				auto res_fnd = std::find_if(resources.begin(), resources.end(), [&param_info](const MaterialResource& res) {return res.index == param_info.index; });
+//				if(res_fnd != resources.end()) {
+//					RenderResourceManager::Get()->UploadDataToBuffer(command_list, std::get<std::shared_ptr<RenderBufferResource>>(res_fnd->resource),
+//						&parameter.resource, param_info.primitive_size, param_info.constant_buffer_offset);
+//					parameter.flags &= ~MaterialParameter_flags::DIRTY;
+//				}
+//				else {
+//					throw std::runtime_error("Constant Buffer for parameter " + parameter.name + " not found");
+//				}
+//			}
+//		}
+//	}
+//}
+//
+//void Material::SetTexture(const std::string& name, const std::string& path)
+//{
+//	if (TextureManager::Get()->IsTextureAvailable(path)) {
+//		SetParameter(name, TextureManager::Get()->LoadTextureFromFile(path, false), path);
+//	}
+//	else {
+//		auto future = TextureManager::Get()->LoadTextureFromFileAsync(path, true);
+//		MaterialManager::Get()->AddTextureLoad(shared_from_this(),name, future, path);
+//	}
+//}
+//
+//Material::Material(std::shared_ptr<MaterialTemplate> material_template) : material_template(material_template), parameters(), resources()
+//{
+//	bool has_defaults = material_template->GetShader()->GetDefaultMaterial() != nullptr;
+//	std::shared_ptr<Material> defaults = nullptr;
+//	if (has_defaults) {
+//		defaults = material_template->GetShader()->GetDefaultMaterial();
+//		for (auto& parameter : defaults->parameters) {
+//			MaterialParameter res;
+//			res.flags = parameter.flags | MaterialParameter_flags::DEFAULT;
+//			res.name = parameter.name;
+//			res.type = parameter.type;
+//			res.resource = parameter.resource;
+//			res.flags |= MaterialParameter_flags::DIRTY;
+//			parameters.push_back(res);
+//		}
+//	}
+//	else {
+//		for (auto& material_param : material_template->GetMaterialTemplateParameters()) {
+//			MaterialParameter res;
+//			res.flags |= MaterialParameter_flags::DIRTY | MaterialParameter_flags::DEFAULT;
+//			res.name = material_param.name;
+//			res.type = material_param.type;
+//			res.flags |= material_param.descriptor_table_id != -1 ? MaterialParameter_flags::TABLE : (MaterialParameter_flags)0;
+//			SetParameterTypeDefault(res);
+//			parameters.push_back(res);
+//		}
+//	}
+//
+//
+//
+//	std::set<int> const_buf_index;
+//	std::set<int> table_index;
+//	const auto& signature = material_template->GetRootSignature();
+//	for (auto& param_types : material_template->GetMaterialTemplateParameters()) {
+//		if (param_types.constant_buffer_offset != -1) {
+//			if (const_buf_index.insert(param_types.index).second) {
+//				int size = material_template->GetTableOrBufferSize(param_types.index);
+//				MaterialResource res;
+//				res.index = param_types.index;
+//				res.is_table = false;
+//				RenderBufferDescriptor desc(size, RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
+//				res.resource = RenderResourceManager::Get()->CreateBuffer(desc);
+//				resources.push_back(res);
+//			}
+//		}
+//		else if (param_types.descriptor_table_id != -1) {
+//			if (table_index.insert(param_types.descriptor_table_id).second) {
+//				int size = material_template->GetTableOrBufferSize(param_types.descriptor_table_id);
+//				MaterialResource res;
+//				res.index = param_types.descriptor_table_id;
+//				res.is_table = true;
+//				res.resource = FrameMultiBufferResource<RenderDescriptorTable>([size]() {return Renderer3D::Get()->GetDescriptorHeap().Allocate(size); });
+//				resources.push_back(res);
+//			}
+//		}
+//	}
+//	status = Material_status::OK;
+//}
 
-	file << json_dump;
+//void Material::SetParameterTypeDefault(MaterialParameter& param)
+//{
+//	switch (param.type)
+//	{
+//	case MaterialTemplate::MaterialTemplateParameterType::SCALAR:
+//		param.resource = 1.0f;
+//		break;
+//	case MaterialTemplate::MaterialTemplateParameterType::VEC2:
+//		param.resource = glm::vec2(1.0f);
+//		break;
+//	case MaterialTemplate::MaterialTemplateParameterType::VEC3:
+//		param.resource = glm::vec3(1.0f);
+//		break;
+//	case MaterialTemplate::MaterialTemplateParameterType::VEC4:
+//		param.resource = glm::vec4(1.0f);
+//		break;
+//	case MaterialTemplate::MaterialTemplateParameterType::INT:
+//		param.resource = 0;
+//		break;
+//	case MaterialTemplate::MaterialTemplateParameterType::TEXTURE:
+//		param.resource = Texture_type{ TextureManager::Get()->GetDefaultTexture() };
+//		break;
+//	case MaterialTemplate::MaterialTemplateParameterType::TEXTURE_2D_ARRAY:
+//		param.resource = TextureManager::Get()->GetDefaultTextureArray();
+//		break;
+//	case MaterialTemplate::MaterialTemplateParameterType::TEXTURE_2D_CUBEMAP:
+//		param.resource = TextureManager::Get()->GetDefaultTextureCubemap();
+//		break;
+//	default:
+//		throw std::runtime_error("Unsupported tempate parameter type " + param.name);
+//		break;
+//	}
+//}
 
-	file.close();
-}
+//MaterialTemplate::MaterialTemplate(std::shared_ptr<Shader> shader_in) : material_parameters(), material_parameters_map(), shader_wk(shader_in), buffer_and_descriptor_table_sizes()
+//{
+//	auto shader = GetShader();
+//	auto& desc_parametrs = shader->GetRootSignature().GetDescriptor().parameters;
+//	int index = 0;
+//	for (auto& parameter : desc_parametrs) {
+//		if (parameter.is_material_visible) {
+//			switch (parameter.type)
+//			{
+//			case RootParameterType::TEXTURE_2D:
+//				AddTexture2DParameter(parameter,index);
+//				break;
+//			case RootParameterType::TEXTURE_2D_ARRAY:
+//				AddTexture2DArrayParameter(parameter, index);
+//				break;
+//			case RootParameterType::TEXTURE_2D_CUBEMAP:
+//				AddTexture2DCubemapParameter(parameter, index);
+//				break;
+//			case RootParameterType::CONSTANT_BUFFER:
+//				AddConstantBufferParameter(parameter, index);
+//				break;
+//			case RootParameterType::DESCRIPTOR_TABLE:
+//				AddDescriptorTableParameter(parameter, index);
+//				break;
+//			default:
+//				break;
+//			}
+//		}
+//		index++;
+//	}
+//}
 
-std::shared_ptr<Material> MaterialManager::CreateEmptyMaterial(const std::string& filepath_in, std::shared_ptr<Shader> shader)
-{
-	std::string file_path = FileManager::Get()->GetPath(filepath_in);
-	std::shared_ptr<Material> mat = CreateMaterial(shader->GetPath());
-	mat->material_path = filepath_in;
-	SerializeMaterial(filepath_in, mat);
-	std::lock_guard<std::mutex> lock(material_mutex);
-	materials.insert(std::make_pair(file_path, mat));
-	return mat;
-}
-
-void Material::SetMaterial(RenderCommandList* command_list, std::shared_ptr<Pipeline> pipeline)
-{
-	UpdateValues(command_list);
-	auto& sig = material_template->GetRootSignature().GetDescriptor().parameters;
-	for (auto& resource : resources) {
-		if (resource.is_table) {
-			command_list->SetDescriptorTable(sig[resource.index].name, std::get<FrameMultiBufferResource<RenderDescriptorTable>>(resource.resource).GetResource());
-		}
-		else {
-			command_list->SetConstantBuffer(sig[resource.index].name, std::get<std::shared_ptr<RenderBufferResource>>(resource.resource));
-		}
-	}
-	for (auto& parameter : parameters) {
-		if (parameter.type == MaterialTemplate::MaterialTemplateParameterType::TEXTURE && parameter.IsDirty()) {
-			command_list->SetTexture2D(parameter.name, std::get<Texture_type>(parameter.resource).texture);
-		} else if (parameter.type == MaterialTemplate::MaterialTemplateParameterType::TEXTURE_2D_ARRAY && parameter.IsDirty()) {
-			command_list->SetTexture2DArray(parameter.name, std::get<std::shared_ptr<RenderTexture2DArrayResource>>(parameter.resource));
-		} else if (parameter.type == MaterialTemplate::MaterialTemplateParameterType::TEXTURE_2D_CUBEMAP && parameter.IsDirty()) {
-			command_list->SetTexture2DCubemap(parameter.name, std::get<std::shared_ptr<RenderTexture2DCubemapResource>>(parameter.resource));
-		}
-	}
-
-}
-
-void Material::UpdateValues(RenderCommandList* command_list)
-{
-	for (auto& parameter : parameters) {
-		auto& param_info = material_template->GetMaterialTemplateParameter(parameter.name);
-		if (param_info.descriptor_table_id != -1) {
-			if (parameter.type == MaterialTemplate::TEXTURE) {
-				if (param_info.descriptor_table_id != -1) {
-					auto res_fnd = std::find_if(resources.begin(), resources.end(), [&param_info](const MaterialResource& res) {return res.index == param_info.descriptor_table_id; });
-					if (res_fnd != resources.end()) {
-						RenderResourceManager::Get()->CreateTexture2DDescriptor(std::get<FrameMultiBufferResource<RenderDescriptorTable>>(res_fnd->resource).GetResource(),
-							param_info.index, std::get<Texture_type>(parameter.resource).texture);
-						parameter.flags &= ~MaterialParameter_flags::DIRTY;
-					}
-					else {
-						throw std::runtime_error("Descriptor table for parameter " + parameter.name + " not found");
-					}
-				}
-			}
-			else if (parameter.type == MaterialTemplate::TEXTURE_2D_ARRAY) {
-				if (param_info.descriptor_table_id != -1) {
-					auto res_fnd = std::find_if(resources.begin(), resources.end(), [&param_info](const MaterialResource& res) {return res.index == param_info.descriptor_table_id; });
-					if (res_fnd != resources.end()) {
-						RenderResourceManager::Get()->CreateTexture2DArrayDescriptor(std::get<FrameMultiBufferResource<RenderDescriptorTable>>(res_fnd->resource).GetResource(),
-							param_info.index, std::get<std::shared_ptr<RenderTexture2DArrayResource>>(parameter.resource));
-						parameter.flags &= ~MaterialParameter_flags::DIRTY;
-					}
-					else {
-						throw std::runtime_error("Descriptor table for parameter " + parameter.name + " not found");
-					}
-				}
-			}
-			else if (parameter.type == MaterialTemplate::TEXTURE_2D_CUBEMAP) {
-				if (param_info.descriptor_table_id != -1) {
-					auto res_fnd = std::find_if(resources.begin(), resources.end(), [&param_info](const MaterialResource& res) {return res.index == param_info.descriptor_table_id; });
-					if (res_fnd != resources.end()) {
-						RenderResourceManager::Get()->CreateTexture2DCubemapDescriptor(std::get<FrameMultiBufferResource<RenderDescriptorTable>>(res_fnd->resource).GetResource(),
-							param_info.index, std::get<std::shared_ptr<RenderTexture2DCubemapResource>>(parameter.resource));
-						parameter.flags &= ~MaterialParameter_flags::DIRTY;
-					}
-					else {
-						throw std::runtime_error("Descriptor table for parameter " + parameter.name + " not found");
-					}
-				}
-			} else if(parameter.IsDirty()) {
-				auto res_fnd = std::find_if(resources.begin(), resources.end(), [&param_info](const MaterialResource& res) {return res.index == param_info.index; });
-				if(res_fnd != resources.end()) {
-					RenderResourceManager::Get()->UploadDataToBuffer(command_list, std::get<std::shared_ptr<RenderBufferResource>>(res_fnd->resource),
-						&parameter.resource, param_info.primitive_size, param_info.constant_buffer_offset);
-					parameter.flags &= ~MaterialParameter_flags::DIRTY;
-				}
-				else {
-					throw std::runtime_error("Constant Buffer for parameter " + parameter.name + " not found");
-				}
-			}
-		}
-	}
-}
-
-void Material::SetTexture(const std::string& name, const std::string& path)
-{
-	if (TextureManager::Get()->IsTextureAvailable(path)) {
-		SetParameter(name, TextureManager::Get()->LoadTextureFromFile(path, false), path);
-	}
-	else {
-		auto future = TextureManager::Get()->LoadTextureFromFileAsync(path, true);
-		MaterialManager::Get()->AddTextureLoad(shared_from_this(),name, future, path);
-	}
-}
-
-Material::Material(std::shared_ptr<MaterialTemplate> material_template) : material_template(material_template), parameters(), resources()
-{
-	bool has_defaults = material_template->GetShader()->GetDefaultMaterial() != nullptr;
-	std::shared_ptr<Material> defaults = nullptr;
-	if (has_defaults) {
-		defaults = material_template->GetShader()->GetDefaultMaterial();
-		for (auto& parameter : defaults->parameters) {
-			MaterialParameter res;
-			res.flags = parameter.flags | MaterialParameter_flags::DEFAULT;
-			res.name = parameter.name;
-			res.type = parameter.type;
-			res.resource = parameter.resource;
-			res.flags |= MaterialParameter_flags::DIRTY;
-			parameters.push_back(res);
-		}
-	}
-	else {
-		for (auto& material_param : material_template->GetMaterialTemplateParameters()) {
-			MaterialParameter res;
-			res.flags |= MaterialParameter_flags::DIRTY | MaterialParameter_flags::DEFAULT;
-			res.name = material_param.name;
-			res.type = material_param.type;
-			res.flags |= material_param.descriptor_table_id != -1 ? MaterialParameter_flags::TABLE : (MaterialParameter_flags)0;
-			SetParameterTypeDefault(res);
-			parameters.push_back(res);
-		}
-	}
-
-
-
-	std::set<int> const_buf_index;
-	std::set<int> table_index;
-	const auto& signature = material_template->GetRootSignature();
-	for (auto& param_types : material_template->GetMaterialTemplateParameters()) {
-		if (param_types.constant_buffer_offset != -1) {
-			if (const_buf_index.insert(param_types.index).second) {
-				int size = material_template->GetTableOrBufferSize(param_types.index);
-				MaterialResource res;
-				res.index = param_types.index;
-				res.is_table = false;
-				RenderBufferDescriptor desc(size, RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
-				res.resource = RenderResourceManager::Get()->CreateBuffer(desc);
-				resources.push_back(res);
-			}
-		}
-		else if (param_types.descriptor_table_id != -1) {
-			if (table_index.insert(param_types.descriptor_table_id).second) {
-				int size = material_template->GetTableOrBufferSize(param_types.descriptor_table_id);
-				MaterialResource res;
-				res.index = param_types.descriptor_table_id;
-				res.is_table = true;
-				res.resource = FrameMultiBufferResource<RenderDescriptorTable>([size]() {return Renderer3D::Get()->GetDescriptorHeap().Allocate(size); });
-				resources.push_back(res);
-			}
-		}
-	}
-	status = Material_status::OK;
-}
-
-void Material::SetParameterTypeDefault(MaterialParameter& param)
-{
-	switch (param.type)
-	{
-	case MaterialTemplate::MaterialTemplateParameterType::SCALAR:
-		param.resource = 1.0f;
-		break;
-	case MaterialTemplate::MaterialTemplateParameterType::VEC2:
-		param.resource = glm::vec2(1.0f);
-		break;
-	case MaterialTemplate::MaterialTemplateParameterType::VEC3:
-		param.resource = glm::vec3(1.0f);
-		break;
-	case MaterialTemplate::MaterialTemplateParameterType::VEC4:
-		param.resource = glm::vec4(1.0f);
-		break;
-	case MaterialTemplate::MaterialTemplateParameterType::INT:
-		param.resource = 0;
-		break;
-	case MaterialTemplate::MaterialTemplateParameterType::TEXTURE:
-		param.resource = Texture_type{ TextureManager::Get()->GetDefaultTexture() };
-		break;
-	case MaterialTemplate::MaterialTemplateParameterType::TEXTURE_2D_ARRAY:
-		param.resource = TextureManager::Get()->GetDefaultTextureArray();
-		break;
-	case MaterialTemplate::MaterialTemplateParameterType::TEXTURE_2D_CUBEMAP:
-		param.resource = TextureManager::Get()->GetDefaultTextureCubemap();
-		break;
-	default:
-		throw std::runtime_error("Unsupported tempate parameter type " + param.name);
-		break;
-	}
-}
-
-MaterialTemplate::MaterialTemplate(std::shared_ptr<Shader> shader_in) : material_parameters(), material_parameters_map(), shader_wk(shader_in), buffer_and_descriptor_table_sizes()
-{
-	auto shader = GetShader();
-	auto& desc_parametrs = shader->GetRootSignature().GetDescriptor().parameters;
-	int index = 0;
-	for (auto& parameter : desc_parametrs) {
-		if (parameter.is_material_visible) {
-			switch (parameter.type)
-			{
-			case RootParameterType::TEXTURE_2D:
-				AddTexture2DParameter(parameter,index);
-				break;
-			case RootParameterType::TEXTURE_2D_ARRAY:
-				AddTexture2DArrayParameter(parameter, index);
-				break;
-			case RootParameterType::TEXTURE_2D_CUBEMAP:
-				AddTexture2DCubemapParameter(parameter, index);
-				break;
-			case RootParameterType::CONSTANT_BUFFER:
-				AddConstantBufferParameter(parameter, index);
-				break;
-			case RootParameterType::DESCRIPTOR_TABLE:
-				AddDescriptorTableParameter(parameter, index);
-				break;
-			default:
-				break;
-			}
-		}
-		index++;
-	}
-}
-
-const MaterialTemplate::MaterialTemplateParameter& MaterialTemplate::GetMaterialTemplateParameter(const std::string& name) const
-{
-	auto fnd = material_parameters_map.find(name);
-	if (fnd != material_parameters_map.end()) {
-		return material_parameters[fnd->second];
-	}
-	else {
-		throw std::runtime_error("Material template parameter " + name + " not found");
-	}
-}
+//const MaterialTemplate::MaterialTemplateParameter& MaterialTemplate::GetMaterialTemplateParameter(const std::string& name) const
+//{
+//	auto fnd = material_parameters_map.find(name);
+//	if (fnd != material_parameters_map.end()) {
+//		return material_parameters[fnd->second];
+//	}
+//	else {
+//		throw std::runtime_error("Material template parameter " + name + " not found");
+//	}
+//}
 
 MaterialTemplate::~MaterialTemplate()
 {
 
 }
 
-int MaterialTemplate::GetTableOrBufferSize(int index)
-{
-	auto fnd = buffer_and_descriptor_table_sizes.find(index);
-	if (fnd != buffer_and_descriptor_table_sizes.end()) {
-		return fnd->second;
-	}
-	else {
-		throw std::runtime_error("Table or buffer size " + std::to_string(index) + " not found");
-	}
-	
-}
+//
+//int MaterialTemplate::GetTableOrBufferSize(int index)
+//{
+//	auto fnd = buffer_and_descriptor_table_sizes.find(index);
+//	if (fnd != buffer_and_descriptor_table_sizes.end()) {
+//		return fnd->second;
+//	}
+//	else {
+//		throw std::runtime_error("Table or buffer size " + std::to_string(index) + " not found");
+//	}
+//	
+//}
 
-void MaterialTemplate::CreateParameter(const MaterialTemplateParameter& parameter)
-{
-	material_parameters.push_back(parameter);
-	material_parameters_map.insert(std::make_pair(parameter.name,material_parameters.size()-1));
-}
+//void MaterialTemplate::CreateParameter(const MaterialTemplateParameter& parameter)
+//{
+//	material_parameters.push_back(parameter);
+//	material_parameters_map.insert(std::make_pair(parameter.name,material_parameters.size()-1));
+//}
 
-const RootSignature& MaterialTemplate::GetRootSignature() const {
-	return GetShader()->GetRootSignature();
-}
-
-void MaterialTemplate::AddTexture2DParameter(const RootSignatureDescriptorElement& element, int index, uint32_t table )
-{
-	MaterialTemplateParameter parameter;
-	if (table != -1) {
-		parameter.descriptor_table_id = table;
-		parameter.index = index;
-		parameter.name = element.name;
-		parameter.type = TEXTURE;
-	}
-	else {
-		parameter.index = index;
-		parameter.name = element.name;
-		parameter.type = TEXTURE;
-	}
-	CreateParameter(parameter);
-}
-
-
-void MaterialTemplate::AddTexture2DCubemapParameter(const RootSignatureDescriptorElement& element, int index, uint32_t table)
-{
-	MaterialTemplateParameter parameter;
-	if (table != -1) {
-		parameter.descriptor_table_id = table;
-		parameter.index = index;
-		parameter.name = element.name;
-		parameter.type = TEXTURE_2D_CUBEMAP;
-	}
-	else {
-		parameter.index = index;
-		parameter.name = element.name;
-		parameter.type = TEXTURE_2D_CUBEMAP;
-	}
-	CreateParameter(parameter);
-}
-
-
-void MaterialTemplate::AddTexture2DArrayParameter(const RootSignatureDescriptorElement& element, int index, uint32_t table)
-{
-	MaterialTemplateParameter parameter;
-	if (table != -1) {
-		parameter.descriptor_table_id = table;
-		parameter.index = index;
-		parameter.name = element.name;
-		parameter.type = TEXTURE_2D_ARRAY;
-	}
-	else {
-		parameter.index = index;
-		parameter.name = element.name;
-		parameter.type = TEXTURE_2D_ARRAY;
-	}
-	CreateParameter(parameter);
-}
-
-
-void MaterialTemplate::AddDescriptorTableParameter(const RootSignatureDescriptorElement& element, int index)
-{
-	int current_index = 0;
-	for (auto& range : element.table) {
-		switch (range.type) {
-		//Descriptor table contained Constant buffer dont support MaterialParameters, since their layout can be defined at runtime.
-		case RootDescriptorType::TEXTURE_2D:
-			if (range.individual_names.empty()) {
-				throw std::runtime_error("Material Visible Textures in Descriptor tables must have assigned individual names.");
-			}
-			else {
-				for (int i = 0; i < range.size; i++) {
-					AddTexture2DParameter(RootSignatureDescriptorElement(range.individual_names[i], RootParameterType::TEXTURE_2D, true),current_index,index);
-					current_index++;
-				}
-			}
-			break;
-		case RootDescriptorType::TEXTURE_2D_ARRAY:
-			if (range.individual_names.empty()) {
-				throw std::runtime_error("Material Visible Textures in Descriptor tables must have assigned individual names.");
-			}
-			else {
-				for (int i = 0; i < range.size; i++) {
-					AddTexture2DArrayParameter(RootSignatureDescriptorElement(range.individual_names[i], RootParameterType::TEXTURE_2D_ARRAY, true), current_index, index);
-					current_index++;
-				}
-			}
-			break;
-		case RootDescriptorType::TEXTURE_2D_CUBEMAP:
-			if (range.individual_names.empty()) {
-				throw std::runtime_error("Material Visible Textures in Descriptor tables must have assigned individual names.");
-			}
-			else {
-				for (int i = 0; i < range.size; i++) {
-					AddTexture2DCubemapParameter(RootSignatureDescriptorElement(range.individual_names[i], RootParameterType::TEXTURE_2D_CUBEMAP, true), current_index, index);
-					current_index++;
-				}
-			}
-			break;
-		default:
-			current_index += range.size;
-			break;
-		}
-	}
-	buffer_and_descriptor_table_sizes.insert(std::make_pair(index, current_index));
-}
-
-void MaterialTemplate::AddConstantBufferParameter(const RootSignatureDescriptorElement& element, int index, uint32_t table)
-{
-	auto shader = GetShader();
-	try {
-		auto layout = shader->GetRootSignature().GetConstantBufferLayout(element.name);
-		int offset = 0;
-		for (auto& entry : layout) {
-			MaterialTemplateParameter param;
-			param.constant_buffer_offset = offset;
-			if (table == -1) {
-				param.index = index;
-				param.descriptor_table_id = -1;
-			}
-			else {
-				throw std::runtime_error("Descriptor table contained Constant buffer dont support MaterialParameters, since their layout can be defined at runtime.");
-			}
-			param.name = entry.name;
-			switch (entry.type) {
-			case RenderPrimitiveType::FLOAT:
-				param.type = SCALAR;
-				break;
-			case RenderPrimitiveType::VEC2:
-				param.type = VEC2;
-				break;
-			case RenderPrimitiveType::VEC3:
-				param.type = VEC3;
-				break;
-			case RenderPrimitiveType::VEC4:
-				param.type = VEC4;
-				break;
-			case RenderPrimitiveType::INT:
-				param.type = INT;
-				break;
-			default:
-				offset += UnitConverter::PrimitiveSize(entry.type);
-				continue;
-			}
-			offset += UnitConverter::PrimitiveSize(entry.type);
-			param.primitive_size = UnitConverter::PrimitiveSize(entry.type);
-			CreateParameter(param);
-		}
-		buffer_and_descriptor_table_sizes.insert(std::make_pair(index, offset));
-
-
-	}
-	catch (...) {
-		throw std::runtime_error("Material Visible Constant buffer needs to be directly specified in the root signature with a valid layout attached.");
-	}
-
-
-}
 
 int MaterialTemplate::GetMaterialTemplateParameterIndex(const std::string& name) const {
 	auto fnd = material_parameters_map.find(name);
@@ -693,7 +569,7 @@ void Material::ActivateParameter(const std::string& name) {
 void Material::DeactivateParameter(const std::string& name) {
 	auto& param = parameters[material_template->GetMaterialTemplateParameterIndex(name)];
 	param.flags |= MaterialParameter_flags::DEFAULT | MaterialParameter_flags::DIRTY;
-	auto def = material_template->GetShader()->GetDefaultMaterial();
+	auto def = material_template->GetDefaultMaterial();
 	if (def != nullptr) {
 		auto param_src = material_template->GetMaterialTemplateParameterIndex(name);
 		param.resource = def->parameters[param_src].resource;
@@ -702,4 +578,128 @@ void Material::DeactivateParameter(const std::string& name) {
 		SetParameterTypeDefault(param);
 	}
 
+}
+
+std::shared_ptr<MaterialTemplate> MaterialManager::LoadMaterialTemplateFromJson(const nlohmann::json& json_object)
+{
+	if (!json_object.is_array()) {
+		throw std::runtime_error("Material template must be a named list of parameters.\n");
+	}
+
+	auto name = std::string(json_object.type_name());
+
+	MaterialLayout layout;
+	for (auto& item : json_object) {
+		if (!item.is_object()) {
+			throw std::runtime_error("Material template item must be a json object.\n");
+		}
+		if (!item.contains("name") || !item["name"].is_string() || !item.contains("type") || !item["type"].is_string()) {
+			throw std::runtime_error("Material template item have a string \"name\" and \"type\".\n");
+		}
+		MaterialLayoutItem mat_item;
+		mat_item.name = item["name"].get<std::string>();
+		mat_item.type = item["type"].get<MaterialLayoutItemType>();
+
+		bool default_exists = item.contains("default_value");
+
+		switch (mat_item.type)
+		{
+		case MaterialLayoutItemType::INT:
+			mat_item.default_value = default_exists ? item["default_value"].get<int>() : 0;
+			break;
+		case MaterialLayoutItemType::MAT3:
+			mat_item.default_value = default_exists ? item["default_value"].get<glm::mat3>() : glm::mat3(1.0f);
+			break;
+		case MaterialLayoutItemType::MAT4:
+			mat_item.default_value = default_exists ? item["default_value"].get<glm::mat4>() : glm::mat4(1.0f);
+			break;
+		case MaterialLayoutItemType::SCALAR:
+			mat_item.default_value = default_exists ? item["default_value"].get<float>() : 0.0f;
+			break;
+		case MaterialLayoutItemType::VEC2:
+			mat_item.default_value = default_exists ? item["default_value"].get<glm::vec2>() : glm::vec2(0,0);
+			break;
+		case MaterialLayoutItemType::VEC3:
+			mat_item.default_value = default_exists ? item["default_value"].get<glm::vec3>() : glm::vec3(0, 0, 0);
+			break;
+		case MaterialLayoutItemType::VEC4:
+			mat_item.default_value = default_exists ? item["default_value"].get<glm::vec4>() : glm::vec4(0, 0, 0, 0);
+			break;
+		case MaterialLayoutItemType::TEXTURE:		
+			mat_item.default_value = default_exists ? item["default_value"].get<std::string>() : std::string(""); // dont set the resource yet, only store the path, empty if none was specified
+			break;
+		case MaterialLayoutItemType::TEXTURE_2D_ARRAY:		// Texture arrays, cubemaps, and constant buffers, cannot be have defaults specified
+		case MaterialLayoutItemType::TEXTURE_2D_CUBEMAP:	
+		case MaterialLayoutItemType::CONSTANT_BUFFER:		
+			break;
+		default:
+			throw std::runtime_error("Invalid material type.\n");
+		}
+		layout.layout_items.push_back(mat_item);
+	}
+
+
+	return std::make_shared<MaterialTemplate>(layout, name);
+}
+
+MaterialTemplate::MaterialTemplate(const MaterialLayout& layout, std::string name) : material_name(name), material_parameters(layout),  material_parameters_map() 
+{
+#ifdef Vulkan_API
+	material_allocator = std::make_unique<VulkanRenderDescriptorHeap>(material_parameters);
+#elif
+	static_assert(false, "Apis other that vulkan are currently unsupported");
+#endif
+	for (int i; i < material_parameters.layout_items.size(); i++) {
+		material_parameters_map.insert(std::make_pair(material_parameters.layout_items[i].name, i));
+	}
+
+	static_assert(false, "Need to finish creating the default material");
+
+}
+
+void MaterialManager::LoadMaterialTemplateFile(const std::string& path)
+{
+	std::ifstream file(FileManager::Get()->GetPath(path));
+	if (!file.is_open()) {
+		throw std::runtime_error("Material template file could not be opened.");
+	}
+	nlohmann::json json_object;
+
+	json_object << file;
+
+	file.close();
+
+	if (!json_object.array()) {
+		throw std::runtime_error("Material template file must contain an array of json objects representing the materials");
+	}
+
+	for (auto& material_spec : json_object) {
+		auto material_template = LoadMaterialTemplateFromJson(material_spec);
+		RegisterMaterialTemplate(material_template);
+	}
+}
+
+void MaterialManager::RegisterMaterialTemplate(std::shared_ptr<MaterialTemplate> material_template)
+{
+	material_templates.insert(std::make_pair(material_template->GetName(), material_template));
+}
+
+RenderDescriptorAllocationHandle MaterialTemplate::AllocateMaterialDescriptor()
+{
+	return material_allocator->Allocate();
+}
+
+Material::Material(std::shared_ptr<MaterialTemplate> material_template) : material_template(material_template)
+{
+	descriptor_table = material_template->AllocateMaterialDescriptor();
+	auto const_size = material_template->GetMaterialTemplateParameters().const_buffer_size;
+	if (const_size != 0) {
+		RenderBufferDescriptor desc;
+		desc.buffer_size = const_size;
+		desc.type = RenderBufferType::DEFAULT;
+		desc.usage = RenderBufferUsage::CONSTANT_BUFFER;
+		constant_buffer = RenderResourceManager::Get()->CreateBuffer(desc);
+	}
+
+	status = Material_status::UNINITIALIZED;
 }

@@ -55,6 +55,9 @@ public:
 		case MaterialLayoutItemType::TEXTURE_2D_CUBEMAP:	
 			is_uniform = false; 
 			return VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		case MaterialLayoutItemType::CONSTANT_BUFFER:
+			is_uniform = false;
+			return VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		default:
 			throw std::runtime_error("Conversion failed");
 		}
@@ -73,6 +76,7 @@ public:
 		case MaterialLayoutItemType::TEXTURE:					return -1;
 		case MaterialLayoutItemType::TEXTURE_2D_ARRAY:			return -1;
 		case MaterialLayoutItemType::TEXTURE_2D_CUBEMAP:		return -1;
+		case MaterialLayoutItemType::CONSTANT_BUFFER:			return -1;
 		default:												
 			throw std::runtime_error("Conversion failed");		
 		}

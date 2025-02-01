@@ -9,13 +9,25 @@
 
 class Shader;
 
+class Material;
+
+struct MaterialTextureType {
+    std::shared_ptr<RenderTexture2DResource> texture;
+#ifdef EDITOR
+    std::string path = "";
+#endif
+};
+
+using MaterialParameter = std::variant<int, float, glm::vec2, glm::vec3, glm::vec4, glm::mat4, glm::mat3, MaterialTextureType, std::shared_ptr<RenderTexture2DArrayResource>, std::shared_ptr<RenderTexture2DCubemapResource>, std::string, std::monostate>;
+
 enum MaterialLayoutItemType : char {
-    SCALAR = 0, VEC2 = 1, VEC3 = 2, VEC4 = 3, TEXTURE = 4, MAT3 = 5, MAT4 = 6, INT = 7, TEXTURE_2D_ARRAY = 8, TEXTURE_2D_CUBEMAP = 9, INVALID_PARAMETER = -1
+    SCALAR = 0, VEC2 = 1, VEC3 = 2, VEC4 = 3, TEXTURE = 4, MAT3 = 5, MAT4 = 6, INT = 7, TEXTURE_2D_ARRAY = 8, TEXTURE_2D_CUBEMAP = 9, CONSTANT_BUFFER = 10,  INVALID_PARAMETER = -1
 };
 
 struct MaterialLayoutItem {
     std::string name;
     MaterialLayoutItemType type = INVALID_PARAMETER;
+    MaterialParameter default_value = std::monostate();
     union { // This is filled in by the constructor of the RenderDescriptorHeap, which handles allocations and layouts
         uint32_t set_binding;
         uint32_t constant_buffer_offset;
@@ -29,8 +41,8 @@ struct MaterialLayout {
 
 class MaterialTemplate {
 public:
-    MaterialTemplate() : material_parameters(), material_parameters_map() {}
-    MaterialTemplate(const MaterialLayout& layout);
+    MaterialTemplate();
+    MaterialTemplate(const MaterialLayout& layout, std::string name);
     MaterialTemplate(const MaterialTemplate& other) : material_parameters(other.material_parameters), material_parameters_map(material_parameters_map) {}
     MaterialTemplate& operator=(const MaterialTemplate& other) {;
         material_parameters = other.material_parameters;
@@ -48,8 +60,23 @@ public:
         return material_parameters;
     }
 
+    RenderDescriptorAllocationHandle AllocateMaterialDescriptor();
+
+    std::shared_ptr<Material> GetDefaultMaterial() const {
+        return default_material;
+    }
+
+    const std::string& GetName() const { return material_name; }
+
+    RenderDescriptorHeap& GetAllocator()  {
+        return *material_allocator;
+    }
+   
+
 private:
+    std::string material_name = "";
     std::unique_ptr<RenderDescriptorHeap> material_allocator;
+    std::shared_ptr<Material> default_material;
     MaterialLayout material_parameters;
     std::unordered_map<std::string, size_t> material_parameters_map;
 };
@@ -59,14 +86,6 @@ public:
 
     Material() = default;
 
-    struct Texture_type {
-        std::shared_ptr<RenderTexture2DResource> texture;
-#ifdef EDITOR
-        std::string path = "";
-#endif
-    };
-
-    using material_parameter_type = std::variant<int, float, glm::vec2, glm::vec3, glm::vec4, Texture_type, std::shared_ptr<RenderTexture2DArrayResource>, std::shared_ptr<RenderTexture2DCubemapResource>>;
     using material_resource_type = std::variant<FrameMultiBufferResource<RenderDescriptorTable>,std::shared_ptr<RenderBufferResource>>;
 
     enum class Material_status : char {
@@ -124,6 +143,8 @@ private:
     std::string material_path = "";
     std::shared_ptr<MaterialTemplate> material_template = nullptr;
     std::vector<MaterialParameter> parameters = std::vector<MaterialParameter>();
+    RenderDescriptorAllocationHandle descriptor_table;
+    std::shared_ptr<RenderBufferResource> constant_buffer = nullptr;
     Material_status status = Material_status::ERROR;
 };
 
@@ -201,6 +222,14 @@ public:
 
     std::shared_ptr<Material> CreateEmptyMaterial(const std::string& filepath, std::shared_ptr<Shader> shader);
 
+    std::shared_ptr<MaterialTemplate> GetMaterialTemplate(const std::string& name);
+
+    std::shared_ptr<MaterialTemplate> LoadMaterialTemplateFromJson(const nlohmann::json& json_object);
+
+    void LoadMaterialTemplateFile(const std::string& path);
+
+    void RegisterMaterialTemplate(std::shared_ptr<MaterialTemplate> material_template);
+
 private:
 
 
@@ -227,7 +256,7 @@ private:
     void AddTextureLoad(std::shared_ptr<Material> material, std::string name, Future<std::shared_ptr<RenderTexture2DResource>> future, const std::string path = "");
 
     std::shared_ptr<Material> ParseMaterialFromFile(const std::string& path);
-    std::shared_ptr<Material> ParseMaterialFromString(const std::string& string, std::shared_ptr<Shader> shader_spec = nullptr);
+    std::shared_ptr<Material> ParseMaterialFromString(const std::string& string, std::shared_ptr<MaterialTemplate> material_template = nullptr);
 
     std::mutex material_mutex;
     std::unordered_map<std::string, std::shared_ptr<MaterialTemplate>> material_templates;

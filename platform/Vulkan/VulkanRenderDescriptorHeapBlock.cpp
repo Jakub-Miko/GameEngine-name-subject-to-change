@@ -39,12 +39,6 @@ VulkanRenderDescriptorHeapBlock::VulkanRenderDescriptorHeapBlock(VulkanRenderDes
 	vkCreateDescriptorPool(context->GetVkDevice(), &info, NULL, &pool);
 }
 
-VulkanRenderDescriptorHeapBlock::VulkanRenderDescriptorHeapBlock(VulkanRenderDescriptorHeapBlock&& other) noexcept
-{
-	pool = other.pool;
-	other.pool = VK_NULL_HANDLE; // destroying VK_NULL_HANDLE is silently ignored according to vulkan spec
-}
-
 RenderDescriptorAllocation* VulkanRenderDescriptorHeapBlock::Allocate(size_t num_of_descriptors)
 {
 	return nullptr;
