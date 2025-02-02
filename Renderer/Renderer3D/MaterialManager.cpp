@@ -380,7 +380,7 @@ void Material::UpdateValues(RenderCommandList* command_list)
 		auto& param = parameters[i];
 		auto& layout_item = material_template->GetMaterialTemplateParameters().layout_items[i];
 
-		if (param.IsDirty()) {
+		if (param.IsDirty() || status == Material_status::UNINITIALIZED) {
 			switch (param.type)
 			{
 			case MaterialLayoutItemType::TEXTURE:
