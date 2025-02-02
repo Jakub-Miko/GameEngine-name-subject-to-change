@@ -18,7 +18,8 @@ struct MaterialTextureType {
 #endif
 };
 
-using MaterialParameter = std::variant<int, float, glm::vec2, glm::vec3, glm::vec4, glm::mat4, glm::mat3, MaterialTextureType, std::shared_ptr<RenderTexture2DArrayResource>, std::shared_ptr<RenderTexture2DCubemapResource>, std::string, std::monostate>;
+using MaterialParameterResource = std::variant<int, float, glm::vec2, glm::vec3, glm::vec4, glm::mat4, glm::mat3, MaterialTextureType, std::shared_ptr<RenderTexture2DArrayResource>, 
+    std::shared_ptr<RenderTexture2DCubemapResource>, std::shared_ptr<RenderBufferResource>, std::string, std::monostate>;
 
 enum MaterialLayoutItemType : char {
     SCALAR = 0, VEC2 = 1, VEC3 = 2, VEC4 = 3, TEXTURE = 4, MAT3 = 5, MAT4 = 6, INT = 7, TEXTURE_2D_ARRAY = 8, TEXTURE_2D_CUBEMAP = 9, CONSTANT_BUFFER = 10,  INVALID_PARAMETER = -1
@@ -27,7 +28,7 @@ enum MaterialLayoutItemType : char {
 struct MaterialLayoutItem {
     std::string name;
     MaterialLayoutItemType type = INVALID_PARAMETER;
-    MaterialParameter default_value = std::monostate();
+    MaterialParameterResource default_value = std::monostate();
     union { // This is filled in by the constructor of the RenderDescriptorHeap, which handles allocations and layouts
         uint32_t set_binding;
         uint32_t constant_buffer_offset;
@@ -39,7 +40,7 @@ struct MaterialLayout {
     uint32_t const_buffer_size = 0; //0 if not constant buffer exists
 };
 
-class MaterialTemplate {
+class MaterialTemplate : public std::enable_shared_from_this<MaterialTemplate> {
 public:
     MaterialTemplate();
     MaterialTemplate(const MaterialLayout& layout, std::string name);
@@ -81,7 +82,7 @@ private:
     std::unordered_map<std::string, size_t> material_parameters_map;
 };
 
-class Material {
+class Material : std::enable_shared_from_this<Material> {
 public:
 
     Material() = default;
@@ -98,7 +99,7 @@ public:
     };
 
     struct MaterialParameter {
-        material_parameter_type resource;
+        MaterialParameterResource resource;
         std::string name;
         MaterialLayoutItemType type;
         MaterialParameter_flags flags = MaterialParameter_flags(0);
@@ -128,6 +129,7 @@ public:
     const std::string& GetFilePath() const {
         return material_path;
     }
+    void UpdateValues(RenderCommandList* command_list);
 
 private:
 
@@ -138,7 +140,6 @@ private:
     friend class MaterialEditor;
 #endif
     Material(std::shared_ptr<MaterialTemplate> material_template);
-    void UpdateValues(RenderCommandList* command_list);
 
     std::string material_path = "";
     std::shared_ptr<MaterialTemplate> material_template = nullptr;
@@ -172,8 +173,8 @@ inline void Material::SetParameter(const std::string& name, std::shared_ptr<Rend
     auto& param = parameters[material_template->GetMaterialTemplateParameterIndex(name)];
     param.flags |= MaterialParameter_flags::DIRTY;
     param.flags &= ~MaterialParameter_flags::DEFAULT;
-    if (!std::holds_alternative<Texture_type>(param.resource)) throw std::runtime_error("Parameter " + name + "assignment type mismatch");
-    Texture_type type;
+    if (!std::holds_alternative<MaterialTextureType>(param.resource)) throw std::runtime_error("Parameter " + name + "assignment type mismatch");
+    MaterialTextureType type;
     type.texture = value;
 #ifdef EDITOR
     type.path = path;
@@ -195,8 +196,8 @@ inline void Material::SetParameter(const std::string& name, std::shared_ptr<Rend
     auto& param = parameters[material_template->GetMaterialTemplateParameterIndex(name)];
     param.flags |= MaterialParameter_flags::DIRTY;
     param.flags &= ~MaterialParameter_flags::DEFAULT;
-    if (!std::holds_alternative<Texture_type>(param.resource)) throw std::runtime_error("Parameter " + name + "assignment type mismatch");
-    Texture_type type;
+    if (!std::holds_alternative<MaterialTextureType>(param.resource)) throw std::runtime_error("Parameter " + name + "assignment type mismatch");
+    MaterialTextureType type;
     type.texture = value;
     param.resource = type;
 }

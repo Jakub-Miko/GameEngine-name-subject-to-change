@@ -77,3 +77,9 @@ VulkanRenderDescriptorHeapBlock::~VulkanRenderDescriptorHeapBlock()
 	DEFINE_VK_INSTANCE(context);
 	vkDestroyDescriptorPool(context->GetVkDevice(), pool, NULL);
 }
+
+bool VulkanRenderDescriptorAllocation::IsInUse()
+{
+	DEFINE_VK_INSTANCE(context);
+	return timeline < context->GetCurrentGpuTimelineValue();
+}

@@ -5,6 +5,7 @@
 class RenderDescriptorAllocation {
 public:
 	virtual ~RenderDescriptorAllocation() {}
+	virtual bool IsInUse() = 0;
 };
 
 class RenderDescriptorHeapBlock {
@@ -13,7 +14,7 @@ public:
 	static RenderDescriptorHeapBlock* CreateHeapBlock(size_t size);
 
 	virtual RenderDescriptorAllocation* Allocate(size_t num_of_descriptor_sets) = 0;
-	
+
 	virtual void FlushDescriptorDeallocations(uint32_t frame_number) = 0;
 
 	virtual ~RenderDescriptorHeapBlock() {}

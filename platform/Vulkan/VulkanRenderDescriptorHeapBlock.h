@@ -11,6 +11,8 @@ class VulkanRenderDescriptorAllocation : public RenderDescriptorAllocation {
 public:
 	virtual ~VulkanRenderDescriptorAllocation() {}
 	
+	virtual bool IsInUse() override;
+
 public:
 	VkDescriptorSet descritor_set;
 	VulkanRenderDescriptorHeapBlock* allocating_heap_block; // The heap to return to after freeing
