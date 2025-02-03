@@ -6,65 +6,56 @@
 			"type" : "constant_buffer"
 		},
 		{
-			"name" : "light_props",
-			"type" : "constant_buffer",
-			"material_visible" : true
-		},
-		{
-			"name" : "G_Buffer",
-			"type" : "descriptor_table",
-			"material_visible" : true,
-			"ranges" : [
-				{
-					"size" : 4,
-					"name" : "Textures",
-					"type" : "texture_2D",
-					"individual_names" : [
-						"Color", "Normal","Roughness", "DepthBuffer"
-					]
-				}
-			]
-		},
-		{
 			"name" : "Diffuse",
 			"type" : "texture_2D_cubemap"
 		},
 		{
 			"name" : "Specular",
 			"type" : "texture_2D_cubemap"
-		}
-	],
-	
-	"constant_buffer_layouts" : [
-			{
-				"name" : "light_props",
-				"layout" : [
+		},
+		{
+			"name" : "LightingPassSkylightLightProps",
+			"type" : "material",
+			"material_inline" : [
 					{
 						"name" : "Light_Color",
-						"type" : "VEC4"
+						"type" : "VEC4",
+						"value" : {
+							"x" : 1.0,
+							"y" : 1.0,
+							"z" : 1.0,
+							"w" : 1.0
+						}
 					},
 					{
 						"name" : "pixel_size",
 						"type" : "VEC2"
 					}
-				]
-			}
-	],
-
-	"default_material" : {
-		"parameters": [
-			{
-				"name": "Light_Color",
-				"type" : "VEC4",
-				"value" : {
-					"x" : 1.0,
-					"y" : 1.0,
-					"z" : 1.0,
-					"w" : 1.0
-				}
-			}
-		]
-	}
+			]
+		},
+		{
+			"name" : "GBufferMaterial",
+			"type" : "material",
+			"material_inline": [
+					{
+						"name" : "Color",
+						"type" : "texture_2D"
+					},
+					{
+						"name" : "Normal",
+						"type" : "texture_2D"
+					},
+					{
+						"name" : "Roughness",
+						"type" : "texture_2D"
+					},
+					{
+						"name" : "DepthBuffer",
+						"type" : "texture_2D"
+					}
+			]
+		}
+	]
 }
 #end
 
@@ -83,7 +74,7 @@ layout(set = 0, binding = 0) uniform conf{
 	float depth_constant_b;
 };
 
-layout(set = 0, binding = 1) uniform light_props{
+layout(set = 1, binding = 0) uniform light_props{
 	vec4 Light_Color;
 	vec2 pixel_size;
 };
@@ -103,21 +94,21 @@ void main() {
 
 layout(location = 0) out vec4 color_out;
 
-layout(set = 1, binding = 0)uniform sampler2D Color;
-layout(set = 1, binding = 1)uniform sampler2D Normal;
-layout(set = 1, binding = 2)uniform sampler2D Roughness;
-layout(set = 1, binding = 3)uniform sampler2D DepthBuffer;
-layout(set = 0, binding = 2)uniform samplerCube Diffuse;
-layout(set = 0, binding = 3)uniform samplerCube Specular;
+layout(set = 2, binding = 0)uniform sampler2D Color;
+layout(set = 2, binding = 1)uniform sampler2D Normal;
+layout(set = 2, binding = 2)uniform sampler2D Roughness;
+layout(set = 2, binding = 3)uniform sampler2D DepthBuffer;
+layout(set = 0, binding = 1)uniform samplerCube Diffuse;
+layout(set = 0, binding = 2)uniform samplerCube Specular;
 
-uniform conf{
+layout(set = 0, binding = 0) uniform conf{
 	mat4 inverse_view;
 	mat4 inverse_projection;
 	float depth_constant_a;
 	float depth_constant_b;
 };
 
-uniform light_props{
+layout(set = 1, binding = 0) uniform light_props{
 	vec4 Light_Color;
 	vec2 pixel_size;
 };

@@ -56,10 +56,13 @@ VulkanRenderDescriptorHeap::VulkanRenderDescriptorHeap(MaterialLayout& layout_in
 		}
 	}
 
-	VkDescriptorPoolSize texture_size;
-	texture_size.descriptorCount = texture_desc_count;
-	texture_size.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	pool_sizes.push_back(texture_size);
+	if (texture_desc_count != 0) {
+
+		VkDescriptorPoolSize texture_size;
+		texture_size.descriptorCount = texture_desc_count;
+		texture_size.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		pool_sizes.push_back(texture_size);
+	}
 
 	if (constant_buffer_offset != 0) {
 		VkDescriptorPoolSize buffer_size;
