@@ -240,29 +240,29 @@ std::shared_ptr<Material> MaterialManager::CreateEmptyMaterial(const std::string
 	return mat;
 }
 
-//void Material::SetMaterial(RenderCommandList* command_list, std::shared_ptr<Pipeline> pipeline)
-//{
-//	UpdateValues(command_list);
-//	auto& sig = material_template->GetRootSignature().GetDescriptor().parameters;
-//	for (auto& resource : resources) {
-//		if (resource.is_table) {
-//			command_list->SetDescriptorTable(sig[resource.index].name, std::get<FrameMultiBufferResource<RenderDescriptorTable>>(resource.resource).GetResource());
-//		}
-//		else {
-//			command_list->SetConstantBuffer(sig[resource.index].name, std::get<std::shared_ptr<RenderBufferResource>>(resource.resource));
-//		}
-//	}
-//	for (auto& parameter : parameters) {
-//		if (parameter.type == MaterialTemplate::MaterialTemplateParameterType::TEXTURE && parameter.IsDirty()) {
-//			command_list->SetTexture2D(parameter.name, std::get<Texture_type>(parameter.resource).texture);
-//		} else if (parameter.type == MaterialTemplate::MaterialTemplateParameterType::TEXTURE_2D_ARRAY && parameter.IsDirty()) {
-//			command_list->SetTexture2DArray(parameter.name, std::get<std::shared_ptr<RenderTexture2DArrayResource>>(parameter.resource));
-//		} else if (parameter.type == MaterialTemplate::MaterialTemplateParameterType::TEXTURE_2D_CUBEMAP && parameter.IsDirty()) {
-//			command_list->SetTexture2DCubemap(parameter.name, std::get<std::shared_ptr<RenderTexture2DCubemapResource>>(parameter.resource));
-//		}
-//	}
-//
-//}
+void Material::SetMaterial(RenderCommandList* command_list)
+{
+	/*UpdateValues(command_list);
+	auto& sig = material_template->GetRootSignature().GetDescriptor().parameters;
+	for (auto& resource : resources) {
+		if (resource.is_table) {
+			command_list->SetDescriptorTable(sig[resource.index].name, std::get<FrameMultiBufferResource<RenderDescriptorTable>>(resource.resource).GetResource());
+		}
+		else {
+			command_list->SetConstantBuffer(sig[resource.index].name, std::get<std::shared_ptr<RenderBufferResource>>(resource.resource));
+		}
+	}
+	for (auto& parameter : parameters) {
+		if (parameter.type == MaterialTemplate::MaterialTemplateParameterType::TEXTURE && parameter.IsDirty()) {
+			command_list->SetTexture2D(parameter.name, std::get<Texture_type>(parameter.resource).texture);
+		} else if (parameter.type == MaterialTemplate::MaterialTemplateParameterType::TEXTURE_2D_ARRAY && parameter.IsDirty()) {
+			command_list->SetTexture2DArray(parameter.name, std::get<std::shared_ptr<RenderTexture2DArrayResource>>(parameter.resource));
+		} else if (parameter.type == MaterialTemplate::MaterialTemplateParameterType::TEXTURE_2D_CUBEMAP && parameter.IsDirty()) {
+			command_list->SetTexture2DCubemap(parameter.name, std::get<std::shared_ptr<RenderTexture2DCubemapResource>>(parameter.resource));
+		}
+	}*/
+
+}
 
 
 //void Material::UpdateValues(RenderCommandList* command_list)
@@ -661,13 +661,13 @@ void Material::DeactivateParameter(const std::string& name) {
 
 }
 
-std::shared_ptr<MaterialTemplate> MaterialManager::LoadMaterialTemplateFromJson(const nlohmann::json& json_object)
+std::shared_ptr<MaterialTemplate> MaterialManager::LoadMaterialTemplateFromJson(const nlohmann::json& json_object, const std::string& name_in)
 {
 	if (!json_object.is_array()) {
 		throw std::runtime_error("Material template must be a named list of parameters.\n");
 	}
 
-	auto name = std::string(json_object.type_name());
+	auto name = name_in.empty() ? std::string(json_object.type_name()) : name_in;
 
 	MaterialLayout layout;
 	for (auto& item : json_object) {
@@ -744,9 +744,15 @@ MaterialTemplate::MaterialTemplate(const MaterialLayout& layout, std::string nam
 
 }
 
-void MaterialManager::LoadMaterialTemplateFile(const std::string& path)
+void MaterialManager::LoadMaterialTemplateFile(const std::string& path_in)
 {
-	std::ifstream file(FileManager::Get()->GetPath(path));
+	auto path = FileManager::Get()->GetPath(path_in);
+	auto fnd = loaded_signature_files.find(path);
+	if (fnd != loaded_signature_files.end()) {
+		return;
+	}
+	
+	std::ifstream file(path);
 	if (!file.is_open()) {
 		throw std::runtime_error("Material template file could not be opened.");
 	}
@@ -799,4 +805,15 @@ Material::Material(std::shared_ptr<MaterialTemplate> material_template) : materi
 	}
 
 	status = Material_status::UNINITIALIZED;
+}
+
+std::shared_ptr<MaterialTemplate> MaterialManager::GetMaterialTemplate(const std::string& name)
+{
+	auto fnd_template = material_templates.find(name);
+	if (fnd_template != material_templates.end()) {
+		return fnd_template->second;
+	}
+	else {
+		throw std::runtime_error("Material template " + name + " was not loaded.\n");
+	}
 }

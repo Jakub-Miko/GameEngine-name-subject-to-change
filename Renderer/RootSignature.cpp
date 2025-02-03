@@ -8,28 +8,6 @@
 #include <platform/Vulkan/VulkanUnitConverter.h>
 #endif
 
-RootMappingEntry RootSignature::GetRootMapping(const std::string& semantic_name) const 
-{
-	auto fnd = RootMappings.find(semantic_name);
-	if (fnd != RootMappings.end()) {
-		return fnd->second;
-	}
-	else {
-		return RootMappingEntry();
-	}
-}
-
-const ConstantBufferLayout& RootSignature::GetConstantBufferLayout(const std::string& semantic_name) const
-{
-	auto fnd = ConstantBufferLayouts.find(semantic_name);
-	if (fnd != ConstantBufferLayouts.end()) {
-		return fnd->second;
-	}
-	else {
-		throw std::runtime_error("Constant Buffer Layout " + semantic_name + " not found");
-	}
-}
-
 RootSignature* RootSignature::CreateSignature(const RootSignatureDescriptor& descriptor)
 {
 #ifdef OpenGL_API
@@ -37,20 +15,17 @@ RootSignature* RootSignature::CreateSignature(const RootSignatureDescriptor& des
 #elif defined Vulkan_API
 	RootSignature* signature = new VulkanRootSignature(descriptor);
 #endif
-	signature->descriptor = descriptor;
 	return signature;
 }
 
-RootSignature* RootSignature::CreateSignature(const RootSignatureDescriptor& descriptor, RootMappingTable&& mapping_table, const ConstantBufferLayoutTable& const_buf_layouts)
+RootSignature* RootSignature::CreateSignature(const RootSignatureDescriptor& descriptor, RootMappingTable&& mapping_table)
 {
 #ifdef OpenGL_API
 	RootSignature* signature = new OpenGLRootSignature(descriptor);
 #elif defined Vulkan_API
 	RootSignature* signature = new VulkanRootSignature(descriptor);
 #endif
-	signature->descriptor = descriptor;
 	signature->RootMappings = std::move(mapping_table);
-	signature->ConstantBufferLayouts = const_buf_layouts;
 	return signature;
 }
 
@@ -67,5 +42,27 @@ void VertexLayout::CalculateStride()
 #elif defined Vulkan_API
 		stride += element.size * VulkanUnitConverter::PrimitiveSize(element.type);
 #endif
+	}
+}
+
+RootMappingEntry RootSignature::GetRootParameterId(const std::string& semantic_name) const
+{
+	auto fnd = RootMappings.find(semantic_name);
+	if (fnd != RootMappings.end()) {
+		return RootMappingEntry( fnd->second.parameter_id );
+	}
+	else {
+		throw std::runtime_error("Root parameter " + semantic_name + "doesn't exist.\n");
+	}
+}
+
+const RootSignatureDescriptorElement& RootSignature::GetRootParameter(const std::string& semantic_name) const
+{
+	auto fnd = RootMappings.find(semantic_name);
+	if (fnd != RootMappings.end()) {
+		return descriptor.parameters[fnd->second.parameter_id];
+	}
+	else {
+		throw std::runtime_error("Root parameter " + semantic_name + "doesn't exist.\n");
 	}
 }

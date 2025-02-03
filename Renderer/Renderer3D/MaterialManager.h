@@ -1,13 +1,12 @@
 #pragma once
 #include <Renderer/Renderer3D/Renderer3D.h>
-#include <Renderer/RootSignature.h>
-#include <Renderer/Renderer.h>
 #include <variant>
 #include <deque>
 #include <AsyncTaskDispatcher.h>
 #include <Core/FrameMultiBufferResource.h>
 
 class Shader;
+class RenderCommandList;
 
 class Material;
 
@@ -21,13 +20,13 @@ struct MaterialTextureType {
 using MaterialParameterResource = std::variant<int, float, glm::vec2, glm::vec3, glm::vec4, glm::mat4, glm::mat3, MaterialTextureType, std::shared_ptr<RenderTexture2DArrayResource>, 
     std::shared_ptr<RenderTexture2DCubemapResource>, std::shared_ptr<RenderBufferResource>, std::string, std::monostate>;
 
-enum MaterialLayoutItemType : char {
+enum class MaterialLayoutItemType : char {
     SCALAR = 0, VEC2 = 1, VEC3 = 2, VEC4 = 3, TEXTURE = 4, MAT3 = 5, MAT4 = 6, INT = 7, TEXTURE_2D_ARRAY = 8, TEXTURE_2D_CUBEMAP = 9, CONSTANT_BUFFER = 10,  INVALID_PARAMETER = -1
 };
 
 struct MaterialLayoutItem {
     std::string name;
-    MaterialLayoutItemType type = INVALID_PARAMETER;
+    MaterialLayoutItemType type = MaterialLayoutItemType::INVALID_PARAMETER;
     MaterialParameterResource default_value = std::monostate();
     union { // This is filled in by the constructor of the RenderDescriptorHeap, which handles allocations and layouts
         uint32_t set_binding;
@@ -86,9 +85,10 @@ class Material : std::enable_shared_from_this<Material> {
 public:
 
     Material() = default;
+    Material(std::shared_ptr<MaterialTemplate> material_template);
 
     using material_resource_type = std::variant<FrameMultiBufferResource<RenderDescriptorTable>,std::shared_ptr<RenderBufferResource>>;
-
+    
     enum class Material_status : char {
         OK = 0, ERROR = 1, UNINITIALIZED = 2
     };
@@ -108,7 +108,7 @@ public:
 
     };
 
-    void SetMaterial(RenderCommandList* command_list, std::shared_ptr<Pipeline> pipeline);
+    void SetMaterial(RenderCommandList* command_list);
 
     void ActivateParameter(const std::string& name);
     void DeactivateParameter(const std::string& name);
@@ -134,12 +134,10 @@ public:
 private:
 
     void SetParameterTypeDefault(MaterialParameter& param);
-
     friend class MaterialManager;
 #ifdef EDITOR
     friend class MaterialEditor;
 #endif
-    Material(std::shared_ptr<MaterialTemplate> material_template);
 
     std::string material_path = "";
     std::shared_ptr<MaterialTemplate> material_template = nullptr;
@@ -225,7 +223,7 @@ public:
 
     std::shared_ptr<MaterialTemplate> GetMaterialTemplate(const std::string& name);
 
-    std::shared_ptr<MaterialTemplate> LoadMaterialTemplateFromJson(const nlohmann::json& json_object);
+    std::shared_ptr<MaterialTemplate> LoadMaterialTemplateFromJson(const nlohmann::json& json_object, const std::string& name = "");
 
     void LoadMaterialTemplateFile(const std::string& path);
 
@@ -262,6 +260,7 @@ private:
     std::mutex material_mutex;
     std::unordered_map<std::string, std::shared_ptr<MaterialTemplate>> material_templates;
     std::unordered_map<std::string, std::shared_ptr<Material>> materials;
+    std::unordered_set<std::string> loaded_signature_files;
     std::mutex material_load_mutex;
     std::deque<Material_loading_item> material_load;
     static MaterialManager* instance;

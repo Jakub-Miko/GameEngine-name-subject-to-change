@@ -45,7 +45,7 @@ static void RenderMesh(MeshComponent& component, Entity ent) {
     command_list->SetDefaultRenderTarget();
     command_list->SetPipeline(local_data->pipeline);
 
-    material->SetMaterial(command_list, local_data->pipeline);
+    material->SetMaterial(command_list);
 
     command_list->SetVertexBuffer(mesh_m->GetVertexBuffer());
     command_list->SetIndexBuffer(mesh_m->GetIndexBuffer());

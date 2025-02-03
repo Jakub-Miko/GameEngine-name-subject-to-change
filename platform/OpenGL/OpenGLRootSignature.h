@@ -17,7 +17,6 @@ struct ExtraElementInfo {
 class OpenGLRootSignature : public RootSignature {
 public:
 	struct RootDescriptorTableBinding {
-		RootDescriptorTable table;
 		unsigned int starting_binding_id;
 		unsigned int starting_texture_id;
 	};

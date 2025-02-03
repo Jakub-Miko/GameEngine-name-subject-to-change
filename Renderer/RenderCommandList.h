@@ -5,7 +5,6 @@
 #include <Core/ExecutableCommand.h>
 #include <Renderer/RenderResource.h>
 #include <Renderer/RenderDescriptorHeap.h>
-#include <Renderer/RootSignature.h>
 #include <Renderer/PipelineManager.h>
 
 class Renderer;

@@ -1,6 +1,7 @@
 #include "FrameManager.h"
 #include <ConfigManager.h>
 #include <Profiler.h>
+#include <Renderer/Renderer.h>
 
 FrameManager* FrameManager::instance = nullptr;
 

@@ -63,7 +63,8 @@ if("${RENDER_API}" STREQUAL "Vulkan")
 
 file(GLOB Vulkan_SRC 
 "./platform/Vulkan/*.cpp" "./platform/Vulkan/*.h"
-"./platform/Vulkan/*/*.cpp" "./platform/Vulkan/*/*.h" )
+"./platform/Vulkan/*/*.cpp" "./platform/Vulkan/*/*.h"
+"./platform/GLFW/*.cpp" "./platform/GLFW/*.h")
 
 set(UPDATE_DEPS OFF)
 set(BUILD_TESTS OFF)
@@ -85,9 +86,19 @@ target_link_libraries(EngineCore PRIVATE Vulkan-Headers vulkan GPUOpen::VulkanMe
 
 target_sources(EngineCore PRIVATE ${Vulkan_SRC})
 
+
+elseif()
+
+target_sources(EngineCore PRIVATE ${OPENGL_SRC})
+
 endif()
 
 if(WIN32) 
+
+file(GLOB WINDOWS_SRC
+"./platform/Windows/WindowsOSApi.cpp" "./platform/Windows/WindowsOSApi.h")
+
+target_sources(EngineCore PRIVATE ${WINDOWS_SRC})
 
 set(FT_DISABLE_ZLIB on CACHE BOOL "" FORCE)
 set(BUILD_SHARED_LIBS on)
@@ -145,6 +156,8 @@ set_property(CACHE RENDER_API PROPERTY STRINGS "OpenGL" "DirectX12")
 
 
 
+file(GLOB WINDOWS_SRC
+"./platform/Windows/WindowsOSApi.cpp" "./platform/Windows/WindowsOSApi.h")
 
 file(GLOB DIRECTX_SRC
 "./platform/DirectX/*.cpp" "./platform/DirectX/*.h"
@@ -152,8 +165,6 @@ file(GLOB DIRECTX_SRC
 "./platform/Windows/*.cpp" "./platform/Windows/*.h")
 
 target_compile_definitions(EngineCore PRIVATE "WINDOWS")
-
-target_sources(EngineCore PRIVATE ${DIRECTX_SRC} ${OPENGL_SRC})
 
 target_link_libraries(EngineCore PRIVATE Shlwapi.lib )
 

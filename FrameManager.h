@@ -1,7 +1,7 @@
 #pragma once 
 #include <stdint.h>
-#include <Renderer/Renderer.h>
 #include <Renderer/RenderFence.h>
+#include <memory>
 
 /**
  * @brief Singleton that handles frame count keeping for both the render thread and main thread, and handles their synchronization.

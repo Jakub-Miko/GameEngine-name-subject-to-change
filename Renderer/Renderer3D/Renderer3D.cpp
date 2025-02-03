@@ -38,10 +38,9 @@ void Renderer3D::Update(float delta_time)
 {
 	MaterialManager::Get()->UpdateMaterials();
 	deferred_pipeline->Render();
-	default_descriptor_heap.FlushDescriptorDeallocations(FrameManager::Get()->GetCurrentFrameNumber());
 }
 
-Renderer3D::Renderer3D() : default_descriptor_heap(500), deferred_pipeline()
+Renderer3D::Renderer3D() : deferred_pipeline()
 {
 
 }

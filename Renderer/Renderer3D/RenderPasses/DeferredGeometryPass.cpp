@@ -110,10 +110,10 @@ void DeferredGeometryPass::Render(RenderPipelineResourceManager& resource_manage
 		auto& transform = world.GetComponent<TransformComponent>(entity);
 
 		if (mesh.material == nullptr) {
-			default_mat->SetMaterial(list, data->pipeline);
+			default_mat->SetMaterial(list);
 		}
 		else {
-			mesh.material->SetMaterial(list, data->pipeline);
+			mesh.material->SetMaterial(list);
 		}
 		list->SetVertexBuffer(mesh.GetMesh()->GetVertexBuffer());
 		list->SetIndexBuffer(mesh.GetMesh()->GetIndexBuffer());

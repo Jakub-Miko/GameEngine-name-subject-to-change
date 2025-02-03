@@ -49,7 +49,7 @@ void MaterialEditor::CloseMaterialWinow(int index)
 
 void MaterialEditor::RenderWinow(MaterialEditorWindow& window, int current_index)
 {
-	using param_type = typename MaterialTemplate::MaterialTemplateParameterType;
+	using param_type = typename MaterialLayoutItemType;
 	bool open = true;
 	ImGui::SetNextWindowSize({ 800,600 }, ImGuiCond_Once);
 	ImGui::Begin((std::string("Material Editor##") + window.path).c_str(), &open, ImGuiWindowFlags_MenuBar);
@@ -94,7 +94,7 @@ void MaterialEditor::RenderWinow(MaterialEditorWindow& window, int current_index
 				change = ImGui::DragFloat4("value", glm::value_ptr(std::get<glm::vec4>(parameter.resource)));
 				break;
 			case param_type::TEXTURE:
-				std::string& current_path = std::get<Material::Texture_type>(parameter.resource).path;
+				std::string& current_path = std::get<MaterialTextureType>(parameter.resource).path;
 				char* buffer;
 				bool pressed = false;
 				if (window.text_buffers[i]) {

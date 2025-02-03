@@ -1,7 +1,9 @@
 #pragma once
-#include <Renderer/RenderCommandList.h>
 #include <Renderer/RenderFence.h>
+#include <memory>
 #include <vector>
+
+class RenderCommandList;
 
 class RenderCommandQueue {
 public:

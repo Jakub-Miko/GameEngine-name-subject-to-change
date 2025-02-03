@@ -24,12 +24,12 @@ public:
 	VkPipelineLayout GetPipelineLayout() const { return layout; }
 private:
 	virtual ~VulkanRootSignature();
-	VkDescriptorSetLayout CreateDescriptorTableParams(const RootDescriptorTable& table, uint32_t table_id, const std::string& name);
 	VulkanRootSignature(const RootSignatureDescriptor& descriptor);
 
+	VkDescriptorSetLayout GetShaderLayout() { return shader_layout; }
 
 private:
 	std::unordered_map<std::string, VulkanDescriptorBinding> parameters;
-	std::vector<VkDescriptorSetLayout> table_layouts;
+	VkDescriptorSetLayout shader_layout;
 	VkPipelineLayout layout;
 };

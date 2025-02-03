@@ -139,77 +139,77 @@ void OpenGLPipeline::EndVertexContext()
 
 }
 
-//TODO: FIX THIS, IT MIGHT WORK, BUT I DONT LIKE IT !!!!!!!!!!!!!!!!!!!!!!
-void OpenGLPipeline::SetDescriptorTable(const std::string& semantic_name, RenderDescriptorTable table)
-{
-	const OpenGLRootSignature* sig = static_cast<const OpenGLRootSignature*>(&GetSignature());
-	int current = 0;
-	auto table_desc = sig->GetTableBinding(semantic_name);
-	int buf_start = table_desc.starting_binding_id;
-	int tex_start = table_desc.starting_texture_id;
-
-	for (auto entry : table_desc.table) {
-		if (entry.individual_names.empty()) throw std::runtime_error("Descriptor tables must have assigned individual_names when using OpenGL");
-		switch (entry.type) {
-		case RootDescriptorType::CONSTANT_BUFFER:
-			for (uint32_t i = 0; i < entry.size; i++) {
-				if (static_cast<OpenGLRenderDescriptorAllocation*>(table.get())->descriptor_pointer[current].type == RootParameterType::CONSTANT_BUFFER) {
-					SetConstantBuffer(entry.individual_names[i],
-						std::static_pointer_cast<RenderBufferResource>(static_cast<OpenGLRenderDescriptorAllocation*>(table.get())->descriptor_pointer[current].m_resource));
-					//i++; // I dont think this should be here !!!!!!!!!!!!!!!
-					buf_start++;
-				}
-				else {
-					throw std::runtime_error("Descriptor is not of Constant Buffer type.");
-				}
-				current++;
-			}
-			break;
-		case RootDescriptorType::TEXTURE_2D:
-			for (uint32_t i = 0; i < entry.size; i++) {
-				if (static_cast<OpenGLRenderDescriptorAllocation*>(table.get())->descriptor_pointer[current].type == RootParameterType::TEXTURE_2D) {
-					SetTexture2D(entry.individual_names[i],
-						std::static_pointer_cast<RenderTexture2DResource>(static_cast<OpenGLRenderDescriptorAllocation*>(table.get())->descriptor_pointer[current].m_resource));
-					//i++; // I dont think this should be here !!!!!!!!!!!!!!!
-					tex_start++;
-				}
-				else {
-					throw std::runtime_error("Descriptor is not of Texture2D type.");
-				}
-				current++;
-			}
-			break;
-		case RootDescriptorType::TEXTURE_2D_ARRAY:
-			for (uint32_t i = 0; i < entry.size; i++) {
-				if (static_cast<OpenGLRenderDescriptorAllocation*>(table.get())->descriptor_pointer[current].type == RootParameterType::TEXTURE_2D_ARRAY) {
-					SetTexture2DArray(entry.individual_names[i],
-						std::static_pointer_cast<RenderTexture2DArrayResource>(static_cast<OpenGLRenderDescriptorAllocation*>(table.get())->descriptor_pointer[current].m_resource));
-					//i++; // I dont think this should be here !!!!!!!!!!!!!!!
-					tex_start++;
-				}
-				else {
-					throw std::runtime_error("Descriptor is not of Texture2DArray type.");
-				}
-				current++;
-			}
-			break;
-		case RootDescriptorType::TEXTURE_2D_CUBEMAP:
-			for (uint32_t i = 0; i < entry.size; i++) {
-				if (static_cast<OpenGLRenderDescriptorAllocation*>(table.get())->descriptor_pointer[current].type == RootParameterType::TEXTURE_2D_CUBEMAP) {
-					SetTexture2DCubemap(entry.individual_names[i],
-						std::static_pointer_cast<RenderTexture2DCubemapResource>(static_cast<OpenGLRenderDescriptorAllocation*>(table.get())->descriptor_pointer[current].m_resource));
-					//i++; // I dont think this should be here !!!!!!!!!!!!!!!
-					tex_start++;
-				}
-				else {
-					throw std::runtime_error("Descriptor is not of Texture2DCubemap type.");
-				}
-				current++;
-			}
-			break;
-		}
-	}
-}
+////TODO: FIX THIS, IT MIGHT WORK, BUT I DONT LIKE IT !!!!!!!!!!!!!!!!!!!!!!
+//void OpenGLPipeline::SetDescriptorTable(const std::string& semantic_name, RenderDescriptorTable table)
+//{
+//	const OpenGLRootSignature* sig = static_cast<const OpenGLRootSignature*>(&GetSignature());
+//	int current = 0;
+//	auto table_desc = sig->GetTableBinding(semantic_name);
+//	int buf_start = table_desc.starting_binding_id;
+//	int tex_start = table_desc.starting_texture_id;
+//
+//	for (auto entry : table_desc.table) {
+//		if (entry.individual_names.empty()) throw std::runtime_error("Descriptor tables must have assigned individual_names when using OpenGL");
+//		switch (entry.type) {
+//		case RootDescriptorType::CONSTANT_BUFFER:
+//			for (uint32_t i = 0; i < entry.size; i++) {
+//				if (static_cast<OpenGLRenderDescriptorAllocation*>(table.get())->descriptor_pointer[current].type == RootParameterType::CONSTANT_BUFFER) {
+//					SetConstantBuffer(entry.individual_names[i],
+//						std::static_pointer_cast<RenderBufferResource>(static_cast<OpenGLRenderDescriptorAllocation*>(table.get())->descriptor_pointer[current].m_resource));
+//					//i++; // I dont think this should be here !!!!!!!!!!!!!!!
+//					buf_start++;
+//				}
+//				else {
+//					throw std::runtime_error("Descriptor is not of Constant Buffer type.");
+//				}
+//				current++;
+//			}
+//			break;
+//		case RootDescriptorType::TEXTURE_2D:
+//			for (uint32_t i = 0; i < entry.size; i++) {
+//				if (static_cast<OpenGLRenderDescriptorAllocation*>(table.get())->descriptor_pointer[current].type == RootParameterType::TEXTURE_2D) {
+//					SetTexture2D(entry.individual_names[i],
+//						std::static_pointer_cast<RenderTexture2DResource>(static_cast<OpenGLRenderDescriptorAllocation*>(table.get())->descriptor_pointer[current].m_resource));
+//					//i++; // I dont think this should be here !!!!!!!!!!!!!!!
+//					tex_start++;
+//				}
+//				else {
+//					throw std::runtime_error("Descriptor is not of Texture2D type.");
+//				}
+//				current++;
+//			}
+//			break;
+//		case RootDescriptorType::TEXTURE_2D_ARRAY:
+//			for (uint32_t i = 0; i < entry.size; i++) {
+//				if (static_cast<OpenGLRenderDescriptorAllocation*>(table.get())->descriptor_pointer[current].type == RootParameterType::TEXTURE_2D_ARRAY) {
+//					SetTexture2DArray(entry.individual_names[i],
+//						std::static_pointer_cast<RenderTexture2DArrayResource>(static_cast<OpenGLRenderDescriptorAllocation*>(table.get())->descriptor_pointer[current].m_resource));
+//					//i++; // I dont think this should be here !!!!!!!!!!!!!!!
+//					tex_start++;
+//				}
+//				else {
+//					throw std::runtime_error("Descriptor is not of Texture2DArray type.");
+//				}
+//				current++;
+//			}
+//			break;
+//		case RootDescriptorType::TEXTURE_2D_CUBEMAP:
+//			for (uint32_t i = 0; i < entry.size; i++) {
+//				if (static_cast<OpenGLRenderDescriptorAllocation*>(table.get())->descriptor_pointer[current].type == RootParameterType::TEXTURE_2D_CUBEMAP) {
+//					SetTexture2DCubemap(entry.individual_names[i],
+//						std::static_pointer_cast<RenderTexture2DCubemapResource>(static_cast<OpenGLRenderDescriptorAllocation*>(table.get())->descriptor_pointer[current].m_resource));
+//					//i++; // I dont think this should be here !!!!!!!!!!!!!!!
+//					tex_start++;
+//				}
+//				else {
+//					throw std::runtime_error("Descriptor is not of Texture2DCubemap type.");
+//				}
+//				current++;
+//			}
+//			break;
+//		}
+//	}
+//}
 
 
 OpenGLPipeline::OpenGLPipeline(const PipelineDescriptor& desc) : Pipeline(desc)

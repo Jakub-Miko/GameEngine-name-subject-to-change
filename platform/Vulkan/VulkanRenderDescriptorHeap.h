@@ -26,6 +26,8 @@ public:
 		return pool_sizes;
 	}
 
+	VkDescriptorSetLayout GetLayout() const { return layout; }
+
 private:
 	VkDescriptorSetLayout layout;
 	std::mutex heap_mutex;

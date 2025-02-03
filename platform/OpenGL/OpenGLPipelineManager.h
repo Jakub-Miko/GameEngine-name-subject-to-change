@@ -22,7 +22,7 @@ public:
 		return extra_id;
 	}
 
-	void SetDescriptorTable(const std::string& semantic_name, RenderDescriptorTable table);
+	/*void SetDescriptorTable(const std::string& semantic_name, RenderDescriptorTable table);*/
 
 private:
 	OpenGLPipeline(const PipelineDescriptor& desc);

@@ -17,10 +17,6 @@ public:
 
     void Update(float delta_time);
 
-    RenderDescriptorHeap& GetDescriptorHeap() {
-        return default_descriptor_heap;
-    }
-
     template<typename T>
     const T& GetPersistentResource(const std::string& name) const {
         return deferred_pipeline->template GetPersistentResource<T>(name);
@@ -31,6 +27,5 @@ private:
     static Renderer3D* instance;
 
 private:
-    RenderDescriptorHeap default_descriptor_heap;
     std::shared_ptr<RenderPipeline> deferred_pipeline;
 };

@@ -44,8 +44,7 @@ public:
 
 private:
 
-	RootSignature* ParseRootSignature(const std::string& signature_string, bool* has_default_material = nullptr);
-	std::shared_ptr<Material> ParseDefaulMaterial(const std::string& signature_string,std::shared_ptr<Shader> shader);
+	RootSignature* ParseRootSignature(const std::string& signature_string);
 
 	virtual Shader* CreateShaderFromString_impl(const std::string& source) = 0;
 	virtual Shader* CreateShader_impl(const std::string& path) = 0;

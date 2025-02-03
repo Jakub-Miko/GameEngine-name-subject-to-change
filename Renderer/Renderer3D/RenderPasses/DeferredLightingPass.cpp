@@ -299,7 +299,7 @@ void DeferredLightingPass::RenderLights(RenderPipelineResourceManager& resource_
 		data->mat->SetParameter("DepthBuffer", gbuffer->GetBufferDescriptor().GetDepthAttachmentAsTexture());
 		data->mat->SetParameter("light_type", (int)light.type);
 		data->mat->SetParameter("attenuation", glm::vec4(light.GetAttenuation(), 0.0f));
-		data->mat->SetMaterial(list, data->pipeline);
+		data->mat->SetMaterial(list);
 		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, glm::value_ptr(mvp), sizeof(glm::mat4), 0);
 		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, glm::value_ptr(mv_matrix), sizeof(glm::mat4), sizeof(glm::mat4));
 		list->Draw(index_count);
@@ -357,7 +357,7 @@ void DeferredLightingPass::RenderShadowedLightsPoint(RenderPipelineResourceManag
 		data->mat_shadowed_point->SetParameter("Roughness", gbuffer->GetBufferDescriptor().GetColorAttachmentAsTexture(2));
 		data->mat_shadowed_point->SetParameter("DepthBuffer", gbuffer->GetBufferDescriptor().GetDepthAttachmentAsTexture());
 		data->mat_shadowed_point->SetParameter("attenuation", glm::vec4(light.GetAttenuation(), 0.0f));
-		data->mat_shadowed_point->SetMaterial(list, data->pipeline_shadowed_point);
+		data->mat_shadowed_point->SetMaterial(list);
 		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed_point, glm::value_ptr(mvp), sizeof(glm::mat4), 0);
 		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed_point, glm::value_ptr(mv_matrix), sizeof(glm::mat4), sizeof(glm::mat4));
 		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed_point, glm::value_ptr(light_matrix), sizeof(glm::mat4), sizeof(glm::mat4) * 2);
@@ -422,7 +422,7 @@ void DeferredLightingPass::RenderShadowedLightsDirectional(RenderPipelineResourc
 		data->mat_shadowed_directional->SetParameter("Roughness", gbuffer->GetBufferDescriptor().GetColorAttachmentAsTexture(2));
 		data->mat_shadowed_directional->SetParameter("DepthBuffer", gbuffer->GetBufferDescriptor().GetDepthAttachmentAsTexture());
 		data->mat_shadowed_directional->SetParameter("attenuation", glm::vec4(light.GetAttenuation(), 0.0f));
-		data->mat_shadowed_directional->SetMaterial(list, data->pipeline_shadowed_directional);
+		data->mat_shadowed_directional->SetMaterial(list);
 		glm::vec2 shadow_pixel_size = { 1.0f / shadow.res_x, 1.0f / shadow.res_x };
 		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed_directional, &shadow.cascades, sizeof(uint32_t), sizeof(glm::mat4) * 18 + sizeof(float) * 5 + sizeof(glm::vec2));
 		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed_directional, &shadow.shadow_bias, sizeof(float), sizeof(glm::mat4) * 18 + sizeof(float) * 4 + sizeof(glm::vec2));
@@ -499,7 +499,7 @@ void DeferredLightingPass::RenderSkylights(RenderPipelineResourceManager& resour
 		data->mat_skylight->SetParameter("Normal", gbuffer->GetBufferDescriptor().GetColorAttachmentAsTexture(1));
 		data->mat_skylight->SetParameter("Roughness", gbuffer->GetBufferDescriptor().GetColorAttachmentAsTexture(2));
 		data->mat_skylight->SetParameter("DepthBuffer", gbuffer->GetBufferDescriptor().GetDepthAttachmentAsTexture());
-		data->mat_skylight->SetMaterial(list, data->pipeline_skylight);
+		data->mat_skylight->SetMaterial(list);
 
 		if (light.IsBackgroundVisible()) {
 			bg_comp = &light;

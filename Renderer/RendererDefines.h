@@ -159,19 +159,11 @@ enum class RenderQueueTypes : unsigned char
 using RootBinding = unsigned int;
 
 enum class RootParameterType : unsigned char {
-	UNDEFINED = 0, CONSTANT_BUFFER = 1, TEXTURE_2D = 2, DESCRIPTOR_TABLE = 3, TEXTURE_2D_ARRAY = 4, TEXTURE_2D_CUBEMAP = 5
+	UNDEFINED = 0, CONSTANT_BUFFER = 1, TEXTURE_2D = 2, MATERIAL = 3, TEXTURE_2D_ARRAY = 4, TEXTURE_2D_CUBEMAP = 5, SCALAR = 6, VEC2 = 7, VEC3 = 8, VEC4 = 9, MAT3 = 10, MAT4 = 11, INT = 12
 };
 
 enum class RootDescriptorType : unsigned char {
 	CONSTANT_BUFFER = 0, TEXTURE_2D = 1, TEXTURE_2D_ARRAY = 2, TEXTURE_2D_CUBEMAP = 3
-};
-
-struct RootMappingEntry {
-	RootMappingEntry() : binding_id(0), type(RootParameterType::UNDEFINED), table_binding_id(-1) {}
-	RootMappingEntry(RootBinding binding_id, RootParameterType type, RootBinding table_binding_id = -1) : binding_id(binding_id), type(type), table_binding_id(table_binding_id){}
-	RootBinding binding_id;
-	RootBinding table_binding_id = -1;
-	RootParameterType type;
 };
 
 struct VertexLayoutElement {

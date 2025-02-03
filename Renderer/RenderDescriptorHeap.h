@@ -12,7 +12,7 @@ public:
 	RenderDescriptorHeap() = default;
 	RenderDescriptorHeap(const RenderDescriptorHeap& ref) = delete;
 	RenderDescriptorHeap& operator=(const RenderDescriptorHeap& ref) = delete;
-	virtual ~RenderDescriptorHeap();
+	virtual ~RenderDescriptorHeap() {}
 
 	virtual RenderDescriptorAllocationHandle Allocate() = 0;
 	virtual void FlushDescriptorDeallocations(uint32_t frame_number) { };
