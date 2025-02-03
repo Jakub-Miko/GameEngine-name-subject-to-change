@@ -6,87 +6,44 @@
 			"type" : "constant_buffer"
 		},
 		{
-			"name" : "material",
-			"type" : "constant_buffer",
-			"material_visible" : true
-		},
-		{
-			"name" : "Textures",
-			"type" : "descriptor_table",
-			"material_visible" : true,
-			"ranges" : [
-				{
-					"size" : 3,
-					"name" : "Textures",
-					"type" : "texture_2D",
-					"individual_names" : [
-						"Color", "Normal", "Roughness"
-					]
-				}
-			]
-		}
-	],
-	
-	"constant_buffer_layouts" : [
-			{
-				"name" : "material",
-				"layout" : [
+			"name" : "DeferredGPassMaterial",
+			"type" : "material",
+			"material_inline" : [
 					{
 						"name" : "Base_Color",
-						"type" : "VEC4"
+						"type" : "VEC4",
+						"value" : {
+							"x" : 1.0,
+							"y" : 1.0,
+							"z" : 1.0,
+							"w" : 1.0
+						}
 					},
 					{
 						"name" : "roughness_bias",
-						"type" : "FLOAT"
+						"type" : "FLOAT",
+						"value" : 0.0
 					},
 					{
 						"name" : "roughness_gain",
-						"type" : "FLOAT"
+						"type" : "FLOAT",
+						"value" : 1.0
+					},
+					{
+					    "name" : "Color",
+						"type" : "texture_2D"
+					},
+					{
+					    "name" : "Normal",
+						"type" : "texture_2D"
+					},
+					{
+					    "name" : "Roughness",
+						"type" : "texture_2D"
 					}
-				]
-			}
-	],
-
-	"default_material" : {
-		"parameters": [
-			{
-				"name": "Base_Color",
-				"type" : "VEC4",
-				"value" : {
-					"x" : 1.0,
-					"y" : 1.0,
-					"z" : 1.0,
-					"w" : 1.0
-				}
-			},
-			{
-				"name": "roughness_bias",
-				"type" : "SCALAR",
-				"value" : 0.0
-			},
-			{
-				"name": "roughness_gain",
-				"type" : "SCALAR",
-				"value" : 1.0
-			},
-			{
-				"name": "Color",
-				"type" : "TEXTURE",
-				"value" : ""
-			},
-			{
-				"name": "Roughness",
-				"type" : "TEXTURE",
-				"value" : ""
-			},
-			{
-				"name": "Normal",
-				"type" : "TEXTURE",
-				"value" : "",
-				"default_normal" : true
-			}
-		]
-	}
+			]
+		}
+	]
 }
 #end
 
@@ -103,13 +60,13 @@ out vec3 pos_fragment;
 out vec3 normal_fragment;
 out mat3 TBN;
 
-layout(set = 0, binding = 0) uniform mvp{
+layout( set = 0, binding = 0 ) uniform mvp{
 	mat4 mvp_matrix;
 	mat4 view_model_matrix;
 	uint entity_id;
 };
 
-layout(set = 0, binding = 1) uniform material{
+layout(set = 1, binding = 0) uniform material{
 	vec4 Base_Color;
 	float roughness_bias;
 	float roughness_gain;
@@ -143,17 +100,17 @@ layout(location = 1) out vec4 normal_out;
 layout(location = 2) out float roughness_out;
 layout(location = 3) out uint ids_out;
 
-layout(set = 1, binding = 0) uniform sampler2D Color;
-layout(set = 1, binding = 1) uniform sampler2D Normal;
-layout(set = 1, binding = 2) uniform sampler2D Roughness;
+layout(set = 1, binding = 1) uniform sampler2D Color;
+layout(set = 1, binding = 2) uniform sampler2D Normal;
+layout(set = 1, binding = 3) uniform sampler2D Roughness;
 
-uniform material{
+layout(set = 1, binding = 0) uniform material{
 	vec4 Base_Color;
 	float roughness_bias;
 	float roughness_gain;
 };
 
-uniform mvp{
+layout(set = 0, binding = 0) uniform mvp{
 	mat4 mvp_matrix;
 	mat4 view_model_matrix;
 	uint entity_id;

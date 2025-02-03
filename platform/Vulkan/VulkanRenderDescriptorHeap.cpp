@@ -63,8 +63,8 @@ VulkanRenderDescriptorHeap::VulkanRenderDescriptorHeap(MaterialLayout& layout_in
 
 	if (constant_buffer_offset != 0) {
 		VkDescriptorPoolSize buffer_size;
-		texture_size.descriptorCount = 1;
-		texture_size.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		buffer_size.descriptorCount = 1;
+		buffer_size.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		pool_sizes.push_back(buffer_size);
 	}
 

@@ -72,6 +72,7 @@ public:
 		case RootParameterType::VEC2:
 		case RootParameterType::VEC3:
 		case RootParameterType::VEC4:
+		case RootParameterType::MATERIAL:
 			is_uniform = true;
 			return VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		case RootParameterType::TEXTURE_2D:

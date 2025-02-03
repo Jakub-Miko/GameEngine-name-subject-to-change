@@ -46,7 +46,7 @@ layout(set = 0, binding = 1) uniform samplerCube in_tex;
 layout(location = 0) out vec4 color;
 in vec3 screen_pos;
 
-uniform mvp{
+layout(set = 0, binding = 0) uniform mvp{
 	mat4 inverse_view_projection;
 	vec4 color_bias;
 };

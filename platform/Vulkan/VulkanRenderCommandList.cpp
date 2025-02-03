@@ -151,6 +151,11 @@ void VulkanRenderCommandList::DrawArray(uint32_t vertex_count)
 {
 }
 
+void VulkanRenderCommandList::SetMaterial(const std::string& name, std::shared_ptr<Material> material)
+{
+
+}
+
 void VulkanRenderCommandList::DrawSquare(glm::vec2 pos, glm::vec2 size, glm::vec4 color)
 {
 }

@@ -59,6 +59,8 @@ VulkanRootSignature::VulkanRootSignature(const RootSignatureDescriptor& descript
 
 	if (binding_id != 0) {
 		set_id = 1;
+		set_layout.bindingCount = bindings.size();
+		set_layout.pBindings = bindings.data();
 		vkCreateDescriptorSetLayout(context->GetVkDevice(), &set_layout, NULL, &shader_layout);
 		layouts.push_back(shader_layout);
 	}
@@ -71,8 +73,6 @@ VulkanRootSignature::VulkanRootSignature(const RootSignatureDescriptor& descript
 		}
 	}
 
-	set_layout.bindingCount = bindings.size();
-	set_layout.pBindings = bindings.data();
 
 	info.setLayoutCount = layouts.size();
 	info.pSetLayouts = layouts.data();

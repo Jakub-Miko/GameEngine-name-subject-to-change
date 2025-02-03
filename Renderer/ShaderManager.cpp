@@ -120,7 +120,8 @@ RootSignature* ShaderManager::ParseRootSignature(const std::string& signature_st
 				}
 
 				if (json_sig_element.contains("material_inline")) {
-					MaterialManager::Get()->LoadMaterialTemplateFromJson(json_sig_element["material_inline"]);
+					auto mat_template = MaterialManager::Get()->LoadMaterialTemplateFromJson(json_sig_element["material_inline"], name);
+					MaterialManager::Get()->RegisterMaterialTemplate(mat_template);
 				}
 
 			}

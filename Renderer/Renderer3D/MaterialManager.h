@@ -40,9 +40,10 @@ struct MaterialLayout {
 };
 
 class MaterialTemplate : public std::enable_shared_from_this<MaterialTemplate> {
+    struct Private {}; //Used to ensure constructor is not called outside the CreateTemplate function, without making it private(since make_shared needs it)
 public:
     MaterialTemplate();
-    MaterialTemplate(const MaterialLayout& layout, std::string name);
+
     MaterialTemplate(const MaterialTemplate& other) : material_parameters(other.material_parameters), material_parameters_map(material_parameters_map) {}
     MaterialTemplate& operator=(const MaterialTemplate& other) {;
         material_parameters = other.material_parameters;
@@ -51,6 +52,10 @@ public:
     }
 
     ~MaterialTemplate();
+
+    static std::shared_ptr<MaterialTemplate> CreateTemplate(const MaterialLayout& layout, std::string name);
+
+    MaterialTemplate(const MaterialLayout& layout, std::string name, Private dummy);
 
     const MaterialLayoutItem& GetMaterialTemplateParameter(const std::string& name) const;
 
@@ -62,7 +67,7 @@ public:
 
     RenderDescriptorAllocationHandle AllocateMaterialDescriptor();
 
-    std::shared_ptr<Material> GetDefaultMaterial() const {
+    std::shared_ptr<Material> GetDefaultMaterial() {
         return default_material;
     }
 
@@ -74,6 +79,7 @@ public:
    
 
 private:
+
     std::string material_name = "";
     std::unique_ptr<RenderDescriptorHeap> material_allocator;
     std::shared_ptr<Material> default_material;
@@ -81,7 +87,7 @@ private:
     std::unordered_map<std::string, size_t> material_parameters_map;
 };
 
-class Material : std::enable_shared_from_this<Material> {
+class Material : public std::enable_shared_from_this<Material> {
 public:
 
     Material() = default;
@@ -194,7 +200,7 @@ inline void Material::SetParameter(const std::string& name, std::shared_ptr<Rend
     auto& param = parameters[material_template->GetMaterialTemplateParameterIndex(name)];
     param.flags |= MaterialParameter_flags::DIRTY;
     param.flags &= ~MaterialParameter_flags::DEFAULT;
-    if (!std::holds_alternative<MaterialTextureType>(param.resource)) throw std::runtime_error("Parameter " + name + "assignment type mismatch");
+    if (param.type != MaterialLayoutItemType::TEXTURE) throw std::runtime_error("Parameter " + name + "assignment type mismatch");
     MaterialTextureType type;
     type.texture = value;
     param.resource = type;

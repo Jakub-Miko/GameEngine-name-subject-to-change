@@ -23,7 +23,7 @@ NLOHMANN_JSON_SERIALIZE_ENUM(MaterialLayoutItemType, {
 	{MaterialLayoutItemType::MAT3 , "mat3"},
 	{MaterialLayoutItemType::MAT3 , "MAT3"},
 	{MaterialLayoutItemType::MAT4 , "mat4"},
-	{MaterialLayoutItemType::MAT4 , "MAT"},
+	{MaterialLayoutItemType::MAT4 , "MAT4"},
 	{MaterialLayoutItemType::VEC2 , "vec2"},
 	{MaterialLayoutItemType::VEC3 , "vec3"},
 	{MaterialLayoutItemType::VEC4 , "vec4"},
@@ -31,8 +31,12 @@ NLOHMANN_JSON_SERIALIZE_ENUM(MaterialLayoutItemType, {
 	{MaterialLayoutItemType::VEC3 , "VEC3"},
 	{MaterialLayoutItemType::VEC4 , "VEC4"},
 	{MaterialLayoutItemType::SCALAR , "scalar"},
+	{MaterialLayoutItemType::SCALAR , "float"},
+	{MaterialLayoutItemType::SCALAR , "FLOAT"},
 	{MaterialLayoutItemType::SCALAR , "SCALAR"},
 	{MaterialLayoutItemType::TEXTURE , "texture"},
+	{MaterialLayoutItemType::TEXTURE , "texture_2d"},
+	{MaterialLayoutItemType::TEXTURE , "texture_2D"},
 	{MaterialLayoutItemType::TEXTURE , "TEXTURE"},
 	{MaterialLayoutItemType::TEXTURE_2D_ARRAY , "texture_array"},
 	{MaterialLayoutItemType::TEXTURE_2D_CUBEMAP , "texture_cubemap"},
@@ -262,6 +266,11 @@ void Material::SetMaterial(RenderCommandList* command_list)
 		}
 	}*/
 
+	if (status == Material_status::UNINITIALIZED) {
+		UpdateValues(command_list);
+	}
+
+	command_list->SetMaterial(material_template->GetName(), shared_from_this());
 }
 
 
@@ -384,22 +393,36 @@ void Material::UpdateValues(RenderCommandList* command_list)
 			switch (param.type)
 			{
 			case MaterialLayoutItemType::TEXTURE:
-				RenderResourceManager::Get()->CreateTexture2DDescriptor(descriptor_table, layout_item.set_binding, std::get<MaterialTextureType>(param.resource).texture);
+				if (std::holds_alternative<std::string>(param.resource)) {
+					auto path = std::get<std::string>(param.resource);
+					if (path.empty()) {
+						SetParameter(param.name, TextureManager::Get()->GetDefaultTexture());
+					}
+					else {
+						SetTexture(param.name, std::get<std::string>(param.resource));
+					}
+				}
+				if (std::holds_alternative<MaterialTextureType>(param.resource)) {
+					RenderResourceManager::Get()->CreateTexture2DDescriptor(descriptor_table, layout_item.set_binding, std::get<MaterialTextureType>(param.resource).texture);
+					param.flags &= ~MaterialParameter_flags::DIRTY;
+				}
 				break;
 			case MaterialLayoutItemType::TEXTURE_2D_ARRAY:
 				RenderResourceManager::Get()->CreateTexture2DArrayDescriptor(descriptor_table, layout_item.set_binding, std::get<std::shared_ptr<RenderTexture2DArrayResource>>(param.resource));
+				param.flags &= ~MaterialParameter_flags::DIRTY;
 				break;
 			case MaterialLayoutItemType::TEXTURE_2D_CUBEMAP:
 				RenderResourceManager::Get()->CreateTexture2DCubemapDescriptor(descriptor_table, layout_item.set_binding, std::get<std::shared_ptr<RenderTexture2DCubemapResource>>(param.resource));
+				param.flags &= ~MaterialParameter_flags::DIRTY;
 				break;
 			case MaterialLayoutItemType::CONSTANT_BUFFER:
 				RenderResourceManager::Get()->CreateConstantBufferDescriptor(descriptor_table, layout_item.set_binding, std::get<std::shared_ptr<RenderBufferResource>>(param.resource));
+				param.flags &= ~MaterialParameter_flags::DIRTY;
 				break;
 			default:
 				break;
 			}
 		}
-		param.flags &= ~MaterialParameter_flags::DIRTY;
 	}
 
 }
@@ -712,6 +735,7 @@ std::shared_ptr<MaterialTemplate> MaterialManager::LoadMaterialTemplateFromJson(
 		case MaterialLayoutItemType::TEXTURE_2D_ARRAY:		// Texture arrays, cubemaps, and constant buffers, cannot be have defaults specified
 		case MaterialLayoutItemType::TEXTURE_2D_CUBEMAP:	
 		case MaterialLayoutItemType::CONSTANT_BUFFER:		
+			mat_item.default_value = std::monostate();
 			break;
 		default:
 			throw std::runtime_error("Invalid material type.\n");
@@ -720,27 +744,20 @@ std::shared_ptr<MaterialTemplate> MaterialManager::LoadMaterialTemplateFromJson(
 	}
 
 
-	return std::make_shared<MaterialTemplate>(layout, name);
+	return MaterialTemplate::CreateTemplate(layout, name);
 }
 
-MaterialTemplate::MaterialTemplate(const MaterialLayout& layout, std::string name) : material_name(name), material_parameters(layout),  material_parameters_map(), default_material(nullptr)
+MaterialTemplate::MaterialTemplate(const MaterialLayout& layout, std::string name, Private dummy) : material_name(name), material_parameters(layout),  material_parameters_map(), default_material(nullptr)
 {
 #ifdef Vulkan_API
 	material_allocator = std::make_unique<VulkanRenderDescriptorHeap>(material_parameters);
 #elif
 	static_assert(false, "Apis other that vulkan are currently unsupported");
 #endif
-	for (int i; i < material_parameters.layout_items.size(); i++) {
+	for (int i = 0; i < material_parameters.layout_items.size(); i++) {
 		material_parameters_map.insert(std::make_pair(material_parameters.layout_items[i].name, i));
 	}
 
-	default_material = std::make_shared<Material>(shared_from_this());
-
-	auto list = Renderer::Get()->GetRenderCommandList();
-	
-	default_material->UpdateValues(list); // Make sure to initialize the actual material
-
-	Renderer::Get()->GetCommandQueue()->ExecuteRenderCommandList(list);
 
 }
 
@@ -782,9 +799,10 @@ RenderDescriptorAllocationHandle MaterialTemplate::AllocateMaterialDescriptor()
 	return material_allocator->Allocate();
 }
 
-Material::Material(std::shared_ptr<MaterialTemplate> material_template) : material_template(material_template)
+Material::Material(std::shared_ptr<MaterialTemplate> material_template) : material_template(material_template), descriptor_table()
 {
-	descriptor_table = material_template->GetDefaultMaterial()->descriptor_table; // Use the default values, first and on first used of set material or update create the actual table
+	auto default_temp = material_template->GetDefaultMaterial();
+	descriptor_table = !default_temp ? nullptr : default_temp->descriptor_table; // Use the default values, first and on first used of set material or update create the actual table
 	auto const_size = material_template->GetMaterialTemplateParameters().const_buffer_size;
 	if (const_size != 0) {
 		RenderBufferDescriptor desc;
@@ -794,10 +812,11 @@ Material::Material(std::shared_ptr<MaterialTemplate> material_template) : materi
 		constant_buffer = RenderResourceManager::Get()->CreateBuffer(desc);
 	}
 
-	for (int i; i < material_template->GetMaterialTemplateParameters().layout_items.size(); i++) {
+	for (int i = 0; i < material_template->GetMaterialTemplateParameters().layout_items.size(); i++) {
 		auto& layout_item = material_template->GetMaterialTemplateParameters().layout_items[i];
 		MaterialParameter param;
-		param.flags |= MaterialParameter_flags::DIRTY | MaterialParameter_flags::DEFAULT;
+		param.flags |= MaterialParameter_flags::DEFAULT;
+		param.flags |= std::holds_alternative<std::monostate>(layout_item.default_value) ? (MaterialParameter_flags)0 : MaterialParameter_flags::DIRTY;
 		param.name = layout_item.name;
 		param.resource = layout_item.default_value;
 		param.type = layout_item.type;
@@ -816,4 +835,21 @@ std::shared_ptr<MaterialTemplate> MaterialManager::GetMaterialTemplate(const std
 	else {
 		throw std::runtime_error("Material template " + name + " was not loaded.\n");
 	}
+}
+
+std::shared_ptr<MaterialTemplate> MaterialTemplate::CreateTemplate(const MaterialLayout& layout, std::string name)
+{
+	auto temp = std::make_shared<MaterialTemplate>(layout, name, Private());
+
+	temp->default_material.reset();
+
+	temp->default_material = std::make_shared<Material>(temp->shared_from_this());
+
+	auto list = Renderer::Get()->GetRenderCommandList();
+
+	temp->default_material->UpdateValues(list); // Make sure to initialize the actual material
+
+	Renderer::Get()->GetCommandQueue()->ExecuteRenderCommandList(list);
+
+	return temp;
 }
