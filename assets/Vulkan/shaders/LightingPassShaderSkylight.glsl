@@ -36,24 +36,7 @@
 		{
 			"name" : "GBufferMaterial",
 			"type" : "material",
-			"material_inline": [
-					{
-						"name" : "Color",
-						"type" : "texture_2D"
-					},
-					{
-						"name" : "Normal",
-						"type" : "texture_2D"
-					},
-					{
-						"name" : "Roughness",
-						"type" : "texture_2D"
-					},
-					{
-						"name" : "DepthBuffer",
-						"type" : "texture_2D"
-					}
-			]
+			"material_path": "api:GBufferMaterialLayout.json"
 		}
 	]
 }

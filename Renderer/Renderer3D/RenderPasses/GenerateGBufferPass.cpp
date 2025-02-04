@@ -9,6 +9,7 @@
 
 struct GenerateGBufferPass::internal_data {
 	std::shared_ptr<RenderFrameBufferResource> output_buffer_resource;
+	std::shared_ptr<Material> output_material_resource;
 #ifdef EDITOR
 	int id_texture;
 #endif
@@ -80,6 +81,17 @@ void GenerateGBufferPass::InitPostProcessingPassData() {
 #endif
 #pragma endregion
 
+	data->output_material_resource = MaterialManager::Get()->CreateMaterial("GBufferMaterial");
+	data->output_material_resource->SetParameter("Color", texture_color_albedo);
+	data->output_material_resource->SetParameter("Normal", texture_color_normal);
+	data->output_material_resource->SetParameter("Roughness", roughness_texture);
+	data->output_material_resource->SetParameter("DepthBuffer", texture_depth_stencil);
+
+	auto list = Renderer::Get()->GetRenderCommandList();
+
+	data->output_material_resource->UpdateValues(list);
+
+	Renderer::Get()->GetCommandQueue()->ExecuteRenderCommandList(list);
 
 	data->output_buffer_resource = RenderResourceManager::Get()->CreateFrameBuffer(framebuffer_desc);
 
@@ -87,7 +99,7 @@ void GenerateGBufferPass::InitPostProcessingPassData() {
 }
 
 
-GenerateGBufferPass::GenerateGBufferPass(const std::string& output_buffer) : output_buffer(output_buffer)
+GenerateGBufferPass::GenerateGBufferPass(const std::string& output_buffer, const std::string& output_buffer_material) : output_buffer(output_buffer), output_buffer_material(output_buffer_material)
 {
 	data = new internal_data;
 	InitPostProcessingPassData();
@@ -96,7 +108,9 @@ GenerateGBufferPass::GenerateGBufferPass(const std::string& output_buffer) : out
 void GenerateGBufferPass::Setup(RenderPassResourceDefinnition& setup_builder)
 {
 	setup_builder.AddResource<std::shared_ptr<RenderFrameBufferResource>>(output_buffer, RenderPassResourceDescriptor_Access::WRITE);
+	setup_builder.AddResource<std::shared_ptr<Material>>(output_buffer_material, RenderPassResourceDescriptor_Access::WRITE);
 	setup_builder.AddPersistentResource< std::shared_ptr<RenderFrameBufferResource>>("G_Buffer", data->output_buffer_resource);
+	setup_builder.AddPersistentResource< std::shared_ptr<Material>>("G_Buffer_Material", data->output_material_resource);
 #ifdef EDITOR
 	setup_builder.AddPersistentResource<int>("ID", data->id_texture);
 #endif
@@ -110,6 +124,7 @@ void GenerateGBufferPass::Render(RenderPipelineResourceManager& resource_manager
 	list->Clear();
 	queue->ExecuteRenderCommandList(list);
 	resource_manager.SetResource<std::shared_ptr<RenderFrameBufferResource>>(output_buffer, data->output_buffer_resource);
+	resource_manager.SetResource<std::shared_ptr<Material>>(output_buffer_material, data->output_material_resource);
 }
 
 GenerateGBufferPass::~GenerateGBufferPass()

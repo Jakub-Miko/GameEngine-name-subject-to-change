@@ -548,6 +548,7 @@ void VulkanRenderResourceManager::FlushDeletions()
 			lock.unlock();
 			delete resource.list;
 			lock.lock();
+			break;
 		}
 		case deletion_item_type::DESCRIPTOR_ALLOCATION:
 		{

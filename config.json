@@ -1,19 +1,21 @@
 {
-  "Vsync": 1,
-  "Latency_Frames": 2,
-  "EnableMouseMoveEvent": 1,
-  "default_scene": "asset:Demo.scene",
-  "root_path": "../",
-  "local_asset_path": "assets/",
-  "render_api_path": "assets/Vulkan/",
-  "engine_asset_path": "assets/",
-  "temp_path": "temp/",
-  "resolution_X": 2560,
-  "resolution_Y": 1440,
-  "fullscreen": 1,
-
-  "modules": [
-    "TestLib"
-  ]
+    "Vsync": 1,
+    "Latency_Frames": 2,
+    "EnableMouseMoveEvent": 1,
+    "default_scene": "asset:Demo.scene",
+    "root_path": "../",
+    "local_asset_path": "assets/",
+    "render_api_path": "assets/Vulkan/",
+    "engine_asset_path": "assets/",
+    "temp_path": "temp/",
+    "resolution_X": 2560,
+    "resolution_Y": 1440,
+    "fullscreen": 1,
+    "PreloadMaterialTemplates": [
+        "api:GBufferMaterialLayout.json"
+    ],
+    "modules": [
+        "TestLib"
+    ]
 
 }

@@ -89,7 +89,6 @@ private:
 
 class Material : public std::enable_shared_from_this<Material> {
 public:
-
     Material() = default;
     Material(std::shared_ptr<MaterialTemplate> material_template);
 
@@ -153,6 +152,8 @@ private:
     Material_status status = Material_status::ERROR;
 };
 
+NonIntrusiveRuntimeTag(std::shared_ptr<Material>, "Material");
+
 inline Material::MaterialParameter_flags operator|(const Material::MaterialParameter_flags& first, const Material::MaterialParameter_flags& second) {
     return Material::MaterialParameter_flags((char)first | (char)second);
 }
@@ -177,7 +178,7 @@ inline void Material::SetParameter(const std::string& name, std::shared_ptr<Rend
     auto& param = parameters[material_template->GetMaterialTemplateParameterIndex(name)];
     param.flags |= MaterialParameter_flags::DIRTY;
     param.flags &= ~MaterialParameter_flags::DEFAULT;
-    if (!std::holds_alternative<MaterialTextureType>(param.resource)) throw std::runtime_error("Parameter " + name + "assignment type mismatch");
+    if (param.type != MaterialLayoutItemType::TEXTURE) throw std::runtime_error("Parameter " + name + "assignment type mismatch");
     MaterialTextureType type;
     type.texture = value;
 #ifdef EDITOR
@@ -191,7 +192,7 @@ inline void Material::SetParameter(const std::string& name, T value) {
     auto& param = parameters[material_template->GetMaterialTemplateParameterIndex(name)];
     param.flags |= MaterialParameter_flags::DIRTY;
     param.flags &= ~MaterialParameter_flags::DEFAULT;
-    if (!std::holds_alternative<T>(param.resource)) throw std::runtime_error("Parameter " + name + "assignment type mismatch");
+    if (!std::holds_alternative<T>(param.resource) && !std::holds_alternative<std::monostate>(param.resource)) throw std::runtime_error("Parameter " + name + "assignment type mismatch");
     param.resource = value;
 }
 
@@ -221,11 +222,11 @@ public:
 
     std::shared_ptr<Material> GetMaterial(const std::string& path);
 
-    std::shared_ptr<Material> CreateMaterial(const std::string& shader_path);
+    std::shared_ptr<Material> CreateMaterial(const std::string& template_path);
 
     void SerializeMaterial(const std::string& filepath, std::shared_ptr<Material> material);
 
-    std::shared_ptr<Material> CreateEmptyMaterial(const std::string& filepath, std::shared_ptr<Shader> shader);
+    std::shared_ptr<Material> CreateEmptyMaterial(const std::string& filepath, std::shared_ptr<MaterialTemplate> shader);
 
     std::shared_ptr<MaterialTemplate> GetMaterialTemplate(const std::string& name);
 

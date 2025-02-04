@@ -274,7 +274,7 @@ void Editor::Run()
 						extension_error = true;
 						throw std::runtime_error("Extension Error");
 					}
-					auto mat = MaterialManager::Get()->CreateEmptyMaterial(file_dialog_text_buffer, ShaderManager::Get()->GetShader("shaders/GeometryPassShader.glsl"));
+					auto mat = MaterialManager::Get()->CreateEmptyMaterial(file_dialog_text_buffer, MaterialManager::Get()->GetMaterialTemplate("DeferredGPassMaterial"));
 					material_editor->OpenEditorWinow(mat->GetFilePath());
 					ImGui::CloseCurrentPopup();
 					file_dialog_text_buffer[0] = '\0';

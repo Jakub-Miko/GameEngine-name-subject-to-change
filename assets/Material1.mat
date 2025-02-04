@@ -1,5 +1,5 @@
 {
-	"shader": "shaders/MeshShader.glsl",
+	"material_template": "DeferredGPassMaterial",
 	"parameters": [
 		{
 			"name": "sun_direction",

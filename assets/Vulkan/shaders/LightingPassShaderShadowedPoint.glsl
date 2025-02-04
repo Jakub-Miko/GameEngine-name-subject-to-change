@@ -6,43 +6,28 @@
 			"type" : "constant_buffer"
 		},
 		{
-			"name" : "light_props",
-			"type" : "constant_buffer",
-			"material_visible" : true
-		},
-		{
-			"name" : "ShadowCubeMap",
-			"type" : "texture_2D_cubemap",
-			"material_visible" : true
-		},
-		{
-			"name" : "G_Buffer",
-			"type" : "descriptor_table",
-			"material_visible" : true,
-			"ranges" : [
-				{
-					"size" : 4,
-					"name" : "Textures",
-					"type" : "texture_2D",
-					"individual_names" : [
-						"Color", "Normal", "Roughness", "DepthBuffer"
-					]
-				}
-			]
-		}
-	],
-	
-	"constant_buffer_layouts" : [
-			{
-				"name" : "light_props",
-				"layout" : [
+			"name" : "LightingPassPointLightMaterial",
+			"type" : "material",
+			"material_inline": [
 					{
 						"name" : "Light_Color",
-						"type" : "VEC4"
+						"type" : "VEC4",
+						"value" : {
+							"x" : 1.0,
+							"y" : 1.0,
+							"z" : 1.0,
+							"w" : 1.0
+						}
 					},
 					{
 						"name" : "attenuation",
-						"type" : "VEC4"
+						"type" : "VEC4",
+						"value" : {
+							"x" : 1.0,
+							"y" : 0.1,
+							"z" : 0.01,
+							"w" : 0.0
+						}
 					},
 					{
 						"name" : "pixel_size",
@@ -50,41 +35,21 @@
 					},
 					{
 						"name": "light_far_plane",
-						"type" : "FLOAT"
+						"type" : "SCALAR",
+						"value" : 1.0
+					},
+					{
+						"name" : "ShadowCubeMap",
+						"type" : "texture_2D_cubemap"
 					}
-				]
-			}
-	],
-
-	"default_material" : {
-		"parameters": [
-			{
-				"name": "Light_Color",
-				"type" : "VEC4",
-				"value" : {
-					"x" : 1.0,
-					"y" : 1.0,
-					"z" : 1.0,
-					"w" : 1.0
-				}
-			},
-			{
-				"name": "attenuation",
-				"type" : "VEC4",
-				"value" : {
-					"x" : 1.0,
-					"y" : 0.1,
-					"z" : 0.01,
-					"w" : 0.0
-				}
-			},
-			{
-				"name": "light_far_plane",
-				"type" : "SCALAR",
-				"value" : 1.0
-			}
-		]
-	}
+			]
+		},
+		{
+			"name" : "GBufferMaterial",
+			"type" : "material",
+			"material_path": "api:GBufferMaterialLayout.json"
+		}
+	]
 }
 #end
 
@@ -104,7 +69,7 @@ layout(set = 0, binding = 0) uniform conf{
 	float depth_constant_b;
 };
 
-layout(set = 0, binding = 1) uniform light_props{
+layout(set = 1, binding = 0) uniform light_props{
 	vec4 Light_Color;
 	vec4 attenuation_constants;
 	vec2 pixel_size;
@@ -129,13 +94,13 @@ void main() {
 
 layout(location = 0) out vec4 color_out;
 
-layout(set = 1, binding = 0) uniform sampler2D Color;
-layout(set = 1, binding = 1) uniform sampler2D Normal;
-layout(set = 1, binding = 2) uniform sampler2D Roughness;
-layout(set = 1, binding = 3) uniform sampler2D DepthBuffer;
-layout(set = 0, binding = 2) uniform samplerCubeShadow ShadowCubeMap;
+layout(set = 2, binding = 0) uniform sampler2D Color;
+layout(set = 2, binding = 1) uniform sampler2D Normal;
+layout(set = 2, binding = 2) uniform sampler2D Roughness;
+layout(set = 2, binding = 3) uniform sampler2D DepthBuffer;
+layout(set = 1, binding = 1) uniform samplerCubeShadow ShadowCubeMap;
 
-uniform conf {
+layout(set = 0, binding = 0) uniform conf {
 	mat4 mvp_matrix;
 	mat4 view_model_matrix;
 	mat4 light_matrix;
@@ -143,7 +108,7 @@ uniform conf {
 	float depth_constant_b;
 };
 
-uniform light_props{
+layout(set = 1, binding = 0) uniform light_props{
 	vec4 Light_Color;
 	vec4 attenuation_constants;
 	vec2 pixel_size;

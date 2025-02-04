@@ -115,7 +115,7 @@ RenderDescriptorAllocationHandle VulkanRenderDescriptorHeap::Allocate()
 		static_cast<VulkanRenderResourceManager*>(RenderResourceManager::Get())->ReturnDescriptorAllocation(alloc, static_cast<VulkanRenderDescriptorAllocation*>(alloc)->timeline);
 		});
 
-
+	return handle;
 }
 
 void VulkanRenderDescriptorHeap::FlushDescriptorDeallocations(uint32_t frame_number)

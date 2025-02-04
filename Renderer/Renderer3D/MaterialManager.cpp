@@ -1,4 +1,5 @@
 #include "MaterialManager.h"
+#include <ConfigManager.h>
 #include <fstream>
 #include <json.hpp>
 #include <Core/UnitConverter.h>
@@ -39,7 +40,11 @@ NLOHMANN_JSON_SERIALIZE_ENUM(MaterialLayoutItemType, {
 	{MaterialLayoutItemType::TEXTURE , "texture_2D"},
 	{MaterialLayoutItemType::TEXTURE , "TEXTURE"},
 	{MaterialLayoutItemType::TEXTURE_2D_ARRAY , "texture_array"},
+	{MaterialLayoutItemType::TEXTURE_2D_ARRAY , "texture_2d_array"},
+	{MaterialLayoutItemType::TEXTURE_2D_ARRAY , "texture_2D_array"},
 	{MaterialLayoutItemType::TEXTURE_2D_CUBEMAP , "texture_cubemap"},
+	{MaterialLayoutItemType::TEXTURE_2D_CUBEMAP , "texture_2d_cubemap"},
+	{MaterialLayoutItemType::TEXTURE_2D_CUBEMAP , "texture_2D_cubemap"},
 	{MaterialLayoutItemType::CONSTANT_BUFFER , "constant_buffer"}
 	})
 
@@ -88,14 +93,20 @@ std::shared_ptr<Material> MaterialManager::GetMaterial(const std::string& path_i
 
 MaterialManager::MaterialManager() : materials(), material_templates(), material_mutex(), material_load(), material_load_mutex()
 {
-
+	if (ConfigManager::Get()->Exists("PreloadMaterialTemplates")) {
+		auto preload = ConfigManager::Get()->GetArray("PreloadMaterialTemplates");
+		for (int i = 0; i < preload->GetArraySize(); i++) {
+			auto& item = preload->GetString(i);
+			LoadMaterialTemplateFile(item);
+		}
+	}
 }
 
 void MaterialManager::ClearMaterialCache()
 {
 	std::lock_guard<std::mutex> lock1(material_load_mutex);
 	std::lock_guard<std::mutex> lock2(material_mutex);
-	material_templates.clear();
+	// material_templates.clear();
 	materials.clear();
 }
 
@@ -168,6 +179,7 @@ std::shared_ptr<Material> MaterialManager::ParseMaterialFromString(const std::st
 				else {
 					material->SetTexture(parameter["name"].get<std::string>(), parameter["value"].get<std::string>());
 				}
+				break;
 			default:
 				throw std::runtime_error("Invalid material type.\n");
 			}
@@ -233,15 +245,15 @@ void MaterialManager::SerializeMaterial(const std::string& filepath, std::shared
 	file.close();
 }
 
-std::shared_ptr<Material> MaterialManager::CreateEmptyMaterial(const std::string& filepath_in, std::shared_ptr<Shader> shader)
+std::shared_ptr<Material> MaterialManager::CreateEmptyMaterial(const std::string& filepath_in, std::shared_ptr<MaterialTemplate> material_template)
 {
 	std::string file_path = FileManager::Get()->GetPath(filepath_in);
-	std::shared_ptr<Material> mat = CreateMaterial(shader->GetPath());
-	mat->material_path = filepath_in;
-	SerializeMaterial(filepath_in, mat);
+	auto material = std::make_shared<Material>(material_template);
+	material->material_path = filepath_in;
+	SerializeMaterial(filepath_in, material);
 	std::lock_guard<std::mutex> lock(material_mutex);
-	materials.insert(std::make_pair(file_path, mat));
-	return mat;
+	materials.insert(std::make_pair(file_path, material));
+	return material;
 }
 
 void Material::SetMaterial(RenderCommandList* command_list)
@@ -389,7 +401,7 @@ void Material::UpdateValues(RenderCommandList* command_list)
 		auto& param = parameters[i];
 		auto& layout_item = material_template->GetMaterialTemplateParameters().layout_items[i];
 
-		if (param.IsDirty() || status == Material_status::UNINITIALIZED) {
+		if (param.IsDirty() || status == Material_status::UNINITIALIZED && !std::holds_alternative<std::monostate>(param.resource)) {
 			switch (param.type)
 			{
 			case MaterialLayoutItemType::TEXTURE:
@@ -423,6 +435,10 @@ void Material::UpdateValues(RenderCommandList* command_list)
 				break;
 			}
 		}
+	}
+
+	if (status == Material_status::UNINITIALIZED) { 
+		status = Material_status::OK;
 	}
 
 }
@@ -768,7 +784,8 @@ void MaterialManager::LoadMaterialTemplateFile(const std::string& path_in)
 	if (fnd != loaded_signature_files.end()) {
 		return;
 	}
-	
+	loaded_signature_files.insert(path);
+
 	std::ifstream file(path);
 	if (!file.is_open()) {
 		throw std::runtime_error("Material template file could not be opened.");
@@ -779,18 +796,24 @@ void MaterialManager::LoadMaterialTemplateFile(const std::string& path_in)
 
 	file.close();
 
-	if (!json_object.array()) {
-		throw std::runtime_error("Material template file must contain an array of json objects representing the materials");
+	if (!json_object.is_object()) {
+		throw std::runtime_error("Material template file must contain an object containing json objects representing the materials");
 	}
 
-	for (auto& material_spec : json_object) {
-		auto material_template = LoadMaterialTemplateFromJson(material_spec);
+	for (auto& element : json_object.items()) {
+		auto material_template = LoadMaterialTemplateFromJson(element.value(), element.key());
 		RegisterMaterialTemplate(material_template);
 	}
 }
 
 void MaterialManager::RegisterMaterialTemplate(std::shared_ptr<MaterialTemplate> material_template)
 {
+	auto fnd = material_templates.find(material_template->GetName());
+	if (fnd != material_templates.end()) {
+		throw std::runtime_error("Material template " + material_template->GetName() + " could not be loaded because it already exists,  \
+			make sure each template has a unique name and is defined only once.\n");
+	}
+	
 	material_templates.insert(std::make_pair(material_template->GetName(), material_template));
 }
 

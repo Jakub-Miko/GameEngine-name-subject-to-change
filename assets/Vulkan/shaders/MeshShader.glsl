@@ -5,109 +5,53 @@
 			"name" : "conf",
 			"type" : "constant_buffer"
 		},
-			{
-			"name" : "mat",
-			"type" : "constant_buffer",
-			"material_visible" : true
-		},
 		{
-			"name" : "table",
-			"type" : "descriptor_table",
-			"material_visible" : true,
-			"ranges" : [
+			"name" : "MeshShaderMaterial",
+			"type" : "material",
+			"material_inline" : [
 				{
-					"size" : 2,
-					"name" : "textures",
+					"name": "sun_direction",
+					"type" : "VEC4",
+					"value" : {
+						"x": 0.2,
+						"y" : 0.5,
+						"z" : 0.5,
+						"w" : 0.0
+					}
+				},
+				{
+					"name": "color",
+					"type" : "VEC4",
+					"value" : {
+						"x": 0.5,
+						"y" : 0.7,
+						"z" : 1.0,
+						"w" : 1.0
+					}
+				},
+				{
+					"name": "options",
+					"type" : "VEC4",
+					"value" : {
+						"x": 0.0,
+						"y" : 0.0,
+						"z" : 0.0,
+						"w" : 0.0
+					}
+				},
+				{
+					"name" : "Texture_First",
 					"type" : "texture_2D",
-					"individual_names" : [
-						"Texture_First", "Texture_Second"
-					]
+					"value" : "asset:image_texture.tex"
+				},
+				{
+					"name" : "Texture_Second",
+					"type" : "texture_2D"
 				}
-
 			]
 		}
 
-	], 
-
-	"constant_buffer_layouts" : [
-			{
-				"name" : "conf",
-				"layout" : [
-					{
-						"name" : "mvp_matrix",
-						"type" : "MAT4"
-					},
-					{
-						"name" : "model",
-						"type" : "MAT4"
-					}
-				]
-			},
-			{
-				"name" : "mat",
-				"layout" : [
-					{
-						"name" : "sun_direction",
-						"type" : "VEC4"
-					},
-					{
-						"name" : "color",
-						"type" : "VEC4"
-					},
-					{
-						"name" : "options",
-						"type" : "VEC4"
-					}
-				]
-			}
-
-
-	],
-
-	"default_material" : {
-		"parameters": [
-			{
-				"name": "sun_direction",
-				"type" : "VEC4",
-				"value" : {
-					"x": 0.2,
-					"y" : 0.5,
-					"z" : 0.5,
-					"w" : 0.0
-				}
-			},
-			{
-				"name": "color",
-				"type" : "VEC4",
-				"value" : {
-					"x": 0.5,
-					"y" : 0.7,
-					"z" : 1.0,
-					"w" : 1.0
-				}
-			},
-			{
-				"name": "options",
-				"type" : "VEC4",
-				"value" : {
-					"x": 0.0,
-					"y" : 0.0,
-					"z" : 0.0,
-					"w" : 0.0
-				}
-			},
-			{
-				"name": "Texture_First",
-				"type" : "TEXTURE",
-				"value" : "asset:image_texture.tex"
-			},
-			{
-				"name": "Texture_Second",
-				"type" : "TEXTURE",
-				"value" : ""
-			}
-		]
-	}
+	]
 }
 #end
 
@@ -129,7 +73,7 @@ layout(set = 0, binding = 0) uniform conf
 	mat4 model;
 };
 
-layout(set = 0, binding = 1) uniform mat
+layout(set = 1, binding = 0) uniform mat
 {
 	vec4 sun_direction;
 	vec4 color;
@@ -153,7 +97,7 @@ layout(set = 0, binding = 0) uniform conf
 	mat4 model;
 };
 
-layout(set = 0, binding = 1) uniform mat
+layout(set = 1, binding = 0) uniform mat
 {
 	vec4 sun_direction;
 	vec4 color;
@@ -165,8 +109,8 @@ in vec2 uvs;
 
 out vec4 out_color;
 
-layout(set = 1, binding = 0)uniform sampler2D Texture_First;
-layout(set = 1, binding = 1)uniform sampler2D Texture_Second;
+layout(set = 1, binding = 1)uniform sampler2D Texture_First;
+layout(set = 1, binding = 2)uniform sampler2D Texture_Second;
 
 void main() {
 	//out_color = abs(out_normal);
