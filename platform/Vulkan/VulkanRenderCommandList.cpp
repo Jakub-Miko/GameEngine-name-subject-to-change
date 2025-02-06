@@ -4,6 +4,8 @@
 #include "VulkanRenderContext.h"
 #include "VulkanPipelineManager.h"
 #include "VulkanRenderResourceManager.h"
+#include "VulkanRenderDescriptorHeapBlock.h"
+#include <Renderer/TextureManager.h>
 
 VulkanRenderCommandList::VulkanRenderCommandList(Renderer* renderer, std::shared_ptr<RenderCommandAllocator> alloc) : RenderCommandList(renderer, alloc), dependency_handler(),
 	current_framebuffer(nullptr), current_pipeline(nullptr)
@@ -153,6 +155,200 @@ void VulkanRenderCommandList::DrawArray(uint32_t vertex_count)
 
 void VulkanRenderCommandList::SetMaterial(const std::string& name, std::shared_ptr<Material> material)
 {
+
+}
+
+void VulkanRenderCommandList::UpdateMaterial(std::shared_ptr<Material> material)
+{
+	DEFINE_VK_INSTANCE(context);
+	using Material_status = Material::Material_status;
+	using MaterialParameter_flags = Material::MaterialParameter_flags;
+	
+	bool needs_table_update = false;
+
+	auto& parameters = GetMutableMaterialParameters(material.get());
+	auto material_template = material->GetMaterialTemplate();
+	auto constant_buffer = GetMaterialConstantBuffer(material.get());
+	auto& descriptor_table = GetMutableMaterialDescriptorTable(material.get());
+	auto& status = GetMutableMaterialStatus(material.get());
+
+	int image_update_num = 0;
+	int buffer_update_num = 0;
+
+	for (int i = 0; i < parameters.size(); i++) {
+		auto& param = parameters[i];
+		auto& layout_item = material_template->GetMaterialTemplateParameters().layout_items[i];
+
+		if (param.IsDirty()) {
+			switch (param.type)
+			{
+			case MaterialLayoutItemType::INT:
+				RenderResourceManager::Get()->UploadDataToBuffer(this, constant_buffer, &std::get<int>(param.resource), sizeof(int), layout_item.constant_buffer_offset);
+				break;
+			case MaterialLayoutItemType::MAT3:
+				RenderResourceManager::Get()->UploadDataToBuffer(this, constant_buffer, glm::value_ptr(std::get<glm::mat3>(param.resource)), sizeof(glm::mat3), layout_item.constant_buffer_offset);
+				break;
+			case MaterialLayoutItemType::MAT4:
+				RenderResourceManager::Get()->UploadDataToBuffer(this, constant_buffer, glm::value_ptr(std::get<glm::mat4>(param.resource)), sizeof(glm::mat4), layout_item.constant_buffer_offset);
+				break;
+			case MaterialLayoutItemType::SCALAR:
+				RenderResourceManager::Get()->UploadDataToBuffer(this, constant_buffer, &std::get<float>(param.resource), sizeof(float), layout_item.constant_buffer_offset);
+				break;
+			case MaterialLayoutItemType::VEC2:
+				RenderResourceManager::Get()->UploadDataToBuffer(this, constant_buffer, glm::value_ptr(std::get<glm::vec2>(param.resource)), sizeof(glm::vec2), layout_item.constant_buffer_offset);
+				break;
+			case MaterialLayoutItemType::VEC3:
+				RenderResourceManager::Get()->UploadDataToBuffer(this, constant_buffer, glm::value_ptr(std::get<glm::vec3>(param.resource)), sizeof(glm::vec3), layout_item.constant_buffer_offset);
+				break;
+			case MaterialLayoutItemType::VEC4:
+				RenderResourceManager::Get()->UploadDataToBuffer(this, constant_buffer, glm::value_ptr(std::get<glm::vec4>(param.resource)), sizeof(glm::vec4), layout_item.constant_buffer_offset);
+				break;
+			case MaterialLayoutItemType::TEXTURE:
+			case MaterialLayoutItemType::TEXTURE_2D_ARRAY:
+			case MaterialLayoutItemType::TEXTURE_2D_CUBEMAP:
+				image_update_num++;
+				needs_table_update = true;
+				break;
+			case MaterialLayoutItemType::CONSTANT_BUFFER:
+				buffer_update_num++;
+				needs_table_update = true;
+				break;
+			default:
+				throw std::runtime_error("Invalid material type.\n");
+			}
+		}
+		param.flags &= ~MaterialParameter_flags::DIRTY;
+	}
+
+	if (!needs_table_update && status != Material_status::UNINITIALIZED) return; // For buffer updates there's no need to update the descriptor table, unless we are still using the default table
+
+	if (status == Material_status::UNINITIALIZED || descriptor_table->IsInUse()) { // uninitialized = we're currently using the default table so we need a new one, In use = the current table is in use so we need a new one
+		descriptor_table = material_template->AllocateMaterialDescriptor();
+		RenderResourceManager::Get()->CreateConstantBufferDescriptor(descriptor_table, 0, constant_buffer); // On Initialization, we need to at bind our constant buffer
+	}
+
+	std::vector<VkWriteDescriptorSet> desc_set_writes;
+	desc_set_writes.reserve(image_update_num + buffer_update_num);
+	std::vector<VkDescriptorImageInfo > desc_set_image_infos;
+	desc_set_image_infos.reserve(image_update_num);
+	std::vector<VkDescriptorBufferInfo> desc_set_buffer_infos;
+	desc_set_buffer_infos.reserve(buffer_update_num);
+
+	VkWriteDescriptorSet write = {};
+	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	write.descriptorCount = 1;
+	write.dstArrayElement = 0;
+	write.dstSet = static_cast<VulkanRenderDescriptorAllocation*>(descriptor_table.get())->descritor_set;
+
+	for (int i = 0; i < parameters.size(); i++) {
+		auto& param = parameters[i];
+		auto& layout_item = material_template->GetMaterialTemplateParameters().layout_items[i];
+		bool is_uniform;
+		auto type = VulkanUnitConverter::MaterialLayoutItemTypeToDescritorType(param.type, is_uniform);
+
+		if (param.IsDirty() || status == Material_status::UNINITIALIZED && !std::holds_alternative<std::monostate>(param.resource)) {
+			switch (param.type)
+			{
+			case MaterialLayoutItemType::TEXTURE:
+				if (std::holds_alternative<std::string>(param.resource)) {
+					auto path = std::get<std::string>(param.resource);
+					if (path.empty()) {
+						material->SetParameter(param.name, TextureManager::Get()->GetDefaultTexture());
+					}
+					else {
+						material->SetTexture(param.name, std::get<std::string>(param.resource));
+					}
+				}
+				if (std::holds_alternative<MaterialTextureType>(param.resource)) {
+					auto image = std::get<MaterialTextureType>(param.resource);
+					auto vk_image = static_cast<VulkanRenderTextureResource*>(image.texture->GetExtensionData());
+
+					VkDescriptorImageInfo image_info;
+					image_info.imageLayout = VkImageLayout::VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL;
+					image_info.imageView = vk_image->GetImageView();
+					image_info.sampler = std::static_pointer_cast<VulkanTextureSampler>(vk_image->GetSampler())->GetSampler();
+
+					desc_set_image_infos.push_back(image_info);
+
+					write.descriptorType = type;
+					write.dstBinding = layout_item.set_binding;
+					write.pImageInfo = &desc_set_image_infos.back();
+
+					desc_set_writes.push_back(write);
+					param.flags &= ~MaterialParameter_flags::DIRTY;
+				}
+				break;
+			case MaterialLayoutItemType::TEXTURE_2D_ARRAY:
+			{
+				auto image = std::get<std::shared_ptr<RenderTexture2DArrayResource>>(param.resource);
+				auto vk_image = static_cast<VulkanRenderTextureResource*>(image->GetExtensionData());
+
+				VkDescriptorImageInfo image_info;
+				image_info.imageLayout = VkImageLayout::VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL;
+				image_info.imageView = vk_image->GetImageView();
+				image_info.sampler = std::static_pointer_cast<VulkanTextureSampler>(vk_image->GetSampler())->GetSampler();
+
+				desc_set_image_infos.push_back(image_info);
+
+				write.descriptorType = type;
+				write.dstBinding = layout_item.set_binding;
+				write.pImageInfo = &desc_set_image_infos.back();
+
+				desc_set_writes.push_back(write);
+				param.flags &= ~MaterialParameter_flags::DIRTY;
+				break;
+			}
+			case MaterialLayoutItemType::TEXTURE_2D_CUBEMAP:
+			{
+				auto image = std::get<std::shared_ptr<RenderTexture2DCubemapResource>>(param.resource);
+				auto vk_image = static_cast<VulkanRenderTextureResource*>(image->GetExtensionData());
+
+				VkDescriptorImageInfo image_info;
+				image_info.imageLayout = VkImageLayout::VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL;
+				image_info.imageView = vk_image->GetImageView();
+				image_info.sampler = std::static_pointer_cast<VulkanTextureSampler>(vk_image->GetSampler())->GetSampler();
+
+				desc_set_image_infos.push_back(image_info);
+
+				write.descriptorType = type;
+				write.dstBinding = layout_item.set_binding;
+				write.pImageInfo = &desc_set_image_infos.back();
+
+				desc_set_writes.push_back(write);
+				param.flags &= ~MaterialParameter_flags::DIRTY;
+				break;
+			}
+			case MaterialLayoutItemType::CONSTANT_BUFFER:
+			{
+				auto buffer = std::get<std::shared_ptr<RenderBufferResource>>(param.resource);
+				auto vk_buffer = std::static_pointer_cast<VulkanRenderBufferResource>(std::get<std::shared_ptr<RenderBufferResource>>(param.resource));
+
+				VkDescriptorBufferInfo buffer_info;
+				buffer_info.offset = 0;
+				buffer_info.range = buffer->GetBufferDescriptor().buffer_size;
+				buffer_info.buffer = vk_buffer->GetBuffer();
+
+				desc_set_buffer_infos.push_back(buffer_info);
+
+				write.descriptorType = type;
+				write.dstBinding = layout_item.set_binding;
+				write.pBufferInfo = &desc_set_buffer_infos.back();
+
+				desc_set_writes.push_back(write);
+				param.flags &= ~MaterialParameter_flags::DIRTY;
+				break;
+			}
+			default:
+				break;
+			}
+		}
+	}
+
+	vkUpdateDescriptorSets(context->GetVkDevice(), desc_set_writes.size(), desc_set_writes.data(), 0, NULL);
+
+	if (status == Material_status::UNINITIALIZED) {
+		status = Material_status::OK;
+	}
 
 }
 

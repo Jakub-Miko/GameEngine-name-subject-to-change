@@ -134,12 +134,18 @@ public:
     const std::string& GetFilePath() const {
         return material_path;
     }
+
+    std::shared_ptr<MaterialTemplate> GetMaterialTemplate() const {
+        return material_template;
+    }
+
     void UpdateValues(RenderCommandList* command_list);
 
 private:
 
     void SetParameterTypeDefault(MaterialParameter& param);
     friend class MaterialManager;
+    friend class RenderCommandList;
 #ifdef EDITOR
     friend class MaterialEditor;
 #endif

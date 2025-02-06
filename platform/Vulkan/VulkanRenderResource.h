@@ -35,6 +35,7 @@ public:
 	virtual glm::uvec2 GetResolution() = 0;
 	virtual TextureUsage GetUsage() = 0;
 	virtual uint32_t GetArrayLayerCount() = 0;
+	virtual std::shared_ptr<TextureSampler> GetSampler() = 0;
 };
 
 class VulkanRenderBufferResource : public RenderBufferResource, public VulkanRenderResource {
@@ -47,6 +48,8 @@ public:
 	
 
 	virtual RenderResourceExtension* GetExtensionData() override { return static_cast<RenderResourceExtension*>(this); };
+
+	VkBuffer GetBuffer() { return buffer;  }
 
 private:
 	virtual ~VulkanRenderBufferResource();
@@ -82,6 +85,8 @@ public:
 
 	virtual ~VulkanTextureSampler();
 
+	VkSampler GetSampler() const { return sampler; }
+
 private:
 	VulkanTextureSampler(const TextureSamplerDescritor& desc);
 
@@ -109,6 +114,8 @@ public:
 	virtual VkImageView GetImageView() override { return view;  }
 
 	virtual glm::uvec2 GetResolution() override { return { descriptor.width, descriptor.height }; };
+
+	virtual std::shared_ptr<TextureSampler> GetSampler() { return descriptor.sampler; }
 
 private:
 	virtual ~VulkanRenderTexture2DResource();
@@ -144,6 +151,8 @@ public:
 
 	virtual glm::uvec2 GetResolution() override { return { descriptor.width, descriptor.height }; };
 
+	virtual std::shared_ptr<TextureSampler> GetSampler() { return descriptor.sampler; }
+
 private:
 	VulkanRenderTexture2DArrayResource(const RenderTexture2DArrayDescriptor& desc, RenderState initial_state = RenderState::UNINITIALIZED, unsigned int render_id = 0)
 		: RenderTexture2DArrayResource(desc, initial_state) {
@@ -178,6 +187,8 @@ public:
 	virtual VkImageView GetImageView() override { return view; }
 
 	virtual glm::uvec2 GetResolution() override { return { descriptor.res, descriptor.res }; };
+
+	virtual std::shared_ptr<TextureSampler> GetSampler() { return descriptor.sampler; }
 
 private:
 	VulkanRenderTexture2DCubemapResource(const RenderTexture2DCubemapDescriptor& desc, RenderState initial_state = RenderState::UNINITIALIZED, unsigned int render_id = 0)

@@ -8,6 +8,7 @@
 #include <Renderer/PipelineManager.h>
 
 class Renderer;
+class Material;
 
 class RenderCommandList : public ExecutableCommand
 {
@@ -36,11 +37,18 @@ public:
     virtual void Draw(uint32_t index_count, bool use_unsined_short_as_index = false,int index_offset = 0) = 0;
     virtual void DrawArray(uint32_t vertex_count) = 0;
     virtual void SetMaterial(const std::string& name, std::shared_ptr<Material> material) = 0;
+    virtual void UpdateMaterial(std::shared_ptr<Material> material) = 0;
 
     virtual void DrawSquare(glm::vec2 pos, glm::vec2 size, glm::vec4 color = {1.f,1.f,1.f,1.f}) = 0;
     virtual void DrawSquare(const glm::mat4& transform, glm::vec4 color = { 1.f,1.f,1.f,1.f }) = 0;
 
 protected:
+
+    // to get around encapsulation and allow the command list implementation to mutate the Material without exposing Mutable references to a public interface
+    std::vector<Material::MaterialParameter>& GetMutableMaterialParameters(Material* material); 
+    Material::Material_status& GetMutableMaterialStatus(Material* material); 
+    RenderDescriptorAllocationHandle& GetMutableMaterialDescriptorTable(Material* material);
+    std::shared_ptr<RenderBufferResource> GetMaterialConstantBuffer(Material* material);
 
     Renderer* m_Renderer;
     std::shared_ptr<RenderCommandAllocator> m_Alloc;
