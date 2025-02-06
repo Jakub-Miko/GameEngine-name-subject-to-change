@@ -4,6 +4,7 @@
 #include "VulkanRenderContext.h"
 #include "VulkanPipelineManager.h"
 #include "VulkanRenderResourceManager.h"
+#include "VulkanRootSignature.h"
 #include "VulkanRenderDescriptorHeapBlock.h"
 #include <Renderer/TextureManager.h>
 
@@ -38,8 +39,7 @@ VulkanRenderCommandList::~VulkanRenderCommandList()
 
 void VulkanRenderCommandList::SetPipeline(std::shared_ptr<Pipeline> pipeline)
 {
-
-	current_pipeline = pipeline;
+	current_pipeline = std::dynamic_pointer_cast<VulkanPipeline>(pipeline);
 	auto vulkan_pipeline = static_cast<VulkanPipeline*>(pipeline.get());
 	auto vk_pipeline = vulkan_pipeline->GetVkPipeline();
 	vkCmdBindPipeline(command_buffer, VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS, *vk_pipeline);
@@ -155,6 +155,64 @@ void VulkanRenderCommandList::DrawArray(uint32_t vertex_count)
 
 void VulkanRenderCommandList::SetMaterial(const std::string& name, std::shared_ptr<Material> material)
 {
+
+	if (!current_pipeline) {
+		throw std::runtime_error("Cannot set a material before a pipeline was bound.\n");
+	}
+
+	auto sig = static_cast<const VulkanRootSignature*>(&current_pipeline->GetSignature());
+	auto param = sig->GetRootParameter(name);
+	if (param.type != RootParameterType::MATERIAL) {
+		throw std::runtime_error("The parameter " + name + " is not a material.\n");
+	}
+
+	if (material->GetStatus() == Material::Material_status::UNINITIALIZED) { // On first material use, make sure to initialize it
+		material->UpdateValues(this);
+	}
+
+	auto bind_point = param.set_id;
+
+	auto& desc_table = std::static_pointer_cast<VulkanRenderDescriptorAllocation>(GetMutableMaterialDescriptorTable(material.get()));
+
+	for (auto& parameter : GetMutableMaterialParameters(material.get())) {
+		std::shared_ptr<RenderResource> resource;
+		switch (parameter.type)
+		{
+		case MaterialLayoutItemType::CONSTANT_BUFFER:
+			resource = std::get<std::shared_ptr<RenderBufferResource>>(parameter.resource);
+			break;
+		case MaterialLayoutItemType::TEXTURE:
+			if (std::holds_alternative<MaterialTextureType>(parameter.resource)) {
+				resource = std::get<MaterialTextureType>(parameter.resource).texture;
+			}
+			break;
+		case MaterialLayoutItemType::TEXTURE_2D_ARRAY:
+			resource = std::get<std::shared_ptr<RenderTexture2DArrayResource>>(parameter.resource);
+			break;
+		case MaterialLayoutItemType::TEXTURE_2D_CUBEMAP:
+			resource = std::get<std::shared_ptr<RenderTexture2DCubemapResource>>(parameter.resource);
+			break;
+		default:
+			continue;
+		}
+
+		VulkanCommandListDependency dep = {};
+		dep.type = VulkanCommandListDependencyType::READ;
+		dep.current_state = parameter.type == MaterialLayoutItemType::CONSTANT_BUFFER ? RenderState::COMMON : RenderState::TEXTURE_SAMPLE;
+		dep.expected_state = RenderState::COMMON;
+		AddDependency(resource, dep);
+
+	}
+
+	if (auto buffer = GetMaterialConstantBuffer(material.get())) {
+		VulkanCommandListDependency dep = {};
+		dep.type = VulkanCommandListDependencyType::READ;
+		dep.current_state =  RenderState::COMMON;
+		dep.expected_state = RenderState::COMMON;
+		AddDependency(buffer, dep);
+	}
+
+	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, sig->GetPipelineLayout(), bind_point, 1, &desc_table->descritor_set, 0, NULL);
 
 }
 
@@ -490,10 +548,8 @@ DefaultVulkanDependencyHandler::VulkanDependencyHandlerFeedback DefaultVulkanDep
 	for (auto& dependency : dependencies) {
 		resource = static_cast<VulkanRenderResource*>(dependency.first->GetExtensionData());
 
-		if (dependency.second.expected_state != RenderState::UNINITIALIZED) { // If we allow uninitialed resource then accept the resource
-			if (dependency.second.expected_state != dependency.first->GetRenderState()) { // If we don't the resource must be in the default state
-				throw std::runtime_error("Attempted to read an uninitialized resource or the resource change type between command recording and command list submit.\n");
-			}
+		if (dependency.second.expected_state != RenderState::UNINITIALIZED && dependency.first->GetRenderState() == RenderState::UNINITIALIZED) { // If we allow uninitialed resource then accept the resource
+			throw std::runtime_error("Attempted to read an uninitialized resource or the resource change type between command recording and command list submit.\n");
 		}
 
 		switch (dependency.second.type)

@@ -1,6 +1,7 @@
 #pragma once
 #include <Renderer/RenderCommandList.h>
 #include <Renderer/PipelineManager.h>
+#include "VulkanPipelineManager.h"
 #include <unordered_map>
 #include <vulkan/vulkan.h>
 
@@ -110,6 +111,6 @@ private:
 
     VulkanDependencyHandler* dependency_handler;
     std::shared_ptr<RenderFrameBufferResource> current_framebuffer = nullptr;
-    std::shared_ptr<Pipeline> current_pipeline = nullptr;
+    std::shared_ptr<VulkanPipeline> current_pipeline = nullptr;
     bool render_pass_active = false;
 };

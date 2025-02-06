@@ -119,7 +119,6 @@ std::shared_ptr<Material> MaterialManager::ParseMaterialFromFile(const std::stri
 	sstream << stream.rdbuf();
 	stream.close();
 	auto mat = ParseMaterialFromString(sstream.str());
-	mat->status = Material::Material_status::OK;
 	return mat;
 }
 
@@ -277,11 +276,6 @@ void Material::SetMaterial(RenderCommandList* command_list)
 			command_list->SetTexture2DCubemap(parameter.name, std::get<std::shared_ptr<RenderTexture2DCubemapResource>>(parameter.resource));
 		}
 	}*/
-
-	if (status == Material_status::UNINITIALIZED) {
-		UpdateValues(command_list);
-	}
-
 	command_list->SetMaterial(material_template->GetName(), shared_from_this());
 }
 
