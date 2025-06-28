@@ -1,7 +1,7 @@
 #pragma once
 #include <Renderer/RenderDescriptorHeapBlock.h>
 #include <Renderer/Renderer3D/MaterialManager.h>
-#include <Vulkan/vulkan.h>
+#include <vulkan/vulkan.h>
 
 class VulkanRenderDescriptorHeap;
 class VulkanRenderDescriptorHeapBlock;

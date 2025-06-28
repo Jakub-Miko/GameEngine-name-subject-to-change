@@ -2,7 +2,7 @@
 #include <Renderer/RenderDescriptorHeap.h>
 #include "VulkanRenderDescriptorHeapBlock.h"
 #include "Renderer/Renderer3D/MaterialManager.h"
-#include <Vulkan/vulkan.h>
+#include <vulkan/vulkan.h>
 
 #ifndef VK_MAX_DESCRIPTOR_FREEVECTOR_SIZE
 #define VK_MAX_DESCRIPTOR_FREEVECTOR_SIZE 50

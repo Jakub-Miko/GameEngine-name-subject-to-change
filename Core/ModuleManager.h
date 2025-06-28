@@ -9,6 +9,7 @@
 #include <memory>
 #include <mutex>
 
+class BaseModuleFactory;
 
 class Module {
 private:

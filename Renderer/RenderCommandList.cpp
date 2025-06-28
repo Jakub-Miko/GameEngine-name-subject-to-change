@@ -34,7 +34,7 @@ Material::Material_status& RenderCommandList::GetMutableMaterialStatus(Material*
     return material->status;
 }
 
-RenderDescriptorAllocationHandle& RenderCommandList::GetMutableMaterialDescriptorTable(Material* material)
+RenderDescriptorAllocationHandle RenderCommandList::GetMutableMaterialDescriptorTable(Material* material)
 {
     return material->descriptor_table;
 }

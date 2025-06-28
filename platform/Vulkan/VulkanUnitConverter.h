@@ -2,7 +2,7 @@
 #include <Core/UnitConverter.h>
 #include <Renderer/RendererDefines.h>
 #include <stdexcept>
-#include <Vulkan/vulkan.h>
+#include <vulkan/vulkan.h>
 #include "VulkanRenderContext.h"
 #include "VulkanRenderCommandList.h"
 #include "VulkanShaderManager.h"

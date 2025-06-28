@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0.0)
+cmake_minimum_required(VERSION 3.10.0)
 project(EngineCore VERSION 0.1.0)
 
 
@@ -16,6 +16,8 @@ set(BUILD_EXTRAS on CACHE BOOL "" FORCE)
 set(CMAKE_DEBUG_POSTFIX "") 
 
 add_compile_definitions("${RENDER_API}_API")
+add_compile_definitions("GLM_ENABLE_EXPERIMENTAL")
+
 
 if(UNIX)
   add_compile_definitions(UNIX=1)
@@ -76,7 +78,9 @@ get_target_property(VK_HEADER_DIRECTORY Vulkan-Headers INCLUDE_DIRECTORIES)
 set(VULKAN_HEADERS_INSTALL_DIR "${VK_HEADER_DIRECTORY}")
 add_subdirectory("./platform/Vulkan/dependencies/loader")
 add_subdirectory("./platform/Vulkan/dependencies/vma")
+set(BUILD_SHARED_LIBS on)
 add_subdirectory("./platform/Vulkan/dependencies/bootstrap")
+set(BUILD_SHARED_LIBS off)
 add_subdirectory("./platform/Vulkan/dependencies/spirv-headers")
 add_subdirectory("./platform/Vulkan/dependencies/spirv-tools")
 add_subdirectory("./platform/Vulkan/dependencies/glslang")
@@ -93,33 +97,14 @@ target_sources(EngineCore PRIVATE ${OPENGL_SRC})
 
 endif()
 
-if(WIN32) 
-
-file(GLOB WINDOWS_SRC
-"./platform/Windows/WindowsOSApi.cpp" "./platform/Windows/WindowsOSApi.h")
-
-target_sources(EngineCore PRIVATE ${WINDOWS_SRC})
-
-set(FT_DISABLE_ZLIB on CACHE BOOL "" FORCE)
-set(BUILD_SHARED_LIBS on)
 add_subdirectory("./dependencies/FreeType")
 add_subdirectory("./dependencies/glfw")
 
 add_subdirectory("./dependencies/EnTT")
 
-set(ALSOFT_INSTALL off CACHE BOOL "" FORCE)
-set(ALSOFT_EXAMPLES off CACHE BOOL "" FORCE)
-
-
 add_subdirectory("./dependencies/glew/build/cmake")
 
 add_subdirectory("./dependencies/glm")
-
-set(ASSIMP_BUILD_ALL_EXPORTERS_BY_DEFAULT off)
-set(ASSIMP_BUILD_ASSIMP_TOOLS off)
-set(ASSIMP_BUILD_TESTS off)
-set(ASSIMP_INSTALL off)
-
 add_subdirectory("./dependencies")
 add_subdirectory("./dependencies/assimp")
 
@@ -129,16 +114,9 @@ add_subdirectory("./dependencies/OpenAL")
 set(BUILD_SHARED_LIBS off)
 add_subdirectory("./Utilities")
 set(BUILD_SHARED_LIBS on)
+if(EDITOR)
 
 target_include_directories(glew_s PUBLIC "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/dependencies/glew/include>")
-
-target_link_libraries(EngineCore PUBLIC glfw glew_s glm Profiler MemoryManagement 
-TaskSystem LuaEngine RuntimeTypeIdentifier ThreadManager FileManager ConfigManager EnTT::EnTT RuntimeTypeIdentifier JsonParser STB_Image assimp OpenAL ImGuizmo
-Bullet freetype)
-
-target_compile_definitions(EngineCore PRIVATE BUILDDLL ENGINE_CORE)
-
-if(EDITOR)
 
 file(GLOB EDITOR_FILES
  "./Editor/*.cpp"  "./Editor/*.h"
@@ -151,6 +129,32 @@ target_compile_definitions(EngineCore PRIVATE EDITOR)
 target_link_libraries(EngineCore PUBLIC IMGUI)
 
 endif()
+if(WIN32) 
+
+file(GLOB WINDOWS_SRC
+"./platform/Windows/WindowsOSApi.cpp" "./platform/Windows/WindowsOSApi.h")
+
+target_sources(EngineCore PRIVATE ${WINDOWS_SRC})
+
+set(FT_DISABLE_ZLIB on CACHE BOOL "" FORCE)
+set(BUILD_SHARED_LIBS on)
+
+set(ALSOFT_INSTALL off CACHE BOOL "" FORCE)
+set(ALSOFT_EXAMPLES off CACHE BOOL "" FORCE)
+
+
+
+set(ASSIMP_BUILD_ALL_EXPORTERS_BY_DEFAULT off)
+set(ASSIMP_BUILD_ASSIMP_TOOLS off)
+set(ASSIMP_BUILD_TESTS off)
+set(ASSIMP_INSTALL off)
+
+target_link_libraries(EngineCore PUBLIC glfw glew_s glm Profiler MemoryManagement 
+TaskSystem LuaEngine RuntimeTypeIdentifier ThreadManager FileManager ConfigManager EnTT::EnTT RuntimeTypeIdentifier JsonParser STB_Image assimp OpenAL ImGuizmo
+Bullet freetype)
+
+target_compile_definitions(EngineCore PRIVATE BUILDDLL ENGINE_CORE)
+
 
 set_property(CACHE RENDER_API PROPERTY STRINGS "OpenGL" "DirectX12")
 
@@ -172,7 +176,9 @@ endif()
 
 if(UNIX AND NOT APPLE)
     
-set_property(CACHE RENDER_API PROPERTY STRINGS "OpenGL")
+target_link_libraries(EngineCore PUBLIC glfw glew_s glm Profiler MemoryManagement 
+TaskSystem LuaEngine RuntimeTypeIdentifier ThreadManager FileManager ConfigManager EnTT RuntimeTypeIdentifier JsonParser STB_Image assimp OpenAL ImGuizmo
+Bullet freetype)
 
 target_compile_definitions(EngineCore PRIVATE "LINUX")
 
@@ -180,7 +186,7 @@ file(GLOB LINUX_SRC
 "./platform/Linux/*.cpp" "./platform/Linux/*.h"
 )
 
-target_sources(EngineCore PRIVATE ${LINUX_SRC} ${OPENGL_SRC})
+target_sources(EngineCore PRIVATE ${LINUX_SRC})
 
 endif()
 

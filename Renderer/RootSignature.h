@@ -117,13 +117,13 @@ struct RootSignatureFactory<TestPreset> {
 		static RootSignature* signature = nullptr;
 		if (!signature) {
 			RootSignature* sig = RootSignature::CreateSignature(RootSignatureDescriptor(
-				{
+				// {
 
-					//RootSignatureDescriptorElement("Test",RootDescriptorTable({
-					//	RootDescriptorTableRange(RootDescriptorType::CONSTANT_BUFFER,1,"Testblock"),
-					//	RootDescriptorTableRange(RootDescriptorType::TEXTURE_2D, 1, "TestTexture")
-					//	}))
-				}
+				// 	RootSignatureDescriptorElement("Test",RootDescriptorTable({
+				// 		RootDescriptorTableRange(RootDescriptorType::CONSTANT_BUFFER,1,"Testblock"),
+				// 		RootDescriptorTableRange(RootDescriptorType::TEXTURE_2D, 1, "TestTexture")
+				// 		}))
+				// }
 			));
 
 			signature = sig;

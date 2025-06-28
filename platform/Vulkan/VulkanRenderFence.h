@@ -4,7 +4,7 @@
 #include <cstddef>
 #include <Core/ExecutableCommand.h>
 #include <condition_variable>
-#include <Vulkan/vulkan.h>
+#include <vulkan/vulkan.h>
 
 class VulkanRenderFence : public RenderFence {
 public:

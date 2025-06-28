@@ -1,5 +1,6 @@
 #pragma once
 #include <Core/Defines.h>
+#include <Core/RuntimeTag.h>
 #include <string>
 #include <vector>
 

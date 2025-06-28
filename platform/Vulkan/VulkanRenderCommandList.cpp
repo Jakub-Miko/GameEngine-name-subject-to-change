@@ -86,7 +86,7 @@ void VulkanRenderCommandList::Clear()
 {
 	OutsideRenderPass();
 	VulkanCommandListDependency dep(VulkanCommandListDependencyType::WRITE, RenderState::TEXTURE_TRANSFER_DST, RenderState::UNINITIALIZED);
-	auto& desc = current_framebuffer->GetBufferDescriptor();
+	const auto& desc = current_framebuffer->GetBufferDescriptor();
 	VkClearColorValue clear{ {0,0,0,0} };
 	VkClearDepthStencilValue clear_depth { 1.0,0 };
 	if (current_framebuffer) {
@@ -172,7 +172,7 @@ void VulkanRenderCommandList::SetMaterial(const std::string& name, std::shared_p
 
 	auto bind_point = param.set_id;
 
-	auto& desc_table = std::static_pointer_cast<VulkanRenderDescriptorAllocation>(GetMutableMaterialDescriptorTable(material.get()));
+	auto desc_table = std::static_pointer_cast<VulkanRenderDescriptorAllocation>(GetMutableMaterialDescriptorTable(material.get()));
 
 	for (auto& parameter : GetMutableMaterialParameters(material.get())) {
 		std::shared_ptr<RenderResource> resource;
@@ -227,7 +227,7 @@ void VulkanRenderCommandList::UpdateMaterial(std::shared_ptr<Material> material)
 	auto& parameters = GetMutableMaterialParameters(material.get());
 	auto material_template = material->GetMaterialTemplate();
 	auto constant_buffer = GetMaterialConstantBuffer(material.get());
-	auto& descriptor_table = GetMutableMaterialDescriptorTable(material.get());
+	auto descriptor_table = GetMutableMaterialDescriptorTable(material.get());
 	auto& status = GetMutableMaterialStatus(material.get());
 
 	int image_update_num = 0;

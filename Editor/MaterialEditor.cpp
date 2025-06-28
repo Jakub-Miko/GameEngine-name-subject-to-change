@@ -49,7 +49,7 @@ void MaterialEditor::CloseMaterialWinow(int index)
 
 void MaterialEditor::RenderWinow(MaterialEditorWindow& window, int current_index)
 {
-	using param_type = typename MaterialLayoutItemType;
+	using param_type = MaterialLayoutItemType;
 	bool open = true;
 	ImGui::SetNextWindowSize({ 800,600 }, ImGuiCond_Once);
 	ImGui::Begin((std::string("Material Editor##") + window.path).c_str(), &open, ImGuiWindowFlags_MenuBar);

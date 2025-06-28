@@ -234,12 +234,12 @@ protected:
 };
 
 struct RenderFrameBufferDescriptor {
-	std::shared_ptr<RenderTexture2DResource> GetColorAttachmentAsTexture(int index);
-	std::shared_ptr<RenderTexture2DArrayResource> GetColorAttachmentAsTextureArray(int index);
-	std::shared_ptr<RenderTexture2DCubemapResource> GetColorAttachmentAsTextureCubemap(int index);
-	std::shared_ptr<RenderTexture2DResource> GetDepthAttachmentAsTexture();
-	std::shared_ptr<RenderTexture2DArrayResource> GetDepthAttachmentAsTextureArray();
-	std::shared_ptr<RenderTexture2DCubemapResource> GetDepthAttachmentAsTextureCubemap();
+	std::shared_ptr<RenderTexture2DResource> GetColorAttachmentAsTexture(int index) const;
+	std::shared_ptr<RenderTexture2DArrayResource> GetColorAttachmentAsTextureArray(int index) const;
+	std::shared_ptr<RenderTexture2DCubemapResource> GetColorAttachmentAsTextureCubemap(int index) const;
+	std::shared_ptr<RenderTexture2DResource> GetDepthAttachmentAsTexture() const;
+	std::shared_ptr<RenderTexture2DArrayResource> GetDepthAttachmentAsTextureArray() const;
+	std::shared_ptr<RenderTexture2DCubemapResource> GetDepthAttachmentAsTextureCubemap() const;
 
 	int GetColorAttachmentMipLevel(int index);
 	int GetDepthAttachmentMipLevel();
@@ -258,7 +258,7 @@ public:
 
 	RenderFrameBufferResource(const RenderFrameBufferDescriptor& desc, RenderState state) : descriptor(desc), RenderResource(state) {}
 
-	RenderFrameBufferDescriptor GetBufferDescriptor() const {
+	const RenderFrameBufferDescriptor& GetBufferDescriptor() const {
 		return descriptor;
 	}
 

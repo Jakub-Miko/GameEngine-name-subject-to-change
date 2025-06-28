@@ -96,7 +96,7 @@ MaterialManager::MaterialManager() : materials(), material_templates(), material
 	if (ConfigManager::Get()->Exists("PreloadMaterialTemplates")) {
 		auto preload = ConfigManager::Get()->GetArray("PreloadMaterialTemplates");
 		for (int i = 0; i < preload->GetArraySize(); i++) {
-			auto& item = preload->GetString(i);
+			auto item = preload->GetString(i);
 			LoadMaterialTemplateFile(item);
 		}
 	}
