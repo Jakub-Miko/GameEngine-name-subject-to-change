@@ -15,10 +15,11 @@ bool VulkanRenderFence::WaitForValue(int desired_value)
 	info.pSemaphores = &semaphore;
 	info.pValues = &value;
 	
-	int code = vkWaitSemaphores(context->GetVkDevice(), &info, 30000000000); // timeout 30 seconds
+	VkResult code = vkWaitSemaphores(context->GetVkDevice(), &info, 30000000000); // timeout 30 seconds
 	if (code != VK_SUCCESS) {
 		throw std::runtime_error("Fence wait timed out.\n");
 	}
+	return true;
 }
 
 void VulkanRenderFence::Wait()

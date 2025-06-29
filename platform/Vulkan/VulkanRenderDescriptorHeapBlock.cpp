@@ -29,12 +29,20 @@ VulkanRenderDescriptorHeapBlock::VulkanRenderDescriptorHeapBlock(VulkanRenderDes
 {
 	DEFINE_VK_INSTANCE(context);
 
+	std::vector<VkDescriptorPoolSize> pool_sizes;
+	pool_sizes.reserve(originating_heap->GetPoolSizes().size());
+	for(auto pool_size_per_set : originating_heap->GetPoolSizes()) {
+		VkDescriptorPoolSize pool_size = pool_size_per_set;
+		pool_size.descriptorCount *= max_sets;
+		pool_sizes.push_back(pool_size);
+	}
+
 	VkDescriptorPoolCreateInfo info = {};
 	info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 	info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT | VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT;
 	info.maxSets = max_sets;
-	info.poolSizeCount = originating_heap->GetPoolSizes().size();
-	info.pPoolSizes = originating_heap->GetPoolSizes().data();
+	info.poolSizeCount = pool_sizes.size();
+	info.pPoolSizes = pool_sizes.data();
 
 	vkCreateDescriptorPool(context->GetVkDevice(), &info, NULL, &pool);
 }

@@ -47,7 +47,7 @@ protected:
     // to get around encapsulation and allow the command list implementation to mutate the Material without exposing Mutable references to a public interface
     std::vector<Material::MaterialParameter>& GetMutableMaterialParameters(Material* material); 
     Material::Material_status& GetMutableMaterialStatus(Material* material); 
-    RenderDescriptorAllocationHandle GetMutableMaterialDescriptorTable(Material* material);
+    RenderDescriptorAllocationHandle& GetMutableMaterialDescriptorTable(Material* material);
     std::shared_ptr<RenderBufferResource> GetMaterialConstantBuffer(Material* material);
 
     Renderer* m_Renderer;

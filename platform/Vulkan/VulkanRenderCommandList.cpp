@@ -227,7 +227,7 @@ void VulkanRenderCommandList::UpdateMaterial(std::shared_ptr<Material> material)
 	auto& parameters = GetMutableMaterialParameters(material.get());
 	auto material_template = material->GetMaterialTemplate();
 	auto constant_buffer = GetMaterialConstantBuffer(material.get());
-	auto descriptor_table = GetMutableMaterialDescriptorTable(material.get());
+	auto& descriptor_table = GetMutableMaterialDescriptorTable(material.get());
 	auto& status = GetMutableMaterialStatus(material.get());
 
 	int image_update_num = 0;

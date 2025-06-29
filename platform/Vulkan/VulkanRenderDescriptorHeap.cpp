@@ -2,7 +2,7 @@
 #include "VulkanUnitConverter.h"
 #include "VulkanRenderResourceManager.h"
 
-VulkanRenderDescriptorHeap::VulkanRenderDescriptorHeap(MaterialLayout& layout_in) : layout(), heap_blocks(), heap_mutex()
+VulkanRenderDescriptorHeap::VulkanRenderDescriptorHeap(MaterialLayout& layout_in) : layout(), heap_blocks(), heap_mutex(), current_block(0)
 {
 	DEFINE_VK_INSTANCE(context);
 
@@ -98,11 +98,10 @@ RenderDescriptorAllocationHandle VulkanRenderDescriptorHeap::Allocate()
 	}
 	else {
 		while (!(alloc = (VulkanRenderDescriptorAllocation*)heap_blocks[current_block]->Allocate(layout))) {
-			current_block = current_block - 1 < 0 ? heap_blocks.size() - 1 : current_block - 1; //subtract and wrap-around (modulo is weird for negative numbers), we subtract so we try the biggest pools first
+			current_block = current_block == 0 ? heap_blocks.size() - 1 : current_block - 1; //subtract and wrap-around (modulo is weird for negative numbers), we subtract so we try the biggest pools first
 			if (original_attempt == current_block) { // if we came back to the original attempt, we allocate a new pool with twice the size
 				heap_blocks.emplace_back(std::make_unique<VulkanRenderDescriptorHeapBlock>(this, heap_blocks.back()->GetSize() * 2)); //
 				current_block = heap_blocks.size() - 1;
-				alloc = (VulkanRenderDescriptorAllocation*)heap_blocks[current_block]->Allocate(layout);
 			}
 		}
 
