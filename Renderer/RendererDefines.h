@@ -159,7 +159,7 @@ enum class RenderQueueTypes : unsigned char
 using RootBinding = unsigned int;
 
 enum class RootParameterType : unsigned char {
-	UNDEFINED = 0, CONSTANT_BUFFER = 1, TEXTURE_2D = 2, MATERIAL = 3, TEXTURE_2D_ARRAY = 4, TEXTURE_2D_CUBEMAP = 5, SCALAR = 6, VEC2 = 7, VEC3 = 8, VEC4 = 9, MAT3 = 10, MAT4 = 11, INT = 12
+	UNDEFINED = 0, CONSTANT_BUFFER = 1, TEXTURE_2D = 2, MATERIAL = 3, TEXTURE_2D_ARRAY = 4, TEXTURE_2D_CUBEMAP = 5
 };
 
 enum class RootDescriptorType : unsigned char {

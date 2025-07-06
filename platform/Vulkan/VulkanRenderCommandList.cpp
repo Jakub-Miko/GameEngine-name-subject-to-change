@@ -39,6 +39,11 @@ VulkanRenderCommandList::~VulkanRenderCommandList()
 
 void VulkanRenderCommandList::SetPipeline(std::shared_ptr<Pipeline> pipeline)
 {
+	// If pipeline signatures dont match invalidate the current dependencies, we compare pointers, since signatures should originate from the same layout
+	if (current_pipeline && &current_pipeline->GetSignature() != &pipeline->GetSignature()) {
+		dependency_handler->InvalidateDrawDependencies(this);
+	}
+
 	current_pipeline = std::dynamic_pointer_cast<VulkanPipeline>(pipeline);
 	auto vulkan_pipeline = static_cast<VulkanPipeline*>(pipeline.get());
 	auto vk_pipeline = vulkan_pipeline->GetVkPipeline();
@@ -55,6 +60,42 @@ void VulkanRenderCommandList::SetConstantBuffer(RootBinding binding_id, std::sha
 
 void VulkanRenderCommandList::SetConstantBuffer(const std::string& semantic_name, std::shared_ptr<RenderBufferResource> buffer)
 {
+	if (!current_pipeline) {
+		throw std::runtime_error("Cannot set a constant buffer before a pipeline was bound.\n");
+	}
+
+	auto sig = static_cast<const VulkanRootSignature*>(&current_pipeline->GetSignature());
+	auto param = sig->GetRootParameter(semantic_name);
+	if (param.type != RootParameterType::CONSTANT_BUFFER) {
+		throw std::runtime_error("The parameter " + semantic_name + " is not a constant buffer.\n");
+	}
+
+	auto bind_point = param.binding_id;
+
+	VulkanCommandListDependency dep;
+	dep.current_state = RenderState::COMMON;
+	dep.expected_state = RenderState::COMMON;
+	dep.type = VulkanCommandListDependencyType::READ;
+
+	dependency_handler->AddDrawDependency(this, buffer, dep, bind_point);
+
+	auto vk_buffer_handle = std::static_pointer_cast<VulkanRenderBufferResource>(buffer)->GetBuffer();
+	
+	VkDescriptorBufferInfo buffer_info = {};
+	buffer_info.buffer = vk_buffer_handle;
+	buffer_info.offset = 0;
+	buffer_info.range = VK_WHOLE_SIZE;
+
+	VkWriteDescriptorSet update_data = {};
+	update_data.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	update_data.descriptorCount = 1;
+	update_data.dstSet = NULL;
+	update_data.descriptorType = VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	update_data.dstBinding = bind_point;
+	update_data.pBufferInfo = &buffer_info;
+	update_data.dstArrayElement = 0;
+
+	vkCmdPushDescriptorSet(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, sig->GetPipelineLayout(), 0, 1, &update_data);
 }
 
 void VulkanRenderCommandList::SetTexture2D(const std::string& semantic_name, std::shared_ptr<RenderTexture2DResource> texture)
@@ -123,10 +164,19 @@ void VulkanRenderCommandList::Clear()
 
 void VulkanRenderCommandList::SetIndexBuffer(std::shared_ptr<RenderBufferResource> buffer)
 {
+	dependency_handler->AddDrawIndexBufferDependency(this, buffer);
+	auto vk_buffer = std::static_pointer_cast<VulkanRenderBufferResource>(buffer);
+	auto vk_buffer_handle = vk_buffer->GetBuffer();
+	vkCmdBindIndexBuffer(command_buffer, vk_buffer_handle, 0, VkIndexType::VK_INDEX_TYPE_UINT32);
 }
 
 void VulkanRenderCommandList::SetVertexBuffer(std::shared_ptr<RenderBufferResource> vertex_buffer)
 {
+	dependency_handler->AddDrawVertexBufferDependency(this, vertex_buffer);
+	auto vk_buffer = std::static_pointer_cast<VulkanRenderBufferResource>(vertex_buffer);
+	auto vk_buffer_handle = vk_buffer->GetBuffer();
+	VkDeviceSize offset = 0;
+	vkCmdBindVertexBuffers(command_buffer, 0, 1, &vk_buffer_handle, &offset);
 }
 
 void VulkanRenderCommandList::SetScissorRect(const RenderScissorRect& scissor_rect)
@@ -147,6 +197,7 @@ void VulkanRenderCommandList::GenerateMIPs(std::shared_ptr<RenderTexture2DResour
 
 void VulkanRenderCommandList::Draw(uint32_t index_count, bool use_unsined_short_as_index, int index_offset)
 {
+	dependency_handler->FlushDrawDependencies(this);
 }
 
 void VulkanRenderCommandList::DrawArray(uint32_t vertex_count)
@@ -155,7 +206,6 @@ void VulkanRenderCommandList::DrawArray(uint32_t vertex_count)
 
 void VulkanRenderCommandList::SetMaterial(const std::string& name, std::shared_ptr<Material> material)
 {
-
 	if (!current_pipeline) {
 		throw std::runtime_error("Cannot set a material before a pipeline was bound.\n");
 	}
@@ -173,6 +223,7 @@ void VulkanRenderCommandList::SetMaterial(const std::string& name, std::shared_p
 	auto bind_point = param.set_id;
 
 	auto& desc_table = std::static_pointer_cast<VulkanRenderDescriptorAllocation>(GetMutableMaterialDescriptorTable(material.get()));
+
 
 	for (auto& parameter : GetMutableMaterialParameters(material.get())) {
 		std::shared_ptr<RenderResource> resource;
@@ -200,9 +251,11 @@ void VulkanRenderCommandList::SetMaterial(const std::string& name, std::shared_p
 		dep.type = VulkanCommandListDependencyType::READ;
 		dep.current_state = parameter.type == MaterialLayoutItemType::CONSTANT_BUFFER ? RenderState::COMMON : RenderState::TEXTURE_SAMPLE;
 		dep.expected_state = RenderState::COMMON;
-		AddDependency(resource, dep);
+		
 
 	}
+
+	dependency_handler->AddMaterialDependency(this, material, bind_point);
 
 	if (auto buffer = GetMaterialConstantBuffer(material.get())) {
 		VulkanCommandListDependency dep = {};
@@ -522,10 +575,131 @@ VulkanCommandListDependency DefaultVulkanDependencyHandler::AddDependency(Vulkan
 		throw std::runtime_error("Invalid resource type.\n");
 	}
 
-
-
-
 	return current_dep;
+}
+
+void DefaultVulkanDependencyHandler::AddDrawDependency(VulkanRenderCommandList* list, std::shared_ptr<RenderResource> resource, 
+	VulkanCommandListDependency dependency, uint32_t bind_id)
+{
+	VulkanDrawResource res;
+	res.resource = resource;
+	res.dependency = dependency;
+	res.bind_id = bind_id;
+	draw_state.draw_resources.push_back(res);
+}
+
+void DefaultVulkanDependencyHandler::AddDrawVertexBufferDependency(VulkanRenderCommandList* list, std::shared_ptr<RenderResource> resource)
+{
+	draw_state.vertex_buffer = resource;
+}
+
+void DefaultVulkanDependencyHandler::AddDrawIndexBufferDependency(VulkanRenderCommandList* list, std::shared_ptr<RenderResource> resource)
+{
+	draw_state.index_buffer = resource;
+}
+
+void DefaultVulkanDependencyHandler::AddMaterialDependency(VulkanRenderCommandList* list, std::shared_ptr<Material> material, uint32_t bind_id)
+{
+	VulkanDrawResource res;
+	res.resource = material;
+	res.dependency = VulkanCommandListDependency();
+	res.bind_id = bind_id;
+	draw_state.draw_resources.push_back(res);
+}
+
+void DefaultVulkanDependencyHandler::FlushDrawDependencies(VulkanRenderCommandList* list)
+{
+	VulkanCommandListDependency vertex_buffer_dependency = {};
+	vertex_buffer_dependency.current_state = RenderState::IN_USE_VERTEX_BUFFER;
+	vertex_buffer_dependency.expected_state = RenderState::COMMON;
+	vertex_buffer_dependency.type = VulkanCommandListDependencyType::READ;
+
+	VulkanCommandListDependency index_buffer_dependency = {};
+	index_buffer_dependency.current_state = RenderState::IN_USE_INDEX_BUFFER;
+	index_buffer_dependency.expected_state = RenderState::COMMON;
+	index_buffer_dependency.type = VulkanCommandListDependencyType::READ;
+
+	AddDependency(list, draw_state.vertex_buffer,  vertex_buffer_dependency);
+	AddDependency(list, draw_state.index_buffer,  index_buffer_dependency);
+
+	std::unordered_set<uint64_t> resource_map;
+
+	for (auto& dep : draw_state.draw_resources) {
+		resource_map.insert(dep.bind_id);
+		if (std::holds_alternative<std::shared_ptr<RenderResource>>(dep.resource)) {
+			auto render_resource_dependency = std::get<std::shared_ptr<RenderResource>>(dep.resource);
+			AddDependency(list, render_resource_dependency, dep.dependency);
+		}
+		else if (std::holds_alternative<std::shared_ptr<Material>>(dep.resource)) {
+			auto material_dependency = std::get<std::shared_ptr<Material>>(dep.resource);
+			for (auto& parameter : material_dependency->GetMaterialParameters()) {
+				std::shared_ptr<RenderResource> resource;
+				switch (parameter.type)
+				{
+				case MaterialLayoutItemType::CONSTANT_BUFFER:
+					resource = std::get<std::shared_ptr<RenderBufferResource>>(parameter.resource);
+					break;
+				case MaterialLayoutItemType::TEXTURE:
+					if (std::holds_alternative<MaterialTextureType>(parameter.resource)) {
+						resource = std::get<MaterialTextureType>(parameter.resource).texture;
+					}
+					break;
+				case MaterialLayoutItemType::TEXTURE_2D_ARRAY:
+					resource = std::get<std::shared_ptr<RenderTexture2DArrayResource>>(parameter.resource);
+					break;
+				case MaterialLayoutItemType::TEXTURE_2D_CUBEMAP:
+					resource = std::get<std::shared_ptr<RenderTexture2DCubemapResource>>(parameter.resource);
+					break;
+				default:
+					continue;
+				}
+
+				VulkanCommandListDependency dep = {};
+				dep.type = VulkanCommandListDependencyType::READ;
+				dep.current_state = parameter.type == MaterialLayoutItemType::CONSTANT_BUFFER ? RenderState::COMMON : RenderState::TEXTURE_SAMPLE;
+				dep.expected_state = RenderState::COMMON;
+				AddDependency(list, resource, dep);
+
+			}
+
+			if (auto buffer = material_dependency->GetConstantBuffer()) {
+				VulkanCommandListDependency dep = {};
+				dep.type = VulkanCommandListDependencyType::READ;
+				dep.current_state = RenderState::COMMON;
+				dep.expected_state = RenderState::COMMON;
+				AddDependency(list, buffer, dep);
+			}
+		}
+	}
+
+	auto& params = list->GetCurrentPipeline()->GetSignature().GetDescriptor().parameters; 
+	for (auto& param : params) {
+		auto fnd = resource_map.find(param.binding_id);
+		if (fnd == resource_map.end()) {
+			throw std::runtime_error("Parameter " + param.name + " was not set on the pipeline.\n");
+		}
+	}
+
+	if (!draw_state.vertex_buffer) {
+		throw std::runtime_error("Vertex buffer was not set on the pipeline.\n");
+	}
+
+	if (!draw_state.index_buffer) {
+		throw std::runtime_error("Index buffer was not set on the pipeline.\n");
+	}
+
+}
+
+void DefaultVulkanDependencyHandler::InvalidateDrawDependencies(VulkanRenderCommandList* list)
+{
+	draw_state.index_buffer.reset();
+	draw_state.vertex_buffer.reset();
+	draw_state.draw_resources.clear();
+}
+
+bool DefaultVulkanDependencyHandler::IsDrawCallReady()
+{
+	return false;
 }
 
 VulkanCommandListDependency DefaultVulkanDependencyHandler::GetDependency(std::shared_ptr<RenderResource> resource)
@@ -549,7 +723,7 @@ DefaultVulkanDependencyHandler::VulkanDependencyHandlerFeedback DefaultVulkanDep
 		resource = static_cast<VulkanRenderResource*>(dependency.first->GetExtensionData());
 
 		if (dependency.second.expected_state != RenderState::UNINITIALIZED && dependency.first->GetRenderState() == RenderState::UNINITIALIZED) { // If we allow uninitialed resource then accept the resource
-			throw std::runtime_error("Attempted to read an uninitialized resource or the resource change type between command recording and command list submit.\n");
+			throw std::runtime_error("Attempted to read an uninitialized resource or the resource changed type between command recording and command list submit.\n");
 		}
 
 		switch (dependency.second.type)

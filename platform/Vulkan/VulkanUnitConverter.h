@@ -63,25 +63,15 @@ public:
 		}
 	}
 
-	static VkDescriptorType RootParameterTypeToDescritorType(RootParameterType type, bool& is_uniform) {
+	static VkDescriptorType RootParameterTypeToDescritorType(RootParameterType type) {
 		switch (type) {
-		case RootParameterType::INT:
-		case RootParameterType::MAT3:
-		case RootParameterType::MAT4:
-		case RootParameterType::SCALAR:
-		case RootParameterType::VEC2:
-		case RootParameterType::VEC3:
-		case RootParameterType::VEC4:
 		case RootParameterType::MATERIAL:
-			is_uniform = true;
 			return VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		case RootParameterType::TEXTURE_2D:
 		case RootParameterType::TEXTURE_2D_ARRAY:
 		case RootParameterType::TEXTURE_2D_CUBEMAP:
-			is_uniform = false;
 			return VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		case RootParameterType::CONSTANT_BUFFER:
-			is_uniform = false;
 			return VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		default:
 			throw std::runtime_error("Conversion failed");
@@ -100,21 +90,6 @@ public:
 		case MaterialLayoutItemType::VEC4:						return sizeof(float) * 4;
 		default:												
 			throw std::runtime_error("Conversion failed");		
-		}
-	}
-
-	//According to scalar alignment rules
-	static uint32_t RootParameterTypeToSize(RootParameterType type) {
-		switch (type) {
-		case RootParameterType::INT:						return sizeof(int);
-		case RootParameterType::MAT3:						return sizeof(float) * 9;
-		case RootParameterType::MAT4:						return sizeof(float) * 16;
-		case RootParameterType::SCALAR:						return sizeof(float);
-		case RootParameterType::VEC2:						return sizeof(float) * 2;
-		case RootParameterType::VEC3:						return sizeof(float) * 3;
-		case RootParameterType::VEC4:						return sizeof(float) * 4;
-		default:
-			throw std::runtime_error("Conversion failed");
 		}
 	}
 

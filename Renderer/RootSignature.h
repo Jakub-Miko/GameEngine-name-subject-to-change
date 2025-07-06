@@ -28,15 +28,14 @@
 
 struct RootSignatureDescriptorElement {
 	RootSignatureDescriptorElement() = default;
-	RootSignatureDescriptorElement(const std::string& name, RootParameterType type, uint32_t offset_or_set_id = 0) : type(type), name(name), constant_offset(offset_or_set_id) {}
+	RootSignatureDescriptorElement(const std::string& name, RootParameterType type, uint32_t set_id = 0) : type(type), name(name) {}
 	RootSignatureDescriptorElement(const RootSignatureDescriptorElement& other) = default;
 
-	RootParameterType type = RootParameterType::INT;
+	RootParameterType type = RootParameterType::CONSTANT_BUFFER;
 	std::shared_ptr<MaterialTemplate> material_template = nullptr;
 	std::string name = "";
 	union {
-		uint32_t constant_offset = 0;
-		uint32_t binding_id;
+		uint32_t binding_id = 0;
 		uint32_t set_id;
 	};
 };
@@ -54,7 +53,7 @@ struct RootSignatureDescriptor {
 };
 
 struct RootMappingEntry {
-	RootMappingEntry()  {}
+	RootMappingEntry() {}
 	RootMappingEntry(uint32_t parameter_id) : parameter_id(parameter_id) {}
 	uint32_t parameter_id;
 };

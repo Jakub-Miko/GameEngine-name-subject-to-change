@@ -26,6 +26,19 @@ struct VulkanCommandListDependency {
 struct VulkanCommandListDependencyExtra { //Used to tell Render Resource manager some extra information for the sake of optimizations
     PipelineStage source_stage = PipelineStage::ALL_STAGES;
     PipelineStage target_stage = PipelineStage::ALL_STAGES;
+}; 
+
+struct VulkanDrawResource {
+    std::variant<std::shared_ptr<RenderResource>, std::shared_ptr<Material>> resource;
+    VulkanCommandListDependency dependency;
+    uint64_t bind_id;
+};
+
+// draw resources deferred for dependency creation at drawcall
+struct VulkanDrawState {
+    std::vector<VulkanDrawResource> draw_resources; 
+    std::shared_ptr<RenderResource> vertex_buffer;
+    std::shared_ptr<RenderResource> index_buffer;
 };
 
 class VulkanDependencyHandler {
@@ -35,7 +48,21 @@ public:
     };
 
     virtual VulkanCommandListDependency AddDependency(VulkanRenderCommandList* list, std::shared_ptr<RenderResource> resource,
-        VulkanCommandListDependency dependency, VulkanCommandListDependencyExtra extra = VulkanCommandListDependencyExtra()) = 0;
+        VulkanCommandListDependency dependency, VulkanCommandListDependencyExtra extra = VulkanCommandListDependencyExtra()) = 0; // add an immediate dependency
+
+    virtual void AddDrawDependency(VulkanRenderCommandList* list, std::shared_ptr<RenderResource> resource,
+        VulkanCommandListDependency dependency, uint32_t root_paramter_id) = 0; // add a dependency for drawcalls
+
+    virtual void AddDrawVertexBufferDependency(VulkanRenderCommandList* list, std::shared_ptr<RenderResource> resource) = 0;
+    virtual void AddDrawIndexBufferDependency(VulkanRenderCommandList* list, std::shared_ptr<RenderResource> resource) = 0;
+
+    virtual void AddMaterialDependency(VulkanRenderCommandList* list, std::shared_ptr<Material> material, uint32_t root_paramter_id) = 0; // add a material dependency for drawcalls
+
+    virtual void FlushDrawDependencies(VulkanRenderCommandList* list) = 0; // Process draw call dependencies before drawcalls
+    virtual void InvalidateDrawDependencies(VulkanRenderCommandList* list) = 0; // Remove all drawcall dependencies after an invalid pipeline was set
+
+    virtual bool IsDrawCallReady() = 0; //Check if all resources have been set and are valid before launching a drawcall
+
     virtual VulkanCommandListDependency GetDependency(std::shared_ptr<RenderResource> resource) = 0;
     virtual VulkanDependencyHandlerFeedback FinalizeDependencies(RenderCommandList* list, uint64_t new_timeline_value) = 0;
     virtual void Reset() = 0;
@@ -47,6 +74,20 @@ public:
 
     virtual VulkanCommandListDependency AddDependency(VulkanRenderCommandList* list, std::shared_ptr<RenderResource> resource,
         VulkanCommandListDependency dependency, VulkanCommandListDependencyExtra extra = VulkanCommandListDependencyExtra()) override;
+    
+    virtual void AddDrawDependency(VulkanRenderCommandList* list, std::shared_ptr<RenderResource> resource,
+        VulkanCommandListDependency dependency, uint32_t bind_id) override;
+
+    virtual void AddDrawVertexBufferDependency(VulkanRenderCommandList* list, std::shared_ptr<RenderResource> resource) override;
+    virtual void AddDrawIndexBufferDependency(VulkanRenderCommandList* list, std::shared_ptr<RenderResource> resource) override;
+
+    virtual void AddMaterialDependency(VulkanRenderCommandList* list, std::shared_ptr<Material> material, uint32_t bind_id) override;
+    
+    virtual void FlushDrawDependencies(VulkanRenderCommandList* list) override;
+    virtual void InvalidateDrawDependencies(VulkanRenderCommandList* list) override;
+
+    virtual bool IsDrawCallReady() override;
+
     virtual VulkanCommandListDependency GetDependency(std::shared_ptr<RenderResource> resource) override;
     virtual VulkanDependencyHandlerFeedback FinalizeDependencies(RenderCommandList* list, uint64_t new_timeline_value) override;
     virtual void Reset() override;
@@ -54,6 +95,7 @@ public:
 private:
     std::unordered_map<std::shared_ptr<RenderResource>, VulkanCommandListDependency> dependencies;
     std::vector<std::shared_ptr<RenderResource>> non_dependent_resources; //Resource which dont have dependencies but their references need to be held until submision to prevent their destruction
+    VulkanDrawState draw_state; // dependencies which will be used be the next drawcall
 };
 
 
@@ -93,6 +135,7 @@ public:
     virtual void DrawSquare(const glm::mat4& transform, glm::vec4 color = { 1.f,1.f,1.f,1.f }) override;
 
     VkCommandBuffer* GetVkCommandBuffer() { return &command_buffer; }
+    std::shared_ptr<Pipeline> GetCurrentPipeline() { return std::static_pointer_cast<Pipeline>(current_pipeline); }
 
     VulkanCommandListDependency AddDependency(std::shared_ptr<RenderResource> dep_resource ,VulkanCommandListDependency dep); //Adds or updates a dependency, and returns the previous dependency state
     VulkanCommandListDependency GetDependency(std::shared_ptr<RenderResource> dep_resource); //Gets the previous dependency if present

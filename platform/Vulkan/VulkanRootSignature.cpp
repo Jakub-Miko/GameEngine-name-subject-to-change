@@ -27,20 +27,9 @@ VulkanRootSignature::VulkanRootSignature(const RootSignatureDescriptor& descript
 	int global_descriptors = 1;
 
 	for (auto& desc : descriptor.parameters) {
-		bool is_uniform = false;
-		auto type = VulkanUnitConverter::RootParameterTypeToDescritorType(desc.type, is_uniform);
+		auto type = VulkanUnitConverter::RootParameterTypeToDescritorType(desc.type);
 		switch (desc.type)
 		{
-		case RootParameterType::INT:
-		case RootParameterType::SCALAR:
-		case RootParameterType::VEC2:
-		case RootParameterType::VEC3:
-		case RootParameterType::VEC4:
-		case RootParameterType::MAT3:
-		case RootParameterType::MAT4:
-			desc.constant_offset = constant_offset;
-			constant_offset += VulkanUnitConverter::RootParameterTypeToSize(desc.type);
-			break;
 		case RootParameterType::CONSTANT_BUFFER:
 		case RootParameterType::TEXTURE_2D:
 		case RootParameterType::TEXTURE_2D_ARRAY:

@@ -135,6 +135,15 @@ public:
         return material_path;
     }
 
+    const std::vector<MaterialParameter>& GetMaterialParameters() const {
+        return parameters;
+    }
+
+    std::shared_ptr<RenderBufferResource> GetConstantBuffer() {
+        return constant_buffer;
+    }
+
+
     std::shared_ptr<MaterialTemplate> GetMaterialTemplate() const {
         return material_template;
     }

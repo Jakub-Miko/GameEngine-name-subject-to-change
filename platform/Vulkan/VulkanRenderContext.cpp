@@ -284,6 +284,7 @@ void VulkanRenderContext::Init()
 	selector.add_required_extension_features(custom_sampler_border);
 	
 	selector.add_required_extension("VK_EXT_custom_border_color");
+	selector.add_required_extension("VK_KHR_push_descriptor");
 	selector.set_required_features_12(features_12);
 
 	selector.set_required_features(features);
