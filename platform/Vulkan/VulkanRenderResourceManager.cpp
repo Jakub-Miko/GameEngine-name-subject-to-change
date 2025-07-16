@@ -7,7 +7,7 @@
 #include "Core/algorithm.h"
 
 
-void VulkanRenderResourceManager::CreateBuffer_internal(VulkanRenderBufferResource* buffer, const RenderBufferDescriptor& buffer_desc)
+void VulkanRenderResourceManager::CreateBuffer_internal(VulkanRenderBufferResource* buffer, const RenderBufferDescriptor& buffer_desc, RenderBufferCreationFlags flags)
 {
 	DEFINE_VK_INSTANCE(context);
 	VmaAllocator& alloc = context->GetVmaAllocator();
@@ -24,20 +24,25 @@ void VulkanRenderResourceManager::CreateBuffer_internal(VulkanRenderBufferResour
 	alloc_info.usage = VulkanUnitConverter::BufferTypeToVmaUsage(buffer_desc.type);
 	alloc_info.flags = VulkanUnitConverter::BufferTypeToVmaFlags(buffer_desc.type);
 
-	vmaCreateBuffer(alloc, &info, &alloc_info, &buffer->buffer, &buffer->alloc, NULL);
+	auto result = vmaCreateBuffer(alloc, &info, &alloc_info, &buffer->buffer, &buffer->alloc, NULL);
+
+	if(result != VK_SUCCESS) {
+		throw std::runtime_error("Vulkan buffer creation failed.\n");
+	}
 
 	uint64_t timeline = context->GetCurrentCpuTimelineValue();
 	buffer->read_timeline = timeline;
 	buffer->write_timeline = timeline;
 }
 
-std::shared_ptr<RenderBufferResource> VulkanRenderResourceManager::CreateBuffer(const RenderBufferDescriptor& buffer_desc)
+std::shared_ptr<RenderBufferResource> VulkanRenderResourceManager::CreateBuffer(const RenderBufferDescriptor& buffer_desc, RenderBufferCreationFlags flags)
 {
 	DEFINE_VK_INSTANCE(context);
 	VmaAllocator& alloc = context->GetVmaAllocator();
 
 	VulkanRenderBufferResource* new_buffer = new VulkanRenderBufferResource();
-	CreateBuffer_internal(new_buffer, buffer_desc);
+	CreateBuffer_internal(new_buffer, buffer_desc, flags);
+	new_buffer->render_state = (bool)(flags & RenderBufferCreationFlags::CREATE_INITIALIZED) ? RenderState::COMMON : RenderState::UNINITIALIZED;
 
 	return std::shared_ptr<RenderBufferResource>(new_buffer, [](RenderBufferResource* resource) {
 		static_cast<VulkanRenderResourceManager*>(RenderResourceManager::Get())->ReturnResource(static_cast<VulkanRenderBufferResource*>(resource));
@@ -453,7 +458,7 @@ std::shared_ptr<RenderBufferResource> VulkanRenderResourceManager::GetStagingBuf
 	RenderBufferDescriptor buffer_desc(size, RenderBufferType::UPLOAD, RenderBufferUsage::STAGING);
 
 	VulkanRenderBufferResource* new_buffer = new VulkanRenderBufferResource();
-	CreateBuffer_internal(new_buffer, buffer_desc);
+	CreateBuffer_internal(new_buffer, buffer_desc, RenderBufferCreationFlags::NONE);
 	
 	return std::shared_ptr<RenderBufferResource>(new_buffer, [](RenderBufferResource* resource) {
 		static_cast<VulkanRenderResourceManager*>(RenderResourceManager::Get())->ReturnStagingBufferResource(static_cast<VulkanRenderBufferResource*>(resource));

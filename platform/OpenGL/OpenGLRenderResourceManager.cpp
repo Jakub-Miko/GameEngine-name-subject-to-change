@@ -11,7 +11,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <cstring>
 
-std::shared_ptr<RenderBufferResource> OpenGLRenderResourceManager::CreateBuffer(const RenderBufferDescriptor& buffer_desc)
+std::shared_ptr<RenderBufferResource> OpenGLRenderResourceManager::CreateBuffer(const RenderBufferDescriptor& buffer_desc, RenderBufferCreationFlags flags)
 {
 	auto allocator = std::pmr::polymorphic_allocator<OpenGLRenderBufferResource>(&ResourcePool);
 	std::unique_lock<std::mutex> lock(ResourceMutex);

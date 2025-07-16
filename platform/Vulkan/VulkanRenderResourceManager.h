@@ -19,7 +19,7 @@ public:
 	friend RenderResourceManager;
 	friend class VulkanRenderContext;
 
-	virtual std::shared_ptr<RenderBufferResource> CreateBuffer(const RenderBufferDescriptor& buffer_desc) override;
+	virtual std::shared_ptr<RenderBufferResource> CreateBuffer(const RenderBufferDescriptor& buffer_desc, RenderBufferCreationFlags flags = RenderBufferCreationFlags::NONE) override;
 	virtual void UploadDataToBuffer(RenderCommandList* list, std::shared_ptr<RenderBufferResource> resource, void* data, size_t size, size_t offset) override;
 	virtual void ReallocateAndUploadBuffer(RenderCommandList* list, std::shared_ptr<RenderBufferResource> resource, void* data, size_t size) override;
 
@@ -70,7 +70,7 @@ private:
 	VulkanRenderResourceManager();
 	~VulkanRenderResourceManager();
 
-	void CreateBuffer_internal(VulkanRenderBufferResource* buffer, const RenderBufferDescriptor& buffer_desc);
+	void CreateBuffer_internal(VulkanRenderBufferResource* buffer, const RenderBufferDescriptor& buffer_desc, RenderBufferCreationFlags flags);
 	void FlushDeletions();
 	void ReturnStagingBufferResource(VulkanRenderBufferResource* resource);
 	void ClearStagingBuffers();

@@ -15,6 +15,15 @@ public:
 	~RenderResourceDescriptor() {}
 };
 
+enum class RenderBufferCreationFlags : char {
+	NONE = 0,
+	CREATE_INITIALIZED = (1 << 0)
+};
+
+inline RenderBufferCreationFlags operator&(const RenderBufferCreationFlags& first, const RenderBufferCreationFlags& second) {
+	return (RenderBufferCreationFlags)((char)first & (char)second);
+}
+
 struct RenderBufferDescriptor {
 	RenderBufferDescriptor() = default;
 	RenderBufferDescriptor(size_t size, RenderBufferType type, RenderBufferUsage usage) : buffer_size(size), type(type), usage(usage) {}

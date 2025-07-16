@@ -211,6 +211,7 @@ void ShadowMappingPass::RenderDirectionalShadowCaster(Entity caster, RenderComma
 	if (skeletal_meshes.empty()) return;
 	list->SetPipeline(data->pipeline_directional_skeletal);
 	list->SetViewport(RenderViewport(glm::vec2(0.0f), glm::vec2(shadow_comp.res_x, shadow_comp.res_y)));
+	list->SetConstantBuffer("mvp", data->const_buffer_directional);
 	for (auto& entity : skeletal_meshes) {
 		auto& mesh = world.GetComponent<SkeletalMeshComponent>(entity);
 		world.UpdateSkeletalMesh(entity);
@@ -297,6 +298,7 @@ void ShadowMappingPass::RenderPointShadowCaster(Entity caster, RenderCommandList
 	if (skeletal_meshes.empty()) return;
 	list->SetPipeline(data->pipeline_point_skeletal);
 	list->SetViewport(RenderViewport(glm::vec2(0.0f), glm::vec2(shadow_comp.res_x, shadow_comp.res_y)));
+	list->SetConstantBuffer("mvp", data->const_buffer_point);
 	for (auto& entity : skeletal_meshes) {
 		auto& mesh = world.GetComponent<SkeletalMeshComponent>(entity);
 		world.UpdateSkeletalMesh(entity);

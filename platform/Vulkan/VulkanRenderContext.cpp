@@ -9,6 +9,8 @@
 #include "Window.h"
 #include "VulkanUnitConverter.h"
 
+PFN_vkCmdPushDescriptorSetKHR vkCmdPushDescriptorSet_KHR = nullptr;
+
 void VulkanRenderContext::StartNewFrame()
 {
 	GetNextPresentImageIndex(); // Get the a swapchain image index for the upcoming frame, this signals the present_fence of the next image after the image becomes available
@@ -284,6 +286,7 @@ void VulkanRenderContext::Init()
 	selector.add_required_extension_features(custom_sampler_border);
 	
 	selector.add_required_extension("VK_EXT_custom_border_color");
+	selector.add_required_extension("VK_KHR_push_descriptor");
 	selector.set_required_features_12(features_12);
 
 	selector.set_required_features(features);
@@ -302,6 +305,7 @@ void VulkanRenderContext::Init()
 	vkb_device = device_result.value();
 	vk_device = vkb_device.device;
 	
+	vkCmdPushDescriptorSet_KHR = (PFN_vkCmdPushDescriptorSetKHR)vkGetDeviceProcAddr(vk_device,"vkCmdPushDescriptorSetKHR");
 
 	VulkanRenderCommandQueue* queue = new VulkanRenderCommandQueue(vkb_device.get_queue(vkb::QueueType::graphics).value());
 

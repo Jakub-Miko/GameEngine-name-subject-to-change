@@ -175,8 +175,8 @@ void DeferredLightingPass::InitPostProcessingPassData() {
 	auto queue = Renderer::Get()->GetCommandQueue();
 	auto list = Renderer::Get()->GetRenderCommandList();
 
-	RenderResourceManager::Get()->ReallocateAndUploadBuffer(list, card_vertex_buffer, (void*)card_vertecies, sizeof(card_vertecies));
-	RenderResourceManager::Get()->ReallocateAndUploadBuffer(list, card_index_buffer, (void*)indicies, sizeof(indicies));
+	RenderResourceManager::Get()->UploadDataToBuffer(list, card_vertex_buffer, (void*)card_vertecies, sizeof(card_vertecies),0);
+	RenderResourceManager::Get()->UploadDataToBuffer(list, card_index_buffer, (void*)indicies, sizeof(indicies),0);
 
 	queue->ExecuteRenderCommandList(list);
 

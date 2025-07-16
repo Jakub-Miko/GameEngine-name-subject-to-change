@@ -252,12 +252,12 @@ void MeshManager::Shutdown()
 
 MeshManager::MeshManager() : mesh_Map(), mesh_Map_mutex(), mesh_Load_queue(), mesh_Load_queue_mutex()
 {
-    RenderBufferDescriptor desc_v(0,RenderBufferType::DEFAULT,RenderBufferUsage::VERTEX_BUFFER);
-    auto vertex_buf = RenderResourceManager::Get()->CreateBuffer(desc_v);
+    RenderBufferDescriptor desc_v(1,RenderBufferType::DEFAULT,RenderBufferUsage::VERTEX_BUFFER);
+    auto vertex_buf = RenderResourceManager::Get()->CreateBuffer(desc_v, RenderBufferCreationFlags::CREATE_INITIALIZED);
     
     
-    RenderBufferDescriptor desc_i(0, RenderBufferType::DEFAULT, RenderBufferUsage::INDEX_BUFFER);
-    auto index_buf = RenderResourceManager::Get()->CreateBuffer(desc_i);
+    RenderBufferDescriptor desc_i(1, RenderBufferType::DEFAULT, RenderBufferUsage::INDEX_BUFFER);
+    auto index_buf = RenderResourceManager::Get()->CreateBuffer(desc_i, RenderBufferCreationFlags::CREATE_INITIALIZED);
 
     default_mesh = std::make_unique<Mesh>(vertex_buf, index_buf, 0);
     default_skeletal_mesh = std::make_unique<Mesh>(vertex_buf, index_buf, 0);

@@ -11,6 +11,8 @@
 
 #define DEFINE_VK_INSTANCE(x) auto x = static_cast<VulkanRenderContext*>(RenderContext::Get());
 
+extern PFN_vkCmdPushDescriptorSetKHR vkCmdPushDescriptorSet_KHR;
+
 class VulkanRenderContext : public RenderContext {
 public:
 
