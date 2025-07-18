@@ -110,12 +110,14 @@ void DeferredLightingPass::InitPostProcessingPassData() {
 
 	RenderTexture2DDescriptor color_texture_desc;
 	color_texture_desc.format = TextureFormat::RGBA_UNSIGNED_CHAR;
+	color_texture_desc.usage = TextureUsage::COLOR_ATTACHMENT_READABLE;
 	color_texture_desc.height = Application::Get()->GetWindow()->GetProperties().resolution_y;
 	color_texture_desc.width = Application::Get()->GetWindow()->GetProperties().resolution_x;
 	color_texture_desc.sampler = sampler;
 
 	RenderTexture2DDescriptor depth_desc;
 	depth_desc.format = TextureFormat::DEFAULT_DEPTH;
+	depth_desc.usage = TextureUsage::DEPTH_ATTACHMENT_READABLE;
 	depth_desc.height = Application::Get()->GetWindow()->GetProperties().resolution_y;
 	depth_desc.width = Application::Get()->GetWindow()->GetProperties().resolution_x;
 	depth_desc.sampler = sampler;

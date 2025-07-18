@@ -17,7 +17,7 @@ enum class RenderBufferType : unsigned char
 
 enum class RenderBufferUsage : unsigned char
 {
-	VERTEX_BUFFER = 0, INDEX_BUFFER = 1, CONSTANT_BUFFER = 2, STAGING = 3
+	VERTEX_BUFFER = 0, INDEX_BUFFER = 1, CONSTANT_BUFFER = 2, STAGING = 3, VERTEX_BUFFER_READABLE = 4, INDEX_BUFFER_READABLE = 5
 };
 
 enum class TextureUsage : unsigned char

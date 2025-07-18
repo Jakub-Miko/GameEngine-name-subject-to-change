@@ -358,6 +358,7 @@ std::shared_ptr<ReflectionMap> TextureManager::GetReflectionMap(const std::strin
         ReflectionMap result;
         RenderTexture2DCubemapDescriptor cb_desc;
         cb_desc.format = TextureFormat::RGB_32FLOAT;
+        cb_desc.usage = TextureUsage::COLOR_ATTACHMENT_READABLE;
         cb_desc.sampler = data->default_cubemap->GetBufferDescriptor().sampler;
         cb_desc.res = REFLECTION_RES;
 
@@ -532,6 +533,7 @@ TextureManager::TextureManager() : texture_Map(), texture_Map_mutex(), sampler_c
 
     RenderTexture2DCubemapDescriptor default_cubemap;
     default_cubemap.format = TextureFormat::RGB_32FLOAT;
+    default_cubemap.usage = TextureUsage::COLOR_ATTACHMENT_READABLE;
     default_cubemap.res = REFLECTION_RES;
     default_cubemap.sampler = TextureSampler::CreateSampler(TextureSamplerDescritor());
     

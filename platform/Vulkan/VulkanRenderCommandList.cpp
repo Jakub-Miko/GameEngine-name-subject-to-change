@@ -39,10 +39,7 @@ VulkanRenderCommandList::~VulkanRenderCommandList()
 
 void VulkanRenderCommandList::SetPipeline(std::shared_ptr<Pipeline> pipeline)
 {
-	// If pipeline signatures dont match invalidate the current dependencies, we compare pointers, since signatures should originate from the same layout
-	if (!current_pipeline || &current_pipeline->GetSignature() != &pipeline->GetSignature()) {
-		dependency_handler->InvalidateDrawDependencies(this, pipeline);
-	}
+	dependency_handler->PipelineChange(this, pipeline);
 
 	current_pipeline = std::dynamic_pointer_cast<VulkanPipeline>(pipeline);
 	auto vulkan_pipeline = static_cast<VulkanPipeline*>(pipeline.get());
@@ -65,7 +62,8 @@ void VulkanRenderCommandList::SetConstantBuffer(const std::string& semantic_name
 	}
 
 	auto sig = static_cast<const VulkanRootSignature*>(&current_pipeline->GetSignature());
-	auto param = sig->GetRootParameter(semantic_name);
+	auto param_id = sig->GetRootParameterId(semantic_name).parameter_id;
+	auto param = sig->GetDescriptor().parameters[param_id];
 	if (param.type != RootParameterType::CONSTANT_BUFFER) {
 		throw std::runtime_error("The parameter " + semantic_name + " is not a constant buffer.\n");
 	}
@@ -77,7 +75,7 @@ void VulkanRenderCommandList::SetConstantBuffer(const std::string& semantic_name
 	dep.expected_state = RenderState::COMMON;
 	dep.type = VulkanCommandListDependencyType::READ;
 
-	dependency_handler->AddDrawDependency(this, buffer, dep, bind_point);
+	dependency_handler->AddDrawDependency(this, buffer, dep, param_id);
 
 	auto vk_buffer_handle = std::static_pointer_cast<VulkanRenderBufferResource>(buffer)->GetBuffer();
 	
@@ -100,27 +98,144 @@ void VulkanRenderCommandList::SetConstantBuffer(const std::string& semantic_name
 
 void VulkanRenderCommandList::SetTexture2D(const std::string& semantic_name, std::shared_ptr<RenderTexture2DResource> texture)
 {
+	if (!current_pipeline) {
+		throw std::runtime_error("Cannot set a texture before a pipeline was bound.\n");
+	}
+
+	auto sig = static_cast<const VulkanRootSignature*>(&current_pipeline->GetSignature());
+	auto param_id = sig->GetRootParameterId(semantic_name).parameter_id;
+	auto param = sig->GetDescriptor().parameters[param_id];
+	if (param.type != RootParameterType::TEXTURE_2D) {
+		throw std::runtime_error("The parameter " + semantic_name + " is not a texture.\n");
+	}
+
+	auto bind_point = param.binding_id;
+
+	VulkanCommandListDependency dep;
+	dep.current_state = RenderState::TEXTURE_SAMPLE;
+	dep.expected_state = RenderState::TEXTURE_SAMPLE;
+	dep.type = VulkanCommandListDependencyType::READ;
+
+	dependency_handler->AddDrawDependency(this, texture, dep, param_id);
+
+	auto vk_image_view = std::static_pointer_cast<VulkanRenderTexture2DResource>(texture)->GetImageView();
+	
+	VkDescriptorImageInfo image_info = {};
+	image_info.imageView = vk_image_view;
+	image_info.imageLayout = VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL;
+	image_info.sampler = std::static_pointer_cast<VulkanTextureSampler>(texture->GetBufferDescriptor().sampler)->GetSampler();
+
+	VkWriteDescriptorSet update_data = {};
+	update_data.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	update_data.descriptorCount = 1;
+	update_data.dstSet = NULL;
+	update_data.descriptorType = VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	update_data.dstBinding = bind_point;
+	update_data.pImageInfo = &image_info;
+	update_data.dstArrayElement = 0;
+
+	vkCmdPushDescriptorSet_KHR(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, sig->GetPipelineLayout(), 0, 1, &update_data);
 }
 
 void VulkanRenderCommandList::SetTexture2DArray(const std::string& semantic_name, std::shared_ptr<RenderTexture2DArrayResource> texture)
 {
+		if (!current_pipeline) {
+		throw std::runtime_error("Cannot set a texture array before a pipeline was bound.\n");
+	}
+
+	auto sig = static_cast<const VulkanRootSignature*>(&current_pipeline->GetSignature());
+	auto param_id = sig->GetRootParameterId(semantic_name).parameter_id;
+	auto param = sig->GetDescriptor().parameters[param_id];
+	if (param.type != RootParameterType::TEXTURE_2D_ARRAY) {
+		throw std::runtime_error("The parameter " + semantic_name + " is not a texture array.\n");
+	}
+
+	auto bind_point = param.binding_id;
+
+	VulkanCommandListDependency dep;
+	dep.current_state = RenderState::TEXTURE_SAMPLE;
+	dep.expected_state = RenderState::TEXTURE_SAMPLE;
+	dep.type = VulkanCommandListDependencyType::READ;
+
+	dependency_handler->AddDrawDependency(this, texture, dep, param_id);
+
+	auto vk_image_view = std::static_pointer_cast<VulkanRenderTexture2DArrayResource>(texture)->GetImageView();
+	
+	VkDescriptorImageInfo image_info = {};
+	image_info.imageView = vk_image_view;
+	image_info.imageLayout = VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL;
+	image_info.sampler = std::static_pointer_cast<VulkanTextureSampler>(texture->GetBufferDescriptor().sampler)->GetSampler();
+
+	VkWriteDescriptorSet update_data = {};
+	update_data.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	update_data.descriptorCount = 1;
+	update_data.dstSet = NULL;
+	update_data.descriptorType = VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	update_data.dstBinding = bind_point;
+	update_data.pImageInfo = &image_info;
+	update_data.dstArrayElement = 0;
+
+	vkCmdPushDescriptorSet_KHR(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, sig->GetPipelineLayout(), 0, 1, &update_data);
 }
 
 void VulkanRenderCommandList::SetTexture2DCubemap(const std::string& semantic_name, std::shared_ptr<RenderTexture2DCubemapResource> texture)
 {
+	if (!current_pipeline) {
+		throw std::runtime_error("Cannot set a texture cubemap before a pipeline was bound.\n");
+	}
+
+	auto sig = static_cast<const VulkanRootSignature*>(&current_pipeline->GetSignature());
+	auto param_id = sig->GetRootParameterId(semantic_name).parameter_id;
+	auto param = sig->GetDescriptor().parameters[param_id];
+	if (param.type != RootParameterType::TEXTURE_2D_CUBEMAP) {
+		throw std::runtime_error("The parameter " + semantic_name + " is not a texture cubemap.\n");
+	}
+
+	auto bind_point = param.binding_id;
+
+	VulkanCommandListDependency dep;
+	dep.current_state = RenderState::TEXTURE_SAMPLE;
+	dep.expected_state = RenderState::TEXTURE_SAMPLE;
+	dep.type = VulkanCommandListDependencyType::READ;
+
+	dependency_handler->AddDrawDependency(this, texture, dep, param_id);
+
+	auto vk_image_view = std::static_pointer_cast<VulkanRenderTexture2DCubemapResource>(texture)->GetImageView();
+	
+	VkDescriptorImageInfo image_info = {};
+	image_info.imageView = vk_image_view;
+	image_info.imageLayout = VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL;
+	image_info.sampler = std::static_pointer_cast<VulkanTextureSampler>(texture->GetBufferDescriptor().sampler)->GetSampler();
+
+	VkWriteDescriptorSet update_data = {};
+	update_data.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	update_data.descriptorCount = 1;
+	update_data.dstSet = NULL;
+	update_data.descriptorType = VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	update_data.dstBinding = bind_point;
+	update_data.pImageInfo = &image_info;
+	update_data.dstArrayElement = 0;
+
+	vkCmdPushDescriptorSet_KHR(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, sig->GetPipelineLayout(), 0, 1, &update_data);
 }
 
 void VulkanRenderCommandList::SetRenderTarget(std::shared_ptr<RenderFrameBufferResource> framebuffer)
 {
 	OutsideRenderPass(); // if a render pass was active, end it, so we can set a new framebuffer and the next rendering command will resume it
 	current_framebuffer = framebuffer;
+	dependency_handler->RenderTargetChange(this, framebuffer);
 }
 
 void VulkanRenderCommandList::SetDefaultRenderTarget()
 {
 	DEFINE_VK_INSTANCE(context);
 	OutsideRenderPass(); // if a render pass was active, end it, so we can set a new framebuffer and the next rendering command will resume it
-	current_framebuffer = context->default_framebuffers[context->current_framebuffer];
+	auto frame_buffer = Renderer::Get()->GetDefaultFrameBuffer();
+	if(frame_buffer) {
+		current_framebuffer = frame_buffer;
+	} else {
+		current_framebuffer = context->default_framebuffers[context->current_framebuffer];
+	}
 }
 
 void VulkanRenderCommandList::Clear()
@@ -211,7 +326,8 @@ void VulkanRenderCommandList::SetMaterial(const std::string& name, std::shared_p
 	}
 
 	auto sig = static_cast<const VulkanRootSignature*>(&current_pipeline->GetSignature());
-	auto param = sig->GetRootParameter(name);
+	auto param_id = sig->GetRootParameterId(name).parameter_id;
+	auto param = sig->GetDescriptor().parameters[param_id];
 	if (param.type != RootParameterType::MATERIAL) {
 		throw std::runtime_error("The parameter " + name + " is not a material.\n");
 	}
@@ -255,7 +371,7 @@ void VulkanRenderCommandList::SetMaterial(const std::string& name, std::shared_p
 
 	}
 
-	dependency_handler->AddMaterialDependency(this, material, sig->GetRootParameterId(name).parameter_id);
+	dependency_handler->AddMaterialDependency(this, material, param_id);
 
 	if (auto buffer = GetMaterialConstantBuffer(material.get())) {
 		VulkanCommandListDependency dep = {};
@@ -590,9 +706,10 @@ void VulkanDrawState::AddDrawDependency(VulkanRenderCommandList* list, std::shar
 	VulkanDrawResource res;
 	res.resource = resource;
 	res.dependency = dependency;
-	if(BindResource(bind_id, -1, res)) {
+	if(BindResource(bind_id)) {
 		currently_bound_count++;
 	}
+	pending_dependencies.push_back(res);
 }
 
 void DefaultVulkanDependencyHandler::AddDrawVertexBufferDependency(VulkanRenderCommandList* list, std::shared_ptr<RenderResource> resource)
@@ -626,6 +743,10 @@ void VulkanDrawState::SetMatertialResources(VulkanRenderCommandList* list, std::
 	dep.type = VulkanCommandListDependencyType::READ;
 	dep.expected_state = RenderState::COMMON;
 	
+	if(BindResource(bind_id)) { // binding 0 is reserved for the optional constant buffer holding constants
+		new_binding_occured = true;
+	};
+
 	for (int i = 0; i < material->GetMaterialParameters().size(); i++) {
 		std::shared_ptr<RenderResource> resource;
 		auto& parameter = material->GetMaterialParameters()[i];
@@ -654,9 +775,8 @@ void VulkanDrawState::SetMatertialResources(VulkanRenderCommandList* list, std::
 		VulkanDrawResource res;
 		res.resource = resource;
 		res.dependency = dep;
-		if(BindResource(layout_item.set_binding, set_id, res)) {
-			new_binding_occured = true;
-		};
+
+		pending_dependencies.push_back(res);
 	}
 
 	if(material->GetConstantBuffer()) {
@@ -665,9 +785,7 @@ void VulkanDrawState::SetMatertialResources(VulkanRenderCommandList* list, std::
 		VulkanDrawResource res;
 		res.resource = material->GetConstantBuffer();
 		res.dependency = dep;
-		if(BindResource(0, set_id, res)) {
-			new_binding_occured = true;
-		};
+		pending_dependencies.push_back(res);
 	}
 
 	if(new_binding_occured) {
@@ -700,14 +818,31 @@ void DefaultVulkanDependencyHandler::FlushDrawDependencies(VulkanRenderCommandLi
 	AddDependency(list, draw_state.vertex_buffer,  vertex_buffer_dependency);
 	AddDependency(list, draw_state.index_buffer,  index_buffer_dependency);
 
-	std::unordered_set<uint64_t> resource_map;
 
-	for (auto& dep : draw_state.draw_resources) {
-		resource_map.insert(dep.first);
-		AddDependency(list, dep.second.resource, dep.second.dependency);
+	for (auto& dep : draw_state.pending_dependencies) {
+		AddDependency(list, dep.resource, dep.dependency);
 	}
 
-	
+	if(framebuffer_dependency_pending) {
+		auto framebuffer_desc = list->GetCurrentFrameBuffer()->GetBufferDescriptor();
+		VulkanCommandListDependency dep = {};
+		dep.type = VulkanCommandListDependencyType::WRITE;
+		dep.expected_state = RenderState::UNINITIALIZED;
+		dep.current_state = RenderState::TEXTURE_DEPTH_STENCIL_ATTACHMENT;
+
+		if(framebuffer_desc.depth_stencil_attachment.resource) {
+			AddDependency(list, framebuffer_desc.depth_stencil_attachment.resource, dep);
+		}
+		
+		dep.current_state = RenderState::TEXTURE_COLOR_ATTACHMENT;
+		for(auto color_attachment : framebuffer_desc.color_attachments) {
+			AddDependency(list, color_attachment.resource, dep);
+		}
+
+		framebuffer_dependency_pending = false;
+	}
+
+	draw_state.pending_dependencies.clear();
 
 	if (!draw_state.vertex_buffer) {
 		throw std::runtime_error("Vertex buffer was not set on the pipeline.\n");
@@ -719,9 +854,18 @@ void DefaultVulkanDependencyHandler::FlushDrawDependencies(VulkanRenderCommandLi
 
 }
 
-void DefaultVulkanDependencyHandler::InvalidateDrawDependencies(VulkanRenderCommandList *list, std::shared_ptr<Pipeline> new_pipeline)
+void DefaultVulkanDependencyHandler::PipelineChange(VulkanRenderCommandList *list, std::shared_ptr<Pipeline> new_pipeline)
 {
-	draw_state.InvalidateDrawDependencies(list, new_pipeline);
+	auto current_pipeline = list->GetCurrentPipeline();
+	// If pipeline signatures dont match invalidate the current dependencies, we compare pointers, since signatures should originate from the same layout
+	if (!current_pipeline || &current_pipeline->GetSignature() != &new_pipeline->GetSignature()) {
+		draw_state.InvalidateDrawDependencies(list, new_pipeline);
+	}
+}
+
+void DefaultVulkanDependencyHandler::RenderTargetChange(VulkanRenderCommandList *list, std::shared_ptr<RenderFrameBufferResource> new_framebuffer)
+{
+	framebuffer_dependency_pending = true;
 }
 
 void VulkanDrawState::InvalidateDrawDependencies(VulkanRenderCommandList* list, std::shared_ptr<Pipeline> new_pipeline)
@@ -729,6 +873,7 @@ void VulkanDrawState::InvalidateDrawDependencies(VulkanRenderCommandList* list, 
 	index_buffer.reset();
 	vertex_buffer.reset();
 	draw_resources.clear();
+	pending_dependencies.clear();
 	currently_bound_count = 0;
 	expected_binding_count = new_pipeline->GetSignature().GetDescriptor().parameters.size();
 }
@@ -803,4 +948,6 @@ void DefaultVulkanDependencyHandler::Reset()
 {
 	dependencies.clear();
 	non_dependent_resources.clear();
+	draw_state = VulkanDrawState();
+	framebuffer_dependency_pending = true;
 }

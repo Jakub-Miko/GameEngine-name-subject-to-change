@@ -13,7 +13,8 @@ void VulkanRenderResourceManager::CreateBuffer_internal(VulkanRenderBufferResour
 	VmaAllocator& alloc = context->GetVmaAllocator();
 
 	buffer->descriptor = buffer_desc;
-	buffer->render_state = buffer_desc.type == RenderBufferType::UPLOAD ? RenderState::COMMON : RenderState::UNINITIALIZED;
+	buffer->render_state = buffer_desc.type == RenderBufferType::UPLOAD || (bool)(flags & RenderBufferCreationFlags::CREATE_INITIALIZED) 
+		? RenderState::COMMON : RenderState::UNINITIALIZED;
 
 	VkBufferCreateInfo info = {};
 	info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -42,7 +43,6 @@ std::shared_ptr<RenderBufferResource> VulkanRenderResourceManager::CreateBuffer(
 
 	VulkanRenderBufferResource* new_buffer = new VulkanRenderBufferResource();
 	CreateBuffer_internal(new_buffer, buffer_desc, flags);
-	new_buffer->render_state = (bool)(flags & RenderBufferCreationFlags::CREATE_INITIALIZED) ? RenderState::COMMON : RenderState::UNINITIALIZED;
 
 	return std::shared_ptr<RenderBufferResource>(new_buffer, [](RenderBufferResource* resource) {
 		static_cast<VulkanRenderResourceManager*>(RenderResourceManager::Get())->ReturnResource(static_cast<VulkanRenderBufferResource*>(resource));
@@ -98,20 +98,48 @@ void VulkanRenderResourceManager::UploadDataToBuffer(RenderCommandList* list, st
 
 void VulkanRenderResourceManager::ReallocateAndUploadBuffer(RenderCommandList* list, std::shared_ptr<RenderBufferResource> resource, void* data, size_t size)
 {
-	//throw std::runtime_error("ReallocateAndUploadBuffer has been removed, since it violates resource management requirements.\n");
+	throw std::runtime_error("ReallocateAndUploadBuffer has been removed, since it violates resource management requirements.\n");
 	
-	/*DEFINE_VK_INSTANCE(context);
-	VulkanRenderBufferResource* buffer = static_cast<VulkanRenderBufferResource*>(resource.get());
+	// DEFINE_VK_INSTANCE(context);
+	// VulkanRenderBufferResource* buffer = static_cast<VulkanRenderBufferResource*>(resource.get());
 
-	RenderBufferDescriptor new_desc = buffer->descriptor;
-	new_desc.buffer_size = size;
+	// RenderBufferDescriptor new_desc = buffer->descriptor;
+	// new_desc.buffer_size = size;
 
-	VulkanRenderBufferResource* new_buffer = new VulkanRenderBufferResource();
-	CreateBuffer_internal(new_buffer, new_desc);
+	// VulkanRenderBufferResource* new_buffer = new VulkanRenderBufferResource(); 
+	// CreateBuffer_internal(new_buffer, new_desc, RenderBufferCreationFlags::NONE);
 
-	*buffer = std::move(*new_buffer);
+	// UploadDataToBuffer(list, resource, data, size, 0);
+}
 
-	UploadDataToBuffer(list, resource, data, size, 0);*/
+void VulkanRenderResourceManager::CopyBufferData(RenderCommandList *list, std::shared_ptr<RenderBufferResource> source, std::shared_ptr<RenderBufferResource> destination, size_t source_offset, size_t source_size, size_t destination_offset)
+{
+
+	VulkanRenderCommandList* vk_command_list = static_cast<VulkanRenderCommandList*>(list);
+
+	VkBufferCopy copy = {};
+	copy.dstOffset = destination_offset;
+	copy.size = source_size;
+	copy.srcOffset = source_offset;
+
+	VulkanCommandListDependency dep_source;
+	dep_source.type = VulkanCommandListDependencyType::READ;
+	dep_source.current_state = RenderState::COMMON;
+	dep_source.expected_state = RenderState::COMMON;
+
+	VulkanCommandListDependency dep_destination;
+	dep_destination.type = VulkanCommandListDependencyType::WRITE;
+	dep_destination.current_state = RenderState::COMMON;
+	dep_destination.expected_state = RenderState::UNINITIALIZED;
+
+	vk_command_list->AddDependency(source, dep_source);
+	vk_command_list->AddDependency(destination, dep_destination);
+
+	VulkanRenderBufferResource* source_buffer = static_cast<VulkanRenderBufferResource*>(source.get());
+	VulkanRenderBufferResource* destination_buffer = static_cast<VulkanRenderBufferResource*>(destination.get());
+
+
+	vkCmdCopyBuffer(vk_command_list->command_buffer, source_buffer->buffer, destination_buffer->buffer, 1, &copy);
 }
 
 std::shared_ptr<RenderTexture2DResource> VulkanRenderResourceManager::CreateTexture(const RenderTexture2DDescriptor& buffer_desc, RenderState default_state)
@@ -435,6 +463,9 @@ void VulkanRenderResourceManager::CopyFrameBufferDepthAttachment(RenderCommandLi
 
 void VulkanRenderResourceManager::SetFrameBufferColorAttachment(RenderCommandList* list, std::shared_ptr<RenderFrameBufferResource> framebuffer, std::shared_ptr<RenderResource> new_attachment, int index, int level)
 {
+	auto& desc = GetAdjustableFrameBufferDescriptor(framebuffer);
+	desc.color_attachments[index].level = level;
+	desc.color_attachments[index].resource = new_attachment;
 }
 
 std::shared_ptr<RenderBufferResource> VulkanRenderResourceManager::GetStagingBuffer(size_t size)

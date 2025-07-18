@@ -22,6 +22,8 @@ public:
 	virtual std::shared_ptr<RenderBufferResource> CreateBuffer(const RenderBufferDescriptor& buffer_desc, RenderBufferCreationFlags flags = RenderBufferCreationFlags::NONE) override;
 	virtual void UploadDataToBuffer(RenderCommandList* list, std::shared_ptr<RenderBufferResource> resource, void* data, size_t size, size_t offset) override;
 	virtual void ReallocateAndUploadBuffer(RenderCommandList* list, std::shared_ptr<RenderBufferResource> resource, void* data, size_t size) override;
+	virtual void CopyBufferData(RenderCommandList* list, std::shared_ptr<RenderBufferResource> source, std::shared_ptr<RenderBufferResource> destination 
+		, size_t source_offset, size_t source_size, size_t destination_offset) override;
 
 	virtual std::shared_ptr<RenderTexture2DResource> CreateTexture(const RenderTexture2DDescriptor& buffer_desc, RenderState default_state = RenderState::TEXTURE_SAMPLE) override;
 	virtual void UploadDataToTexture2D(RenderCommandList* list, std::shared_ptr<RenderTexture2DResource> resource, void* data, size_t width, size_t height,

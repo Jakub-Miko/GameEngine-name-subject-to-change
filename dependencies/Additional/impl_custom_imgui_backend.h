@@ -18,6 +18,8 @@ public:
 
 	static void DrawData(ImDrawData* draw_data);
 	
+	static std::shared_ptr<RenderBufferResource> UploadDataDynamicSize(RenderCommandList* command_list, std::shared_ptr<RenderBufferResource> existing_buffer, void* data, 
+		size_t size, size_t offset, bool allow_invalidation = false);
 	
 	static void CreateObjects();
 private:

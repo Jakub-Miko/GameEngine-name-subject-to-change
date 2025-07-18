@@ -78,6 +78,7 @@ void GenerateGBufferPass::InitPostProcessingPassData() {
 	id_desc.format = TextureFormat::R_UNSIGNED_INT;
 	id_desc.height = Application::Get()->GetWindow()->GetProperties().resolution_y;
 	id_desc.width = Application::Get()->GetWindow()->GetProperties().resolution_x;
+	id_desc.usage = TextureUsage::COLOR_ATTACHMENT_READABLE;
 	id_desc.sampler = sampler;
 	auto id_buffer = RenderResourceManager::Get()->CreateTexture(id_desc);
 	framebuffer_desc.color_attachments.push_back({ 0,id_buffer });

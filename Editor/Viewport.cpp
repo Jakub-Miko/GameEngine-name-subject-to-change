@@ -28,6 +28,7 @@ Viewport::Viewport()
 
     RenderTexture2DDescriptor color_desc;
     color_desc.format = TextureFormat::RGB_UNSIGNED_CHAR;
+    color_desc.usage = TextureUsage::COLOR_ATTACHMENT_READABLE;
     color_desc.height = viewport_resolution_y;
     color_desc.width = viewport_resolution_x;
     color_desc.sampler = fb_sampler;
@@ -36,6 +37,7 @@ Viewport::Viewport()
 
     RenderTexture2DDescriptor depth_desc;
     depth_desc.format = TextureFormat::DEFAULT_DEPTH;
+    depth_desc.usage = TextureUsage::DEPTH_ATTACHMENT_READABLE;
     depth_desc.height = viewport_resolution_y;
     depth_desc.width = viewport_resolution_x;
     depth_desc.sampler = fb_sampler;
@@ -49,6 +51,10 @@ Viewport::Viewport()
     viewport_frame_buffer = RenderResourceManager::Get()->CreateFrameBuffer(desc);
     Renderer::Get()->SetDefaultFrameBuffer(viewport_frame_buffer);
 
+    // auto list = Renderer::Get()->GetRenderCommandList();
+    // list->SetDefaultRenderTarget();
+    // list->Clear();
+    // Renderer::Get()->GetCommandQueue()->ExecuteRenderCommandList(list);
 
 }
 

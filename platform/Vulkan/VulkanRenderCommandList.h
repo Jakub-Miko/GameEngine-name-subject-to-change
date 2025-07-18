@@ -3,6 +3,7 @@
 #include <Renderer/PipelineManager.h>
 #include "VulkanPipelineManager.h"
 #include <unordered_map>
+#include <unordered_set>
 #include <vulkan/vulkan.h>
 
 enum class VulkanCommandListDependencyType : char {
@@ -36,16 +37,12 @@ struct VulkanDrawResource {
 // draw resources deferred for dependency creation at drawcall
 struct VulkanDrawState {
 
-    static uint64_t GetDrawDependencyBindingKey(uint32_t binding_id, uint32_t set_id) {
-        return (uint64_t)set_id << 32 | (uint64_t)binding_id;
-    }
-
     /**
-     * @brief Recors a resource binding to the current pipeline
-     * @return true when the binding didn't previously exist false if the previous binding was replaced.
+     * @brief Records a resource binding to the current pipeline
+     * @return true when the binding didn't previously exist, false if the previous binding was replaced.
      */
-    bool BindResource(uint32_t binding_id, uint32_t set_id, const VulkanDrawResource& res) {
-        auto result = draw_resources.insert_or_assign(VulkanDrawState::GetDrawDependencyBindingKey(binding_id, set_id), res);
+    bool BindResource(uint32_t binding_id) {
+        auto result = draw_resources.insert(binding_id);
         return result.second;
     }
 
@@ -58,7 +55,8 @@ struct VulkanDrawState {
     bool IsPipelineReady();
 
     int expected_binding_count = 0, currently_bound_count = 0;
-    std::unordered_map<uint64_t, VulkanDrawResource> draw_resources; 
+    std::unordered_set<uint32_t> draw_resources; 
+    std::vector<VulkanDrawResource> pending_dependencies;
     std::shared_ptr<RenderResource> vertex_buffer;
     std::shared_ptr<RenderResource> index_buffer;
 };
@@ -81,7 +79,9 @@ public:
     virtual void AddMaterialDependency(VulkanRenderCommandList* list, std::shared_ptr<Material> material, uint32_t root_paramter_id) = 0; // add a material dependency for drawcalls
 
     virtual void FlushDrawDependencies(VulkanRenderCommandList* list) = 0; // Process draw call dependencies before drawcalls
-    virtual void InvalidateDrawDependencies(VulkanRenderCommandList* list, std::shared_ptr<Pipeline> new_pipeline) = 0; // Remove all drawcall dependencies after an invalid pipeline was set
+
+    virtual void PipelineChange(VulkanRenderCommandList* list, std::shared_ptr<Pipeline> new_pipeline) = 0;
+    virtual void RenderTargetChange(VulkanRenderCommandList* list, std::shared_ptr<RenderFrameBufferResource> new_framebuffer) = 0;
 
     virtual bool IsPipelineReady() = 0; //Check if all resources have been set and are valid before launching a drawcall
 
@@ -92,7 +92,7 @@ public:
 
 class DefaultVulkanDependencyHandler : public VulkanDependencyHandler {
 public:
-    DefaultVulkanDependencyHandler() : dependencies(), non_dependent_resources() {}
+    DefaultVulkanDependencyHandler() : dependencies(), non_dependent_resources(), framebuffer_dependency_pending(true) {}
 
     virtual VulkanCommandListDependency AddDependency(VulkanRenderCommandList* list, std::shared_ptr<RenderResource> resource,
         VulkanCommandListDependency dependency, VulkanCommandListDependencyExtra extra = VulkanCommandListDependencyExtra()) override;
@@ -106,7 +106,9 @@ public:
     virtual void AddMaterialDependency(VulkanRenderCommandList* list, std::shared_ptr<Material> material, uint32_t bind_id) override;
     
     virtual void FlushDrawDependencies(VulkanRenderCommandList* list) override;
-    virtual void InvalidateDrawDependencies(VulkanRenderCommandList* list, std::shared_ptr<Pipeline> new_pipeline) override;
+
+    virtual void PipelineChange(VulkanRenderCommandList* list, std::shared_ptr<Pipeline> new_pipeline) override;
+    virtual void RenderTargetChange(VulkanRenderCommandList* list, std::shared_ptr<RenderFrameBufferResource> new_framebuffer) override;
 
     virtual bool IsPipelineReady() override;
 
@@ -118,6 +120,7 @@ private:
     std::unordered_map<std::shared_ptr<RenderResource>, VulkanCommandListDependency> dependencies;
     std::vector<std::shared_ptr<RenderResource>> non_dependent_resources; //Resource which dont have dependencies but their references need to be held until submision to prevent their destruction
     VulkanDrawState draw_state; // dependencies which will be used be the next drawcall
+    bool framebuffer_dependency_pending = true;
 };
 
 
@@ -158,6 +161,7 @@ public:
 
     VkCommandBuffer* GetVkCommandBuffer() { return &command_buffer; }
     std::shared_ptr<Pipeline> GetCurrentPipeline() { return std::static_pointer_cast<Pipeline>(current_pipeline); }
+    std::shared_ptr<RenderFrameBufferResource> GetCurrentFrameBuffer() { return std::static_pointer_cast<RenderFrameBufferResource>(current_framebuffer); }
 
     VulkanCommandListDependency AddDependency(std::shared_ptr<RenderResource> dep_resource ,VulkanCommandListDependency dep); //Adds or updates a dependency, and returns the previous dependency state
     VulkanCommandListDependency GetDependency(std::shared_ptr<RenderResource> dep_resource); //Gets the previous dependency if present

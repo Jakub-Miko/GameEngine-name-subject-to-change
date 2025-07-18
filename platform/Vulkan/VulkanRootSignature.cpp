@@ -50,6 +50,7 @@ VulkanRootSignature::VulkanRootSignature(const RootSignatureDescriptor& descript
 		set_id = 1;
 		set_layout.bindingCount = bindings.size();
 		set_layout.pBindings = bindings.data();
+		set_layout.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT;
 		vkCreateDescriptorSetLayout(context->GetVkDevice(), &set_layout, NULL, &shader_layout);
 		layouts.push_back(shader_layout);
 	}

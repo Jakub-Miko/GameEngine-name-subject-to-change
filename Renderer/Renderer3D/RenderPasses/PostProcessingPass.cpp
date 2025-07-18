@@ -69,8 +69,8 @@ void PostProcessingPass::InitPostProcessingPassData() {
 	auto queue = Renderer::Get()->GetCommandQueue();
 	auto list = Renderer::Get()->GetRenderCommandList();
 
-	RenderResourceManager::Get()->ReallocateAndUploadBuffer(list, data->vertex_buffer,(void*)vertecies, sizeof(vertecies));
-	RenderResourceManager::Get()->ReallocateAndUploadBuffer(list, data->index_buffer, (void*)indicies, sizeof(indicies));
+	RenderResourceManager::Get()->UploadDataToBuffer(list, data->vertex_buffer,(void*)vertecies, sizeof(vertecies),0);
+	RenderResourceManager::Get()->UploadDataToBuffer(list, data->index_buffer, (void*)indicies, sizeof(indicies),0);
 	queue->ExecuteRenderCommandList(list);
 	data->initialized = true;
 }

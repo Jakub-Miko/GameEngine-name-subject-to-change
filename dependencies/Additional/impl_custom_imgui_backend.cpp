@@ -113,14 +113,14 @@ static void CreatePipeline() {
 }
 
 static void CreateBuffers() {
-    RenderBufferDescriptor index_desc(0, RenderBufferType::DEFAULT, RenderBufferUsage::INDEX_BUFFER);
+    RenderBufferDescriptor index_desc(2048, RenderBufferType::DEFAULT, RenderBufferUsage::INDEX_BUFFER_READABLE); // initial size doesn't matter
 
     impl_custom_imgui_backend::GetBackendData()->index_buffer = FrameMultiBufferResource<std::shared_ptr<RenderBufferResource>>([&]() -> std::shared_ptr<RenderBufferResource> {
         std::shared_ptr<RenderBufferResource> index_buffer_instance = RenderResourceManager::Get()->CreateBuffer(index_desc);
         return index_buffer_instance;
         });
 
-    RenderBufferDescriptor vertex_desc(0, RenderBufferType::DEFAULT, RenderBufferUsage::VERTEX_BUFFER);
+    RenderBufferDescriptor vertex_desc(2048, RenderBufferType::DEFAULT, RenderBufferUsage::VERTEX_BUFFER_READABLE); // initial size doesn't matter
 
     impl_custom_imgui_backend::GetBackendData()->vertex_buffer = FrameMultiBufferResource<std::shared_ptr<RenderBufferResource>>([&]() -> std::shared_ptr<RenderBufferResource> { 
         std::shared_ptr<RenderBufferResource> vertex_buffer_instance = RenderResourceManager::Get()->CreateBuffer(vertex_desc);
@@ -260,8 +260,8 @@ void impl_custom_imgui_backend::DrawData(ImDrawData* draw_data)
 
         const size_t vtx_buffer_size = (size_t)cmd_list->VtxBuffer.Size * (int)sizeof(ImDrawVert);
         const size_t idx_buffer_size = (size_t)cmd_list->IdxBuffer.Size * (int)sizeof(ImDrawIdx);
-        RenderResourceManager::Get()->ReallocateAndUploadBuffer(list, current_backend_data->vertex_buffer.GetResource(), (void*)cmd_list->VtxBuffer.Data, vtx_buffer_size);
-        RenderResourceManager::Get()->ReallocateAndUploadBuffer(list, current_backend_data->index_buffer.GetResource(), (void*)cmd_list->IdxBuffer.Data, idx_buffer_size);
+        current_backend_data->vertex_buffer.SetResource(UploadDataDynamicSize(list, current_backend_data->vertex_buffer.GetResource(), (void*)cmd_list->VtxBuffer.Data, vtx_buffer_size,0));
+        current_backend_data->index_buffer.SetResource(UploadDataDynamicSize(list, current_backend_data->index_buffer.GetResource(), (void*)cmd_list->IdxBuffer.Data, idx_buffer_size,0));
 
         for (int cmd_i = 0; cmd_i < cmd_list->CmdBuffer.Size; cmd_i++)
         {
@@ -307,6 +307,26 @@ void impl_custom_imgui_backend::DrawData(ImDrawData* draw_data)
     queue->ExecuteRenderCommandList(list);
     ResetState(draw_data, fb_width, fb_height);
 
+}
+
+std::shared_ptr<RenderBufferResource> impl_custom_imgui_backend::UploadDataDynamicSize(RenderCommandList* command_list, std::shared_ptr<RenderBufferResource> existing_buffer, 
+    void *data, size_t size, size_t offset, bool allow_invalidation)
+{
+    auto buf = existing_buffer;
+    auto desc = existing_buffer->GetBufferDescriptor();
+    if(size + offset > desc.buffer_size) {
+        RenderBufferDescriptor new_desc = desc;
+        new_desc.buffer_size = std::max(desc.buffer_size*2, size + offset);
+
+        buf = RenderResourceManager::Get()->CreateBuffer(new_desc);
+
+        if(!allow_invalidation && !(offset == 0 && size == new_desc.buffer_size)) { // copy old data into the new buffer
+            RenderResourceManager::Get()->CopyBufferData(command_list, existing_buffer, buf, 0,desc.buffer_size, 0);
+        }
+    }
+
+    RenderResourceManager::Get()->UploadDataToBuffer(command_list, buf, data, size, offset);
+    return buf;
 }
 
 static void ImGui_custom_RenderWindow(ImGuiViewport* viewport, void*)

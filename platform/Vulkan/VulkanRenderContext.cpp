@@ -15,7 +15,7 @@ void VulkanRenderContext::StartNewFrame()
 {
 	GetNextPresentImageIndex(); // Get the a swapchain image index for the upcoming frame, this signals the present_fence of the next image after the image becomes available
 	auto vulkan_queue = static_cast<VulkanRenderCommandQueue*>(Renderer::Get()->GetCommandQueue());
-	vulkan_queue->VkBinarySemaphoreWait(frame_sync.present_fence.GetNextResource()); //Waits until the image is available so rendering can begin on it 
+	vulkan_queue->VkBinarySemaphoreWait(frame_sync.present_fence[previous_framebuffer]); //Waits until the image is available so rendering can begin on it 
 	auto list = static_cast<VulkanRenderCommandList*>(Renderer::Get()->GetRenderCommandList());
 	auto vk_command_buffer = list->GetVkCommandBuffer();
 
@@ -90,7 +90,7 @@ void VulkanRenderContext::SignalEndFrame()
 	vkCmdPipelineBarrier2(*vk_command_buffer, &info);
 
 	vulkan_queue->ExecuteRenderCommandList(list);
-	vulkan_queue->VkBinarySemaphoreSignal(frame_sync.render_fence.GetResource());
+	vulkan_queue->VkBinarySemaphoreSignal(frame_sync.render_fence[current_framebuffer]);
 
 }
 
@@ -114,42 +114,61 @@ void VulkanRenderContext::RequestExtension(const std::string& extension)
 
 uint32_t VulkanRenderContext::GetNextPresentImageIndex()
 {
-	auto code = vkAcquireNextImageKHR(vk_device, vk_swapchain, 30000000000,frame_sync.present_fence.GetNextResource(), NULL, &current_framebuffer); // timeout 30 seconds
+	previous_framebuffer = current_framebuffer;
+	auto code = vkAcquireNextImageKHR(vk_device, vk_swapchain, 30000000000,frame_sync.present_fence[current_framebuffer], NULL, &current_framebuffer); // timeout 30 seconds
 	if (code == VK_ERROR_OUT_OF_DATE_KHR) {
 		RecreateSwapchain();
-		vkAcquireNextImageKHR(vk_device, vk_swapchain, 30000000000, frame_sync.present_fence.GetNextResource(), NULL, &current_framebuffer);
+		vkAcquireNextImageKHR(vk_device, vk_swapchain, 30000000000, frame_sync.present_fence[current_framebuffer], NULL, &current_framebuffer);
 	}
 	return current_framebuffer;
 }
 
 void VulkanRenderContext::CreateSwapchain()
 {
-	VkSemaphoreTypeCreateInfo semaphore_type_info;
-	semaphore_type_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
-	semaphore_type_info.initialValue = 0;
-	semaphore_type_info.pNext = NULL;
-	semaphore_type_info.semaphoreType = VK_SEMAPHORE_TYPE_BINARY;
+	VkSemaphoreTypeCreateInfo present_semaphore_type_info;
+	present_semaphore_type_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
+	present_semaphore_type_info.initialValue = 0;
+	present_semaphore_type_info.pNext = NULL;
+	present_semaphore_type_info.semaphoreType = VK_SEMAPHORE_TYPE_BINARY;
 
-	VkSemaphoreCreateInfo semaphore_info;
-	semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-	semaphore_info.pNext = &semaphore_type_info;
-	semaphore_info.flags = NULL;
+	VkSemaphoreCreateInfo present_semaphore_info;
+	present_semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+	present_semaphore_info.pNext = &present_semaphore_type_info;
+	present_semaphore_info.flags = NULL;
 
 	vkb::SwapchainBuilder swapchain_builder(vkb_device);
 	swapchain_builder.add_image_usage_flags(VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+	swapchain_builder.set_desired_min_image_count(FrameManager::Get()->GetLatencyFrames());
 	auto swapchain_result = swapchain_builder.build();
 	if (!swapchain_result.has_value()) {
 		throw std::runtime_error(swapchain_result.error().message());
 	}
 	vkb_swapchain = swapchain_result.value();
 	vk_swapchain = vkb_swapchain.swapchain;
+	
+	auto images = vkb_swapchain.get_images().value();
+	auto views = vkb_swapchain.get_image_views().value();
+	
+	VkSemaphoreTypeCreateInfo render_semaphore_type_info;
+	render_semaphore_type_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
+	render_semaphore_type_info.initialValue = 0;
+	render_semaphore_type_info.pNext = NULL;
+	render_semaphore_type_info.semaphoreType = VK_SEMAPHORE_TYPE_BINARY;
 
-	frame_sync.present_fence = FrameMultiBufferResource<VkSemaphore>([&semaphore_info, this]() {
-		VkSemaphore semaphore;
-		vkCreateSemaphore(vk_device, &semaphore_info, NULL, &semaphore);
-		return semaphore;
-		});
+	VkSemaphoreCreateInfo render_semaphore_info;
+	render_semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+	render_semaphore_info.pNext = &render_semaphore_type_info;
+	render_semaphore_info.flags = NULL;
+	
+	for(int i = 0; i < images.size(); i++) {
+		VkSemaphore present_fence;
+		vkCreateSemaphore(vk_device, &present_semaphore_info, NULL, &present_fence);
+		frame_sync.present_fence.push_back(present_fence);
 
+		VkSemaphore render_fence;
+		vkCreateSemaphore(vk_device, &render_semaphore_info, NULL, &render_fence);
+		frame_sync.render_fence.push_back(render_fence);
+	}
 
 	auto resource_manager = static_cast<VulkanRenderResourceManager*>(RenderResourceManager::Get());
 	auto props = Application::Get()->GetWindow()->GetProperties();
@@ -169,8 +188,6 @@ void VulkanRenderContext::CreateSwapchain()
 	depth_desc.usage = TextureUsage::DEPTH_ATTACHMENT;
 
 	std::vector<RenderFrameBufferDescriptor::RenderFrameBufferAttachment> swapchain_images;
-	auto images = vkb_swapchain.get_images().value();
-	auto views = vkb_swapchain.get_image_views().value();
 
 	swapchain_images.reserve(images.size());
 	int swapchain_size = images.size();
@@ -195,7 +212,7 @@ void VulkanRenderContext::CreateSwapchain()
 
 void VulkanRenderContext::RecreateSwapchain()
 {
-	for (auto& ref : frame_sync.present_fence.GetAllResource()) {
+	for (auto& ref : frame_sync.present_fence) {
 		vkDestroySemaphore(vk_device, ref, NULL);
 	}
 
@@ -228,17 +245,17 @@ std::vector<const char*> VulkanRenderContext::GetExtensions()
 void VulkanRenderContext::Destroy()
 {
 	VulkanUnitConverter::Shutdown();
-	for (auto& ref : frame_sync.present_fence.GetAllResource()) {
+	for (auto& ref : frame_sync.present_fence) {
 		vkDestroySemaphore(vk_device, ref, NULL);
 	}
 
-	frame_sync.present_fence.release();
+	frame_sync.present_fence.clear();
 
-	for (auto& ref : frame_sync.render_fence.GetAllResource()) {
+	for (auto& ref : frame_sync.render_fence) {
 		vkDestroySemaphore(vk_device, ref, NULL);
 	}
 
-	frame_sync.render_fence.release();
+	frame_sync.render_fence.clear();
 
 	vmaDestroyAllocator(allocator);
 
@@ -314,23 +331,6 @@ void VulkanRenderContext::Init()
 	SetRenderQueue(queue, RenderQueueTypes::ComputeQueue);
 
 
-	VkSemaphoreTypeCreateInfo semaphore_type_info;
-	semaphore_type_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
-	semaphore_type_info.initialValue = 0;
-	semaphore_type_info.pNext = NULL;
-	semaphore_type_info.semaphoreType = VK_SEMAPHORE_TYPE_BINARY;
-
-	VkSemaphoreCreateInfo semaphore_info;
-	semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-	semaphore_info.pNext = &semaphore_type_info;
-	semaphore_info.flags = NULL;
-
-
-	frame_sync.render_fence = FrameMultiBufferResource<VkSemaphore>([&semaphore_info, this]() {
-		VkSemaphore semaphore;
-		vkCreateSemaphore(vk_device, &semaphore_info, NULL, &semaphore);
-		return semaphore;
-		});
 
 	VmaAllocatorCreateInfo allocator_info = {};
 	allocator_info.device = vk_device;

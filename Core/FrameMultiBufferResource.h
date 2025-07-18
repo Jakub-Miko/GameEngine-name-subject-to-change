@@ -57,6 +57,10 @@ public:
 		return resources[(FrameManager::Get()->GetCurrentFrameNumber() % resources.size())];
 	}
 
+	void SetResource(const T& resource) {
+		resources[(FrameManager::Get()->GetCurrentFrameNumber() % resources.size())] = resource;
+	}
+
 	T& GetNextResource() {
 		return resources[((FrameManager::Get()->GetCurrentFrameNumber() + 1) % resources.size())];
 	}

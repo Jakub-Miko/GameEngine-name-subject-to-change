@@ -59,6 +59,11 @@ void OpenGLRenderResourceManager::ReallocateAndUploadBuffer(RenderCommandList* l
 	static_cast<OpenGLRenderCommandList*>(list)->UpdateBufferResourceAndReallocate(resource, allocated, size);
 }
 
+void OpenGLRenderResourceManager::CopyBufferData(RenderCommandList *list, std::shared_ptr<RenderBufferResource> source, std::shared_ptr<RenderBufferResource> destination, size_t source_offset, size_t source_size, size_t destination_offset)
+{
+	throw std::runtime_error("Not implemented.\n");
+}
+
 std::shared_ptr<RenderTexture2DResource> OpenGLRenderResourceManager::CreateTexture(const RenderTexture2DDescriptor& buffer_desc, RenderState default_state)
 {
 	if (!buffer_desc.sampler) {

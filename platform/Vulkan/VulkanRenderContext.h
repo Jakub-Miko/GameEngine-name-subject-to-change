@@ -51,7 +51,7 @@ public:
 	vkb::Swapchain GetVkbSwapchain() const { return vkb_swapchain; }
 	vkb::Device GetVkbDevice() const { return vkb_device; }
 	void SetSurface(VkSurfaceKHR surface) { vk_surface = surface; }
-	VkSemaphore GetVkRenderSemaphore() { return frame_sync.render_fence.GetResource(); };
+	VkSemaphore GetVkRenderSemaphore() { return frame_sync.render_fence[current_framebuffer]; };
 	void RequestExtension(const std::string& extension);
 	void RequestExtensions(const char** extensions, int count);
 	std::vector<const char*> GetExtensions();
@@ -77,10 +77,11 @@ private:
 	VkSwapchainKHR vk_swapchain;
 	std::vector<std::shared_ptr<RenderFrameBufferResource>> default_framebuffers;
 	uint32_t current_framebuffer = 0;
+	uint32_t previous_framebuffer = 0;
 	VmaAllocator allocator;
 	struct {
-		FrameMultiBufferResource<VkSemaphore> render_fence;
-		FrameMultiBufferResource<VkSemaphore> present_fence; ///< we normally use timeline semaphores instead of fences, but vkAcquireNextImageKHR only takes binary ones
+		std::vector<VkSemaphore> render_fence;
+		std::vector<VkSemaphore> present_fence; ///< we normally use timeline semaphores instead of fences, but vkAcquireNextImageKHR only takes binary ones
 
 	} frame_sync;
 };
