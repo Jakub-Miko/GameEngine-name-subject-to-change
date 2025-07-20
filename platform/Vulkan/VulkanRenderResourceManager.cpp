@@ -114,8 +114,8 @@ void VulkanRenderResourceManager::ReallocateAndUploadBuffer(RenderCommandList* l
 
 void VulkanRenderResourceManager::CopyBufferData(RenderCommandList *list, std::shared_ptr<RenderBufferResource> source, std::shared_ptr<RenderBufferResource> destination, size_t source_offset, size_t source_size, size_t destination_offset)
 {
-
 	VulkanRenderCommandList* vk_command_list = static_cast<VulkanRenderCommandList*>(list);
+	vk_command_list->OutsideRenderPass();
 
 	VkBufferCopy copy = {};
 	copy.dstOffset = destination_offset;
@@ -438,10 +438,48 @@ std::shared_ptr<RenderFrameBufferResource> VulkanRenderResourceManager::CreateFr
 
 void VulkanRenderResourceManager::CreateConstantBufferDescriptor(const RenderDescriptorTable& table, int index, std::shared_ptr<RenderBufferResource> resource)
 {
+	DEFINE_VK_INSTANCE(context);
+
+	auto vk_desc_table = std::static_pointer_cast<VulkanRenderDescriptorAllocation>(table);
+	auto vk_buffer = std::static_pointer_cast<VulkanRenderBufferResource>(resource);
+
+	VkDescriptorBufferInfo buffer_info = {};
+	buffer_info.buffer = vk_buffer->GetBuffer();
+	buffer_info.offset = 0;
+	buffer_info.range = VK_WHOLE_SIZE;
+
+	VkWriteDescriptorSet write_desc = {};
+	write_desc.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	write_desc.descriptorCount = 1;
+	write_desc.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	write_desc.dstBinding = index;
+	write_desc.dstSet = vk_desc_table->descritor_set;
+	write_desc.pBufferInfo = &buffer_info;
+
+	vkUpdateDescriptorSets(context->GetVkDevice(), 1, &write_desc ,0,NULL);
 }
 
 void VulkanRenderResourceManager::CreateTexture2DDescriptor(const RenderDescriptorTable& table, int index, std::shared_ptr<RenderTexture2DResource> resource)
 {
+	DEFINE_VK_INSTANCE(context);
+
+	auto vk_desc_table = std::static_pointer_cast<VulkanRenderDescriptorAllocation>(table);
+	auto vk_texture = std::static_pointer_cast<VulkanRenderTexture2DResource>(resource);
+
+	VkDescriptorImageInfo image_info = {};
+	image_info.imageLayout = VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL;
+	image_info.imageView = vk_texture->GetImageView();
+	image_info.sampler = std::static_pointer_cast<VulkanTextureSampler>(vk_texture->GetSampler())->GetSampler();
+
+	VkWriteDescriptorSet write_desc = {};
+	write_desc.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	write_desc.descriptorCount = 1;
+	write_desc.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	write_desc.dstBinding = index;
+	write_desc.dstSet = vk_desc_table->descritor_set;
+	write_desc.pImageInfo = &image_info;
+
+	vkUpdateDescriptorSets(context->GetVkDevice(), 1, &write_desc ,0,NULL);
 }
 
 Future<read_pixel_data> VulkanRenderResourceManager::GetPixelValue(std::shared_ptr<RenderFrameBufferResource> framebuffer, int color_attachment_index, float x, float y)
@@ -451,10 +489,48 @@ Future<read_pixel_data> VulkanRenderResourceManager::GetPixelValue(std::shared_p
 
 void VulkanRenderResourceManager::CreateTexture2DArrayDescriptor(const RenderDescriptorTable& table, int index, std::shared_ptr<RenderTexture2DArrayResource> resource)
 {
+	DEFINE_VK_INSTANCE(context);
+
+	auto vk_desc_table = std::static_pointer_cast<VulkanRenderDescriptorAllocation>(table);
+	auto vk_texture = std::static_pointer_cast<VulkanRenderTexture2DArrayResource>(resource);
+
+	VkDescriptorImageInfo image_info = {};
+	image_info.imageLayout = VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL;
+	image_info.imageView = vk_texture->GetImageView();
+	image_info.sampler = std::static_pointer_cast<VulkanTextureSampler>(vk_texture->GetSampler())->GetSampler();
+
+	VkWriteDescriptorSet write_desc = {};
+	write_desc.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	write_desc.descriptorCount = 1;
+	write_desc.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	write_desc.dstBinding = index;
+	write_desc.dstSet = vk_desc_table->descritor_set;
+	write_desc.pImageInfo = &image_info;
+
+	vkUpdateDescriptorSets(context->GetVkDevice(), 1, &write_desc ,0,NULL);
 }
 
 void VulkanRenderResourceManager::CreateTexture2DCubemapDescriptor(const RenderDescriptorTable& table, int index, std::shared_ptr<RenderTexture2DCubemapResource> resource)
 {
+	DEFINE_VK_INSTANCE(context);
+
+	auto vk_desc_table = std::static_pointer_cast<VulkanRenderDescriptorAllocation>(table);
+	auto vk_texture = std::static_pointer_cast<VulkanRenderTexture2DCubemapResource>(resource);
+
+	VkDescriptorImageInfo image_info = {};
+	image_info.imageLayout = VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL;
+	image_info.imageView = vk_texture->GetImageView();
+	image_info.sampler = std::static_pointer_cast<VulkanTextureSampler>(vk_texture->GetSampler())->GetSampler();
+
+	VkWriteDescriptorSet write_desc = {};
+	write_desc.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	write_desc.descriptorCount = 1;
+	write_desc.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	write_desc.dstBinding = index;
+	write_desc.dstSet = vk_desc_table->descritor_set;
+	write_desc.pImageInfo = &image_info;
+
+	vkUpdateDescriptorSets(context->GetVkDevice(), 1, &write_desc ,0,NULL);
 }
 
 void VulkanRenderResourceManager::CopyFrameBufferDepthAttachment(RenderCommandList* list, std::shared_ptr<RenderFrameBufferResource> source_frame_buffer, std::shared_ptr<RenderFrameBufferResource> destination_frame_buffer)
@@ -463,9 +539,17 @@ void VulkanRenderResourceManager::CopyFrameBufferDepthAttachment(RenderCommandLi
 
 void VulkanRenderResourceManager::SetFrameBufferColorAttachment(RenderCommandList* list, std::shared_ptr<RenderFrameBufferResource> framebuffer, std::shared_ptr<RenderResource> new_attachment, int index, int level)
 {
+	auto vk_framebuffer = std::static_pointer_cast<VulkanRenderFrameBufferResource>(framebuffer);
 	auto& desc = GetAdjustableFrameBufferDescriptor(framebuffer);
+
+	if(desc.color_attachments.size() <= index) {
+		throw std::runtime_error("Invalid attachment index.\n");
+	}
+
 	desc.color_attachments[index].level = level;
 	desc.color_attachments[index].resource = new_attachment;
+
+	vk_framebuffer->dirty = true;
 }
 
 std::shared_ptr<RenderBufferResource> VulkanRenderResourceManager::GetStagingBuffer(size_t size)

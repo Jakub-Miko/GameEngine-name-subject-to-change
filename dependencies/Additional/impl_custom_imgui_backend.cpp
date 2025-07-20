@@ -243,7 +243,7 @@ void impl_custom_imgui_backend::DrawData(ImDrawData* draw_data)
     };
 
     list->SetPipeline(current_backend_data->pipeline);
-    list->SetViewport(RenderViewport({ 0,0 }, { fb_width,fb_height },0.0f,1000.0f));
+    list->SetViewport(RenderViewport({ 0,0 }, { fb_width,fb_height },0.0f,1.0f));
     RenderResourceManager::Get()->UploadDataToBuffer(list, current_backend_data->constant_buffer.GetResource(), (void*)&ortho_projection, sizeof(float) * 16, 0);
     list->SetConstantBuffer("conf", current_backend_data->constant_buffer.GetResource());
     list->SetVertexBuffer(current_backend_data->vertex_buffer.GetResource());
@@ -262,6 +262,8 @@ void impl_custom_imgui_backend::DrawData(ImDrawData* draw_data)
         const size_t idx_buffer_size = (size_t)cmd_list->IdxBuffer.Size * (int)sizeof(ImDrawIdx);
         current_backend_data->vertex_buffer.SetResource(UploadDataDynamicSize(list, current_backend_data->vertex_buffer.GetResource(), (void*)cmd_list->VtxBuffer.Data, vtx_buffer_size,0));
         current_backend_data->index_buffer.SetResource(UploadDataDynamicSize(list, current_backend_data->index_buffer.GetResource(), (void*)cmd_list->IdxBuffer.Data, idx_buffer_size,0));
+        list->SetVertexBuffer(current_backend_data->vertex_buffer.GetResource());
+        list->SetIndexBuffer(current_backend_data->index_buffer.GetResource());
 
         for (int cmd_i = 0; cmd_i < cmd_list->CmdBuffer.Size; cmd_i++)
         {

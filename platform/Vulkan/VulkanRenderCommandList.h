@@ -57,8 +57,6 @@ struct VulkanDrawState {
     int expected_binding_count = 0, currently_bound_count = 0;
     std::unordered_set<uint32_t> draw_resources; 
     std::vector<VulkanDrawResource> pending_dependencies;
-    std::shared_ptr<RenderResource> vertex_buffer;
-    std::shared_ptr<RenderResource> index_buffer;
 };
 
 class VulkanDependencyHandler {
@@ -72,9 +70,6 @@ public:
 
     virtual void AddDrawDependency(VulkanRenderCommandList* list, std::shared_ptr<RenderResource> resource,
         VulkanCommandListDependency dependency, uint32_t root_paramter_id) = 0; // add a dependency for drawcalls
-
-    virtual void AddDrawVertexBufferDependency(VulkanRenderCommandList* list, std::shared_ptr<RenderResource> resource) = 0;
-    virtual void AddDrawIndexBufferDependency(VulkanRenderCommandList* list, std::shared_ptr<RenderResource> resource) = 0;
 
     virtual void AddMaterialDependency(VulkanRenderCommandList* list, std::shared_ptr<Material> material, uint32_t root_paramter_id) = 0; // add a material dependency for drawcalls
 
@@ -100,8 +95,6 @@ public:
     virtual void AddDrawDependency(VulkanRenderCommandList* list, std::shared_ptr<RenderResource> resource,
         VulkanCommandListDependency dependency, uint32_t bind_id) override;
 
-    virtual void AddDrawVertexBufferDependency(VulkanRenderCommandList* list, std::shared_ptr<RenderResource> resource) override;
-    virtual void AddDrawIndexBufferDependency(VulkanRenderCommandList* list, std::shared_ptr<RenderResource> resource) override;
 
     virtual void AddMaterialDependency(VulkanRenderCommandList* list, std::shared_ptr<Material> material, uint32_t bind_id) override;
     
@@ -175,11 +168,23 @@ public:
     //Ensure the renderpass is inactive
     void OutsideRenderPass();
 
+    std::shared_ptr<RenderResource> GetVertexBuffer() {
+        return vertex_buffer;
+    }
+
+    std::shared_ptr<RenderResource> GetIndexBuffer() {
+        return index_buffer;
+    }
+
 private:
     VkCommandBuffer command_buffer;
 
     VulkanDependencyHandler* dependency_handler;
     std::shared_ptr<RenderFrameBufferResource> current_framebuffer = nullptr;
     std::shared_ptr<VulkanPipeline> current_pipeline = nullptr;
+    std::shared_ptr<RenderResource> vertex_buffer = nullptr;
+    std::shared_ptr<RenderResource> index_buffer = nullptr;
     bool render_pass_active = false;
+    bool is_scissorrect_defined = false, is_viewport_defined = false;
+    bool are_index_vertex_buffers_bound = false;
 };

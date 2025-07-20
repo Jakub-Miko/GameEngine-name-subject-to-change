@@ -216,11 +216,20 @@ public:
 
 	VulkanRenderFrameBufferResource(const RenderFrameBufferDescriptor& desc, RenderState initial_state = RenderState::UNINITIALIZED, unsigned int render_id = 0);
 
-	VkRenderingInfo& GetRenderingInfo() { return rendering_info;  }
+	VkRenderingInfo& GetRenderingInfo() { 
+		if(dirty) {
+			RecalculateRenderingInfo();
+			dirty = false;
+		}
+		return rendering_info;
+	}
 
 	virtual ~VulkanRenderFrameBufferResource() {}
 
 private:
+	void RecalculateRenderingInfo();
+
 	std::vector<VkRenderingAttachmentInfo> attachment_info_store; //index 0 is depth, other are color
 	VkRenderingInfo rendering_info;
+	bool dirty = true;
 };

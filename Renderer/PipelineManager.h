@@ -30,7 +30,7 @@ struct FramebufferFormat {
 	};
 
 	struct DepthAttachmentFormat {
-		TextureFormat format = TextureFormat::UNDEFINED;
+		TextureFormat format = TextureFormat::DEFAULT_DEPTH;
 	};
 
 	std::vector<ColorAttachmentFormat> color_attachemt_formats = std::vector<ColorAttachmentFormat>();

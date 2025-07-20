@@ -107,7 +107,13 @@ void VulkanRenderFrameBufferResource::UnMap()
 	throw std::runtime_error("Not Implemented");
 }
 
-VulkanRenderFrameBufferResource::VulkanRenderFrameBufferResource(const RenderFrameBufferDescriptor& desc, RenderState initial_state, unsigned int render_id) : RenderFrameBufferResource(desc, initial_state), attachment_info_store()
+VulkanRenderFrameBufferResource::VulkanRenderFrameBufferResource(const RenderFrameBufferDescriptor& desc, RenderState initial_state, unsigned int render_id) 
+	: RenderFrameBufferResource(desc, initial_state), attachment_info_store(), rendering_info(), dirty(true)
+{
+	RecalculateRenderingInfo();
+}
+
+void VulkanRenderFrameBufferResource::RecalculateRenderingInfo()
 {
 	bool has_color = descriptor.color_attachments.size() != 0;
 	bool has_depth = descriptor.depth_stencil_attachment.resource != nullptr;
@@ -143,6 +149,7 @@ VulkanRenderFrameBufferResource::VulkanRenderFrameBufferResource(const RenderFra
 	if (has_depth) {
 		auto depth_texture = static_cast<VulkanRenderTexture2DResource*>(descriptor.depth_stencil_attachment.resource->GetExtensionData());
 		attachment_info.imageView = depth_texture->GetImageView();
+		attachment_info.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
 		attachment_info_store.push_back(attachment_info);
 		info.pDepthAttachment = &attachment_info_store[0];
 	}
@@ -150,6 +157,7 @@ VulkanRenderFrameBufferResource::VulkanRenderFrameBufferResource(const RenderFra
 		attachment_info_store.push_back(VkRenderingAttachmentInfo());
 	}
 
+	attachment_info.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 	if (has_color) {
 		for (auto color_attachment : descriptor.color_attachments) {
 			VkRenderingAttachmentInfo color_attachment_info = {};
@@ -159,8 +167,9 @@ VulkanRenderFrameBufferResource::VulkanRenderFrameBufferResource(const RenderFra
 		}
 		info.pColorAttachments = &attachment_info_store[1];
 	}
-}
 
+	rendering_info = info;
+}
 
 void* VulkanRenderTexture2DArrayResource::Map()
 {

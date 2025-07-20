@@ -279,16 +279,18 @@ void VulkanRenderCommandList::Clear()
 
 void VulkanRenderCommandList::SetIndexBuffer(std::shared_ptr<RenderBufferResource> buffer)
 {
-	dependency_handler->AddDrawIndexBufferDependency(this, buffer);
+	index_buffer = buffer;
+	are_index_vertex_buffers_bound = false;
 	auto vk_buffer = std::static_pointer_cast<VulkanRenderBufferResource>(buffer);
 	auto vk_buffer_handle = vk_buffer->GetBuffer();
 	vkCmdBindIndexBuffer(command_buffer, vk_buffer_handle, 0, VkIndexType::VK_INDEX_TYPE_UINT32);
 }
 
-void VulkanRenderCommandList::SetVertexBuffer(std::shared_ptr<RenderBufferResource> vertex_buffer)
+void VulkanRenderCommandList::SetVertexBuffer(std::shared_ptr<RenderBufferResource> buffer)
 {
-	dependency_handler->AddDrawVertexBufferDependency(this, vertex_buffer);
-	auto vk_buffer = std::static_pointer_cast<VulkanRenderBufferResource>(vertex_buffer);
+	vertex_buffer = buffer;
+	are_index_vertex_buffers_bound = false;
+	auto vk_buffer = std::static_pointer_cast<VulkanRenderBufferResource>(buffer);
 	auto vk_buffer_handle = vk_buffer->GetBuffer();
 	VkDeviceSize offset = 0;
 	vkCmdBindVertexBuffers(command_buffer, 0, 1, &vk_buffer_handle, &offset);
@@ -296,14 +298,27 @@ void VulkanRenderCommandList::SetVertexBuffer(std::shared_ptr<RenderBufferResour
 
 void VulkanRenderCommandList::SetScissorRect(const RenderScissorRect& scissor_rect)
 {
+	VkRect2D scissor = {};
+	scissor.extent = { (uint32_t)scissor_rect.size.x, (uint32_t)scissor_rect.size.y };
+	scissor.offset = { (int32_t)scissor_rect.offset.x, (int32_t)scissor_rect.offset.y };
+	vkCmdSetScissor(command_buffer, 0,1, &scissor);
 }
 
 void VulkanRenderCommandList::SetViewport(const RenderViewport& viewport)
 {
+	VkViewport vk_viewport = {};
+	vk_viewport.width = viewport.size.y;
+	vk_viewport.height = viewport.size.x;
+	vk_viewport.x = viewport.offset.x;
+	vk_viewport.y = viewport.offset.y;
+	vk_viewport.minDepth = viewport.min_depth;
+	vk_viewport.maxDepth = viewport.max_depth;
+	vkCmdSetViewport(command_buffer, 0,1, &vk_viewport);
 }
 
 void VulkanRenderCommandList::SetDescriptorTable(const std::string& semantic_name, RenderDescriptorTable table)
 {
+	throw std::runtime_error("Not implemented\n");
 }
 
 void VulkanRenderCommandList::GenerateMIPs(std::shared_ptr<RenderTexture2DResource> texture)
@@ -313,6 +328,42 @@ void VulkanRenderCommandList::GenerateMIPs(std::shared_ptr<RenderTexture2DResour
 void VulkanRenderCommandList::Draw(uint32_t index_count, bool use_unsined_short_as_index, int index_offset)
 {
 	dependency_handler->FlushDrawDependencies(this);
+	InsideRenderPass();
+	if(!is_scissorrect_defined || !is_viewport_defined) {
+		auto framebuf = std::static_pointer_cast<VulkanRenderFrameBufferResource>(current_framebuffer);
+		auto area = framebuf->GetRenderingInfo().renderArea;
+		if(!is_scissorrect_defined) {
+			RenderScissorRect rect;
+			rect.offset = {area.offset.x, area.offset.y};
+			rect.size = {area.extent.width, area.extent.height};
+			SetScissorRect(rect);
+			is_scissorrect_defined = true;
+		}
+		if(!is_viewport_defined) {
+			RenderViewport viewport;
+			viewport.offset = {area.offset.x, area.offset.y};
+			viewport.size = {area.extent.width, area.extent.height};
+			viewport.min_depth = 0.0f;
+			viewport.min_depth = 1.0f;
+			SetViewport(viewport);
+			is_viewport_defined = true;
+		}
+	}
+
+	if(!are_index_vertex_buffers_bound) {
+		auto vk_vertex_buffer = std::static_pointer_cast<VulkanRenderBufferResource>(vertex_buffer);
+		auto vk_vertex_buffer_handle = vk_vertex_buffer->GetBuffer();
+		VkDeviceSize offset = 0;
+		vkCmdBindVertexBuffers(command_buffer, 0, 1, &vk_vertex_buffer_handle, &offset);
+
+		auto vk_index_buffer = std::static_pointer_cast<VulkanRenderBufferResource>(index_buffer);
+		auto vk_index_buffer_handle = vk_index_buffer->GetBuffer();
+		vkCmdBindIndexBuffer(command_buffer, vk_index_buffer_handle, 0, use_unsined_short_as_index ? VkIndexType::VK_INDEX_TYPE_UINT16 : VkIndexType::VK_INDEX_TYPE_UINT32);
+
+		are_index_vertex_buffers_bound = true;
+	}
+
+	vkCmdDrawIndexed(command_buffer, index_count, 1,index_offset, 0, 0);
 }
 
 void VulkanRenderCommandList::DrawArray(uint32_t vertex_count)
@@ -451,7 +502,9 @@ void VulkanRenderCommandList::UpdateMaterial(std::shared_ptr<Material> material)
 
 	if (status == Material_status::UNINITIALIZED || descriptor_table->IsInUse()) { // uninitialized = we're currently using the default table so we need a new one, In use = the current table is in use so we need a new one
 		descriptor_table = material_template->AllocateMaterialDescriptor();
-		RenderResourceManager::Get()->CreateConstantBufferDescriptor(descriptor_table, 0, constant_buffer); // On Initialization, we need to at bind our constant buffer
+		if(constant_buffer) {
+			RenderResourceManager::Get()->CreateConstantBufferDescriptor(descriptor_table, 0, constant_buffer); // On Initialization, we need to at bind our constant buffer
+		}
 	}
 
 	std::vector<VkWriteDescriptorSet> desc_set_writes;
@@ -617,6 +670,7 @@ void VulkanRenderCommandList::OutsideRenderPass()
 	if (render_pass_active) {
 		vkCmdEndRendering(command_buffer);
 	}
+	render_pass_active = false;
 }
 
 // If this works, i'll name it the GOD FUNCTION, since basically performs most if not all implicit synchronization.
@@ -712,16 +766,6 @@ void VulkanDrawState::AddDrawDependency(VulkanRenderCommandList* list, std::shar
 	pending_dependencies.push_back(res);
 }
 
-void DefaultVulkanDependencyHandler::AddDrawVertexBufferDependency(VulkanRenderCommandList* list, std::shared_ptr<RenderResource> resource)
-{
-	draw_state.vertex_buffer = resource;
-}
-
-void DefaultVulkanDependencyHandler::AddDrawIndexBufferDependency(VulkanRenderCommandList* list, std::shared_ptr<RenderResource> resource)
-{
-	draw_state.index_buffer = resource;
-}
-
 void DefaultVulkanDependencyHandler::AddMaterialDependency(VulkanRenderCommandList *list, std::shared_ptr<Material> material, uint32_t bind_id)
 {
 	draw_state.SetMatertialResources(list, material, bind_id);
@@ -815,8 +859,8 @@ void DefaultVulkanDependencyHandler::FlushDrawDependencies(VulkanRenderCommandLi
 	index_buffer_dependency.expected_state = RenderState::COMMON;
 	index_buffer_dependency.type = VulkanCommandListDependencyType::READ;
 
-	AddDependency(list, draw_state.vertex_buffer,  vertex_buffer_dependency);
-	AddDependency(list, draw_state.index_buffer,  index_buffer_dependency);
+	AddDependency(list, list->GetVertexBuffer(),  vertex_buffer_dependency);
+	AddDependency(list, list->GetIndexBuffer(),  index_buffer_dependency);
 
 
 	for (auto& dep : draw_state.pending_dependencies) {
@@ -844,11 +888,11 @@ void DefaultVulkanDependencyHandler::FlushDrawDependencies(VulkanRenderCommandLi
 
 	draw_state.pending_dependencies.clear();
 
-	if (!draw_state.vertex_buffer) {
+	if (!list->GetVertexBuffer()) {
 		throw std::runtime_error("Vertex buffer was not set on the pipeline.\n");
 	}
 
-	if (!draw_state.index_buffer) {
+	if (!list->GetVertexBuffer()) {
 		throw std::runtime_error("Index buffer was not set on the pipeline.\n");
 	}
 
@@ -870,8 +914,6 @@ void DefaultVulkanDependencyHandler::RenderTargetChange(VulkanRenderCommandList 
 
 void VulkanDrawState::InvalidateDrawDependencies(VulkanRenderCommandList* list, std::shared_ptr<Pipeline> new_pipeline)
 {
-	index_buffer.reset();
-	vertex_buffer.reset();
 	draw_resources.clear();
 	pending_dependencies.clear();
 	currently_bound_count = 0;

@@ -76,6 +76,8 @@ void VulkanRenderCommandQueue::ExecuteRenderCommandList(RenderCommandList* list)
 	uint64_t value = ++last_buffer_signaled;
 	VkTimelineSemaphoreSubmitInfo submit_sync = {};
 
+	vk_command_list->OutsideRenderPass();
+
 	submit_sync.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
 	submit_sync.signalSemaphoreValueCount = 1;
 	submit_sync.pSignalSemaphoreValues = &value;

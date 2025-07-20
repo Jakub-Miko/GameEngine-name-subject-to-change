@@ -146,6 +146,7 @@ void VulkanRenderContext::CreateSwapchain()
 	vkb_swapchain = swapchain_result.value();
 	vk_swapchain = vkb_swapchain.swapchain;
 	
+	auto extent = vkb_swapchain.extent;
 	auto images = vkb_swapchain.get_images().value();
 	auto views = vkb_swapchain.get_image_views().value();
 	
@@ -175,8 +176,8 @@ void VulkanRenderContext::CreateSwapchain()
 
 	RenderTexture2DDescriptor swapchain_image_desc;
 	swapchain_image_desc.format = TextureFormat::UNDEFINED; // This image is never accesed by the user so the descriptor contents are not important 
-	swapchain_image_desc.height = props.resolution_y;
-	swapchain_image_desc.width = props.resolution_x;
+	swapchain_image_desc.height = extent.height;
+	swapchain_image_desc.width = extent.width;
 	swapchain_image_desc.sampler = nullptr;
 	swapchain_image_desc.usage = TextureUsage::COLOR_ATTACHMENT;
 
