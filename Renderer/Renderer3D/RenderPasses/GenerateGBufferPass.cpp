@@ -55,7 +55,7 @@ void GenerateGBufferPass::InitPostProcessingPassData() {
 
 	RenderTexture2DDescriptor depth_desc;
 	depth_desc.format = TextureFormat::DEFAULT_DEPTH;
-	depth_desc.usage = TextureUsage::DEPTH_ATTACHMENT_READABLE;
+	depth_desc.usage = TextureUsage::DEPTH_ATTACHMENT_READABLE | TextureUsage::COPYABLE;
 	depth_desc.height = Application::Get()->GetWindow()->GetProperties().resolution_y;
 	depth_desc.width = Application::Get()->GetWindow()->GetProperties().resolution_x;
 	depth_desc.sampler = sampler;

@@ -73,7 +73,7 @@ void VulkanRenderCommandQueue::ExecuteRenderCommandList(RenderCommandList* list)
 {
 	DEFINE_VK_INSTANCE(context);
 	VulkanRenderCommandList* vk_command_list = static_cast<VulkanRenderCommandList*>(list);
-	uint64_t value = ++last_buffer_signaled;
+	uint64_t value = ++last_buffer_signaled; /// @todo this can cause a datarace make sure its locked behind the submission mutex
 	VkTimelineSemaphoreSubmitInfo submit_sync = {};
 
 	vk_command_list->OutsideRenderPass();

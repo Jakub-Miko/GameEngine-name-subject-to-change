@@ -361,26 +361,33 @@ std::shared_ptr<ReflectionMap> TextureManager::GetReflectionMap(const std::strin
         cb_desc.usage = TextureUsage::COLOR_ATTACHMENT_READABLE;
         cb_desc.sampler = data->default_cubemap->GetBufferDescriptor().sampler;
         cb_desc.res = REFLECTION_RES;
-
+        
         std::shared_ptr<RenderTexture2DCubemapResource> converted_cubemap = RenderResourceManager::Get()->CreateTextureCubemap(cb_desc);
         std::shared_ptr<RenderTexture2DCubemapResource> converted_cubemap_diffuse = RenderResourceManager::Get()->CreateTextureCubemap(cb_desc);
         cb_desc.res = SPECULAR_REFLECTION_RES;
         cb_desc.generate_mips = true;
         cb_desc.sampler = data->reflection_sampler;
+        cb_desc.mipmap_levels = 5;
         std::shared_ptr<RenderTexture2DCubemapResource> converted_cubemap_specular = RenderResourceManager::Get()->CreateTextureCubemap(cb_desc);
 
         auto list = Renderer::Get()->GetRenderCommandList();
         auto queue = Renderer::Get()->GetCommandQueue();
 
 
-        glm::mat4 light_views[6];
         glm::mat4 projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.01f, 1000.0f);
-        light_views[0] = projection * glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f) + glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
-        light_views[1] = projection * glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f) + glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
-        light_views[2] = projection * glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f) + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        light_views[3] = projection * glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f) + glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f));
-        light_views[4] = projection * glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f) + glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f));
-        light_views[5] = projection * glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f) + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+        glm::mat4 light_views[6];
+        light_views[RenderResourceManager::Get()->GetCubemapFaceIndex(RenderCubemapFace::CUBEMAP_RIGHT)] 
+		    = projection * glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f) + glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+        light_views[RenderResourceManager::Get()->GetCubemapFaceIndex(RenderCubemapFace::CUBEMAP_LEFT)] 
+		    = projection * glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f) + glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+        light_views[RenderResourceManager::Get()->GetCubemapFaceIndex(RenderCubemapFace::CUBEMAP_TOP)] 
+		    = projection * glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f) + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        light_views[RenderResourceManager::Get()->GetCubemapFaceIndex(RenderCubemapFace::CUBEMAP_BOTTOM)] 
+		    = projection * glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f) + glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f));
+        light_views[RenderResourceManager::Get()->GetCubemapFaceIndex(RenderCubemapFace::CUBEMAP_FRONT)] 
+		    = projection * glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f) + glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+        light_views[RenderResourceManager::Get()->GetCubemapFaceIndex(RenderCubemapFace::CUBEMAP_BACK)] 
+		    = projection * glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f) + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f));
         RenderResourceManager::Get()->UploadDataToBuffer(list, data->const_buffer, glm::value_ptr(light_views[0]), sizeof(glm::mat4) * 6, 0);
         RenderResourceManager::Get()->SetFrameBufferColorAttachment(list, data->framebuffer, converted_cubemap);
         RenderResourceManager::Get()->SetFrameBufferColorAttachment(list,data->framebuffer, converted_cubemap_diffuse, 1);
@@ -511,6 +518,10 @@ TextureManager::TextureManager() : texture_Map(), texture_Map_mutex(), sampler_c
     pipeline_desc.enable_depth_clip = false;
     pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/ReflectionMapConversion.glsl");
     pipeline_desc.layout = VertexLayoutFactory<MeshPreset>::GetLayout();
+    pipeline_desc.framebuffer_format.color_attachemt_formats = {
+        {TextureFormat::RGB_32FLOAT},
+        {TextureFormat::RGB_32FLOAT}
+    };
 
     data->reflection_convert_pipeline = PipelineManager::Get()->CreatePipeline(pipeline_desc);
 

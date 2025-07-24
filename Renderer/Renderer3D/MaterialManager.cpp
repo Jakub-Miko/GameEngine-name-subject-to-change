@@ -623,32 +623,41 @@ std::shared_ptr<MaterialTemplate> MaterialManager::LoadMaterialTemplateFromJson(
 
 		bool default_exists = item.contains("default_value");
 
+		
 		switch (mat_item.type)
 		{
 		case MaterialLayoutItemType::INT:
-			mat_item.default_value = default_exists ? item["default_value"].get<int>() : 0;
-			break;
+		mat_item.default_value = default_exists ? item["default_value"].get<int>() : 0;
+		break;
 		case MaterialLayoutItemType::MAT3:
-			mat_item.default_value = default_exists ? item["default_value"].get<glm::mat3>() : glm::mat3(1.0f);
-			break;
+		mat_item.default_value = default_exists ? item["default_value"].get<glm::mat3>() : glm::mat3(1.0f);
+		break;
 		case MaterialLayoutItemType::MAT4:
-			mat_item.default_value = default_exists ? item["default_value"].get<glm::mat4>() : glm::mat4(1.0f);
-			break;
+		mat_item.default_value = default_exists ? item["default_value"].get<glm::mat4>() : glm::mat4(1.0f);
+		break;
 		case MaterialLayoutItemType::SCALAR:
-			mat_item.default_value = default_exists ? item["default_value"].get<float>() : 0.0f;
-			break;
+		mat_item.default_value = default_exists ? item["default_value"].get<float>() : 0.0f;
+		break;
 		case MaterialLayoutItemType::VEC2:
-			mat_item.default_value = default_exists ? item["default_value"].get<glm::vec2>() : glm::vec2(0,0);
-			break;
+		mat_item.default_value = default_exists ? item["default_value"].get<glm::vec2>() : glm::vec2(0,0);
+		break;
 		case MaterialLayoutItemType::VEC3:
-			mat_item.default_value = default_exists ? item["default_value"].get<glm::vec3>() : glm::vec3(0, 0, 0);
-			break;
+		mat_item.default_value = default_exists ? item["default_value"].get<glm::vec3>() : glm::vec3(0, 0, 0);
+		break;
 		case MaterialLayoutItemType::VEC4:
-			mat_item.default_value = default_exists ? item["default_value"].get<glm::vec4>() : glm::vec4(0, 0, 0, 0);
-			break;
-		case MaterialLayoutItemType::TEXTURE:		
-			mat_item.default_value = default_exists ? item["default_value"].get<std::string>() : std::string(""); // dont set the resource yet, only store the path, empty if none was specified
-			break;
+		mat_item.default_value = default_exists ? item["default_value"].get<glm::vec4>() : glm::vec4(0, 0, 0, 0);
+		break;
+		case MaterialLayoutItemType::TEXTURE:{
+			bool is_normal_texture = item.contains("normal_texture") && item["normal_texture"].get<bool>();
+			if(default_exists) {
+				mat_item.default_value = item["default_value"].get<std::string>();
+			} else if (is_normal_texture) {
+				mat_item.default_value = MaterialTextureType { TextureManager::Get()->GetDefaultNormalTexture(), ""};
+			} else {
+				mat_item.default_value = MaterialTextureType { TextureManager::Get()->GetDefaultTexture(), ""};
+			}
+		}
+		break;
 		case MaterialLayoutItemType::TEXTURE_2D_ARRAY:		// Texture arrays, cubemaps, and constant buffers, cannot be have defaults specified
 		case MaterialLayoutItemType::TEXTURE_2D_CUBEMAP:	
 		case MaterialLayoutItemType::CONSTANT_BUFFER:		

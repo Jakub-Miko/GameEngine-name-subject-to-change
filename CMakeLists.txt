@@ -72,6 +72,7 @@ set(UPDATE_DEPS OFF)
 set(BUILD_TESTS OFF)
 set(SHADERC_SKIP_TESTS ON)
 set(ALLOW_EXTERNAL_SPIRV_TOOLS ON)
+target_compile_definitions(EngineCore PUBLIC "GLM_FORCE_DEPTH_ZERO_TO_ONE")
 add_subdirectory("./platform/Vulkan/dependencies/headers")
 get_target_property(VK_HEADER_DIRECTORY Vulkan-Headers INCLUDE_DIRECTORIES)
 

@@ -6,6 +6,7 @@
 #include "VulkanRenderResourceManager.h"
 #include "VulkanRootSignature.h"
 #include "VulkanRenderDescriptorHeapBlock.h"
+#include "VulkanRenderDescriptorHeap.h"
 #include <Renderer/TextureManager.h>
 
 VulkanRenderCommandList::VulkanRenderCommandList(Renderer* renderer, std::shared_ptr<RenderCommandAllocator> alloc) : RenderCommandList(renderer, alloc), dependency_handler(),
@@ -281,39 +282,25 @@ void VulkanRenderCommandList::SetIndexBuffer(std::shared_ptr<RenderBufferResourc
 {
 	index_buffer = buffer;
 	are_index_vertex_buffers_bound = false;
-	auto vk_buffer = std::static_pointer_cast<VulkanRenderBufferResource>(buffer);
-	auto vk_buffer_handle = vk_buffer->GetBuffer();
-	vkCmdBindIndexBuffer(command_buffer, vk_buffer_handle, 0, VkIndexType::VK_INDEX_TYPE_UINT32);
 }
 
 void VulkanRenderCommandList::SetVertexBuffer(std::shared_ptr<RenderBufferResource> buffer)
 {
 	vertex_buffer = buffer;
 	are_index_vertex_buffers_bound = false;
-	auto vk_buffer = std::static_pointer_cast<VulkanRenderBufferResource>(buffer);
-	auto vk_buffer_handle = vk_buffer->GetBuffer();
-	VkDeviceSize offset = 0;
-	vkCmdBindVertexBuffers(command_buffer, 0, 1, &vk_buffer_handle, &offset);
 }
 
-void VulkanRenderCommandList::SetScissorRect(const RenderScissorRect& scissor_rect)
+void VulkanRenderCommandList::SetScissorRect(const RenderScissorRect& in_scissor_rect)
 {
-	VkRect2D scissor = {};
-	scissor.extent = { (uint32_t)scissor_rect.size.x, (uint32_t)scissor_rect.size.y };
-	scissor.offset = { (int32_t)scissor_rect.offset.x, (int32_t)scissor_rect.offset.y };
-	vkCmdSetScissor(command_buffer, 0,1, &scissor);
+	scissor_rect = in_scissor_rect;
+	is_scissorrect_defined = false;
 }
 
-void VulkanRenderCommandList::SetViewport(const RenderViewport& viewport)
+void VulkanRenderCommandList::SetViewport(const RenderViewport& in_viewport)
 {
-	VkViewport vk_viewport = {};
-	vk_viewport.width = viewport.size.y;
-	vk_viewport.height = viewport.size.x;
-	vk_viewport.x = viewport.offset.x;
-	vk_viewport.y = viewport.offset.y;
-	vk_viewport.minDepth = viewport.min_depth;
-	vk_viewport.maxDepth = viewport.max_depth;
-	vkCmdSetViewport(command_buffer, 0,1, &vk_viewport);
+
+	viewport = in_viewport;
+	is_viewport_defined = false;
 }
 
 void VulkanRenderCommandList::SetDescriptorTable(const std::string& semantic_name, RenderDescriptorTable table)
@@ -329,26 +316,7 @@ void VulkanRenderCommandList::Draw(uint32_t index_count, bool use_unsined_short_
 {
 	dependency_handler->FlushDrawDependencies(this);
 	InsideRenderPass();
-	if(!is_scissorrect_defined || !is_viewport_defined) {
-		auto framebuf = std::static_pointer_cast<VulkanRenderFrameBufferResource>(current_framebuffer);
-		auto area = framebuf->GetRenderingInfo().renderArea;
-		if(!is_scissorrect_defined) {
-			RenderScissorRect rect;
-			rect.offset = {area.offset.x, area.offset.y};
-			rect.size = {area.extent.width, area.extent.height};
-			SetScissorRect(rect);
-			is_scissorrect_defined = true;
-		}
-		if(!is_viewport_defined) {
-			RenderViewport viewport;
-			viewport.offset = {area.offset.x, area.offset.y};
-			viewport.size = {area.extent.width, area.extent.height};
-			viewport.min_depth = 0.0f;
-			viewport.min_depth = 1.0f;
-			SetViewport(viewport);
-			is_viewport_defined = true;
-		}
-	}
+	FlushDrawState();
 
 	if(!are_index_vertex_buffers_bound) {
 		auto vk_vertex_buffer = std::static_pointer_cast<VulkanRenderBufferResource>(vertex_buffer);
@@ -363,11 +331,25 @@ void VulkanRenderCommandList::Draw(uint32_t index_count, bool use_unsined_short_
 		are_index_vertex_buffers_bound = true;
 	}
 
-	vkCmdDrawIndexed(command_buffer, index_count, 1,index_offset, 0, 0);
+	vkCmdDrawIndexed(command_buffer, index_count, 1,index_offset / (use_unsined_short_as_index ? 2 : 4) , 0, 0);
 }
 
 void VulkanRenderCommandList::DrawArray(uint32_t vertex_count)
 {
+	dependency_handler->FlushDrawDependencies(this);
+	InsideRenderPass();
+	FlushDrawState();
+
+	if(!are_index_vertex_buffers_bound) {
+		auto vk_vertex_buffer = std::static_pointer_cast<VulkanRenderBufferResource>(vertex_buffer);
+		auto vk_vertex_buffer_handle = vk_vertex_buffer->GetBuffer();
+		VkDeviceSize offset = 0;
+		vkCmdBindVertexBuffers(command_buffer, 0, 1, &vk_vertex_buffer_handle, &offset);
+
+		are_index_vertex_buffers_bound = true;
+	}
+
+	vkCmdDraw(command_buffer, vertex_count, 1,0,0);
 }
 
 void VulkanRenderCommandList::SetMaterial(const std::string& name, std::shared_ptr<Material> material)
@@ -383,44 +365,12 @@ void VulkanRenderCommandList::SetMaterial(const std::string& name, std::shared_p
 		throw std::runtime_error("The parameter " + name + " is not a material.\n");
 	}
 
-	if (material->GetStatus() == Material::Material_status::UNINITIALIZED) { // On first material use, make sure to initialize it
-		material->UpdateValues(this);
-	}
+	material->UpdateValues(this);
 
 	auto bind_point = param.set_id;
 
 	auto desc_table = std::static_pointer_cast<VulkanRenderDescriptorAllocation>(GetMutableMaterialDescriptorTable(material.get()));
 
-
-	for (auto& parameter : GetMutableMaterialParameters(material.get())) {
-		std::shared_ptr<RenderResource> resource;
-		switch (parameter.type)
-		{
-		case MaterialLayoutItemType::CONSTANT_BUFFER:
-			resource = std::get<std::shared_ptr<RenderBufferResource>>(parameter.resource);
-			break;
-		case MaterialLayoutItemType::TEXTURE:
-			if (std::holds_alternative<MaterialTextureType>(parameter.resource)) {
-				resource = std::get<MaterialTextureType>(parameter.resource).texture;
-			}
-			break;
-		case MaterialLayoutItemType::TEXTURE_2D_ARRAY:
-			resource = std::get<std::shared_ptr<RenderTexture2DArrayResource>>(parameter.resource);
-			break;
-		case MaterialLayoutItemType::TEXTURE_2D_CUBEMAP:
-			resource = std::get<std::shared_ptr<RenderTexture2DCubemapResource>>(parameter.resource);
-			break;
-		default:
-			continue;
-		}
-
-		VulkanCommandListDependency dep = {};
-		dep.type = VulkanCommandListDependencyType::READ;
-		dep.current_state = parameter.type == MaterialLayoutItemType::CONSTANT_BUFFER ? RenderState::COMMON : RenderState::TEXTURE_SAMPLE;
-		dep.expected_state = RenderState::COMMON;
-		
-
-	}
 
 	dependency_handler->AddMaterialDependency(this, material, param_id);
 
@@ -432,6 +382,7 @@ void VulkanRenderCommandList::SetMaterial(const std::string& name, std::shared_p
 		AddDependency(buffer, dep);
 	}
 
+	dependency_handler->AddDescriptorTableDependency(this, desc_table);
 	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, sig->GetPipelineLayout(), bind_point, 1, &desc_table->descritor_set, 0, NULL);
 
 }
@@ -486,11 +437,11 @@ void VulkanRenderCommandList::UpdateMaterial(std::shared_ptr<Material> material)
 			case MaterialLayoutItemType::TEXTURE_2D_CUBEMAP:
 				image_update_num++;
 				needs_table_update = true;
-				break;
+				continue;
 			case MaterialLayoutItemType::CONSTANT_BUFFER:
 				buffer_update_num++;
 				needs_table_update = true;
-				break;
+				continue;
 			default:
 				throw std::runtime_error("Invalid material type.\n");
 			}
@@ -500,19 +451,20 @@ void VulkanRenderCommandList::UpdateMaterial(std::shared_ptr<Material> material)
 
 	if (!needs_table_update && status != Material_status::UNINITIALIZED) return; // For buffer updates there's no need to update the descriptor table, unless we are still using the default table
 
-	if (status == Material_status::UNINITIALIZED || descriptor_table->IsInUse()) { // uninitialized = we're currently using the default table so we need a new one, In use = the current table is in use so we need a new one
-		descriptor_table = material_template->AllocateMaterialDescriptor();
-		if(constant_buffer) {
-			RenderResourceManager::Get()->CreateConstantBufferDescriptor(descriptor_table, 0, constant_buffer); // On Initialization, we need to at bind our constant buffer
-		}
+	auto old_desc_table = descriptor_table;
+	descriptor_table = material_template->AllocateMaterialDescriptor();
+
+	if (constant_buffer) { 
+		RenderResourceManager::Get()->CreateConstantBufferDescriptor(descriptor_table, 0, constant_buffer); // On Initialization, we need to at bind our constant buffer
 	}
+
 
 	std::vector<VkWriteDescriptorSet> desc_set_writes;
 	desc_set_writes.reserve(image_update_num + buffer_update_num);
 	std::vector<VkDescriptorImageInfo > desc_set_image_infos;
-	desc_set_image_infos.reserve(image_update_num);
+	desc_set_image_infos.reserve(parameters.size());
 	std::vector<VkDescriptorBufferInfo> desc_set_buffer_infos;
-	desc_set_buffer_infos.reserve(buffer_update_num);
+	desc_set_buffer_infos.reserve(parameters.size());
 
 	VkWriteDescriptorSet write = {};
 	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -526,7 +478,7 @@ void VulkanRenderCommandList::UpdateMaterial(std::shared_ptr<Material> material)
 		bool is_uniform;
 		auto type = VulkanUnitConverter::MaterialLayoutItemTypeToDescritorType(param.type, is_uniform);
 
-		if (param.IsDirty() || status == Material_status::UNINITIALIZED && !std::holds_alternative<std::monostate>(param.resource)) {
+		if (!std::holds_alternative<std::monostate>(param.resource)) {
 			switch (param.type)
 			{
 			case MaterialLayoutItemType::TEXTURE:
@@ -624,6 +576,7 @@ void VulkanRenderCommandList::UpdateMaterial(std::shared_ptr<Material> material)
 		}
 	}
 
+
 	vkUpdateDescriptorSets(context->GetVkDevice(), desc_set_writes.size(), desc_set_writes.data(), 0, NULL);
 
 	if (status == Material_status::UNINITIALIZED) {
@@ -671,6 +624,42 @@ void VulkanRenderCommandList::OutsideRenderPass()
 		vkCmdEndRendering(command_buffer);
 	}
 	render_pass_active = false;
+}
+
+void VulkanRenderCommandList::FlushDrawState()
+{
+	if(!is_scissorrect_defined || !is_viewport_defined) {
+		auto framebuf = std::static_pointer_cast<VulkanRenderFrameBufferResource>(current_framebuffer);
+		auto area = framebuf->GetRenderingInfo().renderArea;
+		if(!is_scissorrect_defined) {
+			if(scissor_rect.size.x == 0) {
+				scissor_rect.offset = {area.offset.x, area.offset.y};
+				scissor_rect.size = {area.extent.width, area.extent.height};
+			}
+			VkRect2D scissor = {};
+			scissor.extent = { (uint32_t)scissor_rect.size.x, (uint32_t)scissor_rect.size.y };
+			scissor.offset = { (int32_t)scissor_rect.offset.x, (int32_t)scissor_rect.offset.y };
+			vkCmdSetScissor(command_buffer, 0,1, &scissor);
+			is_scissorrect_defined = true;
+		}
+		if(!is_viewport_defined) {
+			if(viewport.max_depth == viewport.max_depth) {
+				viewport.offset = {area.offset.x, area.offset.y};
+				viewport.size = {area.extent.width, area.extent.height};
+				viewport.min_depth = 0.0f;
+				viewport.max_depth = 1.0f;
+			}
+			VkViewport vk_viewport = {};
+			vk_viewport.width = viewport.size.x;
+			vk_viewport.height = -viewport.size.y;
+			vk_viewport.x = viewport.offset.x;
+			vk_viewport.y = viewport.offset.y + viewport.size.y;
+			vk_viewport.minDepth = viewport.min_depth;
+			vk_viewport.maxDepth = viewport.max_depth;
+			vkCmdSetViewport(command_buffer,0,1,&vk_viewport);
+			is_viewport_defined = true;
+		}
+	}
 }
 
 // If this works, i'll name it the GOD FUNCTION, since basically performs most if not all implicit synchronization.
@@ -886,7 +875,7 @@ void DefaultVulkanDependencyHandler::FlushDrawDependencies(VulkanRenderCommandLi
 		framebuffer_dependency_pending = false;
 	}
 
-	draw_state.pending_dependencies.clear();
+	//draw_state.pending_dependencies.clear(); //We cannot do this because resources can be updated in between draws without rebinding the material.
 
 	if (!list->GetVertexBuffer()) {
 		throw std::runtime_error("Vertex buffer was not set on the pipeline.\n");
@@ -896,6 +885,11 @@ void DefaultVulkanDependencyHandler::FlushDrawDependencies(VulkanRenderCommandLi
 		throw std::runtime_error("Index buffer was not set on the pipeline.\n");
 	}
 
+}
+
+void DefaultVulkanDependencyHandler::AddDescriptorTableDependency(VulkanRenderCommandList *list, RenderDescriptorTable desc_table)
+{
+	draw_state.used_descriptor_tables.insert(desc_table);
 }
 
 void DefaultVulkanDependencyHandler::PipelineChange(VulkanRenderCommandList *list, std::shared_ptr<Pipeline> new_pipeline)
@@ -978,6 +972,11 @@ DefaultVulkanDependencyHandler::VulkanDependencyHandlerFeedback DefaultVulkanDep
 				manager->TransitionImage(list, texture, range, dependency.second.current_state, texture->default_state, PipelineStage::ALL_STAGES, PipelineStage::ALL_STAGES);
 			}
 		}
+	}
+
+	for(auto table : draw_state.used_descriptor_tables) {
+		auto vk_desc_table = std::static_pointer_cast<VulkanRenderDescriptorAllocation>(table);
+		vk_desc_table->timeline = new_timeline_value;
 	}
 
 	VulkanDependencyHandlerFeedback feedback;

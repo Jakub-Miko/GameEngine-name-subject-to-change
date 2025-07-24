@@ -3,7 +3,7 @@
         {
             "name": "Base_Color",
             "type": "VEC4",
-            "value": {
+            "default_value": {
                 "x": 1.0,
                 "y": 1.0,
                 "z": 1.0,
@@ -13,12 +13,12 @@
         {
             "name": "roughness_bias",
             "type": "FLOAT",
-            "value": 0.0
+            "default_value": 0.0
         },
         {
             "name": "roughness_gain",
             "type": "FLOAT",
-            "value": 1.0
+            "default_value": 1.0
         },
         {
             "name": "Color",
@@ -26,7 +26,8 @@
         },
         {
             "name": "Normal",
-            "type": "texture_2D"
+            "type": "texture_2D",
+            "normal_texture": true
         },
         {
             "name": "Roughness",

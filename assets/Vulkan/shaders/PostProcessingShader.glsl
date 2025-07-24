@@ -24,6 +24,7 @@ out vec2 uv_fragment;
 void main() {
 	gl_Position = vec4(position,0.0,1.0);
 	uv_fragment = uv;
+	uv_fragment.y = 1 - uv_fragment.y;
 }
 
 

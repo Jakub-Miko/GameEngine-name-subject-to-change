@@ -29,8 +29,14 @@ void DeferredSkeletalGeometryPass::InitPostProcessingPassData() {
 	pipeline_desc.flags = PipelineFlags::ENABLE_DEPTH_TEST;
 	pipeline_desc.layout = VertexLayoutFactory<SkeletalGeometryPassPreset>::GetLayout();
 	pipeline_desc.polygon_render_mode = PrimitivePolygonRenderMode::DEFAULT;
+	pipeline_desc.framebuffer_format.color_attachemt_formats = {
+        { TextureFormat::RGBA_UNSIGNED_CHAR },
+		{ TextureFormat::RGBA_32FLOAT},
+		{ TextureFormat::R_8FLOAT}
+    };
 #ifdef EDITOR
 
+	pipeline_desc.framebuffer_format.color_attachemt_formats.push_back({TextureFormat::R_UNSIGNED_INT});
 	//Use a shader with ids, for viewport picking in the editor.
 	pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/SkeletalGeometryPassShaderEditor.glsl");
 #else 
@@ -81,7 +87,7 @@ void DeferredSkeletalGeometryPass::Render(RenderPipelineResourceManager& resourc
 	list->SetPipeline(data->pipeline);
 	list->SetRenderTarget(out_buffer);
 	list->SetConstantBuffer("mvp", data->constant_scene_buf);
-	auto default_mat = data->pipeline->GetShader()->GetDefaultMaterial();
+	auto default_mat = MaterialManager::Get()->GetMaterialTemplate("DeferredGPassMaterial")->GetDefaultMaterial();
 	for(auto& entity : geometry.resources) {
 		auto& mesh = world.GetComponent<SkeletalMeshComponent>(entity);
 		world.UpdateSkeletalMesh(entity);

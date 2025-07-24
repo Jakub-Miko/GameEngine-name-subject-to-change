@@ -51,6 +51,8 @@ public:
 	virtual void CopyFrameBufferDepthAttachment(RenderCommandList* list, std::shared_ptr<RenderFrameBufferResource> source_frame_buffer, std::shared_ptr<RenderFrameBufferResource> destination_frame_buffer) override;
 	virtual void SetFrameBufferColorAttachment(RenderCommandList* list, std::shared_ptr<RenderFrameBufferResource> framebuffer, std::shared_ptr<RenderResource> new_attachment, int index = 0, int level = 0) override;
 
+	virtual int GetCubemapFaceIndex(RenderCubemapFace face) override;
+
 	void ReturnResource(VulkanRenderResource* resource);
 
 	void BufferBarrier(RenderCommandList* list, std::shared_ptr<RenderBufferResource> buffer,

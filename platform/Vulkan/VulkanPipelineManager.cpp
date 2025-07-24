@@ -85,13 +85,15 @@ std::shared_ptr<Pipeline> VulkanPipelineManager::CreatePipeline(const PipelineDe
 
 	VkPipelineDepthStencilStateCreateInfo depth_stencil = {};
 	depth_stencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-	depth_stencil.depthTestEnable = true;
+	depth_stencil.depthTestEnable = (bool)(desc.flags & PipelineFlags::ENABLE_DEPTH_TEST);
 	depth_stencil.depthWriteEnable = true;
 	depth_stencil.depthCompareOp = VulkanUnitConverter::DepthFunctionToVulkanCompareFunc(desc.depth_function);
 	depth_stencil.back = stencil_ops;
 	depth_stencil.front = stencil_ops;
-	depth_stencil.stencilTestEnable = false;
+	depth_stencil.stencilTestEnable = (bool)(desc.flags & PipelineFlags::ENABLE_STENCIL_TEST);
 	depth_stencil.flags = NULL;
+	depth_stencil.minDepthBounds = 0.0f;
+	depth_stencil.maxDepthBounds = 1.0f;
 
 	VkDynamicState dyn_states[] = { VkDynamicState::VK_DYNAMIC_STATE_SCISSOR, VkDynamicState::VK_DYNAMIC_STATE_VIEWPORT };
 

@@ -120,12 +120,17 @@ in vec3 light_pos;
 in vec3 light_direction_in;
 
 
-float calculate_shadows(vec3 view_space_pos) {
+float calculate_shadows(vec3 view_space_pos, vec3 coords) {
 	vec4 light_space_pos = light_matrix * vec4(view_space_pos, 1.0);
+
+
+	vec3 normal = texture(Normal, coords.xy).xyz;
+	vec3 bias = normal * 0.02;
+
+	light_space_pos += vec4(bias,0);
 	vec3 light_space_coords = normalize(light_space_pos.xyz);
 	float current_depth = length(light_space_pos) / light_far_plane;
-
-	vec4 shadow_coords = vec4(light_space_coords.xyz, current_depth -0.001);
+	vec4 shadow_coords = vec4(light_space_coords.xyz * vec3(1,-1,1), current_depth - 0.0002);
 	float shadow_map_depth = texture(ShadowCubeMap, shadow_coords);
 
 	return shadow_map_depth;
@@ -160,7 +165,7 @@ void main() {
 	float contribution = diffuse_contribution + specular_contribution;
 
 
-	float shadows = calculate_shadows(view_space_pos);
+	float shadows = calculate_shadows(view_space_pos, coords);
 	color_out = vec4(shadows * color.xyz * Light_Color.xyz * attenuation_factor * Light_Color.w * contribution,1.0);
 }
 

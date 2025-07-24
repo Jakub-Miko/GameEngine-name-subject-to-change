@@ -89,5 +89,5 @@ VulkanRenderDescriptorHeapBlock::~VulkanRenderDescriptorHeapBlock()
 bool VulkanRenderDescriptorAllocation::IsInUse()
 {
 	DEFINE_VK_INSTANCE(context);
-	return timeline < context->GetCurrentGpuTimelineValue();
+	return timeline > context->GetCurrentGpuTimelineValue();
 }

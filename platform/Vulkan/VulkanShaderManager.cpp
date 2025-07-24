@@ -81,7 +81,10 @@ VkShaderModule VulkanShaderManager::CompileShaderStage(VulkanShaderStages type, 
 	shaderc_compile_options_set_auto_bind_uniforms(options, true);
 	shaderc_compile_options_set_auto_map_locations(options, true);
 	shaderc_compile_options_set_source_language(options, shaderc_source_language_glsl);
-	
+#ifndef NDEBUG
+	shaderc_compile_options_set_generate_debug_info(options);
+
+#endif
 	shaderc_compiler_t compiler = shaderc_compiler_initialize();
 	shaderc_compilation_result_t result = shaderc_compile_into_spv(compiler, source.c_str(), source.size(), VulkanUnitConverter::ShaderStageToShadercShaderKind(type), "shader", "main", options);
 

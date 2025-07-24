@@ -123,7 +123,7 @@ void VulkanRenderFrameBufferResource::RecalculateRenderingInfo()
 	}
 
 	auto default_resource = has_color ? descriptor.color_attachments[0].resource : descriptor.depth_stencil_attachment.resource;
-	auto default_attachment = static_cast<VulkanRenderTexture2DResource*>(default_resource->GetExtensionData());
+	auto default_attachment = static_cast<VulkanRenderTextureResource*>(default_resource->GetExtensionData());
 
 
 	VkRect2D extent;
@@ -147,7 +147,7 @@ void VulkanRenderFrameBufferResource::RecalculateRenderingInfo()
 	attachment_info_store.reserve(info.colorAttachmentCount + 1);
 	
 	if (has_depth) {
-		auto depth_texture = static_cast<VulkanRenderTexture2DResource*>(descriptor.depth_stencil_attachment.resource->GetExtensionData());
+		auto depth_texture = static_cast<VulkanRenderTextureResource*>(descriptor.depth_stencil_attachment.resource->GetExtensionData());
 		attachment_info.imageView = depth_texture->GetImageView();
 		attachment_info.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
 		attachment_info_store.push_back(attachment_info);

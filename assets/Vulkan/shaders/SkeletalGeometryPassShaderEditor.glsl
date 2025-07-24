@@ -81,6 +81,7 @@ void main() {
 	pos_fragment = (view_model_matrix * vec4(new_pos.xyz,1.0f)).xyz;
 	gl_Position = mvp_matrix * vec4(new_pos.xyz, 1.0f);
 	uv_fragment = uv;
+	uv_fragment.y = 1 - uv_fragment.y;
 	normal_fragment = normalize(mat3(transpose(inverse(view_model_matrix))) * normal.xyz).xyz;
 }
 

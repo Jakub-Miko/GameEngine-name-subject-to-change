@@ -140,13 +140,13 @@ float calculate_shadows(vec3 view_space_pos, vec3 coords) {
 
 	vec4 light_space_pos = light_matrix_cascades[cascade] * vec4(view_space_pos,1.0);
 	vec3 light_space_coords = light_space_pos.xyz / light_space_pos.w;
-	light_space_coords = light_space_coords * 0.5 + 0.5;
 	float current_depth = light_space_coords.z;
+	light_space_coords = light_space_coords * 0.5 + 0.5;
 	float accumulate = 0;
 
 	for (int x = -1; x <= 1; x++) {
 		for (int y = -1; y <= 1; y++) {
-			vec4 shadow_coords = vec4(light_space_coords.x + x* shadow_map_pixel_size.x, light_space_coords.y + y * shadow_map_pixel_size.y, cascade, current_depth);
+			vec4 shadow_coords = vec4(light_space_coords.x + x* shadow_map_pixel_size.x, (1 - light_space_coords.y) + y * shadow_map_pixel_size.y, cascade, current_depth);
 			accumulate += texture(ShadowMapArray, shadow_coords);
 
 		}

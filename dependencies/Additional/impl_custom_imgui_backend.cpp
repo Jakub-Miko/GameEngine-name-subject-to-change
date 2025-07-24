@@ -99,6 +99,8 @@ static void CreateShaders() {
 static void CreatePipeline() {
     PipelineDescriptor desc;
 
+    desc.enable_depth_clip = false;
+    desc.depth_function = DepthFunction::ALWAYS;
     desc.flags = PipelineFlags::ENABLE_SCISSOR_TEST | PipelineFlags::ENABLE_BLEND | PipelineFlags::IS_MULTI_WINDOW;
     desc.layout = VertexLayoutFactory<ImGUI_Shader>::GetLayout();
     desc.polygon_render_mode = PrimitivePolygonRenderMode::DEFAULT;
@@ -106,6 +108,9 @@ static void CreatePipeline() {
     desc.shader = impl_custom_imgui_backend::GetBackendData()->shader;
     desc.viewport = RenderViewport();
     desc.blend_functions = PipelineBlendFunctions{ BlendFunction::SRC_ALPHA, BlendFunction::ONE_MINUS_SRC_ALPHA ,BlendFunction::ONE, BlendFunction::ONE_MINUS_SRC_ALPHA };
+    desc.framebuffer_format.color_attachemt_formats = {
+        { TextureFormat::BGRA_SRGB } // @todo Hardcoding the swapchain buffer format like this isn't a good idea
+    };
 
     auto pipeline = PipelineManager::Get()->CreatePipeline(desc);
     impl_custom_imgui_backend::GetBackendData()->pipeline = pipeline;
@@ -260,8 +265,8 @@ void impl_custom_imgui_backend::DrawData(ImDrawData* draw_data)
 
         const size_t vtx_buffer_size = (size_t)cmd_list->VtxBuffer.Size * (int)sizeof(ImDrawVert);
         const size_t idx_buffer_size = (size_t)cmd_list->IdxBuffer.Size * (int)sizeof(ImDrawIdx);
-        current_backend_data->vertex_buffer.SetResource(UploadDataDynamicSize(list, current_backend_data->vertex_buffer.GetResource(), (void*)cmd_list->VtxBuffer.Data, vtx_buffer_size,0));
-        current_backend_data->index_buffer.SetResource(UploadDataDynamicSize(list, current_backend_data->index_buffer.GetResource(), (void*)cmd_list->IdxBuffer.Data, idx_buffer_size,0));
+        current_backend_data->vertex_buffer.SetResource(UploadDataDynamicSize(list, current_backend_data->vertex_buffer.GetResource(), (void*)cmd_list->VtxBuffer.Data, vtx_buffer_size,0,true));
+        current_backend_data->index_buffer.SetResource(UploadDataDynamicSize(list, current_backend_data->index_buffer.GetResource(), (void*)cmd_list->IdxBuffer.Data, idx_buffer_size,0,true));
         list->SetVertexBuffer(current_backend_data->vertex_buffer.GetResource());
         list->SetIndexBuffer(current_backend_data->index_buffer.GetResource());
 
@@ -290,7 +295,7 @@ void impl_custom_imgui_backend::DrawData(ImDrawData* draw_data)
                     continue;
 
                 // Apply scissor/clipping rectangle (Y is inverted in OpenGL)
-                list->SetScissorRect(RenderScissorRect({ (int)clip_min.x, (int)((float)fb_height - clip_max.y) }, { (int)(clip_max.x - clip_min.x), (int)(clip_max.y - clip_min.y) }));
+                list->SetScissorRect(RenderScissorRect({ (int)clip_min.x, (int)clip_min.y }, { (int)(clip_max.x - clip_min.x), (int)(clip_max.y - clip_min.y) }));
 
                 //WARNING: thextures passed this way are not reference counted properly and if not managed properly will cause dangling pointers.
                 list->SetTexture2D("Texture", std::shared_ptr< RenderTexture2DResource>((RenderTexture2DResource*)pcmd->TextureId, [](RenderTexture2DResource* ptr)

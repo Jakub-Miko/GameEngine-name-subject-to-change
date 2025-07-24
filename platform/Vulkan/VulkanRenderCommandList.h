@@ -57,6 +57,7 @@ struct VulkanDrawState {
     int expected_binding_count = 0, currently_bound_count = 0;
     std::unordered_set<uint32_t> draw_resources; 
     std::vector<VulkanDrawResource> pending_dependencies;
+    std::unordered_set<RenderDescriptorTable> used_descriptor_tables; 
 };
 
 class VulkanDependencyHandler {
@@ -80,6 +81,8 @@ public:
 
     virtual bool IsPipelineReady() = 0; //Check if all resources have been set and are valid before launching a drawcall
 
+    virtual void AddDescriptorTableDependency(VulkanRenderCommandList* list, RenderDescriptorTable desc_table) = 0;  
+
     virtual VulkanCommandListDependency GetDependency(std::shared_ptr<RenderResource> resource) = 0;
     virtual VulkanDependencyHandlerFeedback FinalizeDependencies(RenderCommandList* list, uint64_t new_timeline_value) = 0;
     virtual void Reset() = 0;
@@ -99,6 +102,8 @@ public:
     virtual void AddMaterialDependency(VulkanRenderCommandList* list, std::shared_ptr<Material> material, uint32_t bind_id) override;
     
     virtual void FlushDrawDependencies(VulkanRenderCommandList* list) override;
+
+    virtual void AddDescriptorTableDependency(VulkanRenderCommandList* list, RenderDescriptorTable desc_table) override;  
 
     virtual void PipelineChange(VulkanRenderCommandList* list, std::shared_ptr<Pipeline> new_pipeline) override;
     virtual void RenderTargetChange(VulkanRenderCommandList* list, std::shared_ptr<RenderFrameBufferResource> new_framebuffer) override;
@@ -176,6 +181,8 @@ public:
         return index_buffer;
     }
 
+    void FlushDrawState();
+
 private:
     VkCommandBuffer command_buffer;
 
@@ -184,6 +191,8 @@ private:
     std::shared_ptr<VulkanPipeline> current_pipeline = nullptr;
     std::shared_ptr<RenderResource> vertex_buffer = nullptr;
     std::shared_ptr<RenderResource> index_buffer = nullptr;
+    RenderViewport viewport = RenderViewport({0,0}, {0,0}, 0.0f, 0.0f);
+    RenderScissorRect scissor_rect = RenderScissorRect({0,0}, {0,0});
     bool render_pass_active = false;
     bool is_scissorrect_defined = false, is_viewport_defined = false;
     bool are_index_vertex_buffers_bound = false;

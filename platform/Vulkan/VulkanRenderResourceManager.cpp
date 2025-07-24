@@ -164,7 +164,7 @@ std::shared_ptr<RenderTexture2DResource> VulkanRenderResourceManager::CreateText
 	image_info.format = VulkanUnitConverter::TextureFormatToVulkanInternalformat(buffer_desc.format);
 	image_info.imageType = VkImageType::VK_IMAGE_TYPE_2D;
 	image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	image_info.mipLevels = 1; /// @todo Add mipmap spec to descriptor;
+	image_info.mipLevels = buffer_desc.mipmap_levels; 
 	image_info.sharingMode = VkSharingMode::VK_SHARING_MODE_EXCLUSIVE;
 	image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
 	image_info.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
@@ -300,7 +300,7 @@ std::shared_ptr<RenderTexture2DArrayResource> VulkanRenderResourceManager::Creat
 	image_info.format = VulkanUnitConverter::TextureFormatToVulkanInternalformat(buffer_desc.format);
 	image_info.imageType = VkImageType::VK_IMAGE_TYPE_2D;
 	image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	image_info.mipLevels = 1; /// @todo Add mipmap spec to descriptor;
+	image_info.mipLevels = buffer_desc.mipmap_levels; 
 	image_info.sharingMode = VkSharingMode::VK_SHARING_MODE_EXCLUSIVE;
 	image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
 	image_info.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
@@ -377,7 +377,7 @@ std::shared_ptr<RenderTexture2DCubemapResource> VulkanRenderResourceManager::Cre
 	image_info.format = VulkanUnitConverter::TextureFormatToVulkanInternalformat(buffer_desc.format);
 	image_info.imageType = VkImageType::VK_IMAGE_TYPE_2D;
 	image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	image_info.mipLevels = 1; /// @todo Add mipmap spec to descriptor;
+	image_info.mipLevels = buffer_desc.mipmap_levels; 
 	image_info.sharingMode = VkSharingMode::VK_SHARING_MODE_EXCLUSIVE;
 	image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
 	image_info.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
@@ -535,6 +535,48 @@ void VulkanRenderResourceManager::CreateTexture2DCubemapDescriptor(const RenderD
 
 void VulkanRenderResourceManager::CopyFrameBufferDepthAttachment(RenderCommandList* list, std::shared_ptr<RenderFrameBufferResource> source_frame_buffer, std::shared_ptr<RenderFrameBufferResource> destination_frame_buffer)
 {
+	DEFINE_VK_INSTANCE(context);
+	VulkanRenderTextureResource* source_depth = static_cast<VulkanRenderTextureResource*>(
+		source_frame_buffer->GetBufferDescriptor().depth_stencil_attachment.resource->GetExtensionData());
+
+	VulkanRenderTextureResource* destination_depth = static_cast<VulkanRenderTextureResource*>(
+		destination_frame_buffer->GetBufferDescriptor().depth_stencil_attachment.resource->GetExtensionData());
+
+	if(destination_depth->GetResolution() != source_depth->GetResolution()) {
+		throw std::runtime_error("Resolution of depth attachments must match to allow depth copying.\n");
+	}
+
+	auto res = destination_depth->GetResolution();
+
+	VulkanRenderCommandList* vk_command_list = static_cast<VulkanRenderCommandList*>(list);
+	vk_command_list->OutsideRenderPass();
+	VulkanCommandListDependency src_dependency = {};
+	src_dependency.current_state = RenderState::TEXTURE_TRANSFER_SRC;
+	src_dependency.expected_state = RenderState::TEXTURE_TRANSFER_SRC;
+	src_dependency.type = VulkanCommandListDependencyType::READ;
+
+	VulkanCommandListDependency dst_dependency = {};
+	dst_dependency.current_state = RenderState::TEXTURE_TRANSFER_DST;
+	dst_dependency.expected_state = RenderState::TEXTURE_TRANSFER_DST;
+	dst_dependency.type = VulkanCommandListDependencyType::WRITE;
+	vk_command_list->AddDependency(source_frame_buffer->GetBufferDescriptor().depth_stencil_attachment.resource, src_dependency);
+	vk_command_list->AddDependency(destination_frame_buffer->GetBufferDescriptor().depth_stencil_attachment.resource, dst_dependency);
+
+	VkImageSubresourceLayers layers = {};
+	layers.mipLevel = 0;
+	layers.baseArrayLayer = 0;
+	layers.layerCount = 1;
+	layers.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+
+	VkImageCopy region = {};
+	region.srcSubresource = layers;
+	region.dstSubresource = layers;
+	region.srcOffset = {0,0};
+	region.dstOffset = {0,0};
+	region.extent = {res.x, res.y, 1};
+
+	vkCmdCopyImage(*vk_command_list->GetVkCommandBuffer(), source_depth->GetImage(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+	 destination_depth->GetImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 }
 
 void VulkanRenderResourceManager::SetFrameBufferColorAttachment(RenderCommandList* list, std::shared_ptr<RenderFrameBufferResource> framebuffer, std::shared_ptr<RenderResource> new_attachment, int index, int level)
@@ -550,6 +592,18 @@ void VulkanRenderResourceManager::SetFrameBufferColorAttachment(RenderCommandLis
 	desc.color_attachments[index].resource = new_attachment;
 
 	vk_framebuffer->dirty = true;
+}
+
+int VulkanRenderResourceManager::GetCubemapFaceIndex(RenderCubemapFace face)
+{
+    int indicies[6] = {};
+	indicies[(int)RenderCubemapFace::CUBEMAP_RIGHT] = 0;
+	indicies[(int)RenderCubemapFace::CUBEMAP_LEFT] = 1;
+	indicies[(int)RenderCubemapFace::CUBEMAP_TOP] = 3; // Y coordinate is flipped in vulkan
+	indicies[(int)RenderCubemapFace::CUBEMAP_BOTTOM] = 2; // Y coordinate is flipped in vulkan
+	indicies[(int)RenderCubemapFace::CUBEMAP_FRONT] = 4;
+	indicies[(int)RenderCubemapFace::CUBEMAP_BACK] = 5;
+	return indicies[(int)face];
 }
 
 std::shared_ptr<RenderBufferResource> VulkanRenderResourceManager::GetStagingBuffer(size_t size)

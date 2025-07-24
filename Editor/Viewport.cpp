@@ -245,7 +245,7 @@ void Viewport::Render()
     ImGui::SetCursorPos((ImGui::GetWindowSize() + ImVec2{ 0,ImGui::GetCurrentWindow()->TitleBarHeight() } - ImVec2{ viewport_size.x,viewport_size.y }) * 0.5f); 
 
     ImVec2 mid = ImGui::GetWindowSize() / 2;
-    ImGui::Image(static_cast<ImTextureID>(viewport_frame_buffer->GetBufferDescriptor().color_attachments[0].resource.get()), { viewport_size.x,viewport_size.y}, { 0,1 }, { 1,0 });
+    ImGui::Image(static_cast<ImTextureID>(viewport_frame_buffer->GetBufferDescriptor().color_attachments[0].resource.get()), { viewport_size.x,viewport_size.y});
     if (ImGui::IsItemClicked() && !(ImGuizmo::IsOver() || ImGuizmo::IsUsing())) {
         ImVec2 mouse_pos = ImGui::GetMousePos() - ImGui::GetWindowPos() - ImVec2{ 0,ImGui::GetCurrentWindow()->TitleBarHeight() / 2 } - mid + ImVec2{ viewport_size.x,viewport_size.y } / 2;
         mouse_pos /= ImVec2{ viewport_size.x,viewport_size.y };

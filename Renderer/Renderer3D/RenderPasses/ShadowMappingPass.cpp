@@ -63,7 +63,7 @@ void ShadowMappingPass::InitShadowComponent(Entity ent, LightType light_type)
 	RenderFrameBufferDescriptor framebuffer_desc;
 	framebuffer_desc.color_attachments = {};
 	if (light_type == LightType::DIRECTIONAL) {
-		RenderTexture2DArrayDescriptor desc;
+		RenderTexture2DArrayDescriptor desc = {};
 		desc.format = TextureFormat::DEFAULT_DEPTH;
 		desc.usage = TextureUsage::DEPTH_ATTACHMENT_READABLE;
 		desc.height = shadow_comp.res_y;
@@ -84,7 +84,7 @@ void ShadowMappingPass::InitShadowComponent(Entity ent, LightType light_type)
 		framebuffer_desc.depth_stencil_attachment = { 0,depth_array };
 	}
 	else if(light_type == LightType::POINT){
-		RenderTexture2DCubemapDescriptor depth_text_desc;
+		RenderTexture2DCubemapDescriptor depth_text_desc = {};
 		shadow_comp.res_y = shadow_comp.res_x;
 		depth_text_desc.res = shadow_comp.res_x;
 		depth_text_desc.format = TextureFormat::DEFAULT_DEPTH;
@@ -254,12 +254,18 @@ void ShadowMappingPass::RenderPointShadowCaster(Entity caster, RenderCommandList
 	Application::GetWorld().GetSpatialIndex().SphereCulling(Application::GetWorld(), culling_sphere, entities);
 
 	glm::mat4 light_views[6];
-	light_views[0] = projection * glm::lookAt(translation, translation + glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
-	light_views[1] = projection * glm::lookAt(translation, translation + glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
-	light_views[2] = projection * glm::lookAt(translation, translation + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	light_views[3] = projection * glm::lookAt(translation, translation + glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f));
-	light_views[4] = projection * glm::lookAt(translation, translation + glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f));
-	light_views[5] = projection * glm::lookAt(translation, translation + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+	light_views[RenderResourceManager::Get()->GetCubemapFaceIndex(RenderCubemapFace::CUBEMAP_RIGHT)] 
+		= projection * glm::lookAt(translation, translation + glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+	light_views[RenderResourceManager::Get()->GetCubemapFaceIndex(RenderCubemapFace::CUBEMAP_LEFT)] 
+		= projection * glm::lookAt(translation, translation + glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+	light_views[RenderResourceManager::Get()->GetCubemapFaceIndex(RenderCubemapFace::CUBEMAP_TOP)] 
+		= projection * glm::lookAt(translation, translation + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	light_views[RenderResourceManager::Get()->GetCubemapFaceIndex(RenderCubemapFace::CUBEMAP_BOTTOM)] 
+		= projection * glm::lookAt(translation, translation + glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f));
+	light_views[RenderResourceManager::Get()->GetCubemapFaceIndex(RenderCubemapFace::CUBEMAP_FRONT)] 
+		= projection * glm::lookAt(translation, translation + glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+	light_views[RenderResourceManager::Get()->GetCubemapFaceIndex(RenderCubemapFace::CUBEMAP_BACK)] 
+		= projection * glm::lookAt(translation, translation + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f));
 	RenderResourceManager::Get()->UploadDataToBuffer(list, data->const_buffer_point, light_views, sizeof(glm::mat4) * 6, sizeof(glm::mat4));
 	glm::vec4 trans = glm::vec4(translation, 1.0f);
 	RenderResourceManager::Get()->UploadDataToBuffer(list, data->const_buffer_point, glm::value_ptr(trans), sizeof(glm::vec4), sizeof(glm::mat4) * 7);

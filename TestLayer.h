@@ -427,7 +427,7 @@ public:
 
 #pragma endregion
 
-            auto cubemap = TextureManager::Get()->GetReflectionMap("asset:HDR_texture.tex");
+            //auto cubemap = TextureManager::Get()->GetReflectionMap("asset:HDR_texture.tex");
 
 
 #pragma region ModuleTest

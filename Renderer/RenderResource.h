@@ -10,6 +10,10 @@ enum class RenderResourceType : char  {
 	INVALID = 0, RenderBufferResource = 1, RenderTexture2DResource = 2, RenderFrameBufferResource = 3, RenderTexture2DArrayResource = 4, RenderTexture2DCubemapResource = 5
 };
 
+enum class RenderCubemapFace : char {
+	CUBEMAP_RIGHT = 0, CUBEMAP_LEFT = 1, CUBEMAP_TOP = 2, CUBEMAP_BOTTOM = 3, CUBEMAP_FRONT = 4, CUBEMAP_BACK = 5,
+};
+
 class RenderResourceDescriptor {
 public:
 	~RenderResourceDescriptor() {}
@@ -164,6 +168,7 @@ private:
 
 struct RenderTexture2DDescriptor {
 	int width, height;
+	int mipmap_levels = 1;
 	TextureFormat format;
 	std::shared_ptr<TextureSampler> sampler = nullptr;
 	TextureUsage usage = TextureUsage::DEFAULT;
@@ -190,6 +195,7 @@ protected:
 
 struct RenderTexture2DArrayDescriptor {
 	int width, height, num_of_textures;
+	int mipmap_levels = 1;
 	TextureFormat format;
 	std::shared_ptr<TextureSampler> sampler = nullptr;
 	TextureUsage usage = TextureUsage::DEFAULT;
@@ -218,6 +224,7 @@ protected:
 struct RenderTexture2DCubemapDescriptor {
 	bool generate_mips = false;
 	int res;
+	int mipmap_levels = 1;
 	TextureFormat format;
 	std::shared_ptr<TextureSampler> sampler = nullptr;
 	TextureUsage usage = TextureUsage::DEFAULT;
