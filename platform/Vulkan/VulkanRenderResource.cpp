@@ -45,6 +45,47 @@ void VulkanRenderTexture2DResource::UnMap()
 	throw std::runtime_error("Not Implemented");
 }
 
+VkImageView VulkanRenderTexture2DResource::GetImageView(uint32_t mip_level)
+{
+	// The base index is always created at resource creation and represents the whole resource.
+	if(mip_level == 0) { 
+		return views[0];
+	}
+
+	if(mip_level >= descriptor.mipmap_levels) {
+		throw std::runtime_error("Invalid mip level passed to GetImageView.");
+	}
+
+	DEFINE_VK_INSTANCE(context);
+
+	if(views.size() == 1) {
+		views.reserve(descriptor.mipmap_levels);
+		for(int i = 1; i < descriptor.mipmap_levels; i++) {
+			VkImageView view;
+			
+			VkImageSubresourceRange range = {};
+			range.baseArrayLayer = 0;
+			range.baseMipLevel = i;
+			range.layerCount = VK_REMAINING_ARRAY_LAYERS;
+			range.levelCount = VK_REMAINING_MIP_LEVELS;
+			range.aspectMask = VulkanUnitConverter::IsTextureFormatDepth(descriptor.format) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+
+			VkImageViewCreateInfo view_info = {};
+			view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+			view_info.components = { VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY };
+			view_info.format = VulkanUnitConverter::TextureFormatToVulkanInternalformat(descriptor.format);
+			view_info.image = image;
+			view_info.subresourceRange = range;
+			view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+
+			vkCreateImageView(context->GetVkDevice(), &view_info, NULL, &view);
+			views.push_back(view);
+		}
+	}
+
+    return views[mip_level];
+}
+
 VulkanRenderTexture2DResource::~VulkanRenderTexture2DResource()
 {
 
@@ -55,7 +96,9 @@ void VulkanRenderTexture2DResource::DestroyResource()
 	DEFINE_VK_INSTANCE(context);
 	VmaAllocator& allocator = context->GetVmaAllocator();
 	vmaDestroyImage(allocator, image, alloc);
-	vkDestroyImageView(context->GetVkDevice(), view, NULL);
+	for(auto view : views) {
+		vkDestroyImageView(context->GetVkDevice(), view, NULL);
+	}
 }
 
 
@@ -144,6 +187,7 @@ void VulkanRenderFrameBufferResource::RecalculateRenderingInfo()
 	attachment_info.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 	attachment_info.resolveMode = VK_RESOLVE_MODE_NONE;
 
+	attachment_info_store.clear();
 	attachment_info_store.reserve(info.colorAttachmentCount + 1);
 	
 	if (has_depth) {
@@ -162,7 +206,7 @@ void VulkanRenderFrameBufferResource::RecalculateRenderingInfo()
 		for (auto color_attachment : descriptor.color_attachments) {
 			VkRenderingAttachmentInfo color_attachment_info = {};
 			auto texture = static_cast<VulkanRenderTexture2DResource*>(color_attachment.resource->GetExtensionData());
-			attachment_info.imageView = texture->GetImageView();
+			attachment_info.imageView = texture->GetImageView(color_attachment.level);
 			attachment_info_store.push_back(attachment_info);
 		}
 		info.pColorAttachments = &attachment_info_store[1];
@@ -181,19 +225,61 @@ void VulkanRenderTexture2DArrayResource::UnMap()
 	throw std::runtime_error("Not Implemented");
 }
 
+VkImageView VulkanRenderTexture2DArrayResource::GetImageView(uint32_t mip_level)
+{
+    // The base index is always created at resource creation and represents the whole resource.
+	if(mip_level == 0) { 
+		return views[0];
+	}
+
+	if(mip_level >= descriptor.mipmap_levels) {
+		throw std::runtime_error("Invalid mip level passed to GetImageView.");
+	}
+
+	DEFINE_VK_INSTANCE(context);
+
+	if(views.size() == 1) {
+		views.reserve(descriptor.mipmap_levels);
+		for(int i = 1; i < descriptor.mipmap_levels; i++) {
+			VkImageView view;
+			
+				VkImageSubresourceRange range = {};
+				range.baseArrayLayer = 0;
+				range.baseMipLevel = i;
+				range.layerCount = VK_REMAINING_ARRAY_LAYERS;
+				range.levelCount = VK_REMAINING_MIP_LEVELS;
+				range.aspectMask = VulkanUnitConverter::IsTextureFormatDepth(descriptor.format) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+
+				VkImageViewCreateInfo view_info = {};
+				view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+				view_info.components = { VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY };
+				view_info.format = VulkanUnitConverter::TextureFormatToVulkanInternalformat(descriptor.format);
+				view_info.image = image;
+				view_info.subresourceRange = range;
+				view_info.viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+
+			vkCreateImageView(context->GetVkDevice(), &view_info, NULL, &view);
+			views.push_back(view);
+		}
+	}
+
+    return views[mip_level];
+}
+
 void VulkanRenderTexture2DArrayResource::DestroyResource()
 {
 	DEFINE_VK_INSTANCE(context);
 	VmaAllocator& allocator = context->GetVmaAllocator();
 	vmaDestroyImage(allocator, image, alloc);
-	vkDestroyImageView(context->GetVkDevice(), view, NULL);
+	for(auto view : views) {
+		vkDestroyImageView(context->GetVkDevice(), view, NULL);
+	}
 }
 
 VulkanRenderTexture2DArrayResource::~VulkanRenderTexture2DArrayResource()
 {
 
 }
-
 
 
 void* VulkanRenderTexture2DCubemapResource::Map()
@@ -206,12 +292,55 @@ void VulkanRenderTexture2DCubemapResource::UnMap()
 	throw std::runtime_error("Not Implemented");
 }
 
+VkImageView VulkanRenderTexture2DCubemapResource::GetImageView(uint32_t mip_level)
+{
+    // The base index is always created at resource creation and represents the whole resource.
+	if(mip_level == 0) { 
+		return views[0];
+	}
+
+	if(mip_level >= descriptor.mipmap_levels) {
+		throw std::runtime_error("Invalid mip level passed to GetImageView.");
+	}
+
+	DEFINE_VK_INSTANCE(context);
+
+	if(views.size() == 1) {
+		views.reserve(descriptor.mipmap_levels);
+		for(int i = 1; i < descriptor.mipmap_levels; i++) {
+			VkImageView view;
+			
+			VkImageSubresourceRange range = {};
+			range.baseArrayLayer = 0;
+			range.baseMipLevel = i;
+			range.layerCount = VK_REMAINING_ARRAY_LAYERS;
+			range.levelCount = VK_REMAINING_MIP_LEVELS;
+			range.aspectMask = VulkanUnitConverter::IsTextureFormatDepth(descriptor.format) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+
+			VkImageViewCreateInfo view_info = {};
+			view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+			view_info.components = { VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY };
+			view_info.format = VulkanUnitConverter::TextureFormatToVulkanInternalformat(descriptor.format);
+			view_info.image = image;
+			view_info.subresourceRange = range;
+			view_info.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
+
+			vkCreateImageView(context->GetVkDevice(), &view_info, NULL, &view);
+			views.push_back(view);
+		}
+	}
+
+    return views[mip_level];
+}
+
 void VulkanRenderTexture2DCubemapResource::DestroyResource()
 {
 	DEFINE_VK_INSTANCE(context);
 	VmaAllocator& allocator = context->GetVmaAllocator();
 	vmaDestroyImage(allocator, image, alloc);
-	vkDestroyImageView(context->GetVkDevice(), view, NULL);
+	for(auto view : views) {
+		vkDestroyImageView(context->GetVkDevice(), view, NULL);
+	}
 }
 
 VulkanRenderTexture2DCubemapResource::~VulkanRenderTexture2DCubemapResource()

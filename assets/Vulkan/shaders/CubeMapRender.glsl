@@ -33,6 +33,7 @@ void main() {
 	vec4 screenpos = inverse_view_projection * vec4(position.xy, 1.0, 1.0);
 	gl_Position = vec4(position.xy, 1.0, 1.0);
 	screen_pos = screenpos.xyz;
+	screen_pos.y = -screen_pos.y;
 }
 
 

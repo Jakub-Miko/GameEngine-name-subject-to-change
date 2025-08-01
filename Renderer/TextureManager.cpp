@@ -367,7 +367,7 @@ std::shared_ptr<ReflectionMap> TextureManager::GetReflectionMap(const std::strin
         cb_desc.res = SPECULAR_REFLECTION_RES;
         cb_desc.generate_mips = true;
         cb_desc.sampler = data->reflection_sampler;
-        cb_desc.mipmap_levels = 5;
+        cb_desc.mipmap_levels = 6;
         std::shared_ptr<RenderTexture2DCubemapResource> converted_cubemap_specular = RenderResourceManager::Get()->CreateTextureCubemap(cb_desc);
 
         auto list = Renderer::Get()->GetRenderCommandList();
@@ -406,7 +406,7 @@ std::shared_ptr<ReflectionMap> TextureManager::GetReflectionMap(const std::strin
         for (float roughness = 0.0; roughness <= 1.0; roughness += 0.2f) {
             RenderResourceManager::Get()->SetFrameBufferColorAttachment(list, data->framebuffer, converted_cubemap_specular, 0,i);
             RenderResourceManager::Get()->UploadDataToBuffer(list, data->const_buffer_specular, &roughness, sizeof(float), sizeof(glm::mat4) * 6);
-            
+            list->SetRenderTarget(data->framebuffer);
             unsigned int res = SPECULAR_REFLECTION_RES * std::pow(0.5, i);
             list->SetPipeline(data->specular_generation_pipeline);
             list->SetRenderTarget(data->framebuffer);

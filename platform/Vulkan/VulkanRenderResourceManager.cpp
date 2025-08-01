@@ -204,7 +204,7 @@ std::shared_ptr<RenderTexture2DResource> VulkanRenderResourceManager::CreateText
 	new_texture->alloc = allocation;
 	new_texture->image = image;
 	new_texture->default_state = default_state;
-	new_texture->view = view;
+	new_texture->views.push_back(view);
 
 	uint64_t timeline = context->GetCurrentCpuTimelineValue();
 	new_texture->read_timeline = timeline;
@@ -339,7 +339,7 @@ std::shared_ptr<RenderTexture2DArrayResource> VulkanRenderResourceManager::Creat
 	new_texture->alloc = allocation;
 	new_texture->image = image;
 	new_texture->default_state = default_state;
-	new_texture->view = view;
+	new_texture->views.push_back(view);
 
 	uint64_t timeline = context->GetCurrentCpuTimelineValue();
 	new_texture->read_timeline = timeline;
@@ -416,7 +416,7 @@ std::shared_ptr<RenderTexture2DCubemapResource> VulkanRenderResourceManager::Cre
 	new_texture->alloc = allocation;
 	new_texture->image = image;
 	new_texture->default_state = default_state;
-	new_texture->view = view;
+	new_texture->views.push_back(view);
 
 	uint64_t timeline = context->GetCurrentCpuTimelineValue();
 	new_texture->read_timeline = timeline;
@@ -829,7 +829,7 @@ VulkanRenderTexture2DResource* VulkanRenderResourceManager::CreateNonManagedText
 	texture->read_timeline = timeline;
 	texture->write_timeline = timeline;
 	texture->default_state = default_state;
-	texture->view = view;
+	texture->views.push_back(view);
 
 	return texture;
 }

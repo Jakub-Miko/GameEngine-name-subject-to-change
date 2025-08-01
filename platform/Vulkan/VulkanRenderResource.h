@@ -29,7 +29,7 @@ public:
 	RenderState default_state = RenderState::UNINITIALIZED;
 	virtual RenderState GetDefaultState() override { return default_state; };
 	virtual bool IsTexture() override { return true; };
-	virtual VkImageView GetImageView() = 0;
+	virtual VkImageView GetImageView(uint32_t mip_level = 0) = 0;
 	virtual VkImage GetImage() = 0;
 	virtual TextureFormat GetFormat() = 0;
 	virtual glm::uvec2 GetResolution() = 0;
@@ -111,7 +111,7 @@ public:
 
 	virtual TextureUsage GetUsage() override { return descriptor.usage; };
 
-	virtual VkImageView GetImageView() override { return view;  }
+	virtual VkImageView GetImageView(uint32_t mip_level = 0) override;
 
 	virtual glm::uvec2 GetResolution() override { return { descriptor.width, descriptor.height }; };
 
@@ -121,11 +121,11 @@ private:
 	virtual ~VulkanRenderTexture2DResource();
 	virtual void DestroyResource() override;
 	VulkanRenderTexture2DResource(const RenderTexture2DDescriptor& desc, RenderState initial_state = RenderState::UNINITIALIZED)
-		: RenderTexture2DResource(desc, initial_state) {
+		: RenderTexture2DResource(desc, initial_state), views() {
 
 	}
 	VkImage image;
-	VkImageView view;
+	std::vector<VkImageView> views; ///< one view for each mip level if we need to bind individual levels as attachments
 	VmaAllocation alloc;
 };
 
@@ -147,7 +147,7 @@ public:
 
 	virtual TextureUsage GetUsage() override { return descriptor.usage; };
 
-	virtual VkImageView GetImageView() override { return view; }
+	virtual VkImageView GetImageView(uint32_t mip_level = 0) override;
 
 	virtual glm::uvec2 GetResolution() override { return { descriptor.width, descriptor.height }; };
 
@@ -155,14 +155,14 @@ public:
 
 private:
 	VulkanRenderTexture2DArrayResource(const RenderTexture2DArrayDescriptor& desc, RenderState initial_state = RenderState::UNINITIALIZED, unsigned int render_id = 0)
-		: RenderTexture2DArrayResource(desc, initial_state) {
+		: RenderTexture2DArrayResource(desc, initial_state), views() {
 
 	}
 	virtual void DestroyResource() override;
 	virtual ~VulkanRenderTexture2DArrayResource();
 
 	VkImage image;
-	VkImageView view;
+	std::vector<VkImageView> views; ///< one view for each mip level if we need to bind individual levels as attachments
 	VmaAllocation alloc;
 };
 
@@ -184,7 +184,7 @@ public:
 
 	virtual TextureUsage GetUsage() override { return descriptor.usage; };
 
-	virtual VkImageView GetImageView() override { return view; }
+	virtual VkImageView GetImageView(uint32_t mip_level = 0) override;
 
 	virtual glm::uvec2 GetResolution() override { return { descriptor.res, descriptor.res }; };
 
@@ -192,14 +192,14 @@ public:
 
 private:
 	VulkanRenderTexture2DCubemapResource(const RenderTexture2DCubemapDescriptor& desc, RenderState initial_state = RenderState::UNINITIALIZED, unsigned int render_id = 0)
-		: RenderTexture2DCubemapResource(desc, initial_state) {
+		: RenderTexture2DCubemapResource(desc, initial_state), views() {
 
 	}
 	virtual void DestroyResource() override;
 	~VulkanRenderTexture2DCubemapResource();
 
 	VkImage image;
-	VkImageView view;
+	std::vector<VkImageView> views; ///< one view for each mip level if we need to bind individual levels as attachments
 	VmaAllocation alloc;
 };
 
