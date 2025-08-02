@@ -73,6 +73,7 @@ void VulkanRenderCommandQueue::ExecuteRenderCommandList(RenderCommandList* list)
 {
 	DEFINE_VK_INSTANCE(context);
 	VulkanRenderCommandList* vk_command_list = static_cast<VulkanRenderCommandList*>(list);
+	submit_mutex.lock();
 	uint64_t value = ++last_buffer_signaled; /// @todo this can cause a datarace make sure its locked behind the submission mutex
 	VkTimelineSemaphoreSubmitInfo submit_sync = {};
 
@@ -95,7 +96,6 @@ void VulkanRenderCommandQueue::ExecuteRenderCommandList(RenderCommandList* list)
 	info.pWaitDstStageMask = NULL;
 
 
-	submit_mutex.lock();
 	
 	auto sync = vk_command_list->dependency_handler->FinalizeDependencies(vk_command_list, value);
 

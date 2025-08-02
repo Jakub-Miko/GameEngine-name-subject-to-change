@@ -643,7 +643,7 @@ void VulkanRenderCommandList::FlushDrawState()
 			is_scissorrect_defined = true;
 		}
 		if(!is_viewport_defined) {
-			if(viewport.max_depth == viewport.max_depth) {
+			if(viewport.min_depth == viewport.max_depth) {
 				viewport.offset = {area.offset.x, area.offset.y};
 				viewport.size = {area.extent.width, area.extent.height};
 				viewport.min_depth = 0.0f;
