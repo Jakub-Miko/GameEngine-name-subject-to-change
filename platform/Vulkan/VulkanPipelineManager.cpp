@@ -117,7 +117,7 @@ std::shared_ptr<Pipeline> VulkanPipelineManager::CreatePipeline(const PipelineDe
 	VkPipelineRasterizationStateCreateInfo raster_info = {};
 	raster_info.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 	raster_info.cullMode = VulkanUnitConverter::CullModeTOVulkanFlags(desc.cull_mode);
-	raster_info.depthClampEnable = false;
+	raster_info.depthClampEnable = desc.enable_depth_clip ? false : true; // Yes this seems backwards but its not check the spec.
 	raster_info.depthBiasEnable = false;
 	raster_info.lineWidth = 1;
 	raster_info.frontFace = VkFrontFace::VK_FRONT_FACE_COUNTER_CLOCKWISE;
