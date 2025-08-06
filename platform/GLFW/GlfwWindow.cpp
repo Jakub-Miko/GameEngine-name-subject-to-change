@@ -107,7 +107,7 @@ void GlfwWindow::PollEvents()
 
 void GlfwWindow::SwapBuffers()
 {
-    glfwSwapBuffers(m_Window);
+    //glfwSwapBuffers(m_Window);
 }
 
 void GlfwWindow::RegistorDragAndDropCallback(void(*callback)(int count, std::vector<std::string>paths))

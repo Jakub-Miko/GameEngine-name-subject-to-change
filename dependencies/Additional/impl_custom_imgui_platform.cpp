@@ -261,28 +261,105 @@ static void ImGui_custom_DestroyWindow(ImGuiViewport* viewport)
 #elif defined Vulkan_API
 void impl_custom_imgui_platform::UpdatePlatformWindows()
 {
+    ImGuiContext* g = ImGui::GetCurrentContext();
+    if (g->DragDropActive) {
     
+    }
+    // if (Editor::Get()->IsEditorEnabled() && g->DragDropActive && strcmp(g->DragDropPayload.DataType, IMGUI_PAYLOAD_TYPE_WINDOW) == 0)  {
+    //     auto gl_command_queue = static_cast<OpenGLRenderCommandQueue*>(Renderer::Get()->GetCommandQueue());
+    //     std::shared_ptr<RenderFence> fence = std::shared_ptr<RenderFence>(Renderer::Get()->GetFence());
+    //     gl_command_queue->Signal(fence, 1);
+    //     fence->WaitForValue(1);
+    // }
+
+    auto context = glfwGetCurrentContext();
+    ImGui::UpdatePlatformWindows();
+    ImGui::RenderPlatformWindowsDefault();
+    //glfwMakeContextCurrent(context);
 }
 
 static void ImGui_custom_SwapBuffers(ImGuiViewport* viewport, void*)
 {
-   
+    ImGui_ImplGlfw_Data_internal* bd = ImGui_ImplGlfw_GetBackendData();
+    ImGui_ImplGlfw_ViewportData_internal vd = *(ImGui_ImplGlfw_ViewportData_internal*)viewport->PlatformUserData;
+    //glfwMakeContextCurrent(vd.Window);
+    //glfwSwapBuffers(vd.Window);
 }
 
 static void ImGui_custom_RenderWindow(ImGuiViewport* viewport, void*)
 {
-    
+    ImGui_ImplGlfw_Data_internal* bd = ImGui_ImplGlfw_GetBackendData();
+    ImGui_ImplGlfw_ViewportData_internal vd = *(ImGui_ImplGlfw_ViewportData_internal*)viewport->PlatformUserData;
+    //glfwMakeContextCurrent(vd.Window);
 }
 
 
 void impl_custom_imgui_platform::ImGui_custom_CreateWindow(ImGuiViewport* viewport)
 {
-   
+        //glfwMakeContextCurrent(nullptr);
+        ImGui_ImplGlfw_Data_internal* bd = ImGui_ImplGlfw_GetBackendData();
+        ImGui_ImplGlfw_ViewportData_internal* vd = IM_NEW(ImGui_ImplGlfw_ViewportData_internal)();
+        viewport->PlatformUserData = vd;
+
+        // GLFW 3.2 unfortunately always set focus on glfwCreateWindow() if GLFW_VISIBLE is set, regardless of GLFW_FOCUSED
+        // With GLFW 3.3, the hint GLFW_FOCUS_ON_SHOW fixes this problem
+        glfwWindowHint(GLFW_VISIBLE, false);
+        glfwWindowHint(GLFW_FOCUSED, false);
+    #if GLFW_HAS_FOCUS_ON_SHOW
+        glfwWindowHint(GLFW_FOCUS_ON_SHOW, false);
+    #endif
+        glfwWindowHint(GLFW_DECORATED, (viewport->Flags & ImGuiViewportFlags_NoDecoration) ? false : true);
+    #if GLFW_HAS_WINDOW_TOPMOST
+        glfwWindowHint(GLFW_FLOATING, (viewport->Flags & ImGuiViewportFlags_TopMost) ? true : false);
+    #endif
+        GLFWwindow* share_window = bd->Window;
+        vd->Window = glfwCreateWindow((int)viewport->Size.x, (int)viewport->Size.y, "No Title Yet", NULL, NULL);
+        vd->WindowOwned = true;
+        viewport->PlatformHandle = (void*)vd->Window;
+    #ifdef _WIN32
+        viewport->PlatformHandleRaw = glfwGetWin32Window(vd->Window);
+    #endif
+        glfwSetWindowPos(vd->Window, (int)viewport->Pos.x, (int)viewport->Pos.y);
+
+        // Install GLFW callbacks for secondary viewports
+        glfwSetWindowFocusCallback(vd->Window, ImGui_ImplGlfw_WindowFocusCallback);
+        glfwSetCursorEnterCallback(vd->Window, ImGui_ImplGlfw_CursorEnterCallback);
+        glfwSetCursorPosCallback(vd->Window, ImGui_ImplGlfw_CursorPosCallback);
+        glfwSetMouseButtonCallback(vd->Window, ImGui_ImplGlfw_MouseButtonCallback);
+        glfwSetScrollCallback(vd->Window, ImGui_ImplGlfw_ScrollCallback);
+        glfwSetKeyCallback(vd->Window, ImGui_ImplGlfw_KeyCallback);
+        glfwSetCharCallback(vd->Window, ImGui_ImplGlfw_CharCallback);
+        glfwSetWindowCloseCallback(vd->Window, ImGui_ImplGlfw_WindowCloseCallback);
+        glfwSetWindowPosCallback(vd->Window, ImGui_ImplGlfw_WindowPosCallback);
+        glfwSetWindowSizeCallback(vd->Window, ImGui_ImplGlfw_WindowSizeCallback);
+
+        glfwSetDropCallback(vd->Window, &GlfwWindow::DropCallback);
 }
 
 static void ImGui_custom_DestroyWindow(ImGuiViewport* viewport)
 {
-   
+    ImGui_ImplGlfw_Data_internal* bd = ImGui_ImplGlfw_GetBackendData();
+    if (ImGui_ImplGlfw_ViewportData_internal* vd = (ImGui_ImplGlfw_ViewportData_internal*)viewport->PlatformUserData)
+    {
+        if (vd->WindowOwned)
+        {
+#if !GLFW_HAS_MOUSE_PASSTHROUGH && GLFW_HAS_WINDOW_HOVERED && defined(_WIN32)
+            HWND hwnd = (HWND)viewport->PlatformHandleRaw;
+            ::RemovePropA(hwnd, "IMGUI_VIEWPORT");
+#endif
+
+            // Release any keys that were pressed in the window being destroyed and are still held down,
+            // because we will not receive any release events after window is destroyed.
+            for (int i = 0; i < IM_ARRAYSIZE(bd->KeyOwnerWindows); i++)
+                if (bd->KeyOwnerWindows[i] == vd->Window)
+                    ImGui_ImplGlfw_KeyCallback(vd->Window, i, 0, GLFW_RELEASE, 0); // Later params are only used for main viewport, on which this function is never called.
+
+            glfwDestroyWindow(vd->Window);
+        }
+        vd->Window = NULL;
+        IM_DELETE(vd);
+    }
+    viewport->PlatformUserData = viewport->PlatformHandle = NULL;
 }
 
 #endif

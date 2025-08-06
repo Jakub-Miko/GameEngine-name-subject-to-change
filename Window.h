@@ -52,6 +52,7 @@ public:
     /**
      * @brief Swap front and back buffers to display the rendered frame to the window and allow for the rendering of a new frame
      * @warning in the case of OpenGL needs to be called on the Render thread
+     * @deprecated This will need to be replaced since the vulkan Render API implementation doesn't use it.
     */
     virtual void SwapBuffers() = 0;
 

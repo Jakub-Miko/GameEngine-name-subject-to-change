@@ -211,6 +211,7 @@ public:
 		case TextureFormat::UNDEFINED:						return false;
 		case TextureFormat::DEFAULT_DEPTH:					return true;
 		case TextureFormat::DEFAULT_DEPTH_STENCIL:			return true;
+		case TextureFormat::BGRA_SRGB:						return false;
 		default:
 			throw std::runtime_error("Conversion failed");
 		}
@@ -227,6 +228,7 @@ public:
 		case TextureFormat::R_UNSIGNED_CHAR:                return TextureUsage::SAMPLE_WRITABLE;
 		case TextureFormat::R_UNSIGNED_CHAR_NORM:           return TextureUsage::SAMPLE_WRITABLE;
 		case TextureFormat::R_8FLOAT:						return TextureUsage::SAMPLE_WRITABLE;
+		case TextureFormat::BGRA_SRGB:						return TextureUsage::SAMPLE_WRITABLE;
 		case TextureFormat::DEFAULT_DEPTH:					return TextureUsage::DEPTH_ATTACHMENT;
 		case TextureFormat::DEFAULT_DEPTH_STENCIL:			return TextureUsage::DEPTH_ATTACHMENT;
 		default:
@@ -320,6 +322,7 @@ public:
 	static int TextureFormatToTexelSize(TextureFormat type) {
 		switch (type) {
 		case TextureFormat::RGBA_UNSIGNED_CHAR:				return 4*sizeof(unsigned char);
+		case TextureFormat::BGRA_SRGB:				return 4*sizeof(unsigned char);
 		case TextureFormat::RGB_UNSIGNED_CHAR:				return 3*sizeof(unsigned char);
 		case TextureFormat::DEPTH24_STENCIL8_UNSIGNED_CHAR:	return 4*sizeof(unsigned char);
 		case TextureFormat::RGB_32FLOAT:					return 3*sizeof(float);

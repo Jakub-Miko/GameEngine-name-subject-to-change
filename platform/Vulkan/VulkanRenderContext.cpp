@@ -217,6 +217,13 @@ void VulkanRenderContext::RecreateSwapchain()
 		vkDestroySemaphore(vk_device, ref, NULL);
 	}
 
+	for (auto& ref : frame_sync.render_fence) {
+		vkDestroySemaphore(vk_device, ref, NULL);
+	}
+
+	frame_sync.present_fence.clear();
+	frame_sync.render_fence.clear();
+
 	vkb::destroy_swapchain(vkb_swapchain);
 
 	default_framebuffers.clear();
@@ -282,7 +289,6 @@ void VulkanRenderContext::Init()
 {
 	vkb::PhysicalDeviceSelector selector(vkb_instance);
 	selector.set_surface(vk_surface);
-
 	VkPhysicalDeviceVulkan12Features features_12 = {};
 	features_12.bufferDeviceAddress = true;
 	features_12.descriptorIndexing = true;

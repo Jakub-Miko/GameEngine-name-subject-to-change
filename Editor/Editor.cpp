@@ -371,9 +371,10 @@ void Editor::Run()
 			
 	}
 #elif defined Vulkan_API
-
-	ImGui::UpdatePlatformWindows();
-	ImGui::RenderPlatformWindowsDefault();
+    if (io->ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+	{
+		impl_custom_imgui_platform::UpdatePlatformWindows();
+	}
 
 #endif 
 

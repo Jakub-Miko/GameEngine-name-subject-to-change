@@ -80,7 +80,7 @@ void DeferredLightingPass::InitPostProcessingPassData() {
 	pipeline_desc.polygon_render_mode = PrimitivePolygonRenderMode::DEFAULT;
 	pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/LightingPassShader.glsl");
 	pipeline_desc.framebuffer_format.color_attachemt_formats = {
-		{ TextureFormat::RGBA_UNSIGNED_CHAR }
+		{ TextureFormat::BGRA_SRGB }
 	};
 	data->pipeline = PipelineManager::Get()->CreatePipeline(pipeline_desc);
 
@@ -112,7 +112,7 @@ void DeferredLightingPass::InitPostProcessingPassData() {
 	auto sampler = TextureSampler::CreateSampler(sampler_desc);
 
 	RenderTexture2DDescriptor color_texture_desc;
-	color_texture_desc.format = TextureFormat::RGBA_UNSIGNED_CHAR;
+	color_texture_desc.format = TextureFormat::BGRA_SRGB;
 	color_texture_desc.usage = TextureUsage::COLOR_ATTACHMENT_READABLE;
 	color_texture_desc.height = Application::Get()->GetWindow()->GetProperties().resolution_y;
 	color_texture_desc.width = Application::Get()->GetWindow()->GetProperties().resolution_x;

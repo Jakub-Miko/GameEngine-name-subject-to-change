@@ -27,7 +27,7 @@ Viewport::Viewport()
     auto fb_sampler = TextureSampler::CreateSampler(smp_desc);
 
     RenderTexture2DDescriptor color_desc;
-    color_desc.format = TextureFormat::RGB_UNSIGNED_CHAR;
+    color_desc.format = TextureFormat::BGRA_SRGB;
     color_desc.usage = TextureUsage::COLOR_ATTACHMENT_READABLE;
     color_desc.height = viewport_resolution_y;
     color_desc.width = viewport_resolution_x;

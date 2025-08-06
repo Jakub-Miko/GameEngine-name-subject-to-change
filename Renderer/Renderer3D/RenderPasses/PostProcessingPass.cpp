@@ -47,7 +47,7 @@ void PostProcessingPass::InitPostProcessingPassData() {
 	pipeline_desc.polygon_render_mode = PrimitivePolygonRenderMode::DEFAULT;
 	pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/PostProcessingShader.glsl");
 	pipeline_desc.framebuffer_format.color_attachemt_formats = {
-		{ TextureFormat::RGBA_UNSIGNED_CHAR }
+		{ TextureFormat::BGRA_SRGB }
 	};
 	data->pipeline = PipelineManager::Get()->CreatePipeline(pipeline_desc);
 
