@@ -417,7 +417,7 @@ Future<read_pixel_data> OpenGLRenderResourceManager::GetPixelValue(std::shared_p
 		{
 		case TextureFormat::RGBA_32FLOAT:
 		{
-			glm::vec4 value; //This is just fucked, what am i even doing, i just realized this is a suicide attempt.
+			glm::vec4 value; //This is just fucked, what am i even doing, i just realized this is a suicide attempt. (2 years later and I realize i should have maybe described why it is fucked because i have no idea anymore.)
 			glReadBuffer(GL_COLOR_ATTACHMENT0 + color_attachment_index);
 			glReadPixels(x_int, y_int, 1, 1, OpenGLUnitConverter::TextureFormatToGLFormat(texture->GetBufferDescriptor().format), OpenGLUnitConverter::TextureFormatToGLDataType(texture->GetBufferDescriptor().format), glm::value_ptr(value));
 			data->SetValue(read_pixel_data(value));

@@ -7,21 +7,26 @@
 #include <vulkan/vulkan.h>
 
 enum class VulkanCommandListDependencyType : char {
-    WRITE, READ, INVALID
+    WRITE, READ, INVALID, NONE
 };
 
 class VulkanRenderCommandList;
 
 struct VulkanCommandListDependency {
-    VulkanCommandListDependency(VulkanCommandListDependencyType type, RenderState current_state, RenderState expected_state) 
-        : type(type),previous_access(type), expected_state(expected_state), current_state(current_state) {}
+    VulkanCommandListDependencyType access_type;
+    RenderState desired_state;
+};
 
-    VulkanCommandListDependency() = default;
+struct VulkanCommandListDependencyState {
 
-    VulkanCommandListDependencyType type = VulkanCommandListDependencyType::INVALID;
-    VulkanCommandListDependencyType previous_access = VulkanCommandListDependencyType::INVALID;
-    RenderState expected_state = RenderState::COMMON;
-    RenderState current_state = RenderState::COMMON;
+    VulkanCommandListDependencyState() = default;
+
+    VulkanCommandListDependencyType type = VulkanCommandListDependencyType::INVALID; // aggregate access type of all accesses in a command buffer.
+    VulkanCommandListDependencyType previous_access = VulkanCommandListDependencyType::INVALID; // type of the previous access to the resource in the command buffer
+    RenderState current_state = RenderState::COMMON; // The state after the previous operation on the resource in the command buffer
+    RenderState expected_state = RenderState::COMMON; // The state the resource is expected to be in at the beginning of the command buffer, dictated by the default_state of the resource
+    RenderState desired_final_state = RenderState::EMPTY;  // The state the resource should transition to at the end of the command buffer, used to change resource default state
+    bool allow_uninitialized = false; // whether the resource can be in an uninitialized state when submitting the command buffer 
 };
 
 struct VulkanCommandListDependencyExtra { //Used to tell Render Resource manager some extra information for the sake of optimizations
@@ -50,7 +55,7 @@ struct VulkanDrawState {
 
     void InvalidateDrawDependencies(VulkanRenderCommandList* list, std::shared_ptr<Pipeline> new_pipeline); // Remove all drawcall dependencies after an invalid pipeline was set
 
-    void AddDrawDependency(VulkanRenderCommandList* list, std::shared_ptr<RenderResource> resource, VulkanCommandListDependency dependency, uint32_t bind_id);
+    void AddDrawDependency(VulkanRenderCommandList* list, std::shared_ptr<RenderResource> resource, VulkanCommandListDependencyType access_type, RenderState desired_state, uint32_t bind_id);
 
     bool IsPipelineReady();
 
@@ -66,11 +71,13 @@ public:
         uint64_t timeline_wait;
     };
 
-    virtual VulkanCommandListDependency AddDependency(VulkanRenderCommandList* list, std::shared_ptr<RenderResource> resource,
-        VulkanCommandListDependency dependency, VulkanCommandListDependencyExtra extra = VulkanCommandListDependencyExtra()) = 0; // add an immediate dependency
+    virtual VulkanCommandListDependencyState AddDependency(VulkanRenderCommandList* list, std::shared_ptr<RenderResource> resource,
+        VulkanCommandListDependencyType access_type, RenderState desired_state, VulkanCommandListDependencyExtra extra = VulkanCommandListDependencyExtra()) = 0; // add an immediate dependency
+
+    virtual void SetResourceDefaultState(std::shared_ptr<RenderResource> resource, RenderState state) = 0;
 
     virtual void AddDrawDependency(VulkanRenderCommandList* list, std::shared_ptr<RenderResource> resource,
-        VulkanCommandListDependency dependency, uint32_t root_paramter_id) = 0; // add a dependency for drawcalls
+        VulkanCommandListDependencyType access_type, RenderState desired_state, uint32_t root_paramter_id) = 0; // add a dependency for drawcalls
 
     virtual void AddMaterialDependency(VulkanRenderCommandList* list, std::shared_ptr<Material> material, uint32_t root_paramter_id) = 0; // add a material dependency for drawcalls
 
@@ -83,7 +90,7 @@ public:
 
     virtual void AddDescriptorTableDependency(VulkanRenderCommandList* list, RenderDescriptorTable desc_table) = 0;  
 
-    virtual VulkanCommandListDependency GetDependency(std::shared_ptr<RenderResource> resource) = 0;
+    virtual VulkanCommandListDependencyState GetDependency(std::shared_ptr<RenderResource> resource) = 0;
     virtual VulkanDependencyHandlerFeedback FinalizeDependencies(RenderCommandList* list, uint64_t new_timeline_value) = 0;
     virtual void Reset() = 0;
 };
@@ -92,12 +99,13 @@ class DefaultVulkanDependencyHandler : public VulkanDependencyHandler {
 public:
     DefaultVulkanDependencyHandler() : dependencies(), non_dependent_resources(), framebuffer_dependency_pending(true) {}
 
-    virtual VulkanCommandListDependency AddDependency(VulkanRenderCommandList* list, std::shared_ptr<RenderResource> resource,
-        VulkanCommandListDependency dependency, VulkanCommandListDependencyExtra extra = VulkanCommandListDependencyExtra()) override;
+    virtual VulkanCommandListDependencyState AddDependency(VulkanRenderCommandList* list, std::shared_ptr<RenderResource> resource,
+        VulkanCommandListDependencyType access_type, RenderState desired_state, VulkanCommandListDependencyExtra extra = VulkanCommandListDependencyExtra()) override;
     
-    virtual void AddDrawDependency(VulkanRenderCommandList* list, std::shared_ptr<RenderResource> resource,
-        VulkanCommandListDependency dependency, uint32_t bind_id) override;
+    virtual void SetResourceDefaultState(std::shared_ptr<RenderResource> resource, RenderState state) override;
 
+    virtual void AddDrawDependency(VulkanRenderCommandList* list, std::shared_ptr<RenderResource> resource,
+        VulkanCommandListDependencyType access_type, RenderState desired_state, uint32_t bind_id) override;
 
     virtual void AddMaterialDependency(VulkanRenderCommandList* list, std::shared_ptr<Material> material, uint32_t bind_id) override;
     
@@ -110,12 +118,12 @@ public:
 
     virtual bool IsPipelineReady() override;
 
-    virtual VulkanCommandListDependency GetDependency(std::shared_ptr<RenderResource> resource) override;
+    virtual VulkanCommandListDependencyState GetDependency(std::shared_ptr<RenderResource> resource) override;
     virtual VulkanDependencyHandlerFeedback FinalizeDependencies(RenderCommandList* list, uint64_t new_timeline_value) override;
     virtual void Reset() override;
 
 private:
-    std::unordered_map<std::shared_ptr<RenderResource>, VulkanCommandListDependency> dependencies;
+    std::unordered_map<std::shared_ptr<RenderResource>, VulkanCommandListDependencyState> dependencies;
     std::vector<std::shared_ptr<RenderResource>> non_dependent_resources; //Resource which dont have dependencies but their references need to be held until submision to prevent their destruction
     VulkanDrawState draw_state; // dependencies which will be used be the next drawcall
     bool framebuffer_dependency_pending = true;
@@ -140,6 +148,7 @@ public:
     virtual void SetTexture2D(const std::string& semantic_name, std::shared_ptr<RenderTexture2DResource> texture) override;
     virtual void SetTexture2DArray(const std::string& semantic_name, std::shared_ptr<RenderTexture2DArrayResource> texture) override;
     virtual void SetTexture2DCubemap(const std::string& semantic_name, std::shared_ptr<RenderTexture2DCubemapResource> texture) override;
+    virtual void SetResourceDefaultState(std::shared_ptr<RenderResource> resource, RenderState state) override;
     virtual void SetRenderTarget(std::shared_ptr<RenderFrameBufferResource> framebuffer) override;
     virtual void SetDefaultRenderTarget() override;
     virtual void Clear() override;
@@ -161,8 +170,8 @@ public:
     std::shared_ptr<Pipeline> GetCurrentPipeline() { return std::static_pointer_cast<Pipeline>(current_pipeline); }
     std::shared_ptr<RenderFrameBufferResource> GetCurrentFrameBuffer() { return std::static_pointer_cast<RenderFrameBufferResource>(current_framebuffer); }
 
-    VulkanCommandListDependency AddDependency(std::shared_ptr<RenderResource> dep_resource ,VulkanCommandListDependency dep); //Adds or updates a dependency, and returns the previous dependency state
-    VulkanCommandListDependency GetDependency(std::shared_ptr<RenderResource> dep_resource); //Gets the previous dependency if present
+    VulkanCommandListDependencyState AddDependency(std::shared_ptr<RenderResource> dep_resource ,VulkanCommandListDependencyType access_type, RenderState desired_state); //Adds or updates a dependency, and returns the previous dependency state
+    VulkanCommandListDependencyState GetDependency(std::shared_ptr<RenderResource> dep_resource); //Gets the previous dependency if present
 
     bool IsRenderPassActive() { return render_pass_active; }
 

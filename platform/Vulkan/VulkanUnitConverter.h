@@ -245,6 +245,7 @@ public:
 		case RenderState::TEXTURE_TRANSFER_SRC:					return VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		case RenderState::TEXTURE_DEPTH_STENCIL_ATTACHMENT:		return VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 		case RenderState::TEXTURE_DEPTH_SAMPLE:					return VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL;
+		case RenderState::TEXTURE_PRESENT:						return VkImageLayout::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 		case RenderState::UNINITIALIZED:						return VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED;
 		default:
 			throw std::runtime_error("Conversion failed");

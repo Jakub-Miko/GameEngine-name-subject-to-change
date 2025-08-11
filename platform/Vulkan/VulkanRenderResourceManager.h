@@ -69,6 +69,9 @@ public:
 	void ReturnDependencyHandler(VulkanDependencyHandler* handler);
 	void ReturnCommandList(RenderCommandList* list, uint64_t deletion_timeline);
 	void ReturnDescriptorAllocation(RenderDescriptorAllocation* allocation, uint64_t deletion_timeline);
+	
+	//Creates a texture object from a VkImage which is not managed by the resource manager (used mainly for swapchain textures)
+	VulkanRenderTexture2DResource* CreateNonManagedTexture(VkImage image, VkImageView view, RenderTexture2DDescriptor desc, RenderState default_state = RenderState::TEXTURE_SAMPLE, RenderState initial_state = RenderState::UNINITIALIZED);
 
 private:
 	VulkanRenderResourceManager();
@@ -79,8 +82,6 @@ private:
 	void ReturnStagingBufferResource(VulkanRenderBufferResource* resource);
 	void ClearStagingBuffers();
 
-	//Creates a texture object from a VkImage which is not managed by the resource manager (used mainly for swapchain textures)
-	VulkanRenderTexture2DResource* CreateNonManagedTexture(VkImage image, VkImageView view, RenderTexture2DDescriptor desc, RenderState default_state = RenderState::TEXTURE_SAMPLE, RenderState initial_state = RenderState::UNINITIALIZED);
 
 
 

@@ -80,24 +80,15 @@ void VulkanRenderResourceManager::UploadDataToBuffer(RenderCommandList* list, st
 	copy.size = size;
 	copy.srcOffset = 0;
 
-	VulkanCommandListDependency dep_resource;
-	dep_resource.type = VulkanCommandListDependencyType::WRITE;
-	dep_resource.current_state = RenderState::COMMON;
-	dep_resource.expected_state = RenderState::UNINITIALIZED;
-
-	VulkanCommandListDependency dep_staging;
-	dep_staging.type = VulkanCommandListDependencyType::WRITE;
-	dep_staging.current_state = RenderState::COMMON;
-	dep_staging.expected_state = RenderState::COMMON;
-	vk_command_list->AddDependency(resource, dep_resource);
-	vk_command_list->AddDependency(staging_buffer, dep_staging);
+	vk_command_list->AddDependency(resource, VulkanCommandListDependencyType::WRITE, RenderState::COMMON);
+	vk_command_list->AddDependency(staging_buffer, VulkanCommandListDependencyType::WRITE, RenderState::COMMON);
 	vkCmdCopyBuffer(vk_command_list->command_buffer, vk_staging_buffer->buffer, buffer->buffer, 1, &copy);
 
 
 }
 
 void VulkanRenderResourceManager::ReallocateAndUploadBuffer(RenderCommandList* list, std::shared_ptr<RenderBufferResource> resource, void* data, size_t size)
-{
+{\
 	throw std::runtime_error("ReallocateAndUploadBuffer has been removed, since it violates resource management requirements.\n");
 	
 	// DEFINE_VK_INSTANCE(context);
@@ -122,18 +113,8 @@ void VulkanRenderResourceManager::CopyBufferData(RenderCommandList *list, std::s
 	copy.size = source_size;
 	copy.srcOffset = source_offset;
 
-	VulkanCommandListDependency dep_source;
-	dep_source.type = VulkanCommandListDependencyType::READ;
-	dep_source.current_state = RenderState::COMMON;
-	dep_source.expected_state = RenderState::COMMON;
-
-	VulkanCommandListDependency dep_destination;
-	dep_destination.type = VulkanCommandListDependencyType::WRITE;
-	dep_destination.current_state = RenderState::COMMON;
-	dep_destination.expected_state = RenderState::UNINITIALIZED;
-
-	vk_command_list->AddDependency(source, dep_source);
-	vk_command_list->AddDependency(destination, dep_destination);
+	vk_command_list->AddDependency(source, VulkanCommandListDependencyType::READ, RenderState::COMMON);
+	vk_command_list->AddDependency(destination, VulkanCommandListDependencyType::WRITE, RenderState::COMMON);
 
 	VulkanRenderBufferResource* source_buffer = static_cast<VulkanRenderBufferResource*>(source.get());
 	VulkanRenderBufferResource* destination_buffer = static_cast<VulkanRenderBufferResource*>(destination.get());
@@ -250,18 +231,8 @@ void VulkanRenderResourceManager::UploadDataToTexture2D(RenderCommandList* list,
 	copy.imageOffset = { 0,0,0 };
 	copy.imageSubresource = layers;
 
-	VulkanCommandListDependency dep_resource;
-	dep_resource.type = VulkanCommandListDependencyType::WRITE;
-	dep_resource.current_state = RenderState::TEXTURE_TRANSFER_DST;
-	dep_resource.expected_state = RenderState::UNINITIALIZED;
-
-	VulkanCommandListDependency dep_staging;
-	dep_staging.type = VulkanCommandListDependencyType::WRITE;
-	dep_staging.current_state = RenderState::COMMON;
-	dep_staging.expected_state = RenderState::COMMON;
-
-	vk_command_list->AddDependency(resource, dep_resource);
-	vk_command_list->AddDependency(staging_buffer, dep_staging);
+	vk_command_list->AddDependency(resource, VulkanCommandListDependencyType::WRITE, RenderState::TEXTURE_TRANSFER_DST);
+	vk_command_list->AddDependency(staging_buffer, VulkanCommandListDependencyType::WRITE, RenderState::COMMON);
 	vkCmdCopyBufferToImage(*vk_command_list->GetVkCommandBuffer(), vk_staging_buffer->buffer, texture->GetImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
 }
 
@@ -550,17 +521,9 @@ void VulkanRenderResourceManager::CopyFrameBufferDepthAttachment(RenderCommandLi
 
 	VulkanRenderCommandList* vk_command_list = static_cast<VulkanRenderCommandList*>(list);
 	vk_command_list->OutsideRenderPass();
-	VulkanCommandListDependency src_dependency = {};
-	src_dependency.current_state = RenderState::TEXTURE_TRANSFER_SRC;
-	src_dependency.expected_state = RenderState::TEXTURE_TRANSFER_SRC;
-	src_dependency.type = VulkanCommandListDependencyType::READ;
 
-	VulkanCommandListDependency dst_dependency = {};
-	dst_dependency.current_state = RenderState::TEXTURE_TRANSFER_DST;
-	dst_dependency.expected_state = RenderState::TEXTURE_TRANSFER_DST;
-	dst_dependency.type = VulkanCommandListDependencyType::WRITE;
-	vk_command_list->AddDependency(source_frame_buffer->GetBufferDescriptor().depth_stencil_attachment.resource, src_dependency);
-	vk_command_list->AddDependency(destination_frame_buffer->GetBufferDescriptor().depth_stencil_attachment.resource, dst_dependency);
+	vk_command_list->AddDependency(source_frame_buffer->GetBufferDescriptor().depth_stencil_attachment.resource, VulkanCommandListDependencyType::READ, RenderState::TEXTURE_TRANSFER_SRC);
+	vk_command_list->AddDependency(destination_frame_buffer->GetBufferDescriptor().depth_stencil_attachment.resource, VulkanCommandListDependencyType::WRITE, RenderState::TEXTURE_TRANSFER_DST);
 
 	VkImageSubresourceLayers layers = {};
 	layers.mipLevel = 0;

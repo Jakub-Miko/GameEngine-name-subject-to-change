@@ -9,7 +9,7 @@
 
 enum class EventType : unsigned char
 {
-	INVALID = 0, KEY_PRESS = 1, MOUSE_BUTTON_PRESS = 2 ,MOUSE_MOVE = 3, SCROLL = 4, EXIT = 5 
+	INVALID = 0, KEY_PRESS = 1, MOUSE_BUTTON_PRESS = 2 ,MOUSE_MOVE = 3, SCROLL = 4, EXIT = 5, PRESENT = 6
 };
 
 
