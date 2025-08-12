@@ -5,8 +5,7 @@
 #include <VkBootstrap.h>
 
 class VulkanRenderPresentEvent : public RenderPresentEvent {
-public:
-    std::vector<VkSemaphore> render_finished_semaphores;
+
 };
 
 class VulkanRenderSurface : public RenderSurface {
@@ -26,6 +25,10 @@ public:
 
     void RegisterForPresent();
 
+    void RecreateSwapchain();
+
+    void CreateSwapchain();
+
 private:
 
     VkSurfaceKHR vk_surface;
@@ -35,5 +38,5 @@ private:
     std::vector<VkSemaphore> render_semaphores;
     std::vector<std::shared_ptr<RenderFrameBufferResource>> swapchain_framebuffers;
     std::unique_ptr<EventObserverBase> present_observer;
-    uint32_t current_index = 0;
+    uint32_t current_index = 0, previous_index = 0;
 };

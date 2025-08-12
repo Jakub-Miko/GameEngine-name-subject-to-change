@@ -8,6 +8,8 @@
 #include "VulkanRenderDescriptorHeapBlock.h"
 #include "VulkanRenderDescriptorHeap.h"
 #include <Renderer/TextureManager.h>
+#include <Application.h>
+#include <Window.h>
 
 VulkanRenderCommandList::VulkanRenderCommandList(Renderer* renderer, std::shared_ptr<RenderCommandAllocator> alloc) : RenderCommandList(renderer, alloc), dependency_handler(),
 	current_framebuffer(nullptr), current_pipeline(nullptr)
@@ -221,7 +223,8 @@ void VulkanRenderCommandList::SetDefaultRenderTarget()
 	if(frame_buffer) {
 		current_framebuffer = frame_buffer;
 	} else {
-		current_framebuffer = context->default_framebuffers[context->current_framebuffer];
+		auto buffer = Application::Get()->GetWindow()->GetRenderSurface()->GetCurrentFrameBuffer();
+		current_framebuffer = buffer;
 	}
 }
 
@@ -653,7 +656,7 @@ VulkanCommandListDependencyState DefaultVulkanDependencyHandler::AddDependency(V
 	VulkanCommandListDependencyState current_dep; 
 	auto manager = static_cast<VulkanRenderResourceManager*>(RenderResourceManager::Get());
 	bool found;
-	if (found = fnd != dependencies.end() && fnd->second.current_state != RenderState::EMPTY) { // never overwrite the expected value, only the first command matters
+	if (found = fnd != dependencies.end() && fnd->second.type != VulkanCommandListDependencyType::NONE) { // never overwrite the expected value, only the first command matters
 		current_dep = fnd->second;
 		fnd->second.previous_access = access_type;
 		if (access_type == VulkanCommandListDependencyType::WRITE) { // Make sure Read doesnt overwrite write
@@ -734,8 +737,8 @@ void DefaultVulkanDependencyHandler::SetResourceDefaultState(std::shared_ptr<Ren
 		fnd->second.desired_final_state = state;
 	} else {
 		VulkanCommandListDependencyState dependency = {};
-		dependency.current_state = RenderState::EMPTY;
 		dependency.expected_state = static_cast<VulkanRenderResource*>(resource->GetExtensionData())->GetDefaultState();
+		dependency.current_state = dependency.expected_state;
 		dependency.previous_access = VulkanCommandListDependencyType::NONE;
 		dependency.type = VulkanCommandListDependencyType::NONE;
 		dependency.desired_final_state = state;
@@ -934,6 +937,38 @@ DefaultVulkanDependencyHandler::VulkanDependencyHandlerFeedback DefaultVulkanDep
 			throw std::runtime_error("Attempted to read an uninitialized resource or the resource changed type between command recording and command list submit.\n");
 		}
 
+		
+		auto old_default_state = resource->GetDefaultState();
+		auto requested_default_state = dependency.second.desired_final_state;
+		auto new_state = requested_default_state == RenderState::EMPTY ? old_default_state : requested_default_state;
+		
+		if(old_default_state != dependency.second.expected_state) {
+			throw std::runtime_error("Default state of a resource was changed before command buffer was submitted which invalidated the command buffer, check for misplaced usage of SetDefaultResouce.\n");
+		}
+		
+		dependency.first->SetRenderState(new_state); // Change the resource back to its default state, this also serves to mark the resource initialized
+		
+		bool transitioned = false;
+
+		if (dependency.first->GetExtensionData()->IsTexture()) {
+			auto texture = static_cast<VulkanRenderTextureResource*>(dependency.first->GetExtensionData());
+			if (new_state != dependency.second.current_state) {
+				VkImageSubresourceRange range;
+				range.aspectMask = VulkanUnitConverter::IsTextureFormatDepth(texture->GetFormat()) ? VkImageAspectFlagBits::VK_IMAGE_ASPECT_DEPTH_BIT : VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT;
+				range.baseArrayLayer = 0;
+				range.baseMipLevel = 0;
+				range.layerCount = VK_REMAINING_ARRAY_LAYERS;
+				range.levelCount = VK_REMAINING_MIP_LEVELS; 
+				
+				manager->TransitionImage(list, texture, range, dependency.second.current_state, new_state, PipelineStage::ALL_STAGES, PipelineStage::ALL_STAGES);
+				transitioned = true;
+			}
+		}
+
+		if(transitioned) {
+			dependency.second.type = VulkanCommandListDependencyType::WRITE; // Transition counts as write
+		}
+
 		switch (dependency.second.type)
 		{
 		case VulkanCommandListDependencyType::READ:
@@ -944,32 +979,10 @@ DefaultVulkanDependencyHandler::VulkanDependencyHandlerFeedback DefaultVulkanDep
 			timeline_requirement = std::max(std::max(resource->write_timeline, resource->read_timeline), timeline_requirement); // On write we need to wait for reads as well
 			resource->write_timeline = new_timeline_value;
 			break;
+		case VulkanCommandListDependencyType::NONE:
+			break; // Ignore none since its only used when changing default state, and if actual layout transition occurs WRITE type is used instead
 		default:
 			throw std::runtime_error("Invalid dependency type.\n");
-		}
-
-		auto old_default_state = resource->GetDefaultState();
-		auto requested_default_state = dependency.second.desired_final_state;
-		auto new_state = requested_default_state == RenderState::EMPTY ? old_default_state : requested_default_state;
-
-		if(old_default_state != dependency.second.expected_state) {
-			throw std::runtime_error("Default state of a resource was changed before command buffer was submitted which invalidated the command buffer, check for misplaced usage of SetDefaultResouce.\n");
-		}
-
-		dependency.first->SetRenderState(new_state); // Change the resource back to its default state, this also serves to mark the resource initialized
-
-		if (dependency.first->GetExtensionData()->IsTexture()) {
-			auto texture = static_cast<VulkanRenderTextureResource*>(dependency.first->GetExtensionData());
-			if (new_state != dependency.second.current_state) {
-				VkImageSubresourceRange range;
-				range.aspectMask = VulkanUnitConverter::IsTextureFormatDepth(texture->GetFormat()) ? VkImageAspectFlagBits::VK_IMAGE_ASPECT_DEPTH_BIT : VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT;
-				range.baseArrayLayer = 0;
-				range.baseMipLevel = 0;\
-				range.layerCount = VK_REMAINING_ARRAY_LAYERS;
-				range.levelCount = VK_REMAINING_MIP_LEVELS; 
-				
-				manager->TransitionImage(list, texture, range, dependency.second.current_state, new_state, PipelineStage::ALL_STAGES, PipelineStage::ALL_STAGES);
-			}
 		}
 	}
 

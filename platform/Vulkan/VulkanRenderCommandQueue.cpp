@@ -183,28 +183,3 @@ VulkanRenderCommandQueue::VulkanRenderCommandQueue(VkQueue queue) : vk_queue(que
 	command_buffer_fence.reset(RenderFence::CreateFence());
 }
 
-void VulkanRenderCommandQueue::Present()
-{
-	DEFINE_VK_INSTANCE(context);
-	context->SignalEndFrame(); // Send a Signalcommand  to the semaphore for all render tasks performed in this frame, the semaphore will be signaled when all render tasks in this frame finish.
-	auto semaphore = context->GetVkRenderSemaphore(); // The semaphore mentioned above
-
-	uint32_t index = context->GetCurrentFramebufferIndex(); // Get the index of the framebuffer for this frame
-
-	VkPresentInfoKHR presentInfo = {};
-	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-	presentInfo.pNext = NULL;
-	presentInfo.waitSemaphoreCount = 1;
-	presentInfo.pWaitSemaphores = &semaphore;
-	presentInfo.pSwapchains = context->GetVkSwapchain(); // wait for rendering in this frame to finish before presenting it 
-	presentInfo.swapchainCount = 1;
-	presentInfo.pImageIndices = &index;
-
-	submit_mutex.lock();
-	vkQueuePresentKHR(vk_queue, &presentInfo); //Present
-	submit_mutex.unlock();
-
-	context->StartNewFrame(); // Gets the swapchain image for the next frame
-
-}
-

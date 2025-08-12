@@ -26,6 +26,7 @@ void Renderer::PreInit() {
     if(RenderContext::Get()) {
         RenderContext::Get()->PreInit();
     }
+    RenderResourceManager::Initialize();
 }
 
 RenderCommandList* Renderer::GetRenderCommandList()
@@ -60,7 +61,6 @@ RenderCommandAllocator* Renderer::GetCommandAllocator()
 
 void Renderer::Init(int max_allocators) {
     this->max_allocators = max_allocators;
-    RenderResourceManager::Initialize();
     ShaderManager::Initialize();
     PipelineManager::Initialize();
     if (RenderContext::Get()) {

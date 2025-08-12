@@ -1,5 +1,6 @@
 #pragma once
 #include <Window.h>
+#include <Renderer/RenderSurface.h>
 
 struct GLFWwindow;
 class OpenGLRenderContext;
@@ -26,11 +27,16 @@ public:
     virtual void AdjustWidowToDisabledEditor() override;
 
     virtual void AdjustWidowToEnabledEditor() override;
-
-
+    
+    
 #endif
 
+    virtual std::shared_ptr<RenderSurface> GetRenderSurface() const override {
+        return window_render_surface;
+    }
+    
     virtual ~GlfwWindow();
+    
 
     GLFWwindow* GetHandle() const { return m_Window; }
 private:
@@ -41,4 +47,5 @@ private:
 
     GLFWwindow* m_Window;
     void(*drop_callback)(int count, std::vector<std::string>paths);
+    std::shared_ptr<RenderSurface> window_render_surface;
 };

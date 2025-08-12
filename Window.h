@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <vector>
+#include <Renderer/RenderSurface.h>
 
 /**
  * @brief Properties of the window. Descriptor object for window creation.
@@ -85,6 +86,13 @@ public:
      * @param callback the callback with the paths drag and dropped
     */
     virtual void RegistorDragAndDropCallback(void(*callback)(int count, std::vector<std::string> paths)) = 0;
+
+    /**
+     * @brief Get the Render Surface object which wraps the swapchain images and present functionality.
+     * 
+     * @return The RenderSurface abstraction associated with this window
+     */
+    virtual std::shared_ptr<RenderSurface> GetRenderSurface() const = 0;
 
     virtual ~Window() {};
 public:

@@ -6,6 +6,7 @@
 #include <FileManager.h>
 #include <ConfigManager.h>
 #include <Renderer/Renderer.h>
+#include <Renderer/RenderContext.h>
 #include <World/Systems/ScriptSystemManagement.h>
 #include <World/Systems/MeshRenderSystem.h>
 #include <World/Components/MeshComponent.h>
@@ -294,7 +295,7 @@ void Application::Update()
 #endif
     //Present / Swap buffers
     PROFILE("SwapBuffers");
-    Renderer::Get()->GetCommandQueue()->Present();
+    RenderContext::Get()->Present();
 
     //Flush TaskSystem MemoryPool deallocations
     TaskSystem::Get()->FlushDeallocations();

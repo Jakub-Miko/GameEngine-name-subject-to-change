@@ -5,6 +5,7 @@
 #include <platform/OpenGL/OpenGLRenderCommandList.h>
 #elif defined(Vulkan_API)
 #include <platform/Vulkan/VulkanRenderContext.h>
+#include <platform/Vulkan/VulkanRenderSurface.h>
 #include <vulkan/vulkan.h>
 #endif
 
@@ -38,6 +39,20 @@ void GlfwWindow::Init()
     fence->WaitForValue(1);
     glfwSetDropCallback(m_Window, &DropCallback);
     RegistorDragAndDropCallback(&DefaultDropCallback);
+#endif
+#ifdef Vulkan_API
+    VkSurfaceKHR vk_surface;
+    DEFINE_VK_INSTANCE(context);
+    if (glfwCreateWindowSurface(context->GetVkInstance(), m_Window,NULL, &vk_surface)) {
+        glfwTerminate();
+        Application::Get()->Exit();
+    }
+
+    VulkanRenderSurface* surface = new VulkanRenderSurface(vk_surface, true);
+
+    window_render_surface.reset(static_cast<RenderSurface*>(surface));
+
+
 #endif
 }
 
@@ -78,17 +93,6 @@ void GlfwWindow::PreInit()
         glfwTerminate();
         Application::Get()->Exit();
     }
-#ifdef Vulkan_API
-    VkSurfaceKHR surface;
-    if (glfwCreateWindowSurface(context->GetVkInstance(), m_Window,NULL, &surface)) {
-        glfwTerminate();
-        Application::Get()->Exit();
-    }
-
-    context->SetSurface(surface);
-
-
-#endif
 
 
 }

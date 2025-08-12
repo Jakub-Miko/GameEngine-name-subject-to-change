@@ -28,38 +28,20 @@ public:
 	VulkanRenderContext& operator=(const VulkanRenderContext& ref) = delete;
 	VulkanRenderContext& operator=(VulkanRenderContext&& ref) = delete;
 
-	/**
-	 * @brief Insert a wait in the queue to wait until a new render image is available, then set a new current framebuffer
-	 * @note this is done after the presenting of the last frame so the resources of the next frame are used
-	 */
-	void StartNewFrame();
+	virtual void Present() override;
 
-
-
-	/**
-	 * @brief This Insert synchronization to finish the rendering before presenting
-	 */
-	void SignalEndFrame();
 
 	uint64_t GetCurrentGpuTimelineValue();
 	uint64_t GetCurrentCpuTimelineValue();
 	VmaAllocator& GetVmaAllocator() { return allocator;  }
-	uint32_t GetCurrentFramebufferIndex() const { return current_framebuffer; }
 	VkInstance GetVkInstance() const { return vk_instance; }
-	VkSwapchainKHR* GetVkSwapchain() { return &vk_swapchain; }
 	VkDevice GetVkDevice() const { return vk_device; }
-	vkb::Swapchain GetVkbSwapchain() const { return vkb_swapchain; }
 	vkb::Device GetVkbDevice() const { return vkb_device; }
-	void SetSurface(VkSurfaceKHR surface) { vk_surface = surface; }
-	VkSemaphore GetVkRenderSemaphore() { return frame_sync.render_fence[current_framebuffer]; };
 	void RequestExtension(const std::string& extension);
 	void RequestExtensions(const char** extensions, int count);
 	std::vector<const char*> GetExtensions();
 
 protected:
-	uint32_t GetNextPresentImageIndex();
-	void CreateSwapchain();
-	void RecreateSwapchain();
 
 	virtual void Destroy() override;
 
@@ -72,16 +54,5 @@ private:
 	vkb::Instance vkb_instance;
 	VkDevice vk_device;
 	vkb::Device vkb_device;
-	VkSurfaceKHR vk_surface;
-	vkb::Swapchain vkb_swapchain;
-	VkSwapchainKHR vk_swapchain;
-	std::vector<std::shared_ptr<RenderFrameBufferResource>> default_framebuffers;
-	uint32_t current_framebuffer = 0;
-	uint32_t previous_framebuffer = 0;
 	VmaAllocator allocator;
-	struct {
-		std::vector<VkSemaphore> render_fence;
-		std::vector<VkSemaphore> present_fence; ///< we normally use timeline semaphores instead of fences, but vkAcquireNextImageKHR only takes binary ones
-
-	} frame_sync;
 };

@@ -1,6 +1,7 @@
 #pragma once
 #include <Renderer/RenderCommandQueue.h>
 #include <Renderer/Renderer.h>
+#include <Renderer/RenderSurface.h> 
 
 class RenderContext {
 public:
@@ -13,6 +14,8 @@ public:
 	RenderContext& operator=(RenderContext&& ref) = delete;
 
 	virtual bool IsVulkanContext() { return false; };
+
+	virtual void Present() = 0;
 
 	virtual void StartShutdown() = 0;
 	virtual ~RenderContext() {};
