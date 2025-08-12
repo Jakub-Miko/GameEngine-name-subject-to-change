@@ -49,19 +49,6 @@ struct ImGui_ImplGlfw_Data_internal
     ImGui_ImplGlfw_Data_internal() { memset((void*)this, 0, sizeof(*this)); }
 };
 
-
-
-struct ImGui_ImplGlfw_ViewportData_internal
-{
-    GLFWwindow* Window;
-    bool        WindowOwned;
-    int         IgnoreWindowPosEventFrame;
-    int         IgnoreWindowSizeEventFrame;
-
-    ImGui_ImplGlfw_ViewportData_internal() { Window = NULL; WindowOwned = false; IgnoreWindowSizeEventFrame = IgnoreWindowPosEventFrame = -1; }
-    ~ImGui_ImplGlfw_ViewportData_internal() { }
-};
-
 static ImGui_ImplGlfw_Data_internal* ImGui_ImplGlfw_GetBackendData()
 {
     return ImGui::GetCurrentContext() ? (ImGui_ImplGlfw_Data_internal*)ImGui::GetIO().BackendPlatformUserData : NULL;
@@ -290,7 +277,6 @@ static void ImGui_custom_RenderWindow(ImGuiViewport* viewport, void*)
 {
     ImGui_ImplGlfw_Data_internal* bd = ImGui_ImplGlfw_GetBackendData();
     ImGui_ImplGlfw_ViewportData_internal vd = *(ImGui_ImplGlfw_ViewportData_internal*)viewport->PlatformUserData;
-    //glfwMakeContextCurrent(vd.Window);
 }
 
 
@@ -314,6 +300,7 @@ void impl_custom_imgui_platform::ImGui_custom_CreateWindow(ImGuiViewport* viewpo
     #endif
         GLFWwindow* share_window = bd->Window;
         vd->Window = glfwCreateWindow((int)viewport->Size.x, (int)viewport->Size.y, "No Title Yet", NULL, NULL);
+        vd->render_surface = GlfwWindow::CreateSurfaceFromWindow(vd->Window);
         vd->WindowOwned = true;
         viewport->PlatformHandle = (void*)vd->Window;
     #ifdef _WIN32

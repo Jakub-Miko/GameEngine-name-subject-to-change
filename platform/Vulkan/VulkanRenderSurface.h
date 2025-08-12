@@ -38,5 +38,6 @@ private:
     std::vector<VkSemaphore> render_semaphores;
     std::vector<std::shared_ptr<RenderFrameBufferResource>> swapchain_framebuffers;
     std::unique_ptr<EventObserverBase> present_observer;
+    VkFence swapchain_creation_fence;
     uint32_t current_index = 0, previous_index = 0;
 };

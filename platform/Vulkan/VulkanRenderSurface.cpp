@@ -33,11 +33,14 @@ VulkanRenderSurface::VulkanRenderSurface(VkSurfaceKHR surface, bool register_for
 	render_semaphore_info.pNext = &render_semaphore_type_info;
 	render_semaphore_info.flags = NULL;
 	
-	VkSemaphore present_semaphore; // create at least one semaphore so the create swapchain function can use it to fetch the first image
-	vkCreateSemaphore(vk_device, &present_semaphore_info, NULL, &present_semaphore);
-    present_semaphores.push_back(present_semaphore);
-	
+	VkFence fence;
+	VkFenceCreateInfo info = {};
+	info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+
+	vkCreateFence(context->GetVkDevice(), &info,NULL, &swapchain_creation_fence);
+
 	CreateSwapchain();
+
 
 	for(int i = 0; i < swapchain_framebuffers.size(); i++) {
 		VkSemaphore render_semaphore;
@@ -71,6 +74,7 @@ VulkanRenderSurface::~VulkanRenderSurface()
         vkDestroySemaphore(context->GetVkDevice(), sem, NULL);
     }
 
+	vkDestroyFence(context->GetVkDevice(), swapchain_creation_fence, NULL);
 
     vkb::destroy_swapchain(vkb_swapchain);
 }
@@ -125,19 +129,19 @@ void VulkanRenderSurface::Present(RenderPresentEvent *event)
     vkQueuePresentKHR(*queue->GetVkQueue(), &info);
 	
 	previous_index = current_index;
-	auto code = vkAcquireNextImageKHR(vk_device, vk_swapchain, 30000000000,present_semaphores[current_index + 1], NULL, &current_index); // timeout 30 seconds
+	auto code = vkAcquireNextImageKHR(vk_device, vk_swapchain, 30000000000,present_semaphores[current_index], NULL, &current_index); // timeout 30 seconds
 	if (code == VK_ERROR_OUT_OF_DATE_KHR) {
 		RecreateSwapchain();
-		vkAcquireNextImageKHR(vk_device, vk_swapchain, 30000000000, present_semaphores[current_index + 1], NULL, &current_index);
+	} else {
+		queue->VkBinarySemaphoreWait(present_semaphores[previous_index]); //Waits until the image is available so rendering can begin on it 
 	}
 	
-	queue->VkBinarySemaphoreWait(present_semaphores[previous_index + 1]); //Waits until the image is available so rendering can begin on it 
 	auto list_2 = static_cast<VulkanRenderCommandList*>(Renderer::Get()->GetRenderCommandList());
 
 	auto attachment = swapchain_framebuffers[current_index]->GetBufferDescriptor().color_attachments[0].resource;
 	
 
-	list_2->SetDefaultRenderTarget();
+	list_2->SetRenderTarget(swapchain_framebuffers[current_index]);
 	list_2->SetResourceDefaultState(attachment, RenderState::TEXTURE_COLOR_ATTACHMENT);
 	list_2->Clear();
 
@@ -201,13 +205,15 @@ void VulkanRenderSurface::CreateSwapchain() {
 		swapchain_framebuffers.push_back(framebuffer);
 	}
 
-	auto code = vkAcquireNextImageKHR(vk_device, vk_swapchain, 30000000000,present_semaphores[0], NULL, &current_index); // timeout 30 seconds
+
+	auto queue  = static_cast<VulkanRenderCommandQueue*>(Renderer::Get()->GetCommandQueue());
+	auto code = vkAcquireNextImageKHR(vk_device, vk_swapchain, 30000000000,NULL, swapchain_creation_fence, &current_index); // timeout 30 seconds
 	if (code == VK_ERROR_OUT_OF_DATE_KHR) {
 		throw std::runtime_error{"Could not acquire the first swapchain image.\n"};
 	}
-
-	auto queue  = static_cast<VulkanRenderCommandQueue*>(Renderer::Get()->GetCommandQueue());
-	queue->VkBinarySemaphoreWait(present_semaphores[0]); //Waits until the image is available so rendering can begin on it 
+	vkWaitForFences(context->GetVkDevice(),1, &swapchain_creation_fence, VK_TRUE, 30000000000);
+	vkResetFences(context->GetVkDevice(), 1, &swapchain_creation_fence);
+	vkQueueWaitIdle(*queue->GetVkQueue());
 }
 
 void VulkanRenderSurface::RecreateSwapchain() {

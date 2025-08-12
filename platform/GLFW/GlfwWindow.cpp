@@ -41,17 +41,7 @@ void GlfwWindow::Init()
     RegistorDragAndDropCallback(&DefaultDropCallback);
 #endif
 #ifdef Vulkan_API
-    VkSurfaceKHR vk_surface;
-    DEFINE_VK_INSTANCE(context);
-    if (glfwCreateWindowSurface(context->GetVkInstance(), m_Window,NULL, &vk_surface)) {
-        glfwTerminate();
-        Application::Get()->Exit();
-    }
-
-    VulkanRenderSurface* surface = new VulkanRenderSurface(vk_surface, true);
-
-    window_render_surface.reset(static_cast<RenderSurface*>(surface));
-
+    window_render_surface = CreateSurfaceFromWindow(m_Window);
 
 #endif
 }
@@ -165,7 +155,22 @@ void GlfwWindow::AdjustWidowToEnabledEditor()
 
 }
 
+
 #endif
+
+std::shared_ptr<RenderSurface> GlfwWindow::CreateSurfaceFromWindow(GLFWwindow *window)
+{
+    VkSurfaceKHR vk_surface;
+    DEFINE_VK_INSTANCE(context);
+    if (glfwCreateWindowSurface(context->GetVkInstance(), window,NULL, &vk_surface)) {
+        glfwTerminate();
+        Application::Get()->Exit();
+    }
+
+    VulkanRenderSurface* surface = new VulkanRenderSurface(vk_surface, true);
+
+    return std::shared_ptr<RenderSurface>(surface);
+}
 
 GlfwWindow::~GlfwWindow()
 {

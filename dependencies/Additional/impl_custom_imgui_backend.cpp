@@ -1,4 +1,5 @@
 #include "impl_custom_imgui_backend.h"
+#include "impl_custom_imgui_platform.h"
 #include <stdexcept>
 
 #ifdef  OpenGL_API
@@ -345,8 +346,9 @@ static void ImGui_custom_RenderWindow(ImGuiViewport* viewport, void*)
         list->Clear();
         queue->ExecuteRenderCommandList(list);
     }
+    Renderer::Get()->SetDefaultFrameBuffer(((ImGui_ImplGlfw_ViewportData_internal*)viewport->PlatformUserData)->render_surface->GetCurrentFrameBuffer());
     impl_custom_imgui_backend::DrawData(viewport->DrawData);
-
+    Renderer::Get()->SetDefaultFrameBuffer();
 }
 
 static void ImGui_custom_InitPlatformInterface()
