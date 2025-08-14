@@ -14,7 +14,7 @@ public:
     VulkanRenderSurface(VkSurfaceKHR surface, bool register_for_present = false);
     VulkanRenderSurface(const VulkanRenderSurface& ref) = delete;
     VulkanRenderSurface& operator=(const VulkanRenderSurface& ref) = delete;
-    ~VulkanRenderSurface();
+    virtual ~VulkanRenderSurface();
     
 
     virtual std::shared_ptr<RenderFrameBufferResource> GetFrameBufferByIndex(int index) override;

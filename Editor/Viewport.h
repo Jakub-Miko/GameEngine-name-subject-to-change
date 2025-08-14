@@ -44,7 +44,7 @@ public:
 
 private:
 	std::shared_ptr<RenderFrameBufferResource> viewport_frame_buffer;
-	Future<read_pixel_data> entity_pick_request;
+	std::shared_ptr<Awaitable<read_pixel_data>> entity_pick_request;
 	int viewport_resolution_x, viewport_resolution_y;
 	float translation_snap = 1.0f, scale_snap = 1.0f, rotation_snap = 1.0f;
 	bool snap_enabled = false;

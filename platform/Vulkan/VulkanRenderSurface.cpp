@@ -77,6 +77,7 @@ VulkanRenderSurface::~VulkanRenderSurface()
 	vkDestroyFence(context->GetVkDevice(), swapchain_creation_fence, NULL);
 
     vkb::destroy_swapchain(vkb_swapchain);
+	vkDestroySurfaceKHR(context->GetVkInstance(), vk_surface, NULL);
 }
 
 std::shared_ptr<RenderFrameBufferResource> VulkanRenderSurface::GetFrameBufferByIndex(int index)

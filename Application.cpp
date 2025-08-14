@@ -76,13 +76,13 @@ Application::~Application()
 
     TextureManager::Shutdown();
     MeshManager::Shutdown();
+    delete m_Window;
+    #ifdef EDITOR
+        Editor::Shutdown();
+    #endif
+    
     Renderer::Shutdown();
 
-#ifdef EDITOR
-    Editor::Shutdown();
-#endif
-
-    delete m_Window;
     delete os_api;
     
     TaskSystem::Shutdown();

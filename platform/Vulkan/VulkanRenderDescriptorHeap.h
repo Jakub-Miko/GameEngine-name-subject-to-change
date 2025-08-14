@@ -31,7 +31,7 @@ public:
 private:
 	VkDescriptorSetLayout layout;
 	std::mutex heap_mutex;
-	std::vector<std::unique_ptr<VulkanRenderDescriptorHeapBlock>> heap_blocks;
+	std::vector<std::shared_ptr<VulkanRenderDescriptorHeapBlock>> heap_blocks;
 
 	std::vector<VkDescriptorPoolSize> pool_sizes;
 	std::vector<VulkanRenderDescriptorAllocation*> free_vector;

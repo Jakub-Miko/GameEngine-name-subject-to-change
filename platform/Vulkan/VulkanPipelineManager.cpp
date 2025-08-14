@@ -11,6 +11,8 @@ RootBinding VulkanPipeline::GetBindingId(const std::string& name)
 
 VulkanPipeline::~VulkanPipeline()
 {
+	DEFINE_VK_INSTANCE(context);
+	vkDestroyPipeline(context->GetVkDevice(), pipeline, NULL);
 }
 
 VulkanPipeline::VulkanPipeline(const PipelineDescriptor& desc, VkPipeline pipeline) : Pipeline(desc), pipeline(pipeline)

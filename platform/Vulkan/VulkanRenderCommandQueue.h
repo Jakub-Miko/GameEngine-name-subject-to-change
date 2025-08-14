@@ -11,6 +11,7 @@ public:
 	virtual void ExecuteRenderCommandList(RenderCommandList* list) override;
 
 	virtual void Signal(std::shared_ptr<RenderFence> fence, int num) override;
+	void WaitForValue(uint32_t value);
 
 	void VkBinarySemaphoreSignal(VkSemaphore semaphore);
 	void VkBinarySemaphoreWait(VkSemaphore semaphore, VkPipelineStageFlags wait_mask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);

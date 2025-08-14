@@ -22,4 +22,5 @@ public:
     virtual std::shared_ptr<RenderFrameBufferResource> GetFrameBufferByIndex(int index) = 0;
     virtual std::shared_ptr<RenderFrameBufferResource> GetCurrentFrameBuffer() = 0;
     virtual int GetCurrentFramebufferIndex() = 0;
+    virtual ~RenderSurface() {}
 };

@@ -453,9 +453,91 @@ void VulkanRenderResourceManager::CreateTexture2DDescriptor(const RenderDescript
 	vkUpdateDescriptorSets(context->GetVkDevice(), 1, &write_desc ,0,NULL);
 }
 
-Future<read_pixel_data> VulkanRenderResourceManager::GetPixelValue(std::shared_ptr<RenderFrameBufferResource> framebuffer, int color_attachment_index, float x, float y)
+std::shared_ptr<Awaitable<read_pixel_data>> VulkanRenderResourceManager::GetPixelValue(std::shared_ptr<RenderFrameBufferResource> framebuffer, int color_attachment_index, float x, float y)
 {
-	return Future<read_pixel_data>();
+	DEFINE_VK_INSTANCE(context);
+	auto list = static_cast<VulkanRenderCommandList*>(Renderer::Get()->GetRenderCommandList());
+	auto vk_command_buffer = *list->GetVkCommandBuffer();
+	auto queue = static_cast<VulkanRenderCommandQueue*>(Renderer::Get()->GetCommandQueue());
+	auto attachment = framebuffer->GetBufferDescriptor().color_attachments[color_attachment_index].resource;
+	if(attachment->GetResourceType() != RenderResourceType::RenderTexture2DResource) {
+		throw std::runtime_error("GetPixelValue only supports texture 2D attachments.\n");
+	}
+	auto texture = std::static_pointer_cast<VulkanRenderTexture2DResource>(attachment);
+	auto desc = texture->GetBufferDescriptor();
+
+	if(x >= desc.width || x < 0 || y >= desc.height || y < 0) {
+		throw std::runtime_error("Invalid x and y coordinates passed to GetPixelValue.\n");
+	}
+
+	auto size = VulkanUnitConverter::TextureFormatToTexelSize(desc.format);
+	auto staging_buf = std::static_pointer_cast<VulkanRenderBufferResource>(GetStagingBuffer(size));
+
+	VkBufferImageCopy copy_info = {};
+	copy_info.bufferOffset = 0;
+	copy_info.bufferRowLength = 0;
+	copy_info.bufferImageHeight = 0;
+	copy_info.imageOffset = { (int)(x * desc.width), (int)(y * desc.height), 0};
+	copy_info.imageExtent = { 1, 1, 1};
+	copy_info.imageSubresource.aspectMask = VulkanUnitConverter::IsTextureFormatDepth(desc.format) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+	copy_info.imageSubresource.baseArrayLayer = 0;
+	copy_info.imageSubresource.layerCount = 1;
+	copy_info.imageSubresource.mipLevel = 0;
+
+	list->AddDependency(staging_buf, VulkanCommandListDependencyType::WRITE, RenderState::COMMON);
+	list->AddDependency(texture, VulkanCommandListDependencyType::READ, RenderState::TEXTURE_TRANSFER_SRC);
+
+	vkCmdCopyImageToBuffer(vk_command_buffer, texture->GetImage(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, staging_buf->GetBuffer(), 1, &copy_info);
+	
+	queue->ExecuteRenderCommandList(list);
+	auto signaled = context->GetCurrentCpuTimelineValue();
+	
+	auto is_available_func = [signaled, context]() -> bool {
+		auto gpu_value = context->GetCurrentGpuTimelineValue();
+		return gpu_value >= signaled;
+	};
+
+	auto wait_func = [queue, signaled]() {
+		queue->WaitForValue(signaled);
+	};
+
+	auto format = desc.format;
+
+	auto get_value_func = [queue, signaled, context, staging_buf, format]() -> read_pixel_data {
+		queue->WaitForValue(signaled);
+		switch (format)
+		{
+		case TextureFormat::RGBA_32FLOAT:
+		{
+			glm::vec4 value; //This is just fucked, what am i even doing, i just realized this is a suicide attempt. (2 years later and I realize i should have maybe described why it is fucked because i have no idea anymore.)
+			vmaCopyAllocationToMemory(context->GetVmaAllocator(), staging_buf->alloc, 0,glm::value_ptr(value), sizeof(value));
+			return read_pixel_data(value);
+			break;
+		}
+		case TextureFormat::RGB_32FLOAT:
+		{
+			glm::vec3 value; //This is just fucked, what am i even doing, i just realized this is a suicide attempt. (2 years later and I realize i should have maybe described why it is fucked because i have no idea anymore.)
+			vmaCopyAllocationToMemory(context->GetVmaAllocator(), staging_buf->alloc, 0,glm::value_ptr(value), sizeof(value));
+			return read_pixel_data(value);
+			break;
+		}
+		case TextureFormat::R_UNSIGNED_INT:
+		{
+			unsigned int value; //This is just fucked, what am i even doing, i just realized this is a suicide attempt. (2 years later and I realize i should have maybe described why it is fucked because i have no idea anymore.)
+			vmaCopyAllocationToMemory(context->GetVmaAllocator(), staging_buf->alloc, 0,&value, sizeof(value));
+			return read_pixel_data(value);
+			break;
+		}
+		default:
+			throw std::runtime_error("GetPixelValue currently doesn't support this data type");
+		}
+	};
+
+
+	auto awaitable = std::make_shared<CustomAwaitable<read_pixel_data>>(wait_func, is_available_func, get_value_func);
+
+
+	return awaitable;
 }
 
 void VulkanRenderResourceManager::CreateTexture2DArrayDescriptor(const RenderDescriptorTable& table, int index, std::shared_ptr<RenderTexture2DArrayResource> resource)
@@ -649,6 +731,9 @@ VulkanRenderResourceManager::VulkanRenderResourceManager() : deletion_queue(), d
 
 VulkanRenderResourceManager::~VulkanRenderResourceManager()
 {
+	DEFINE_VK_INSTANCE(context);
+	vkDeviceWaitIdle(context->GetVkbDevice());
+	FlushDeletions(true);
 	ClearStagingBuffers();
 	for (auto handler : dependency_handlers) {
 		delete handler;
@@ -656,7 +741,7 @@ VulkanRenderResourceManager::~VulkanRenderResourceManager()
 }
 
 
-void VulkanRenderResourceManager::FlushDeletions()
+void VulkanRenderResourceManager::FlushDeletions(bool force)
 {
 	DEFINE_VK_INSTANCE(context);
 	VmaAllocator& alloc = context->GetVmaAllocator();
@@ -667,7 +752,7 @@ void VulkanRenderResourceManager::FlushDeletions()
 	uint64_t current_timeline = context->GetCurrentGpuTimelineValue();
 
 	deletion_item resource;
-	while (!deletion_queue.empty() && (resource = deletion_queue.front()).resource && resource.deletion_timeline < current_timeline) {
+	while (!deletion_queue.empty() && (resource = deletion_queue.front()).resource && (resource.deletion_timeline < current_timeline || force)) {
 		switch (resource.type)
 		{
 		case deletion_item_type::RESOURCE:
@@ -689,8 +774,10 @@ void VulkanRenderResourceManager::FlushDeletions()
 		}
 		case deletion_item_type::DESCRIPTOR_ALLOCATION:
 		{
-			auto allocation = (VulkanRenderDescriptorAllocation*)resource.descriptor_allocation;
-			((VulkanRenderDescriptorHeapBlock*)allocation->allocating_heap_block)->GetOriginatingHeap()->ReturnAllocation(allocation);
+			auto allocation = static_cast<VulkanRenderDescriptorAllocation*>(resource.descriptor_allocation);
+			if(auto block = allocation->allocating_heap_block.lock()) { // Take into account that the block might already have been destroyed and the descriptors are thus already freed and invalid
+				block->GetOriginatingHeap()->ReturnAllocation(allocation);
+			}
 		}
 		break;
 		default:
@@ -775,6 +862,7 @@ void VulkanRenderResourceManager::ClearStagingBuffers()
 {
 	std::lock_guard<std::mutex> lock(staging_buffer_map_mutex);
 	for (auto iter : staging_buffer_map) {
+		static_cast<VulkanRenderBufferResource*>(iter.second)->DestroyResource();
 		delete iter.second;
 	}
 	staging_buffer_map.clear();

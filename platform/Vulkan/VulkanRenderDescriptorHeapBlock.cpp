@@ -65,7 +65,7 @@ RenderDescriptorAllocation* VulkanRenderDescriptorHeapBlock::Allocate(VkDescript
 
 	auto result = vkAllocateDescriptorSets(context->GetVkDevice(), &info, &alloc->descritor_set);
 
-	alloc->allocating_heap_block = this;
+	alloc->allocating_heap_block = shared_from_this();
 	alloc->timeline = context->GetCurrentCpuTimelineValue();
 
 	if (result != VK_SUCCESS) {

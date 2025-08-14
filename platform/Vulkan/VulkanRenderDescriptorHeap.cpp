@@ -100,7 +100,7 @@ RenderDescriptorAllocationHandle VulkanRenderDescriptorHeap::Allocate()
 		while (!(alloc = (VulkanRenderDescriptorAllocation*)heap_blocks[current_block]->Allocate(layout))) {
 			current_block = current_block == 0 ? heap_blocks.size() - 1 : current_block - 1; //subtract and wrap-around (modulo is weird for negative numbers), we subtract so we try the biggest pools first
 			if (original_attempt == current_block) { // if we came back to the original attempt, we allocate a new pool with twice the size
-				heap_blocks.emplace_back(std::make_unique<VulkanRenderDescriptorHeapBlock>(this, heap_blocks.back()->GetSize() * 2)); //
+				heap_blocks.emplace_back(std::make_shared<VulkanRenderDescriptorHeapBlock>(this, heap_blocks.back()->GetSize() * 2)); //
 				current_block = heap_blocks.size() - 1;
 			}
 		}
@@ -122,7 +122,9 @@ void VulkanRenderDescriptorHeap::FlushDescriptorDeallocations(uint32_t frame_num
 	std::lock_guard<std::mutex> lock(heap_mutex);
 	DEFINE_VK_INSTANCE(context);
 	for (auto alloc : free_vector) {
-		vkFreeDescriptorSets(context->GetVkDevice(), alloc->allocating_heap_block->GetPool(), 1, &alloc->descritor_set);
+		if(auto block = alloc->allocating_heap_block.lock()) { // Take into account that the block might already have been destroyed and the descriptors are thus already freed and invalid
+			vkFreeDescriptorSets(context->GetVkDevice(), block->GetPool(), 1, &alloc->descritor_set);
+		}
 		delete alloc;
 	}
 }
@@ -142,6 +144,8 @@ void VulkanRenderDescriptorHeap::ReturnAllocation(VulkanRenderDescriptorAllocati
 void VulkanRenderDescriptorHeap::DestroyAlloc(VulkanRenderDescriptorAllocation* alloc)
 {
 	DEFINE_VK_INSTANCE(context);
-	vkFreeDescriptorSets(context->GetVkDevice(), alloc->allocating_heap_block->GetPool(), 1, &alloc->descritor_set);
+	if(auto block = alloc->allocating_heap_block.lock()) { // Take into account that the block might already have been destroyed and the descriptors are thus already freed and invalid
+		vkFreeDescriptorSets(context->GetVkDevice(), block->GetPool(), 1, &alloc->descritor_set);
+	}
 	delete alloc;
 }

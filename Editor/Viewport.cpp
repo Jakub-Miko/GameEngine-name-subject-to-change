@@ -65,8 +65,8 @@ Viewport::~Viewport()
 void Viewport::Render()
 {
 
-    if (entity_pick_request.IsValid() && entity_pick_request.IsAvailable()) {
-        read_pixel_data data = entity_pick_request.GetValue();
+    if (entity_pick_request && entity_pick_request->IsAvailable()) {
+        read_pixel_data data = entity_pick_request->GetValue();
         Entity select = Entity(std::get<unsigned int>(data));
         if (Application::GetWorld().EntityIsValid(select)) {
             SceneNode* node = Application::GetWorld().GetSceneGraph()->GetSceneGraphNode(select);
@@ -89,10 +89,10 @@ void Viewport::Render()
                 }
 
             }
-            entity_pick_request = Future<read_pixel_data>();
+            entity_pick_request.reset();
         }
         else {
-            entity_pick_request = Future<read_pixel_data>();
+            entity_pick_request.reset();
         }
     }
 

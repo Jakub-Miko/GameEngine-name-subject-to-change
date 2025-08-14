@@ -10,7 +10,7 @@ struct ImGui_ImplGlfw_ViewportData_internal
     bool        WindowOwned;
     int         IgnoreWindowPosEventFrame;
     int         IgnoreWindowSizeEventFrame;
-    std::shared_ptr<RenderSurface> render_surface = nullptr;
+    RenderSurface* render_surface = nullptr;
     ImGui_ImplGlfw_ViewportData_internal() { Window = NULL; WindowOwned = false; IgnoreWindowSizeEventFrame = IgnoreWindowPosEventFrame = -1; }
     ~ImGui_ImplGlfw_ViewportData_internal() { }
 };

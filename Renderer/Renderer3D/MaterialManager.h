@@ -145,7 +145,12 @@ public:
 
 
     std::shared_ptr<MaterialTemplate> GetMaterialTemplate() const {
-        return material_template;
+        if(auto ptr = material_template.lock()) {
+            return ptr;
+        } else {
+            throw std::runtime_error("The material template was unloaded but a material attempted to use it.\n");
+        }
+        
     }
 
     void UpdateValues(RenderCommandList* command_list);
@@ -160,7 +165,7 @@ private:
 #endif
 
     std::string material_path = "";
-    std::shared_ptr<MaterialTemplate> material_template = nullptr;
+    std::weak_ptr<MaterialTemplate> material_template;
     std::vector<MaterialParameter> parameters = std::vector<MaterialParameter>();
     RenderDescriptorAllocationHandle descriptor_table;
     std::shared_ptr<RenderBufferResource> constant_buffer = nullptr;
@@ -190,7 +195,7 @@ inline Material::MaterialParameter_flags operator~(Material::MaterialParameter_f
 }
 
 inline void Material::SetParameter(const std::string& name, std::shared_ptr<RenderTexture2DResource> value, const std::string path) {
-    auto& param = parameters[material_template->GetMaterialTemplateParameterIndex(name)];
+    auto& param = parameters[GetMaterialTemplate()->GetMaterialTemplateParameterIndex(name)];
     param.flags |= MaterialParameter_flags::DIRTY;
     param.flags &= ~MaterialParameter_flags::DEFAULT;
     if (param.type != MaterialLayoutItemType::TEXTURE) throw std::runtime_error("Parameter " + name + "assignment type mismatch");
@@ -204,7 +209,7 @@ inline void Material::SetParameter(const std::string& name, std::shared_ptr<Rend
 
 template<typename T>
 inline void Material::SetParameter(const std::string& name, T value) {
-    auto& param = parameters[material_template->GetMaterialTemplateParameterIndex(name)];
+    auto& param = parameters[GetMaterialTemplate()->GetMaterialTemplateParameterIndex(name)];
     param.flags |= MaterialParameter_flags::DIRTY;
     param.flags &= ~MaterialParameter_flags::DEFAULT;
     if (!std::holds_alternative<T>(param.resource) && !std::holds_alternative<std::monostate>(param.resource)) throw std::runtime_error("Parameter " + name + "assignment type mismatch");
@@ -213,7 +218,7 @@ inline void Material::SetParameter(const std::string& name, T value) {
 
 
 inline void Material::SetParameter(const std::string& name, std::shared_ptr<RenderTexture2DResource> value) {
-    auto& param = parameters[material_template->GetMaterialTemplateParameterIndex(name)];
+    auto& param = parameters[GetMaterialTemplate()->GetMaterialTemplateParameterIndex(name)];
     param.flags |= MaterialParameter_flags::DIRTY;
     param.flags &= ~MaterialParameter_flags::DEFAULT;
     if (param.type != MaterialLayoutItemType::TEXTURE) throw std::runtime_error("Parameter " + name + "assignment type mismatch");

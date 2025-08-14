@@ -58,6 +58,8 @@ std::vector<const char*> VulkanRenderContext::GetExtensions()
 
 void VulkanRenderContext::Destroy()
 {
+	vkDeviceWaitIdle(vk_device);
+	
 	VulkanUnitConverter::Shutdown();
 
 	vmaDestroyAllocator(allocator);

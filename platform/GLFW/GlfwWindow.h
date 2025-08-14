@@ -31,7 +31,7 @@ public:
     
 #endif
 
-    static std::shared_ptr<RenderSurface> CreateSurfaceFromWindow(GLFWwindow* window);
+    static RenderSurface* CreateSurfaceFromWindow(GLFWwindow* window);
 
     virtual std::shared_ptr<RenderSurface> GetRenderSurface() const override {
         return window_render_surface;

@@ -15,11 +15,11 @@ public:
 
 public:
 	VkDescriptorSet descritor_set;
-	VulkanRenderDescriptorHeapBlock* allocating_heap_block; // The heap to return to after freeing
+	std::weak_ptr<VulkanRenderDescriptorHeapBlock> allocating_heap_block; // The heap to return to after freeing
 	uint64_t timeline; // the last submit which used this table. if not yet passed a new set needs to be allocated
 };
 
-class VulkanRenderDescriptorHeapBlock : public RenderDescriptorHeapBlock {
+class VulkanRenderDescriptorHeapBlock : public RenderDescriptorHeapBlock, public std::enable_shared_from_this<VulkanRenderDescriptorHeapBlock> {
 public:
 	VulkanRenderDescriptorHeapBlock(size_t size);
 

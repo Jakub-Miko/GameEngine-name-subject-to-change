@@ -113,13 +113,13 @@ void Renderer::SetRenderQueue(RenderCommandQueue* queue, RenderQueueTypes type)
 
 void Renderer::Destroy()
 {
-    RenderContext::Shutdown();
-
+    
     for (auto alloc : m_Allocators) {
         delete alloc;
     }
     m_FreeAllocators.clear();
     m_Allocators.clear();
+    RenderContext::Shutdown();
 }
 
 void Renderer::Create()

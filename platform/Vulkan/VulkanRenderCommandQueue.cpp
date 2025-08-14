@@ -141,6 +141,11 @@ void VulkanRenderCommandQueue::Signal(std::shared_ptr<RenderFence> fence, int nu
 	submit_mutex.unlock();
 }
 
+void VulkanRenderCommandQueue::WaitForValue(uint32_t value)
+{
+	command_buffer_fence->WaitForValue(value);
+}
+
 void VulkanRenderCommandQueue::VkBinarySemaphoreSignal(VkSemaphore semaphore)
 {
 

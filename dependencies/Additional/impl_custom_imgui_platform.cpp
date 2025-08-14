@@ -342,6 +342,7 @@ static void ImGui_custom_DestroyWindow(ImGuiViewport* viewport)
                     ImGui_ImplGlfw_KeyCallback(vd->Window, i, 0, GLFW_RELEASE, 0); // Later params are only used for main viewport, on which this function is never called.
 
             glfwDestroyWindow(vd->Window);
+            delete vd->render_surface;
         }
         vd->Window = NULL;
         IM_DELETE(vd);

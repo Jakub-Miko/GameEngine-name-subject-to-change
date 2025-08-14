@@ -236,7 +236,7 @@ void MaterialManager::SerializeMaterial(const std::string& filepath, std::shared
 		}
 		parameters.push_back(parameter_json);
 	}
-	json_object["material_template"] = material->material_template->GetName();
+	json_object["material_template"] = material->GetMaterialTemplate()->GetName();
 	std::string json_dump = json_object.dump();
 
 	file << json_dump;
@@ -276,7 +276,7 @@ void Material::SetMaterial(RenderCommandList* command_list)
 			command_list->SetTexture2DCubemap(parameter.name, std::get<std::shared_ptr<RenderTexture2DCubemapResource>>(parameter.resource));
 		}
 	}*/
-	command_list->SetMaterial(material_template->GetName(), shared_from_this());
+	command_list->SetMaterial(GetMaterialTemplate()->GetName(), shared_from_this());
 }
 
 
@@ -583,16 +583,16 @@ bool Material::MaterialParameter::IsDirty() const {
 
 
 void Material::ActivateParameter(const std::string& name) {
-	auto& param = parameters[material_template->GetMaterialTemplateParameterIndex(name)];
+	auto& param = parameters[GetMaterialTemplate()->GetMaterialTemplateParameterIndex(name)];
 	param.flags &= ~MaterialParameter_flags::DEFAULT;
 }
 
 void Material::DeactivateParameter(const std::string& name) {
-	auto& param = parameters[material_template->GetMaterialTemplateParameterIndex(name)];
+	auto& param = parameters[GetMaterialTemplate()->GetMaterialTemplateParameterIndex(name)];
 	param.flags |= MaterialParameter_flags::DEFAULT | MaterialParameter_flags::DIRTY;
-	auto def = material_template->GetDefaultMaterial();
+	auto def = GetMaterialTemplate()->GetDefaultMaterial();
 	if (def != nullptr) {
-		auto param_src = material_template->GetMaterialTemplateParameterIndex(name);
+		auto param_src = GetMaterialTemplate()->GetMaterialTemplateParameterIndex(name);
 		param.resource = def->parameters[param_src].resource;
 	}
 	else {
