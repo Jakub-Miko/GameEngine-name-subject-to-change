@@ -66,6 +66,7 @@ VulkanRenderSurface::VulkanRenderSurface(VkSurfaceKHR surface, bool register_for
 VulkanRenderSurface::~VulkanRenderSurface()
 {
     DEFINE_VK_INSTANCE(context);
+	vkDeviceWaitIdle(context->GetVkDevice());
     for(auto sem : present_semaphores) {
         vkDestroySemaphore(context->GetVkDevice(), sem, NULL);
     }
@@ -76,8 +77,16 @@ VulkanRenderSurface::~VulkanRenderSurface()
 
 	vkDestroyFence(context->GetVkDevice(), swapchain_creation_fence, NULL);
 
+	std::vector<VkImageView> views;
+	views.reserve(swapchain_framebuffers.size());
+	for(auto framebuf : swapchain_framebuffers) {
+		views.push_back(static_cast<VulkanRenderTextureResource*>(framebuf->GetBufferDescriptor().color_attachments[0].resource->GetExtensionData())->GetImageView());
+	}
+
+	vkb_swapchain.destroy_image_views(views);
+
     vkb::destroy_swapchain(vkb_swapchain);
-	vkDestroySurfaceKHR(context->GetVkInstance(), vk_surface, NULL);
+	vkb::destroy_surface(context->GetVkbInstance(), vk_surface);
 }
 
 std::shared_ptr<RenderFrameBufferResource> VulkanRenderSurface::GetFrameBufferByIndex(int index)

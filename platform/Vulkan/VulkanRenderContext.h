@@ -35,6 +35,7 @@ public:
 	uint64_t GetCurrentCpuTimelineValue();
 	VmaAllocator& GetVmaAllocator() { return allocator;  }
 	VkInstance GetVkInstance() const { return vk_instance; }
+	vkb::Instance GetVkbInstance() const { return vkb_instance; }
 	VkDevice GetVkDevice() const { return vk_device; }
 	vkb::Device GetVkbDevice() const { return vkb_device; }
 	void RequestExtension(const std::string& extension);
