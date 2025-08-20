@@ -205,6 +205,32 @@ void VulkanRenderCommandList::SetTexture2DCubemap(const std::string& semantic_na
 
 void VulkanRenderCommandList::SetResourceDefaultState(std::shared_ptr<RenderResource> resource, RenderState state)
 {
+	if(state == RenderState::TEXTURE_COLOR_ATTACHMENT) {
+		VkImageSubresourceRange range = {};
+		range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		range.baseArrayLayer = 0;
+		range.baseMipLevel = 0;
+		range.layerCount = 1;
+		range.levelCount = 1;
+		static_cast<VulkanRenderResourceManager*>(RenderResourceManager::Get())->TransitionImage(this, static_cast<VulkanRenderTextureResource*>(resource->GetExtensionData()), 
+			range, RenderState::UNINITIALIZED, RenderState::TEXTURE_COLOR_ATTACHMENT);
+			static_cast<VulkanRenderTextureResource*>(resource->GetExtensionData())->default_state = RenderState::TEXTURE_COLOR_ATTACHMENT;
+			resource->SetRenderState(RenderState::TEXTURE_COLOR_ATTACHMENT);
+			return;
+		}
+	// if(state == RenderState::TEXTURE_PRESENT) {
+	// 	if(resource->GetRenderState() != RenderState::TEXTURE_COLOR_ATTACHMENT) {
+	// 		throw std::runtime_error("wooops");
+	// 	}
+	// 	VkImageSubresourceRange range = {};
+	// 	range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	// 	range.baseArrayLayer = 0;
+	// 	range.baseMipLevel = 0;
+	// 	range.layerCount = 1;
+	// 	range.levelCount = 1;
+	// 	static_cast<VulkanRenderResourceManager*>(RenderResourceManager::Get())->TransitionImage(this, static_cast<VulkanRenderTextureResource*>(resource->GetExtensionData()), 
+	// 		range, RenderState::UNINITIALIZED, RenderState::TEXTURE_COLOR_ATTACHMENT);
+	// 	}
 	dependency_handler->SetResourceDefaultState(resource, state);
 }
 
@@ -595,7 +621,6 @@ void VulkanRenderCommandList::InsideRenderPass()
 		}
 
 		VkRenderingInfo info = static_cast<VulkanRenderFrameBufferResource*>(current_framebuffer.get())->GetRenderingInfo();
-
 		vkCmdBeginRendering(command_buffer, &info);
 
 		render_pass_active = true;
@@ -742,7 +767,7 @@ void DefaultVulkanDependencyHandler::SetResourceDefaultState(std::shared_ptr<Ren
 		dependency.previous_access = VulkanCommandListDependencyType::NONE;
 		dependency.type = VulkanCommandListDependencyType::NONE;
 		dependency.desired_final_state = state;
-		dependency.allow_uninitialized = false;
+		dependency.allow_uninitialized = true;
 		dependencies.insert(std::make_pair(resource, dependency));
 	}
 }
@@ -948,21 +973,23 @@ DefaultVulkanDependencyHandler::VulkanDependencyHandlerFeedback DefaultVulkanDep
 		
 		dependency.first->SetRenderState(new_state); // Change the resource back to its default state, this also serves to mark the resource initialized
 		
+		
 		bool transitioned = false;
-
+		
 		if (dependency.first->GetExtensionData()->IsTexture()) {
 			auto texture = static_cast<VulkanRenderTextureResource*>(dependency.first->GetExtensionData());
-			if (new_state != dependency.second.current_state) {
-				VkImageSubresourceRange range;
-				range.aspectMask = VulkanUnitConverter::IsTextureFormatDepth(texture->GetFormat()) ? VkImageAspectFlagBits::VK_IMAGE_ASPECT_DEPTH_BIT : VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT;
-				range.baseArrayLayer = 0;
-				range.baseMipLevel = 0;
-				range.layerCount = VK_REMAINING_ARRAY_LAYERS;
-				range.levelCount = VK_REMAINING_MIP_LEVELS; 
-				
-				manager->TransitionImage(list, texture, range, dependency.second.current_state, new_state, PipelineStage::ALL_STAGES, PipelineStage::ALL_STAGES);
-				transitioned = true;
+			if(requested_default_state != RenderState::EMPTY) {
+				texture->default_state = new_state;
 			}
+			VkImageSubresourceRange range;
+			range.aspectMask = VulkanUnitConverter::IsTextureFormatDepth(texture->GetFormat()) ? VkImageAspectFlagBits::VK_IMAGE_ASPECT_DEPTH_BIT : VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT;
+			range.baseArrayLayer = 0;
+			range.baseMipLevel = 0;
+			range.layerCount = VK_REMAINING_ARRAY_LAYERS;
+			range.levelCount = VK_REMAINING_MIP_LEVELS; 
+			
+			manager->TransitionImage(list, texture, range, dependency.second.current_state, new_state, PipelineStage::ALL_STAGES, PipelineStage::ALL_STAGES);
+			transitioned = true;
 		}
 
 		if(transitioned) {

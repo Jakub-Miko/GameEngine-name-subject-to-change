@@ -134,7 +134,7 @@ float calculate_shadows(vec3 view_space_pos, vec3 coords) {
 	depth /= camera_far_plane - camera_near_plane;
 	depth = sqrt(depth);
 	depth *= float(cascade_count);
-	int cascade = int(floor(depth));
+	int cascade = max(0,int(floor(depth)));
 
 	view_space_pos += texture(Normal, coords.xy).xyz * shadow_bias * (cascade+1);
 

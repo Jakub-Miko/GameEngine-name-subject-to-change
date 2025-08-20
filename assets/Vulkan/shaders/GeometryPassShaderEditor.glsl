@@ -47,7 +47,7 @@ void main() {
 	TBN = mat3(tangent_transformed, bitangent_transformed, normal_transformed);
 	
 	pos_fragment = (view_model_matrix * vec4(position, 1.0)).xyz;
-	gl_Position = mvp_matrix * vec4(position, 1.0);
+	gl_Position = mvp_matrix * vec4(position + vec3(0.00001), 1.0);
 	uv_fragment = uv;
 	uv_fragment.y = 1 - uv_fragment.y;
 	normal_fragment = normalize(mat3(transpose(inverse(view_model_matrix))) * normal.xyz).xyz;

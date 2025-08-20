@@ -21,6 +21,8 @@ VulkanRenderSurface::VulkanRenderSurface(VkSurfaceKHR surface, bool register_for
 	present_semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 	present_semaphore_info.pNext = &present_semaphore_type_info;
 	present_semaphore_info.flags = NULL;
+
+	
 	
 	VkSemaphoreTypeCreateInfo render_semaphore_type_info;
 	render_semaphore_type_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
@@ -39,20 +41,40 @@ VulkanRenderSurface::VulkanRenderSurface(VkSurfaceKHR surface, bool register_for
 
 	vkCreateFence(context->GetVkDevice(), &info,NULL, &swapchain_creation_fence);
 
-	CreateSwapchain();
-
-
-	for(int i = 0; i < swapchain_framebuffers.size(); i++) {
+	for(int i = 0; i < 6;i++) {
 		VkSemaphore render_semaphore;
 		vkCreateSemaphore(vk_device, &render_semaphore_info, NULL, &render_semaphore);
         render_semaphores.push_back(render_semaphore);
 	}
 
+		for(int i = 0; i < 6;i++) {
+		VkSemaphore render_semaphore;
+		vkCreateSemaphore(vk_device, &render_semaphore_info, NULL, &render_semaphore);
+        transition_render_semaphores.push_back(render_semaphore);
+	}
 
-	for(int i = 0; i < swapchain_framebuffers.size(); i++) { // we need an extra semaphore for the initial image which we dont know the index of 
+
+	for(int i = 0; i < 6; i++) { // we need an extra semaphore for the initial image which we dont know the index of 
 		VkSemaphore present_semaphore;
 		vkCreateSemaphore(vk_device, &present_semaphore_info, NULL, &present_semaphore);
         present_semaphores.push_back(present_semaphore);
+	}
+	CreateSwapchain();
+
+
+
+	VkFenceCreateInfo fence_info = {};
+	fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+
+	auto queue  = static_cast<VulkanRenderCommandQueue*>(Renderer::Get()->GetCommandQueue());
+
+	for(int i = 0; i < 6; i++) { // we need an extra semaphore for the initial image which we dont know the index of 
+		VkSemaphore job_fence;
+		vkCreateSemaphore(vk_device, &present_semaphore_info, NULL, &job_fence);
+        job_fences.push_back(job_fence);
+			queue->VkBinarySemaphoreSignal(job_fences[i]);
+		first.push_back(false);
+		transitioned.push_back(false);
 	}
 
     if(register_for_present) 
@@ -73,6 +95,14 @@ VulkanRenderSurface::~VulkanRenderSurface()
 
 	for(auto sem : render_semaphores) {
         vkDestroySemaphore(context->GetVkDevice(), sem, NULL);
+    }
+
+	for(auto sem : transition_render_semaphores) {
+        vkDestroySemaphore(context->GetVkDevice(), sem, NULL);
+    }
+
+	for(auto fence : job_fences) {
+        vkDestroySemaphore(context->GetVkDevice(), fence, NULL);
     }
 
 	vkDestroyFence(context->GetVkDevice(), swapchain_creation_fence, NULL);
@@ -116,16 +146,42 @@ void VulkanRenderSurface::Present(RenderPresentEvent *event)
 
 
 	auto frame_buf = std::static_pointer_cast<VulkanRenderFrameBufferResource>(GetCurrentFrameBuffer());
+	auto manager = static_cast<VulkanRenderResourceManager*>(RenderResourceManager::Get());
+	auto frame_num = FrameManager::Get()->GetCurrentFrameNumber() % FrameManager::Get()->GetLatencyFrames();
+	
+	
+	auto attachment = swapchain_framebuffers[current_index]->GetBufferDescriptor().color_attachments[0].resource;
+	auto attachment_image = static_cast<VulkanRenderTextureResource*>(attachment->GetExtensionData());
+	
+	
+	// auto list_4 = static_cast<VulkanRenderCommandList*>(Renderer::Get()->GetRenderCommandList());
+	
+	// list_4->SetRenderTarget(swapchain_framebuffers[current_index]);
+	// list_4->Clear();
+	// queue->ExecuteRenderCommandList(list_4);
+	
+	// if(first[current_index]) {
+	// 	queue->VkBinarySemaphoreWait(transition_render_semaphores[current_index]);
+	// }
+
 	auto list_1 = static_cast<VulkanRenderCommandList*>(Renderer::Get()->GetRenderCommandList());
 	auto vk_command_buffer = list_1->GetVkCommandBuffer();
-	auto manager = static_cast<VulkanRenderResourceManager*>(RenderResourceManager::Get());
 	
+	VkImageSubresourceRange range = {};
+	range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	range.baseArrayLayer = 0;
+	range.baseMipLevel = 0;
+	range.layerCount = 1;
+	range.levelCount = 1;
 
-	list_1->SetResourceDefaultState(frame_buf->GetBufferDescriptor().color_attachments[0].resource, RenderState::TEXTURE_PRESENT);
+	manager->TransitionImage(list_1, attachment_image, range, RenderState::TEXTURE_COLOR_ATTACHMENT, RenderState::TEXTURE_PRESENT);
 
-	queue->ExecuteRenderCommandList(list_1);
 
-	queue->VkBinarySemaphoreSignal(render_semaphores[current_index]);
+		queue->ExecuteRenderCommandListWithSemaphores(list_1, {render_semaphores[current_index]}, {transition_render_semaphores[current_index]});
+
+	transitioned[current_index] = true;
+
+	//queue->VkBinarySemaphoreSignal(render_semaphores[current_index]);
 	
     
     VkPresentInfoKHR info = {};
@@ -140,22 +196,48 @@ void VulkanRenderSurface::Present(RenderPresentEvent *event)
 	
 	previous_index = current_index;
 	auto code = vkAcquireNextImageKHR(vk_device, vk_swapchain, 30000000000,present_semaphores[current_index], NULL, &current_index); // timeout 30 seconds
-	if (code == VK_ERROR_OUT_OF_DATE_KHR) {
+	if (code != VK_SUCCESS) {
 		RecreateSwapchain();
+		attachment = swapchain_framebuffers[current_index]->GetBufferDescriptor().color_attachments[0].resource;
+		attachment_image = static_cast<VulkanRenderTextureResource*>(attachment->GetExtensionData());
+		
+		auto list_3 = static_cast<VulkanRenderCommandList*>(Renderer::Get()->GetRenderCommandList());
+		auto vk_command_buffer_3 = list_3->GetVkCommandBuffer();
+
+
+		
+		
+		// list_3->SetRenderTarget(swapchain_framebuffers[current_index]);
+		// list_3->Clear();
+		queue->ExecuteRenderCommandListWithSemaphores(list_3, {transition_render_semaphores[current_index]}, {});
+		first[current_index] = true;
 	} else {
-		queue->VkBinarySemaphoreWait(present_semaphores[previous_index]); //Waits until the image is available so rendering can begin on it 
+		//queue->VkBinarySemaphoreWait(present_semaphores[previous_index]); //Waits until the image is available so rendering can begin on it 
+		// vkWaitForFences(context->GetVkbDevice(), 1, &job_fences[frame_num], VK_TRUE, 30000000000);
+		// vkResetFences(context->GetVkDevice(), 1, &job_fences[frame_num]);
+		attachment = swapchain_framebuffers[current_index]->GetBufferDescriptor().color_attachments[0].resource;
+		attachment_image = static_cast<VulkanRenderTextureResource*>(attachment->GetExtensionData());
+		
+		auto list_3 = static_cast<VulkanRenderCommandList*>(Renderer::Get()->GetRenderCommandList());
+		auto vk_command_buffer_3 = list_3->GetVkCommandBuffer();
+
+
+		if(transitioned[current_index]) {
+
+			manager->TransitionImage(list_3, attachment_image, range, RenderState::TEXTURE_PRESENT, RenderState::TEXTURE_COLOR_ATTACHMENT);
+		} else {
+			manager->TransitionImage(list_3, attachment_image, range, RenderState::UNINITIALIZED, RenderState::TEXTURE_COLOR_ATTACHMENT);
+		}
+		
+		
+		// list_3->SetRenderTarget(swapchain_framebuffers[current_index]);
+		// list_3->Clear();
+		queue->ExecuteRenderCommandListWithSemaphores(list_3, {transition_render_semaphores[current_index]}, {present_semaphores[previous_index]});
+		first[current_index] = true;
 	}
 	
-	auto list_2 = static_cast<VulkanRenderCommandList*>(Renderer::Get()->GetRenderCommandList());
-
-	auto attachment = swapchain_framebuffers[current_index]->GetBufferDescriptor().color_attachments[0].resource;
+	//queue->VkBinarySemaphoreSignal(transition_render_semaphores[current_index]);
 	
-
-	list_2->SetRenderTarget(swapchain_framebuffers[current_index]);
-	list_2->SetResourceDefaultState(attachment, RenderState::TEXTURE_COLOR_ATTACHMENT);
-	list_2->Clear();
-
-	queue->ExecuteRenderCommandList(list_2);
 }
 
 void VulkanRenderSurface::CreateSwapchain() {
@@ -213,6 +295,20 @@ void VulkanRenderSurface::CreateSwapchain() {
 		default_framebuf.depth_stencil_attachment = { 0, depth_buffer };
 		auto framebuffer = resource_manager->CreateFrameBuffer(default_framebuf);
 		swapchain_framebuffers.push_back(framebuffer);
+
+		
+		auto queue  = static_cast<VulkanRenderCommandQueue*>(Renderer::Get()->GetCommandQueue());
+		auto manager = static_cast<VulkanRenderResourceManager*>(RenderResourceManager::Get());
+
+		VkImageSubresourceRange range = {};
+	range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	range.baseArrayLayer = 0;
+	range.baseMipLevel = 0;
+	range.layerCount = 1;
+	range.levelCount = 1;
+
+		//manager->TransitionImage(list_1, static_cast<VulkanRenderTextureResource*>(color_texture->GetExtensionData()), range, RenderState::UNINITIALIZED, RenderState::TEXTURE_COLOR_ATTACHMENT);
+		//queue->ExecuteRenderCommandList(list_1);
 	}
 
 
@@ -223,6 +319,22 @@ void VulkanRenderSurface::CreateSwapchain() {
 	}
 	vkWaitForFences(context->GetVkDevice(),1, &swapchain_creation_fence, VK_TRUE, 30000000000);
 	vkResetFences(context->GetVkDevice(), 1, &swapchain_creation_fence);
+    
+	auto list_1 = static_cast<VulkanRenderCommandList*>(Renderer::Get()->GetRenderCommandList());
+	auto manager = static_cast<VulkanRenderResourceManager*>(RenderResourceManager::Get());
+	auto attachment = swapchain_framebuffers[current_index]->GetBufferDescriptor().color_attachments[0].resource;
+	auto attachment_image = static_cast<VulkanRenderTextureResource*>(attachment->GetExtensionData());
+		VkImageSubresourceRange range = {};
+	range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	range.baseArrayLayer = 0;
+	range.baseMipLevel = 0;
+	range.layerCount = 1;
+	range.levelCount = 1;
+
+	manager->TransitionImage(list_1, attachment_image, range, RenderState::UNINITIALIZED, RenderState::TEXTURE_COLOR_ATTACHMENT);
+
+	queue->ExecuteRenderCommandListWithSemaphores(list_1, {transition_render_semaphores[current_index]}, {});
+
 	vkQueueWaitIdle(*queue->GetVkQueue());
 }
 
@@ -232,6 +344,7 @@ void VulkanRenderSurface::RecreateSwapchain() {
 	current_index = 0;
 	previous_index = 0;
 	CreateSwapchain();
+	previous_index = current_index;
 }
 
 void VulkanRenderSurface::RegisterForPresent()

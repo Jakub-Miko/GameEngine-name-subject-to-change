@@ -9,6 +9,7 @@
 #include "Window.h"
 #include "VulkanUnitConverter.h"
 #include "VulkanRenderSurface.h"
+#include <Renderer/Renderer.h>
 
 PFN_vkCmdPushDescriptorSetKHR vkCmdPushDescriptorSet_KHR = nullptr;
 
@@ -17,6 +18,8 @@ void VulkanRenderContext::Present()
 	VulkanRenderPresentEvent event = {};
 
 	Application::Get()->SendObservedEvent(&event);
+	auto default_framebuf = Application::Get()->GetWindow()->GetRenderSurface()->GetCurrentFrameBuffer();
+	Renderer::Get()->SetDefaultFrameBuffer(default_framebuf);
 }
 
 uint64_t VulkanRenderContext::GetCurrentGpuTimelineValue()

@@ -56,25 +56,39 @@ void VulkanRenderResourceManager::UploadDataToBuffer(RenderCommandList* list, st
 	VulkanRenderBufferResource* buffer = static_cast<VulkanRenderBufferResource*>(resource.get());
 	VulkanRenderCommandList* vk_command_list = static_cast<VulkanRenderCommandList*>(list);
 	vk_command_list->OutsideRenderPass();
+	auto staging_buffer = GetStagingBuffer(size);
 
-
+	
 	if (buffer->descriptor.buffer_size < size + offset) {
 		throw std::runtime_error("Attempted to upload data to a buffer of invalid size, check the size and offset of the data.\n");
 	}
-
+	
 	// For now handle upload resources by using staging buffers, since we need asynchronous uploads
 	//if (buffer->descriptor.type == RenderBufferType::UPLOAD) {
-	//	throw std::runtime_error("Unexpected behaviour might occur when asynchronously uploading to upload resources\n");
-	//	vmaCopyMemoryToAllocation(alloc, data, buffer->alloc, offset, size);
-	//	return;
-	//}
-
-	auto staging_buffer = GetStagingBuffer(size);
-
+		//	throw std::runtime_error("Unexpected behaviour might occur when asynchronously uploading to upload resources\n");
+		//	vmaCopyMemoryToAllocation(alloc, data, buffer->alloc, offset, size);
+		//	return;
+		//}
+		
+		
 	VulkanRenderBufferResource* vk_staging_buffer = static_cast<VulkanRenderBufferResource*>(staging_buffer.get());
+		
+	if(!data) {
+		int data = 6;
+		vmaCopyMemoryToAllocation(alloc, &data, vk_staging_buffer->alloc, 0, sizeof(int));
+			vk_command_list->AddDependency(resource, VulkanCommandListDependencyType::WRITE, RenderState::COMMON);
+	vk_command_list->AddDependency(staging_buffer, VulkanCommandListDependencyType::WRITE, RenderState::COMMON);
+			
+	VkBufferCopy copy = {};
+	copy.dstOffset = 0;
+	copy.size = sizeof(int);
+	copy.srcOffset = 0;
+		vkCmdCopyBuffer(vk_command_list->command_buffer, vk_staging_buffer->buffer, buffer->buffer, 1, &copy);
 
+		return;
+	}
 	vmaCopyMemoryToAllocation(alloc, data, vk_staging_buffer->alloc, 0, size);
-
+		
 	VkBufferCopy copy = {};
 	copy.dstOffset = offset;
 	copy.size = size;
@@ -826,10 +840,10 @@ void VulkanRenderResourceManager::TransitionImage(RenderCommandList* list, Vulka
 {
 	VkImageMemoryBarrier2 barrier = {};
 	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
-	barrier.srcStageMask = VulkanUnitConverter::PipelineStageToVulkanPipelineStage(source_scope);
-	barrier.dstStageMask = VulkanUnitConverter::PipelineStageToVulkanPipelineStage(target_scope);
-	barrier.srcAccessMask = VulkanUnitConverter::DependencyToVkAccess(src_access);
-	barrier.dstAccessMask = VulkanUnitConverter::DependencyToVkAccess(dst_access);
+	barrier.srcStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+	barrier.dstStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+	barrier.srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT | VK_ACCESS_2_MEMORY_READ_BIT;
+	barrier.dstAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT | VK_ACCESS_2_MEMORY_READ_BIT;
 	barrier.image = image->GetImage();
 	barrier.subresourceRange = range;
 	barrier.oldLayout = VulkanUnitConverter::RenderStateToTextureLayout(source_state);

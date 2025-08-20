@@ -82,7 +82,7 @@ void VulkanRenderCommandQueue::ExecuteRenderCommandList(RenderCommandList* list)
 	submit_sync.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
 	submit_sync.signalSemaphoreValueCount = 1;
 	submit_sync.pSignalSemaphoreValues = &value;
-
+	VkPipelineStageFlags flags = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
 	
 	VkSubmitInfo info;
 	info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -91,17 +91,87 @@ void VulkanRenderCommandQueue::ExecuteRenderCommandList(RenderCommandList* list)
 	info.pCommandBuffers = vk_command_list->GetVkCommandBuffer();
 	info.pSignalSemaphores = static_cast<VulkanRenderFence*>(command_buffer_fence.get())->GetSemaphore();;
 	info.signalSemaphoreCount = 1;
-	info.pWaitSemaphores = NULL;
-	info.waitSemaphoreCount = 0;
 	info.pWaitDstStageMask = NULL;
+			info.pWaitSemaphores = NULL;
+		info.waitSemaphoreCount = 0;
+	
+	
+	auto sync = vk_command_list->dependency_handler->FinalizeDependencies(vk_command_list, value);
+	sync.timeline_wait = value - 1;
+	if (true) { // we need to wait until the timeline requirement is met before executing this command list
+		info.pWaitSemaphores = static_cast<VulkanRenderFence*>(command_buffer_fence.get())->GetSemaphore();;
+		info.waitSemaphoreCount = 1;
+		info.pWaitDstStageMask = &flags;
+		submit_sync.waitSemaphoreValueCount = 1;
+		submit_sync.pWaitSemaphoreValues = &sync.timeline_wait;
+	}
+
+	vk_command_list->OutsideRenderPass(); // Make sure to end the render pass before submission;
+	vkEndCommandBuffer(*vk_command_list->GetVkCommandBuffer());
+
+	vkQueueSubmit(vk_queue, 1, &info, NULL);
+	submit_mutex.unlock();
+	static_cast<VulkanRenderResourceManager*>(RenderResourceManager::Get())->ReturnCommandList(list, value);
+}
+
+void VulkanRenderCommandQueue::ExecuteRenderCommandListWithSemaphores(RenderCommandList *list, const std::vector<VkSemaphore> &signal_sems, const std::vector<VkSemaphore>& wait_sems)
+{
+		DEFINE_VK_INSTANCE(context);
+	VulkanRenderCommandList* vk_command_list = static_cast<VulkanRenderCommandList*>(list);
+	submit_mutex.lock();
+	uint64_t value = ++last_buffer_signaled; /// @todo this can cause a datarace make sure its locked behind the submission mutex
+	VkTimelineSemaphoreSubmitInfo submit_sync = {};
+
+	vk_command_list->OutsideRenderPass();
+	VkPipelineStageFlags flags = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+	
+	std::vector<VkSemaphore> sems;
+	std::vector<VkSemaphore> waitsems;
+	std::vector<uint64_t> values;
+	std::vector<uint64_t> wait_values;
+	std::vector<VkPipelineStageFlags> vec_flags;
+	sems.push_back(*static_cast<VulkanRenderFence*>(command_buffer_fence.get())->GetSemaphore());
+	values.push_back(value);
+	waitsems.push_back(*static_cast<VulkanRenderFence*>(command_buffer_fence.get())->GetSemaphore());
+	for(auto sem : signal_sems) {
+		sems.push_back(sem);
+		values.push_back(value);
+	}
 
 
 	
-	auto sync = vk_command_list->dependency_handler->FinalizeDependencies(vk_command_list, value);
+	
+		submit_sync.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
+		submit_sync.signalSemaphoreValueCount = sems.size();
+		submit_sync.pSignalSemaphoreValues = values.data();
 
-	if (sync.timeline_wait > context->GetCurrentGpuTimelineValue()) { // we need to wait until the timeline requirement is met before executing this command list
-		submit_sync.waitSemaphoreValueCount = 1;
-		submit_sync.pWaitSemaphoreValues = &sync.timeline_wait;
+	VkSubmitInfo info;
+	info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	info.pNext = &submit_sync;
+	info.commandBufferCount = 1;
+	info.pCommandBuffers = vk_command_list->GetVkCommandBuffer();
+	info.pSignalSemaphores = sems.data();
+	info.signalSemaphoreCount = sems.size();
+	info.pWaitDstStageMask = NULL;
+			info.pWaitSemaphores = NULL;
+		info.waitSemaphoreCount = 0;
+	
+	for(auto sem : wait_sems) {
+		waitsems.push_back(sem);
+	}
+	
+	auto sync = vk_command_list->dependency_handler->FinalizeDependencies(vk_command_list, value);
+	sync.timeline_wait = value - 1;
+	if (true) { // we need to wait until the timeline requirement is met before executing this command list
+		for(auto sem : waitsems) {
+			vec_flags.push_back(flags);
+			wait_values.push_back(sync.timeline_wait);
+		}
+		info.pWaitSemaphores = waitsems.data();
+		info.waitSemaphoreCount = waitsems.size();
+		info.pWaitDstStageMask = vec_flags.data();
+		submit_sync.waitSemaphoreValueCount = waitsems.size();
+		submit_sync.pWaitSemaphoreValues = wait_values.data();
 	}
 
 	vk_command_list->OutsideRenderPass(); // Make sure to end the render pass before submission;
@@ -149,6 +219,10 @@ void VulkanRenderCommandQueue::WaitForValue(uint32_t value)
 void VulkanRenderCommandQueue::VkBinarySemaphoreSignal(VkSemaphore semaphore)
 {
 
+	
+	submit_mutex.lock();
+
+
 	VkSubmitInfo info;
 	info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	info.pNext = NULL;
@@ -160,7 +234,6 @@ void VulkanRenderCommandQueue::VkBinarySemaphoreSignal(VkSemaphore semaphore)
 	info.waitSemaphoreCount = 0;
 	info.pWaitDstStageMask = NULL;
 
-	submit_mutex.lock();
 	vkQueueSubmit(vk_queue, 1, &info, NULL);
 	submit_mutex.unlock();
 }

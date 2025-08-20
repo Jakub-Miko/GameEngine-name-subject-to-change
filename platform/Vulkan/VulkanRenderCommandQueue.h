@@ -9,12 +9,13 @@ class VulkanRenderCommandQueue : public RenderCommandQueue {
 public:
 	virtual void ExecuteRenderCommandLists(std::vector<RenderCommandList*>& lists) override;
 	virtual void ExecuteRenderCommandList(RenderCommandList* list) override;
+	void ExecuteRenderCommandListWithSemaphores(RenderCommandList* list, const std::vector<VkSemaphore>& signal_sems, const std::vector<VkSemaphore>& wait_sems);
 
 	virtual void Signal(std::shared_ptr<RenderFence> fence, int num) override;
 	void WaitForValue(uint32_t value);
 
 	void VkBinarySemaphoreSignal(VkSemaphore semaphore);
-	void VkBinarySemaphoreWait(VkSemaphore semaphore, VkPipelineStageFlags wait_mask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+	void VkBinarySemaphoreWait(VkSemaphore semaphore, VkPipelineStageFlags wait_mask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
 
 	VulkanRenderCommandQueue(VkQueue queue);
 

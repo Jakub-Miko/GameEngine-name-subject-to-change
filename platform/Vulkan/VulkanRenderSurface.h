@@ -36,8 +36,12 @@ private:
     VkSwapchainKHR vk_swapchain;
     std::vector<VkSemaphore> present_semaphores;
     std::vector<VkSemaphore> render_semaphores;
+    std::vector<VkSemaphore> transition_render_semaphores;
+    std::vector<VkSemaphore> job_fences;
     std::vector<std::shared_ptr<RenderFrameBufferResource>> swapchain_framebuffers;
     std::unique_ptr<EventObserverBase> present_observer;
     VkFence swapchain_creation_fence;
     uint32_t current_index = 0, previous_index = 0;
+    std::vector<bool> first;
+    std::vector<bool> transitioned;
 };

@@ -61,7 +61,7 @@ public:
 
 	void TransitionImage(RenderCommandList* list, VulkanRenderTextureResource* image, VkImageSubresourceRange range, RenderState source_state, RenderState target_state,
 		PipelineStage source_scope = PipelineStage::ALL_STAGES, PipelineStage target_scope = PipelineStage::ALL_STAGES, 
-		VulkanCommandListDependencyType src_access = VulkanCommandListDependencyType::READ, VulkanCommandListDependencyType dst_access = VulkanCommandListDependencyType::WRITE);
+		VulkanCommandListDependencyType src_access = VulkanCommandListDependencyType::WRITE, VulkanCommandListDependencyType dst_access = VulkanCommandListDependencyType::WRITE);
 
 	std::shared_ptr<RenderBufferResource> GetStagingBuffer(size_t size);
 

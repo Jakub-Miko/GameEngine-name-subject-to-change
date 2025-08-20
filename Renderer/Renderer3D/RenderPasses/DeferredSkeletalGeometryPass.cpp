@@ -47,7 +47,7 @@ void DeferredSkeletalGeometryPass::InitPostProcessingPassData() {
 
 #ifdef EDITOR
 	//we need to pass an extra entity id 
-	RenderBufferDescriptor const_desc(sizeof(glm::mat4) * 2 + sizeof(uint32_t), RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
+	RenderBufferDescriptor const_desc(sizeof(glm::mat4) * 2 + sizeof(uint32_t), RenderBufferType::DEFAULT, RenderBufferUsage::CONSTANT_BUFFER);
 #else 
 	RenderBufferDescriptor const_desc(sizeof(glm::mat4) * 2, RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
 #endif

@@ -69,7 +69,7 @@ void DeferredGeometryPass::InitPostProcessingPassData() {
 
 #ifdef EDITOR
 	//we need to pass an extra entity id 
-	RenderBufferDescriptor const_desc(sizeof(glm::mat4)*2 + sizeof(uint32_t), RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
+	RenderBufferDescriptor const_desc(sizeof(glm::mat4)*2 + sizeof(uint32_t), RenderBufferType::DEFAULT, RenderBufferUsage::CONSTANT_BUFFER);
 #else 
 	RenderBufferDescriptor const_desc(sizeof(glm::mat4) * 2, RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
 #endif
@@ -123,16 +123,22 @@ void DeferredGeometryPass::Render(RenderPipelineResourceManager& resource_manage
 		}
 		list->SetVertexBuffer(mesh.GetMesh()->GetVertexBuffer());
 		list->SetIndexBuffer(mesh.GetMesh()->GetIndexBuffer());
-		glm::mat4 mvp = ViewProjection * transform.TransformMatrix;
+		glm::mat4 mvp = glm::mat4(1.0);
+		mvp = ViewProjection * transform.TransformMatrix;
 		glm::mat4 mv_matrix = view_matrix * transform.TransformMatrix;
-		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, glm::value_ptr(mvp), sizeof(glm::mat4), 0);
+		int v[500] = {};
+ 		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, &mvp[0][0], sizeof(glm::mat4), 0);
 		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, glm::value_ptr(mv_matrix), sizeof(glm::mat4), sizeof(glm::mat4));
 #ifdef EDITOR
 		//Pass the extra entity id
 		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, (void*)&entity.id, sizeof(uint32_t), sizeof(glm::mat4)*2);
 #endif
-		list->Draw(mesh.GetMesh()->GetIndexCount());
-
+		list->SetRenderTarget(out_buffer);
+			list->SetPipeline(data->pipeline);
+ 		if(mesh.GetMesh()->GetIndexCount() != 0) {
+			 list->Draw(mesh.GetMesh()->GetIndexCount());
+		}
+		break;
 
 	}
 
