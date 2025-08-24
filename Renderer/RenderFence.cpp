@@ -7,12 +7,12 @@
 #endif
 
 
-RenderFence* RenderFence::CreateFence()
+RenderFence* RenderFence::CreateFence(uint32_t initial_value)
 {
 #ifdef OpenGL_API
-	return new OpenGLRenderFence();
+	return new OpenGLRenderFence(initial_value);
 #elif defined Vulkan_API
-	return new VulkanRenderFence();
+	return new VulkanRenderFence(initial_value);
 #endif
 
 }

@@ -189,7 +189,7 @@ AnimationPlayback::AnimationPlayback(std::shared_ptr<Animation> animation) : pla
 	}
 }
 
-bool AnimationPlayback::UpdateAnimation(float delta_time, RenderCommandList* list, std::shared_ptr<Mesh> skeletal_mesh)
+bool AnimationPlayback::UpdateAnimation(float delta_time, std::shared_ptr<RenderCommandList>  list, std::shared_ptr<Mesh> skeletal_mesh)
 {
 	//TODO: Revise
 	PROFILE("Update Animations");

@@ -255,7 +255,7 @@ std::shared_ptr<Material> MaterialManager::CreateEmptyMaterial(const std::string
 	return material;
 }
 
-void Material::SetMaterial(RenderCommandList* command_list)
+void Material::SetMaterial(std::shared_ptr<RenderCommandList>  command_list)
 {
 	/*UpdateValues(command_list);
 	auto& sig = material_template->GetRootSignature().GetDescriptor().parameters;
@@ -339,7 +339,7 @@ void Material::SetMaterial(RenderCommandList* command_list)
 //}
 
 // Be aware this is not thread safe
-void Material::UpdateValues(RenderCommandList* command_list)
+void Material::UpdateValues(std::shared_ptr<RenderCommandList>  command_list)
 {
 	command_list->UpdateMaterial(shared_from_this());
 }

@@ -19,9 +19,9 @@ private:
 	template<LightType type>
 	void Render_impl(RenderPipelineResourceManager& resource_manager);
 
-	void RenderDirectionalShadowCaster(Entity caster, RenderCommandList* list);
+	void RenderDirectionalShadowCaster(Entity caster, std::shared_ptr<RenderCommandList>  list);
 	
-	void RenderPointShadowCaster(Entity caster, RenderCommandList* list);
+	void RenderPointShadowCaster(Entity caster, std::shared_ptr<RenderCommandList>  list);
 
 	void InitShadowMappingPassData();
 	std::string input_shadow_casters_directional;

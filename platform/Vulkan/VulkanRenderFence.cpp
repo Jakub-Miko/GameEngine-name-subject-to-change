@@ -35,13 +35,13 @@ int VulkanRenderFence::GetValue()
 	return value;
 }
 
-VulkanRenderFence::VulkanRenderFence() : semaphore()
+VulkanRenderFence::VulkanRenderFence(uint32_t initial_value) : semaphore()
 {
 	DEFINE_VK_INSTANCE(context);
 
 	VkSemaphoreTypeCreateInfo type_info = {};
 	type_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
-	type_info.initialValue = 0;
+	type_info.initialValue = initial_value;
 	type_info.pNext = NULL;
 	type_info.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
 

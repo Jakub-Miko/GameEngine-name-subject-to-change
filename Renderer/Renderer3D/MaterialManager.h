@@ -113,7 +113,7 @@ public:
 
     };
 
-    void SetMaterial(RenderCommandList* command_list);
+    void SetMaterial(std::shared_ptr<RenderCommandList>  command_list);
 
     void ActivateParameter(const std::string& name);
     void DeactivateParameter(const std::string& name);
@@ -153,7 +153,7 @@ public:
         
     }
 
-    void UpdateValues(RenderCommandList* command_list);
+    void UpdateValues(std::shared_ptr<RenderCommandList>  command_list);
 
 private:
 

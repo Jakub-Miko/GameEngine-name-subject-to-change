@@ -29,7 +29,7 @@ int OpenGLRenderFence::GetValue()
 	return m_Counter;
 }
 
-OpenGLRenderFence::OpenGLRenderFence() : m_Counter(0), m_Cond(), m_Mutex()
+OpenGLRenderFence::OpenGLRenderFence(uint32_t initial_value) : m_Counter(0), m_Cond(), m_Mutex()
 {
 
 }

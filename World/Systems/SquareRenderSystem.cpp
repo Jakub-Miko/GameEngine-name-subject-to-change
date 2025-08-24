@@ -16,12 +16,12 @@ void SquareRenderSystem(World& world) {
 		return list;
 	};
 
-	auto func_2 = [](ComponentCollectionParameters params, system_return_type<RenderCommandList>& lists) {
+	auto func_2 = [](ComponentCollectionParameters params, system_return_type<std::shared_ptr<RenderCommandList>>& lists) {
 		PROFILE("SUBMITTOQUEUE");
 		for (int i = 0; i < params.num_of_collections + (params.extra_collections_size != 0); i++) {
 			Renderer::Get()->GetCommandQueue()->ExecuteRenderCommandList(lists[i].GetValue());
 		}
 	};
 
-	RunSystem<SquareComponent, RenderCommandList>(world, func_1, func_2);
+	RunSystem<SquareComponent, std::shared_ptr<RenderCommandList>>(world, func_1, func_2);
 };

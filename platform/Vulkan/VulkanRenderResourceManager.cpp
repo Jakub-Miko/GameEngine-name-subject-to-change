@@ -49,12 +49,12 @@ std::shared_ptr<RenderBufferResource> VulkanRenderResourceManager::CreateBuffer(
 		});
 }
 
-void VulkanRenderResourceManager::UploadDataToBuffer(RenderCommandList* list, std::shared_ptr<RenderBufferResource> resource, void* data, size_t size, size_t offset)
+void VulkanRenderResourceManager::UploadDataToBuffer(std::shared_ptr<RenderCommandList>  list, std::shared_ptr<RenderBufferResource> resource, void* data, size_t size, size_t offset)
 {
 	DEFINE_VK_INSTANCE(context);
 	auto alloc = context->GetVmaAllocator();
 	VulkanRenderBufferResource* buffer = static_cast<VulkanRenderBufferResource*>(resource.get());
-	VulkanRenderCommandList* vk_command_list = static_cast<VulkanRenderCommandList*>(list);
+	auto vk_command_list = std::static_pointer_cast<VulkanRenderCommandList>(list);
 	vk_command_list->OutsideRenderPass();
 
 
@@ -87,7 +87,7 @@ void VulkanRenderResourceManager::UploadDataToBuffer(RenderCommandList* list, st
 
 }
 
-void VulkanRenderResourceManager::ReallocateAndUploadBuffer(RenderCommandList* list, std::shared_ptr<RenderBufferResource> resource, void* data, size_t size)
+void VulkanRenderResourceManager::ReallocateAndUploadBuffer(std::shared_ptr<RenderCommandList>  list, std::shared_ptr<RenderBufferResource> resource, void* data, size_t size)
 {\
 	throw std::runtime_error("ReallocateAndUploadBuffer has been removed, since it violates resource management requirements.\n");
 	
@@ -103,9 +103,9 @@ void VulkanRenderResourceManager::ReallocateAndUploadBuffer(RenderCommandList* l
 	// UploadDataToBuffer(list, resource, data, size, 0);
 }
 
-void VulkanRenderResourceManager::CopyBufferData(RenderCommandList *list, std::shared_ptr<RenderBufferResource> source, std::shared_ptr<RenderBufferResource> destination, size_t source_offset, size_t source_size, size_t destination_offset)
+void VulkanRenderResourceManager::CopyBufferData(std::shared_ptr<RenderCommandList>  list, std::shared_ptr<RenderBufferResource> source, std::shared_ptr<RenderBufferResource> destination, size_t source_offset, size_t source_size, size_t destination_offset)
 {
-	VulkanRenderCommandList* vk_command_list = static_cast<VulkanRenderCommandList*>(list);
+	auto vk_command_list = std::static_pointer_cast<VulkanRenderCommandList>(list);
 	vk_command_list->OutsideRenderPass();
 
 	VkBufferCopy copy = {};
@@ -196,12 +196,12 @@ std::shared_ptr<RenderTexture2DResource> VulkanRenderResourceManager::CreateText
 		});
 }
 
-void VulkanRenderResourceManager::UploadDataToTexture2D(RenderCommandList* list, std::shared_ptr<RenderTexture2DResource> resource, void* data, size_t width, size_t height, size_t offset_x, size_t offset_y, int level)
+void VulkanRenderResourceManager::UploadDataToTexture2D(std::shared_ptr<RenderCommandList>  list, std::shared_ptr<RenderTexture2DResource> resource, void* data, size_t width, size_t height, size_t offset_x, size_t offset_y, int level)
 {
 	DEFINE_VK_INSTANCE(context);
 	auto alloc = context->GetVmaAllocator();
 	VulkanRenderTextureResource* texture = static_cast<VulkanRenderTextureResource*>(resource->GetExtensionData());
-	VulkanRenderCommandList* vk_command_list = static_cast<VulkanRenderCommandList*>(list);
+	auto vk_command_list = std::static_pointer_cast<VulkanRenderCommandList>(list);
 	vk_command_list->OutsideRenderPass();
 
 	auto res = texture->GetResolution();
@@ -236,15 +236,15 @@ void VulkanRenderResourceManager::UploadDataToTexture2D(RenderCommandList* list,
 	vkCmdCopyBufferToImage(*vk_command_list->GetVkCommandBuffer(), vk_staging_buffer->buffer, texture->GetImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
 }
 
-void VulkanRenderResourceManager::GenerateMIPs(RenderCommandList* list, std::shared_ptr<RenderTexture2DResource> resource)
+void VulkanRenderResourceManager::GenerateMIPs(std::shared_ptr<RenderCommandList>  list, std::shared_ptr<RenderTexture2DResource> resource)
 {
 }
 
-void VulkanRenderResourceManager::UploadToTexture2DFromFile(RenderCommandList* list, std::shared_ptr<RenderTexture2DResource> resource, const std::string& filepath, int level)
+void VulkanRenderResourceManager::UploadToTexture2DFromFile(std::shared_ptr<RenderCommandList>  list, std::shared_ptr<RenderTexture2DResource> resource, const std::string& filepath, int level)
 {
 }
 
-std::shared_ptr<RenderTexture2DResource> VulkanRenderResourceManager::CreateTextureFromFile(RenderCommandList* list, const std::string& filepath, std::shared_ptr<TextureSampler> sampler)
+std::shared_ptr<RenderTexture2DResource> VulkanRenderResourceManager::CreateTextureFromFile(std::shared_ptr<RenderCommandList>  list, const std::string& filepath, std::shared_ptr<TextureSampler> sampler)
 {
 	return std::shared_ptr<RenderTexture2DResource>();
 }
@@ -321,7 +321,7 @@ std::shared_ptr<RenderTexture2DArrayResource> VulkanRenderResourceManager::Creat
 		});
 }
 
-void VulkanRenderResourceManager::UploadDataToTexture2DArray(RenderCommandList* list, std::shared_ptr<RenderTexture2DArrayResource> resource, int layer, void* data, size_t width, size_t height, size_t offset_x, size_t offset_y, int level)
+void VulkanRenderResourceManager::UploadDataToTexture2DArray(std::shared_ptr<RenderCommandList>  list, std::shared_ptr<RenderTexture2DArrayResource> resource, int layer, void* data, size_t width, size_t height, size_t offset_x, size_t offset_y, int level)
 {
 }
 
@@ -398,7 +398,7 @@ std::shared_ptr<RenderTexture2DCubemapResource> VulkanRenderResourceManager::Cre
 		});
 }
 
-void VulkanRenderResourceManager::UploadDataToTexture2DCubemap(RenderCommandList* list, std::shared_ptr<RenderTexture2DCubemapResource> resource, CubemapFace face, void* data, size_t width, size_t height, size_t offset_x, size_t offset_y, int level)
+void VulkanRenderResourceManager::UploadDataToTexture2DCubemap(std::shared_ptr<RenderCommandList>  list, std::shared_ptr<RenderTexture2DCubemapResource> resource, CubemapFace face, void* data, size_t width, size_t height, size_t offset_x, size_t offset_y, int level)
 {
 }
 
@@ -456,7 +456,7 @@ void VulkanRenderResourceManager::CreateTexture2DDescriptor(const RenderDescript
 std::shared_ptr<Awaitable<read_pixel_data>> VulkanRenderResourceManager::GetPixelValue(std::shared_ptr<RenderFrameBufferResource> framebuffer, int color_attachment_index, float x, float y)
 {
 	DEFINE_VK_INSTANCE(context);
-	auto list = static_cast<VulkanRenderCommandList*>(Renderer::Get()->GetRenderCommandList());
+	auto list = std::static_pointer_cast<VulkanRenderCommandList>(Renderer::Get()->GetRenderCommandList());
 	auto vk_command_buffer = *list->GetVkCommandBuffer();
 	auto queue = static_cast<VulkanRenderCommandQueue*>(Renderer::Get()->GetCommandQueue());
 	auto attachment = framebuffer->GetBufferDescriptor().color_attachments[color_attachment_index].resource;
@@ -586,7 +586,7 @@ void VulkanRenderResourceManager::CreateTexture2DCubemapDescriptor(const RenderD
 	vkUpdateDescriptorSets(context->GetVkDevice(), 1, &write_desc ,0,NULL);
 }
 
-void VulkanRenderResourceManager::CopyFrameBufferDepthAttachment(RenderCommandList* list, std::shared_ptr<RenderFrameBufferResource> source_frame_buffer, std::shared_ptr<RenderFrameBufferResource> destination_frame_buffer)
+void VulkanRenderResourceManager::CopyFrameBufferDepthAttachment(std::shared_ptr<RenderCommandList>  list, std::shared_ptr<RenderFrameBufferResource> source_frame_buffer, std::shared_ptr<RenderFrameBufferResource> destination_frame_buffer)
 {
 	DEFINE_VK_INSTANCE(context);
 	VulkanRenderTextureResource* source_depth = static_cast<VulkanRenderTextureResource*>(
@@ -601,7 +601,7 @@ void VulkanRenderResourceManager::CopyFrameBufferDepthAttachment(RenderCommandLi
 
 	auto res = destination_depth->GetResolution();
 
-	VulkanRenderCommandList* vk_command_list = static_cast<VulkanRenderCommandList*>(list);
+	auto vk_command_list = std::static_pointer_cast<VulkanRenderCommandList>(list);
 	vk_command_list->OutsideRenderPass();
 
 	vk_command_list->AddDependency(source_frame_buffer->GetBufferDescriptor().depth_stencil_attachment.resource, VulkanCommandListDependencyType::READ, RenderState::TEXTURE_TRANSFER_SRC);
@@ -624,7 +624,7 @@ void VulkanRenderResourceManager::CopyFrameBufferDepthAttachment(RenderCommandLi
 	 destination_depth->GetImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 }
 
-void VulkanRenderResourceManager::SetFrameBufferColorAttachment(RenderCommandList* list, std::shared_ptr<RenderFrameBufferResource> framebuffer, std::shared_ptr<RenderResource> new_attachment, int index, int level)
+void VulkanRenderResourceManager::SetFrameBufferColorAttachment(std::shared_ptr<RenderCommandList>  list, std::shared_ptr<RenderFrameBufferResource> framebuffer, std::shared_ptr<RenderResource> new_attachment, int index, int level)
 {
 	auto vk_framebuffer = std::static_pointer_cast<VulkanRenderFrameBufferResource>(framebuffer);
 	auto& desc = GetAdjustableFrameBufferDescriptor(framebuffer);
@@ -679,6 +679,16 @@ std::shared_ptr<RenderBufferResource> VulkanRenderResourceManager::GetStagingBuf
 		});
 }
 
+void VulkanRenderResourceManager::AddToDeferredDestructionQueue(VulkanDeferredDestruction *resource, uint32_t last_usage_timeline_value)
+{
+	std::lock_guard<std::mutex> lock(deletion_queue_mutex);
+	deletion_item item = {};
+	item.deferred_destroy_resource = resource;
+	item.type = deletion_item_type::DEFERRED_DESTROY_RESOURCE;
+	item.deletion_timeline = last_usage_timeline_value;
+	deletion_queue.push(item);
+}
+
 VulkanDependencyHandler* VulkanRenderResourceManager::GetDependencyHandler()
 {
 	std::lock_guard<std::mutex> lock(dependency_handler_mutex);
@@ -696,16 +706,6 @@ void VulkanRenderResourceManager::ReturnDependencyHandler(VulkanDependencyHandle
 	std::lock_guard<std::mutex> lock(dependency_handler_mutex);
 	handler->Reset();
 	dependency_handlers.push_back(handler);
-}
-
-void VulkanRenderResourceManager::ReturnCommandList(RenderCommandList* list, uint64_t deletion_timeline)
-{
-	std::unique_lock<std::mutex> lock(deletion_queue_mutex);
-	deletion_item item;
-	item.list = list;
-	item.type = deletion_item_type::COMMAND_BUFFER;
-	item.deletion_timeline = deletion_timeline;
-	deletion_queue.push(item);
 }
 
 void VulkanRenderResourceManager::ReturnDescriptorAllocation(RenderDescriptorAllocation* allocation,  uint64_t deletion_timeline)
@@ -765,18 +765,18 @@ void VulkanRenderResourceManager::FlushDeletions(bool force)
 			staging_buffer_map.insert(std::make_pair(buffer->descriptor.buffer_size, buffer));
 			break;
 		}
-		case deletion_item_type::COMMAND_BUFFER:
-		{
-			lock.unlock();
-			delete resource.list;
-			lock.lock();
-			break;
-		}
 		case deletion_item_type::DESCRIPTOR_ALLOCATION:
 		{
 			auto allocation = static_cast<VulkanRenderDescriptorAllocation*>(resource.descriptor_allocation);
 			if(auto block = allocation->allocating_heap_block.lock()) { // Take into account that the block might already have been destroyed and the descriptors are thus already freed and invalid
 				block->GetOriginatingHeap()->ReturnAllocation(allocation);
+			}
+		}
+		break;
+		case deletion_item_type::DEFERRED_DESTROY_RESOURCE:
+		{
+			if(resource.deferred_destroy_resource->Destroy()) {
+				delete resource.deferred_destroy_resource;
 			}
 		}
 		break;
@@ -820,7 +820,7 @@ void VulkanRenderResourceManager::BufferBarrier(RenderCommandList* list, std::sh
 
 }
 
-void VulkanRenderResourceManager::TransitionImage(RenderCommandList* list, VulkanRenderTextureResource* image, VkImageSubresourceRange range, RenderState source_state, RenderState target_state,
+void VulkanRenderResourceManager::TransitionImage(RenderCommandList*  list, VulkanRenderTextureResource* image, VkImageSubresourceRange range, RenderState source_state, RenderState target_state,
 	PipelineStage source_scope, PipelineStage target_scope,
 	VulkanCommandListDependencyType src_access, VulkanCommandListDependencyType dst_access)
 {

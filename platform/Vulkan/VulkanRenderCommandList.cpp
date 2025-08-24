@@ -11,7 +11,7 @@
 #include <Application.h>
 #include <Window.h>
 
-VulkanRenderCommandList::VulkanRenderCommandList(Renderer* renderer, std::shared_ptr<RenderCommandAllocator> alloc) : RenderCommandList(renderer, alloc), dependency_handler(),
+VulkanRenderCommandList::VulkanRenderCommandList(std::shared_ptr<VulkanRenderCommandAllocator> alloc) : dependency_handler(), allocator(alloc), timeline_submitted(0), 
 	current_framebuffer(nullptr), current_pipeline(nullptr)
 {
 	DEFINE_VK_INSTANCE(context);
@@ -19,7 +19,7 @@ VulkanRenderCommandList::VulkanRenderCommandList(Renderer* renderer, std::shared
 	VkCommandBufferAllocateInfo info;
 	info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	info.pNext = NULL;
-	info.commandPool = *(static_cast<VkCommandPool*>(alloc->Get()));
+	info.commandPool = alloc->GetCommandPool();
 	info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	info.commandBufferCount = 1;
 
@@ -36,8 +36,10 @@ VulkanRenderCommandList::VulkanRenderCommandList(Renderer* renderer, std::shared
 VulkanRenderCommandList::~VulkanRenderCommandList()
 {
 	DEFINE_VK_INSTANCE(context);
-	static_cast<VulkanRenderResourceManager*>(RenderResourceManager::Get())->ReturnDependencyHandler(dependency_handler);
-	vkFreeCommandBuffers(context->GetVkDevice(), *(static_cast<VkCommandPool*>(m_Alloc->Get())), 1, &command_buffer);
+	if(auto alloc = allocator.lock()) { // If the allocator no longer exists, it means 
+		static_cast<VulkanRenderResourceManager*>(RenderResourceManager::Get())->ReturnDependencyHandler(dependency_handler);
+		vkFreeCommandBuffers(context->GetVkDevice(), alloc->GetCommandPool(), 1, &command_buffer);
+	}
 }
 
 void VulkanRenderCommandList::SetPipeline(std::shared_ptr<Pipeline> pipeline)
@@ -353,7 +355,7 @@ void VulkanRenderCommandList::SetMaterial(const std::string& name, std::shared_p
 		throw std::runtime_error("The parameter " + name + " is not a material.\n");
 	}
 
-	material->UpdateValues(this);
+	material->UpdateValues(SharedFromThis());
 
 	auto bind_point = param.set_id;
 
@@ -396,25 +398,25 @@ void VulkanRenderCommandList::UpdateMaterial(std::shared_ptr<Material> material)
 			switch (param.type)
 			{
 			case MaterialLayoutItemType::INT:
-				RenderResourceManager::Get()->UploadDataToBuffer(this, constant_buffer, &std::get<int>(param.resource), sizeof(int), layout_item.constant_buffer_offset);
+				RenderResourceManager::Get()->UploadDataToBuffer(SharedFromThis(), constant_buffer, &std::get<int>(param.resource), sizeof(int), layout_item.constant_buffer_offset);
 				break;
 			case MaterialLayoutItemType::MAT3:
-				RenderResourceManager::Get()->UploadDataToBuffer(this, constant_buffer, glm::value_ptr(std::get<glm::mat3>(param.resource)), sizeof(glm::mat3), layout_item.constant_buffer_offset);
+				RenderResourceManager::Get()->UploadDataToBuffer(SharedFromThis(), constant_buffer, glm::value_ptr(std::get<glm::mat3>(param.resource)), sizeof(glm::mat3), layout_item.constant_buffer_offset);
 				break;
 			case MaterialLayoutItemType::MAT4:
-				RenderResourceManager::Get()->UploadDataToBuffer(this, constant_buffer, glm::value_ptr(std::get<glm::mat4>(param.resource)), sizeof(glm::mat4), layout_item.constant_buffer_offset);
+				RenderResourceManager::Get()->UploadDataToBuffer(SharedFromThis(), constant_buffer, glm::value_ptr(std::get<glm::mat4>(param.resource)), sizeof(glm::mat4), layout_item.constant_buffer_offset);
 				break;
 			case MaterialLayoutItemType::SCALAR:
-				RenderResourceManager::Get()->UploadDataToBuffer(this, constant_buffer, &std::get<float>(param.resource), sizeof(float), layout_item.constant_buffer_offset);
+				RenderResourceManager::Get()->UploadDataToBuffer(SharedFromThis(), constant_buffer, &std::get<float>(param.resource), sizeof(float), layout_item.constant_buffer_offset);
 				break;
 			case MaterialLayoutItemType::VEC2:
-				RenderResourceManager::Get()->UploadDataToBuffer(this, constant_buffer, glm::value_ptr(std::get<glm::vec2>(param.resource)), sizeof(glm::vec2), layout_item.constant_buffer_offset);
+				RenderResourceManager::Get()->UploadDataToBuffer(SharedFromThis(), constant_buffer, glm::value_ptr(std::get<glm::vec2>(param.resource)), sizeof(glm::vec2), layout_item.constant_buffer_offset);
 				break;
 			case MaterialLayoutItemType::VEC3:
-				RenderResourceManager::Get()->UploadDataToBuffer(this, constant_buffer, glm::value_ptr(std::get<glm::vec3>(param.resource)), sizeof(glm::vec3), layout_item.constant_buffer_offset);
+				RenderResourceManager::Get()->UploadDataToBuffer(SharedFromThis(), constant_buffer, glm::value_ptr(std::get<glm::vec3>(param.resource)), sizeof(glm::vec3), layout_item.constant_buffer_offset);
 				break;
 			case MaterialLayoutItemType::VEC4:
-				RenderResourceManager::Get()->UploadDataToBuffer(this, constant_buffer, glm::value_ptr(std::get<glm::vec4>(param.resource)), sizeof(glm::vec4), layout_item.constant_buffer_offset);
+				RenderResourceManager::Get()->UploadDataToBuffer(SharedFromThis(), constant_buffer, glm::value_ptr(std::get<glm::vec4>(param.resource)), sizeof(glm::vec4), layout_item.constant_buffer_offset);
 				break;
 			case MaterialLayoutItemType::TEXTURE:
 			case MaterialLayoutItemType::TEXTURE_2D_ARRAY:
@@ -646,6 +648,18 @@ void VulkanRenderCommandList::FlushDrawState()
 	}
 }
 
+bool VulkanRenderCommandList::Destroy()
+{
+    if(auto ptr = std::static_pointer_cast<VulkanRenderCommandAllocator>(allocator.lock())) {
+		ResetState();
+		ResetCommandBuffer();
+		ptr->ReturnCommandList(this);
+		return false;
+	} else {
+		return true;
+	}
+}
+
 // If this works, i'll name it the GOD FUNCTION, since basically performs most if not all implicit synchronization.
 // Also in a year since writing this, only god will know whats going on here
 // Scratch that, it's been a couple of months and I'm already lost.
@@ -742,7 +756,7 @@ void DefaultVulkanDependencyHandler::SetResourceDefaultState(std::shared_ptr<Ren
 		dependency.previous_access = VulkanCommandListDependencyType::NONE;
 		dependency.type = VulkanCommandListDependencyType::NONE;
 		dependency.desired_final_state = state;
-		dependency.allow_uninitialized = false;
+		dependency.allow_uninitialized = true;
 		dependencies.insert(std::make_pair(resource, dependency));
 	}
 }
@@ -952,6 +966,9 @@ DefaultVulkanDependencyHandler::VulkanDependencyHandlerFeedback DefaultVulkanDep
 
 		if (dependency.first->GetExtensionData()->IsTexture()) {
 			auto texture = static_cast<VulkanRenderTextureResource*>(dependency.first->GetExtensionData());
+			if(requested_default_state != RenderState::EMPTY) {
+				texture->default_state = requested_default_state;
+			}
 			if (new_state != dependency.second.current_state) {
 				VkImageSubresourceRange range;
 				range.aspectMask = VulkanUnitConverter::IsTextureFormatDepth(texture->GetFormat()) ? VkImageAspectFlagBits::VK_IMAGE_ASPECT_DEPTH_BIT : VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT;
@@ -995,6 +1012,32 @@ DefaultVulkanDependencyHandler::VulkanDependencyHandlerFeedback DefaultVulkanDep
 	feedback.timeline_wait = timeline_requirement;
 
 	return feedback;
+}
+
+void VulkanRenderCommandList::ResetState()
+{
+	dependency_handler->Reset();
+	are_index_vertex_buffers_bound = false;
+	current_framebuffer.reset();
+	current_pipeline.reset();
+	index_buffer.reset();
+	vertex_buffer.reset();
+	is_scissorrect_defined = false;
+	is_viewport_defined = false;
+	render_pass_active = false;
+	scissor_rect = RenderScissorRect({0,0}, {0,0});
+	viewport = RenderViewport({0,0}, {0,0}, 0.0f, 0.0f);
+	timeline_submitted = 0;
+}
+
+void VulkanRenderCommandList::ResetCommandBuffer()
+{
+	vkResetCommandBuffer(command_buffer, NULL);
+
+	VkCommandBufferBeginInfo begin_info = {};
+	begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+	vkBeginCommandBuffer(command_buffer, &begin_info);
 }
 
 void DefaultVulkanDependencyHandler::Reset()

@@ -1,4 +1,5 @@
 #include "Renderer.h"
+#include <ThreadManager.h>
 #include <Renderer/TextRenderer.h>
 #include <Application.h>
 #include <World/Components/CameraComponent.h>
@@ -29,38 +30,25 @@ void Renderer::PreInit() {
     RenderResourceManager::Initialize();
 }
 
-RenderCommandList* Renderer::GetRenderCommandList()
+ std::shared_ptr<RenderCommandList> Renderer::GetRenderCommandList()
 {
-    return RenderCommandList::CreateQueue(this, std::shared_ptr<RenderCommandAllocator>(GetCommandAllocator(), 
-        [this](RenderCommandAllocator* ptr) { ReuseAllocator(ptr); }));
-}
-
-/// @todo This is not optimal all command lists for the same frame and thread should share an allocator. and we are not even reusing command lists.
-RenderCommandAllocator* Renderer::GetCommandAllocator()
-{
-    std::unique_lock<std::mutex> lock(m_List_mutex);
-    if (m_FreeAllocators.empty()) {
-        if (m_Allocators.size() >= max_allocators) {
-            m_List_cond.wait(lock, [this]() {return !m_FreeAllocators.empty(); });
-            RenderCommandAllocator* reused_alloc = m_FreeAllocators.back();
-            m_FreeAllocators.pop_back();
-            return reused_alloc;
-        }
-        else {
-            RenderCommandAllocator* new_alloc = RenderCommandAllocator::CreateAllocator(1024);
-            m_Allocators.push_back(new_alloc);
-            return new_alloc;
-        }
+    auto manager = ThreadManager::Get();
+    if(!manager->IsValidThreadContext()) {
+        throw std::runtime_error("GetRenderCommandList can only be called in a thread managed by ThreadManager, you can still allocate command lists through allocators directly.\n");
     }
-    else {
-        RenderCommandAllocator* reused_alloc = m_FreeAllocators.back();
-        m_FreeAllocators.pop_back();
-        return reused_alloc;
+    
+    if(manager->ThreadLocalDataExists<PerThreadRendererData>()) {
+        auto data = manager->GetThreadLocalData<PerThreadRendererData>();
+        return data->general_allocator->GetCommandList();
+    } else {
+        PerThreadRendererData* data = new PerThreadRendererData;
+        data->general_allocator = RenderCommandAllocator::CreateAllocator(1024);
+        manager->SetThreadLocalData(data);
+        return data->general_allocator->GetCommandList();
     }
 }
 
-void Renderer::Init(int max_allocators) {
-    this->max_allocators = max_allocators;
+void Renderer::Init() {
     ShaderManager::Initialize();
     PipelineManager::Initialize();
     if (RenderContext::Get()) {
@@ -113,12 +101,6 @@ void Renderer::SetRenderQueue(RenderCommandQueue* queue, RenderQueueTypes type)
 
 void Renderer::Destroy()
 {
-    
-    for (auto alloc : m_Allocators) {
-        delete alloc;
-    }
-    m_FreeAllocators.clear();
-    m_Allocators.clear();
     RenderContext::Shutdown();
 }
 
@@ -152,12 +134,4 @@ void Renderer::Update(float delta_time)
     Renderer3D::Get()->Update(delta_time);
     TextRenderer::Get()->UpdateLoadedFonts();
     TextRenderer::Get()->TextRenderSystem();
-}
-
-void Renderer::ReuseAllocator(RenderCommandAllocator* alloc)
-{
-    alloc->clear();
-    std::lock_guard<std::mutex> lock(m_List_mutex);
-    m_FreeAllocators.push_back(alloc);
-    m_List_cond.notify_one();
 }

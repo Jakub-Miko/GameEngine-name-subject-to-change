@@ -116,7 +116,7 @@ void VulkanRenderSurface::Present(RenderPresentEvent *event)
 
 
 	auto frame_buf = std::static_pointer_cast<VulkanRenderFrameBufferResource>(GetCurrentFrameBuffer());
-	auto list_1 = static_cast<VulkanRenderCommandList*>(Renderer::Get()->GetRenderCommandList());
+	auto list_1 = std::static_pointer_cast<VulkanRenderCommandList>(Renderer::Get()->GetRenderCommandList());
 	auto vk_command_buffer = list_1->GetVkCommandBuffer();
 	auto manager = static_cast<VulkanRenderResourceManager*>(RenderResourceManager::Get());
 	
@@ -146,7 +146,7 @@ void VulkanRenderSurface::Present(RenderPresentEvent *event)
 		queue->VkBinarySemaphoreWait(present_semaphores[previous_index]); //Waits until the image is available so rendering can begin on it 
 	}
 	
-	auto list_2 = static_cast<VulkanRenderCommandList*>(Renderer::Get()->GetRenderCommandList());
+	auto list_2 = std::static_pointer_cast<VulkanRenderCommandList>(Renderer::Get()->GetRenderCommandList());
 
 	auto attachment = swapchain_framebuffers[current_index]->GetBufferDescriptor().color_attachments[0].resource;
 	

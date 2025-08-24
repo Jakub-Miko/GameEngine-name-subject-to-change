@@ -100,7 +100,7 @@ void ShadowMappingPass::InitShadowComponent(Entity ent, LightType light_type)
 	shadow_comp.cascades = HARD_CODE_CASCADES;
 }
 
-void ShadowMappingPass::RenderDirectionalShadowCaster(Entity caster, RenderCommandList* list)
+void ShadowMappingPass::RenderDirectionalShadowCaster(Entity caster, std::shared_ptr<RenderCommandList>  list)
 {
 
 	auto& world = Application::GetWorld();
@@ -233,7 +233,7 @@ void ShadowMappingPass::RenderDirectionalShadowCaster(Entity caster, RenderComma
 
 }
 
-void ShadowMappingPass::RenderPointShadowCaster(Entity caster, RenderCommandList* list)
+void ShadowMappingPass::RenderPointShadowCaster(Entity caster, std::shared_ptr<RenderCommandList>  list)
 {
 	auto& world = Application::GetWorld();
 	auto& shadow_comp = world.GetComponent<ShadowCasterComponent>(caster);

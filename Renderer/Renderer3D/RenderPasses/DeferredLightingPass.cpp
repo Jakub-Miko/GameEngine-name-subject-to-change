@@ -254,7 +254,7 @@ DeferredLightingPass::~DeferredLightingPass()
 	}
 }
 
-void DeferredLightingPass::RenderLights(RenderPipelineResourceManager& resource_manager,RenderCommandList* list, const CameraComponent& camera,const render_props& props)
+void DeferredLightingPass::RenderLights(RenderPipelineResourceManager& resource_manager,std::shared_ptr<RenderCommandList>  list, const CameraComponent& camera,const render_props& props)
 {
 	auto& geometry = resource_manager.GetResource<RenderResourceCollection<Entity>>(input_lights);
 	auto& gbuffer = resource_manager.GetResource<std::shared_ptr<RenderFrameBufferResource>>(input_gbuffer);
@@ -313,7 +313,7 @@ void DeferredLightingPass::RenderLights(RenderPipelineResourceManager& resource_
 	}
 }
 
-void DeferredLightingPass::RenderShadowedLightsPoint(RenderPipelineResourceManager& resource_manager, RenderCommandList* list, const CameraComponent& camera, const render_props& props)
+void DeferredLightingPass::RenderShadowedLightsPoint(RenderPipelineResourceManager& resource_manager, std::shared_ptr<RenderCommandList>  list, const CameraComponent& camera, const render_props& props)
 {
 	const RenderResourceCollection<Entity>* geometry;
 	
@@ -370,7 +370,7 @@ void DeferredLightingPass::RenderShadowedLightsPoint(RenderPipelineResourceManag
 	}
 }
 
-void DeferredLightingPass::RenderShadowedLightsDirectional(RenderPipelineResourceManager& resource_manager, RenderCommandList* list, const CameraComponent& camera, const render_props& props)
+void DeferredLightingPass::RenderShadowedLightsDirectional(RenderPipelineResourceManager& resource_manager, std::shared_ptr<RenderCommandList>  list, const CameraComponent& camera, const render_props& props)
 {
 	const RenderResourceCollection<Entity>* geometry;
 	geometry = &resource_manager.GetResource<RenderResourceCollection<Entity>>(input_directional_shadowed_lights);
@@ -444,7 +444,7 @@ void DeferredLightingPass::RenderShadowedLightsDirectional(RenderPipelineResourc
 	}
 }
 
-void DeferredLightingPass::RenderSkylights(RenderPipelineResourceManager& resource_manager, RenderCommandList* list, const CameraComponent& camera, const render_props& props)
+void DeferredLightingPass::RenderSkylights(RenderPipelineResourceManager& resource_manager, std::shared_ptr<RenderCommandList>  list, const CameraComponent& camera, const render_props& props)
 {
 	const RenderResourceCollection<Entity>* geometry;
 	auto skylight_view = Application::GetWorld().GetRegistry().view<SkylightComponent>();

@@ -1,5 +1,8 @@
 #pragma once
+#include <Core/ResettableSharedFromThis.h>
 #include <Renderer/RenderCommandList.h>
+#include "VulkanRenderCommandAllocator.h"
+#include "VulkanDeferredDestruction.h"
 #include <Renderer/PipelineManager.h>
 #include "VulkanPipelineManager.h"
 #include <unordered_map>
@@ -130,7 +133,7 @@ private:
 };
 
 
-class VulkanRenderCommandList : public RenderCommandList
+class VulkanRenderCommandList : public RenderCommandList, public VulkanDeferredDestruction, public ResettableSharedFromThis<VulkanRenderCommandList>
 {
 public:
 
@@ -138,7 +141,7 @@ public:
     friend class VulkanRenderResourceManager;
     friend class VulkanRenderCommandQueue;
 
-    VulkanRenderCommandList(Renderer* renderer, std::shared_ptr<RenderCommandAllocator> alloc);
+    VulkanRenderCommandList(std::shared_ptr<VulkanRenderCommandAllocator> alloc);
     virtual ~VulkanRenderCommandList();
 
     virtual void SetPipeline(std::shared_ptr<Pipeline> pipeline) override;
@@ -190,18 +193,33 @@ public:
         return index_buffer;
     }
 
+    /**
+     * @brief The timeline value of the last submit of this command buffer.
+     * Zero if not submitted.
+     */
+    uint32_t GetLastSubmitTimelineValue() const {
+        return timeline_submitted;
+    }
+
     void FlushDrawState();
+
+    virtual bool Destroy() override;
+
+    void ResetState();
+    void ResetCommandBuffer();
 
 private:
     VkCommandBuffer command_buffer;
 
     VulkanDependencyHandler* dependency_handler;
+    std::weak_ptr<VulkanRenderCommandAllocator> allocator;
     std::shared_ptr<RenderFrameBufferResource> current_framebuffer = nullptr;
     std::shared_ptr<VulkanPipeline> current_pipeline = nullptr;
     std::shared_ptr<RenderResource> vertex_buffer = nullptr;
     std::shared_ptr<RenderResource> index_buffer = nullptr;
     RenderViewport viewport = RenderViewport({0,0}, {0,0}, 0.0f, 0.0f);
     RenderScissorRect scissor_rect = RenderScissorRect({0,0}, {0,0});
+    uint32_t timeline_submitted = 0; // The last time this command buffer was submitted, 0 means never
     bool render_pass_active = false;
     bool is_scissorrect_defined = false, is_viewport_defined = false;
     bool are_index_vertex_buffers_bound = false;

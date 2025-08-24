@@ -9,21 +9,6 @@
 #endif
 
 
-
-RenderCommandList::RenderCommandList(Renderer* renderer, std::shared_ptr<RenderCommandAllocator> alloc)
-    :m_Renderer(renderer), m_Alloc(alloc)
-{
-}
-
-RenderCommandList* RenderCommandList::CreateQueue(Renderer* renderer, std::shared_ptr<RenderCommandAllocator> alloc){
-#ifdef OpenGL_API
-    return new OpenGLRenderCommandList(renderer, alloc);
-#elif defined Vulkan_API
-    return new VulkanRenderCommandList(renderer, alloc);
-#endif
-}
-
-
 std::vector<Material::MaterialParameter>& RenderCommandList::GetMutableMaterialParameters(Material* material)
 {
     return material->parameters;

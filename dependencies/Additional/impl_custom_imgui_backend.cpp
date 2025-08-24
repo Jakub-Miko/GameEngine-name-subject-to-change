@@ -317,7 +317,7 @@ void impl_custom_imgui_backend::DrawData(ImDrawData* draw_data)
 
 }
 
-std::shared_ptr<RenderBufferResource> impl_custom_imgui_backend::UploadDataDynamicSize(RenderCommandList* command_list, std::shared_ptr<RenderBufferResource> existing_buffer, 
+std::shared_ptr<RenderBufferResource> impl_custom_imgui_backend::UploadDataDynamicSize(std::shared_ptr<RenderCommandList>  command_list, std::shared_ptr<RenderBufferResource> existing_buffer, 
     void *data, size_t size, size_t offset, bool allow_invalidation)
 {
     auto buf = existing_buffer;

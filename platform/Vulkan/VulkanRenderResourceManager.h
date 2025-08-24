@@ -4,6 +4,7 @@
 #include "VulkanRenderResource.h"
 #include <Utilities/MemoryManagement/include/MultiPool.h>
 #include "VulkanRenderCommandList.h"
+#include "VulkanDeferredDestruction.h"
 #include <mutex>
 #include <memory>
 #include <queue>
@@ -20,24 +21,24 @@ public:
 	friend class VulkanRenderContext;
 
 	virtual std::shared_ptr<RenderBufferResource> CreateBuffer(const RenderBufferDescriptor& buffer_desc, RenderBufferCreationFlags flags = RenderBufferCreationFlags::NONE) override;
-	virtual void UploadDataToBuffer(RenderCommandList* list, std::shared_ptr<RenderBufferResource> resource, void* data, size_t size, size_t offset) override;
-	virtual void ReallocateAndUploadBuffer(RenderCommandList* list, std::shared_ptr<RenderBufferResource> resource, void* data, size_t size) override;
-	virtual void CopyBufferData(RenderCommandList* list, std::shared_ptr<RenderBufferResource> source, std::shared_ptr<RenderBufferResource> destination 
+	virtual void UploadDataToBuffer(std::shared_ptr<RenderCommandList>  list, std::shared_ptr<RenderBufferResource> resource, void* data, size_t size, size_t offset) override;
+	virtual void ReallocateAndUploadBuffer(std::shared_ptr<RenderCommandList>  list, std::shared_ptr<RenderBufferResource> resource, void* data, size_t size) override;
+	virtual void CopyBufferData(std::shared_ptr<RenderCommandList>  list, std::shared_ptr<RenderBufferResource> source, std::shared_ptr<RenderBufferResource> destination 
 		, size_t source_offset, size_t source_size, size_t destination_offset) override;
 
 	virtual std::shared_ptr<RenderTexture2DResource> CreateTexture(const RenderTexture2DDescriptor& buffer_desc, RenderState default_state = RenderState::TEXTURE_SAMPLE) override;
-	virtual void UploadDataToTexture2D(RenderCommandList* list, std::shared_ptr<RenderTexture2DResource> resource, void* data, size_t width, size_t height,
+	virtual void UploadDataToTexture2D(std::shared_ptr<RenderCommandList>  list, std::shared_ptr<RenderTexture2DResource> resource, void* data, size_t width, size_t height,
 		size_t offset_x, size_t offset_y, int level = 0) override;
-	virtual void GenerateMIPs(RenderCommandList* list, std::shared_ptr<RenderTexture2DResource> resource) override;
-	virtual void UploadToTexture2DFromFile(RenderCommandList* list, std::shared_ptr<RenderTexture2DResource> resource, const std::string& filepath, int level = 0) override;
-	virtual std::shared_ptr<RenderTexture2DResource> CreateTextureFromFile(RenderCommandList* list, const std::string& filepath, std::shared_ptr<TextureSampler> sampler) override;
+	virtual void GenerateMIPs(std::shared_ptr<RenderCommandList>  list, std::shared_ptr<RenderTexture2DResource> resource) override;
+	virtual void UploadToTexture2DFromFile(std::shared_ptr<RenderCommandList>  list, std::shared_ptr<RenderTexture2DResource> resource, const std::string& filepath, int level = 0) override;
+	virtual std::shared_ptr<RenderTexture2DResource> CreateTextureFromFile(std::shared_ptr<RenderCommandList>  list, const std::string& filepath, std::shared_ptr<TextureSampler> sampler) override;
 
 	virtual std::shared_ptr<RenderTexture2DArrayResource> CreateTextureArray(const RenderTexture2DArrayDescriptor& buffer_desc, RenderState default_state = RenderState::TEXTURE_SAMPLE) override;
-	virtual void UploadDataToTexture2DArray(RenderCommandList* list, std::shared_ptr<RenderTexture2DArrayResource> resource, int layer, void* data, size_t width, size_t height,
+	virtual void UploadDataToTexture2DArray(std::shared_ptr<RenderCommandList>  list, std::shared_ptr<RenderTexture2DArrayResource> resource, int layer, void* data, size_t width, size_t height,
 		size_t offset_x, size_t offset_y, int level = 0) override;
 
 	virtual std::shared_ptr<RenderTexture2DCubemapResource> CreateTextureCubemap(const RenderTexture2DCubemapDescriptor& buffer_desc, RenderState default_state = RenderState::TEXTURE_SAMPLE) override;
-	virtual void UploadDataToTexture2DCubemap(RenderCommandList* list, std::shared_ptr<RenderTexture2DCubemapResource> resource, CubemapFace face, void* data, size_t width, size_t height,
+	virtual void UploadDataToTexture2DCubemap(std::shared_ptr<RenderCommandList>  list, std::shared_ptr<RenderTexture2DCubemapResource> resource, CubemapFace face, void* data, size_t width, size_t height,
 		size_t offset_x, size_t offset_y, int level = 0) override;
 
 	virtual std::shared_ptr<RenderFrameBufferResource> CreateFrameBuffer(const RenderFrameBufferDescriptor& buffer_desc) override;
@@ -48,8 +49,8 @@ public:
 	virtual void CreateTexture2DArrayDescriptor(const RenderDescriptorTable& table, int index, std::shared_ptr<RenderTexture2DArrayResource> resource) override;
 	virtual void CreateTexture2DCubemapDescriptor(const RenderDescriptorTable& table, int index, std::shared_ptr<RenderTexture2DCubemapResource> resource) override;
 
-	virtual void CopyFrameBufferDepthAttachment(RenderCommandList* list, std::shared_ptr<RenderFrameBufferResource> source_frame_buffer, std::shared_ptr<RenderFrameBufferResource> destination_frame_buffer) override;
-	virtual void SetFrameBufferColorAttachment(RenderCommandList* list, std::shared_ptr<RenderFrameBufferResource> framebuffer, std::shared_ptr<RenderResource> new_attachment, int index = 0, int level = 0) override;
+	virtual void CopyFrameBufferDepthAttachment(std::shared_ptr<RenderCommandList>  list, std::shared_ptr<RenderFrameBufferResource> source_frame_buffer, std::shared_ptr<RenderFrameBufferResource> destination_frame_buffer) override;
+	virtual void SetFrameBufferColorAttachment(std::shared_ptr<RenderCommandList>  list, std::shared_ptr<RenderFrameBufferResource> framebuffer, std::shared_ptr<RenderResource> new_attachment, int index = 0, int level = 0) override;
 
 	virtual int GetCubemapFaceIndex(RenderCubemapFace face) override;
 
@@ -65,9 +66,10 @@ public:
 
 	std::shared_ptr<RenderBufferResource> GetStagingBuffer(size_t size);
 
+	void AddToDeferredDestructionQueue(VulkanDeferredDestruction* resource, uint32_t last_usage_timeline_value);
+
 	VulkanDependencyHandler* GetDependencyHandler();
 	void ReturnDependencyHandler(VulkanDependencyHandler* handler);
-	void ReturnCommandList(RenderCommandList* list, uint64_t deletion_timeline);
 	void ReturnDescriptorAllocation(RenderDescriptorAllocation* allocation, uint64_t deletion_timeline);
 	
 	//Creates a texture object from a VkImage which is not managed by the resource manager (used mainly for swapchain textures)
@@ -87,14 +89,14 @@ private:
 
 private:
 	enum class deletion_item_type : char {
-		RESOURCE, STAGING_BUFFER, COMMAND_BUFFER, DESCRIPTOR_ALLOCATION
+		RESOURCE, STAGING_BUFFER, DESCRIPTOR_ALLOCATION, DEFERRED_DESTROY_RESOURCE
 	};
 
 	struct deletion_item {
 		union {
 			VulkanRenderResource* resource;
-			RenderCommandList* list;
 			RenderDescriptorAllocation* descriptor_allocation;
+			VulkanDeferredDestruction* deferred_destroy_resource;
 		};
 		uint64_t deletion_timeline;
 		deletion_item_type type = deletion_item_type::RESOURCE;

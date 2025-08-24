@@ -18,7 +18,7 @@ public:
 
 	VkSemaphore* GetSemaphore() { return &semaphore; }
 private:
-	VulkanRenderFence();
+	VulkanRenderFence(uint32_t initial_value);
 	virtual ~VulkanRenderFence();
 
 	VulkanRenderFence(const VulkanRenderFence& ref) = delete;

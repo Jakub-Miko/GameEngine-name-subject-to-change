@@ -142,7 +142,7 @@ public:
 		return bone_buffer;
 	}
 
-	bool UpdateAnimation(float delta_time, RenderCommandList* list, std::shared_ptr<Mesh> skeletal_mesh);
+	bool UpdateAnimation(float delta_time, std::shared_ptr<RenderCommandList>  list, std::shared_ptr<Mesh> skeletal_mesh);
 private:
 	uint32_t last_time_updated = 0;
 	bool was_succesful = false;

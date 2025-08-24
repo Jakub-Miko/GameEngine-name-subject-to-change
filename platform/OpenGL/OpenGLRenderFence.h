@@ -14,7 +14,7 @@ public:
 	virtual void Wait() override;
 	virtual int GetValue() override;
 private:
-	OpenGLRenderFence();
+	OpenGLRenderFence(uint32_t initial_value);
 	virtual ~OpenGLRenderFence();
 
 	OpenGLRenderFence(const OpenGLRenderFence& ref) = delete;

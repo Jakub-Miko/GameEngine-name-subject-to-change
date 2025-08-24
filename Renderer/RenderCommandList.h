@@ -1,7 +1,6 @@
 #pragma once
 #include <memory>
 #include <glm/glm.hpp>
-#include <Renderer/RenderCommandAllocator.h>
 #include <Core/ExecutableCommand.h>
 #include <Renderer/RenderResource.h>
 #include <Renderer/RenderDescriptorHeap.h>
@@ -15,7 +14,6 @@ class RenderCommandList : public ExecutableCommand
 public:
     friend Renderer;
 
-    RenderCommandList(Renderer* renderer, std::shared_ptr<RenderCommandAllocator> alloc);
     virtual ~RenderCommandList() {};
 
     virtual void SetPipeline(std::shared_ptr<Pipeline> pipeline) = 0;
@@ -50,10 +48,4 @@ protected:
     Material::Material_status& GetMutableMaterialStatus(Material* material); 
     RenderDescriptorAllocationHandle& GetMutableMaterialDescriptorTable(Material* material);
     std::shared_ptr<RenderBufferResource> GetMaterialConstantBuffer(Material* material);
-
-    Renderer* m_Renderer;
-    std::shared_ptr<RenderCommandAllocator> m_Alloc;
-
-public:
-    static RenderCommandList* CreateQueue(Renderer* renderer, std::shared_ptr<RenderCommandAllocator> alloc);
 };

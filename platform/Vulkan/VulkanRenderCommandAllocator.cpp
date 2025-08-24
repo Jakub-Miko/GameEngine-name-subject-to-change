@@ -1,13 +1,9 @@
 #include "VulkanRenderCommandAllocator.h"
-#include "VulkanRenderCommandAllocator.h"
 #include "VulkanRenderCommandQueue.h"
+#include "VulkanRenderCommandList.h"
 #include "VulkanRenderContext.h"
+#include "VulkanRenderResourceManager.h"
 #include "VkBootstrap.h"
-
-void* VulkanRenderCommandAllocator::Get()
-{
-	return &pool;
-}
 
 void VulkanRenderCommandAllocator::clear()
 {
@@ -15,7 +11,7 @@ void VulkanRenderCommandAllocator::clear()
 	vkResetCommandPool(context->GetVkDevice(), pool, NULL);
 }
 
-VulkanRenderCommandAllocator::VulkanRenderCommandAllocator(size_t starting_size)
+VulkanRenderCommandAllocator::VulkanRenderCommandAllocator(size_t starting_size) : free_command_lists()
 {
 	DEFINE_VK_INSTANCE(context);
 
@@ -28,8 +24,39 @@ VulkanRenderCommandAllocator::VulkanRenderCommandAllocator(size_t starting_size)
 	vkCreateCommandPool(context->GetVkDevice(), &info, NULL, &pool);
 }
 
+std::shared_ptr<RenderCommandList> VulkanRenderCommandAllocator::GetCommandList()
+{
+	VulkanRenderCommandList* list;
+    if(!free_command_lists.empty()) {
+		list = free_command_lists.back();
+		free_command_lists.pop_back();
+	} else {
+		list = new VulkanRenderCommandList(shared_from_this());
+	}
+
+
+	return list->ResetSharedFromThis([](VulkanRenderCommandList* ptr) {
+		auto vk_list = static_cast<VulkanRenderCommandList*>(ptr);
+		auto destructible = static_cast<VulkanDeferredDestruction*>(vk_list);
+		uint32_t value = vk_list->GetLastSubmitTimelineValue();
+		if(value != 0) { // We only want to defer reuse or destruction if the buffer was submitted
+			static_cast<VulkanRenderResourceManager*>(RenderResourceManager::Get())->AddToDeferredDestructionQueue(destructible, value);
+		} else {
+			destructible->Destroy();
+		}
+	});
+}
+
 VulkanRenderCommandAllocator::~VulkanRenderCommandAllocator()
 {
 	DEFINE_VK_INSTANCE(context);
+	for(auto list : free_command_lists) {
+		delete list;
+	}
 	vkDestroyCommandPool(context->GetVkDevice(), pool, NULL);
+}
+
+void VulkanRenderCommandAllocator::ReturnCommandList(VulkanRenderCommandList *list)
+{
+	free_command_lists.push_back(list);
 }

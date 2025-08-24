@@ -7,11 +7,11 @@
 #endif
 
 
-RenderCommandAllocator* RenderCommandAllocator::CreateAllocator(size_t starting_size)
+std::shared_ptr<RenderCommandAllocator> RenderCommandAllocator::CreateAllocator(size_t starting_size)
 {
 #ifdef OpenGL_API
-	return new OpenGLRenderCommandAllocator(starting_size);
+	return std::make_shared<OpenGLRenderCommandAllocator>(starting_size);
 #elif defined Vulkan_API
-	return new VulkanRenderCommandAllocator(starting_size);
+	return std::make_shared<VulkanRenderCommandAllocator>(starting_size);
 #endif
 }

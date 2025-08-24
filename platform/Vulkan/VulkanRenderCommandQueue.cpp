@@ -69,10 +69,10 @@ void VulkanRenderCommandQueue::ExecuteRenderCommandLists(std::vector<RenderComma
 	//submit_mutex.unlock();
 }
 
-void VulkanRenderCommandQueue::ExecuteRenderCommandList(RenderCommandList* list)
+void VulkanRenderCommandQueue::ExecuteRenderCommandList(std::shared_ptr<RenderCommandList> list)
 {
 	DEFINE_VK_INSTANCE(context);
-	VulkanRenderCommandList* vk_command_list = static_cast<VulkanRenderCommandList*>(list);
+	auto vk_command_list = std::static_pointer_cast<VulkanRenderCommandList>(list);
 	submit_mutex.lock();
 	uint64_t value = ++last_buffer_signaled; /// @todo this can cause a datarace make sure its locked behind the submission mutex
 	VkTimelineSemaphoreSubmitInfo submit_sync = {};
@@ -97,7 +97,7 @@ void VulkanRenderCommandQueue::ExecuteRenderCommandList(RenderCommandList* list)
 
 
 	
-	auto sync = vk_command_list->dependency_handler->FinalizeDependencies(vk_command_list, value);
+	auto sync = vk_command_list->dependency_handler->FinalizeDependencies(vk_command_list.get(), value);
 
 	if (sync.timeline_wait > context->GetCurrentGpuTimelineValue()) { // we need to wait until the timeline requirement is met before executing this command list
 		submit_sync.waitSemaphoreValueCount = 1;
@@ -108,8 +108,9 @@ void VulkanRenderCommandQueue::ExecuteRenderCommandList(RenderCommandList* list)
 	vkEndCommandBuffer(*vk_command_list->GetVkCommandBuffer());
 
 	vkQueueSubmit(vk_queue, 1, &info, NULL);
+	vk_command_list->ResetState(); // Reset all handles held by the abstraction since the abstraction no longer manages them after submit, but retain the actual command buffer.
+	vk_command_list->timeline_submitted = value; // Make sure to update the timeline value after state reset otherwise it will be reset to 0 and the the Render API will think it is not pending(Which can apparently cause AMD drivers to crash)
 	submit_mutex.unlock();
-	static_cast<VulkanRenderResourceManager*>(RenderResourceManager::Get())->ReturnCommandList(list, value);
 }
 
 void VulkanRenderCommandQueue::Signal(std::shared_ptr<RenderFence> fence, int num)
@@ -185,6 +186,6 @@ void VulkanRenderCommandQueue::VkBinarySemaphoreWait(VkSemaphore semaphore, VkPi
 
 VulkanRenderCommandQueue::VulkanRenderCommandQueue(VkQueue queue) : vk_queue(queue), submit_mutex(), command_buffer_fence()
 {
-	command_buffer_fence.reset(RenderFence::CreateFence());
+	command_buffer_fence.reset(RenderFence::CreateFence(1)); // Create a queue with initial value of one to ensure that 0 is always completed.
 }
 

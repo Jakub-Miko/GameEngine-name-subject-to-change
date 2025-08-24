@@ -18,7 +18,7 @@ Mesh MeshManager::LoadMeshFromFileImpl(const std::string& file_path)
     mesh.status = Mesh_status::READY;
     mesh.bounding_box = import_data.bounding_box;
     if (import_data.skeleton != nullptr) {
-        mesh.skeleton.reset(import_data.skeleton.get());
+        mesh.skeleton.reset(import_data.skeleton.get());\
         import_data.skeleton.release();
     }
     auto command_list = Renderer::Get()->GetRenderCommandList(); //TODO:Make sure you dont use too many command lists.

@@ -69,7 +69,7 @@ using system_view_type = decltype(std::declval<entt::registry>().view<Component>
  * @tparam return_type return type expected of each individual task 
 */
 template<typename return_type>
-using system_return_type = decltype(std::declval<std::vector<Future<return_type*>>>());
+using system_return_type = decltype(std::declval<std::vector<Future<return_type>>>());
 
 /**
  * @brief Executes a system function on each entity with a component in parallel
@@ -103,18 +103,18 @@ auto RunSystem(World& world, system_function sys_func, result_function res_func,
 
 	ComponentCollectionParameters params = GetCollectionsFromSize(comps.size(), TaskSystem::Get()->GetProps().num_of_threads + (include_async_thread ? 2 : 1), min_num_of_tasks_per_thread);
 
-	std::vector<Future<return_type*>> lists;
+	std::vector<Future<return_type>> lists;
 	lists.reserve(params.num_of_collections);
 
 	for (int i = 0; i < params.num_of_collections; i++) {
 		ComponentCollection comp{ params.collection_size,params.collection_size * i };
-		auto task1 = TaskSystem::Get()->CreateTask<return_type*>(sys_func, comp, comps, &reg);
+		auto task1 = TaskSystem::Get()->CreateTask<return_type>(sys_func, comp, comps, &reg);
 		lists.push_back(task1->GetFuture());
 		TaskSystem::Get()->Submit(task1);
 	}
 	if (params.extra_collections_size != 0) {
 		ComponentCollection comp{ params.extra_collections_size, params.collection_size * params.num_of_collections };
-		auto task1 = TaskSystem::Get()->CreateTask<return_type*>(sys_func, comp, comps, &reg);
+		auto task1 = TaskSystem::Get()->CreateTask<return_type>(sys_func, comp, comps, &reg);
 		lists.push_back(task1->GetFuture());
 		TaskSystem::Get()->Submit(task1);
 	}

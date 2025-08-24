@@ -10,6 +10,10 @@
 #include <mutex>
 #include <Renderer/RendererDefines.h>
 
+struct PerThreadRendererData {
+    std::shared_ptr<RenderCommandAllocator> general_allocator;
+};
+
 class Renderer {
 public: 
 
@@ -20,11 +24,9 @@ public:
     
     void PreInit();
 
-    RenderCommandList* GetRenderCommandList();
+    std::shared_ptr<RenderCommandList> GetRenderCommandList();
 
-    RenderCommandAllocator* GetCommandAllocator();
-
-    void Init(int max_allocators = 50);
+    void Init();
 
     void PostInit();
 
@@ -48,7 +50,6 @@ public:
         default_frame_buffer = buffer;
     }
 
-    void ReuseAllocator(RenderCommandAllocator* alloc);
 
 private:
     Renderer();
@@ -56,16 +57,10 @@ private:
     void SetRenderQueue(RenderCommandQueue* queue, RenderQueueTypes type);
     void Destroy();
     
-    std::vector<RenderCommandAllocator*> m_Allocators;
-    std::vector<RenderCommandAllocator*> m_FreeAllocators;
     std::array<RenderCommandQueue*, 3> m_CommandQueues;
 
     std::mutex default_frame_buffer_mutex;
     std::shared_ptr<RenderFrameBufferResource> default_frame_buffer = nullptr;
-
-    std::mutex m_List_mutex;
-    int max_allocators = 50;
-    std::condition_variable m_List_cond;
 
     static Renderer* instance;
 public:
