@@ -68,8 +68,6 @@ public:
 
 	void AddToDeferredDestructionQueue(VulkanDeferredDestruction* resource, uint32_t last_usage_timeline_value);
 
-	VulkanDependencyHandler* GetDependencyHandler();
-	void ReturnDependencyHandler(VulkanDependencyHandler* handler);
 	void ReturnDescriptorAllocation(RenderDescriptorAllocation* allocation, uint64_t deletion_timeline);
 	
 	//Creates a texture object from a VkImage which is not managed by the resource manager (used mainly for swapchain textures)
@@ -106,6 +104,4 @@ private:
 	std::queue<deletion_item> deletion_queue;
 	std::mutex staging_buffer_map_mutex;
 	std::multimap<size_t, RenderBufferResource*> staging_buffer_map;
-	std::mutex dependency_handler_mutex;
-	std::vector<VulkanDependencyHandler*> dependency_handlers;
 };

@@ -689,25 +689,6 @@ void VulkanRenderResourceManager::AddToDeferredDestructionQueue(VulkanDeferredDe
 	deletion_queue.push(item);
 }
 
-VulkanDependencyHandler* VulkanRenderResourceManager::GetDependencyHandler()
-{
-	std::lock_guard<std::mutex> lock(dependency_handler_mutex);
-	if (!dependency_handlers.empty()) {
-		auto temp = dependency_handlers.back();
-		dependency_handlers.pop_back();
-		return temp;
-	}
-
-	return new DefaultVulkanDependencyHandler();
-}
-
-void VulkanRenderResourceManager::ReturnDependencyHandler(VulkanDependencyHandler* handler)
-{
-	std::lock_guard<std::mutex> lock(dependency_handler_mutex);
-	handler->Reset();
-	dependency_handlers.push_back(handler);
-}
-
 void VulkanRenderResourceManager::ReturnDescriptorAllocation(RenderDescriptorAllocation* allocation,  uint64_t deletion_timeline)
 {
 	std::unique_lock<std::mutex> lock(deletion_queue_mutex);
@@ -724,8 +705,7 @@ void VulkanRenderResourceManager::Update()
 
 }
 
-VulkanRenderResourceManager::VulkanRenderResourceManager() : deletion_queue(), deletion_queue_mutex(), staging_buffer_map() , staging_buffer_map_mutex(), 
-	dependency_handlers(), dependency_handler_mutex()
+VulkanRenderResourceManager::VulkanRenderResourceManager() : deletion_queue(), deletion_queue_mutex(), staging_buffer_map() , staging_buffer_map_mutex()
 {
 }
 
@@ -735,9 +715,6 @@ VulkanRenderResourceManager::~VulkanRenderResourceManager()
 	vkDeviceWaitIdle(context->GetVkbDevice());
 	FlushDeletions(true);
 	ClearStagingBuffers();
-	for (auto handler : dependency_handlers) {
-		delete handler;
-	}
 }
 
 

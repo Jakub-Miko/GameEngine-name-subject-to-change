@@ -25,7 +25,7 @@ VulkanRenderCommandList::VulkanRenderCommandList(std::shared_ptr<VulkanRenderCom
 
 	vkAllocateCommandBuffers(context->GetVkDevice(), &info, &command_buffer);
 	
-	dependency_handler = static_cast<VulkanRenderResourceManager*>(RenderResourceManager::Get())->GetDependencyHandler();
+	dependency_handler = new DefaultVulkanDependencyHandler;
 	
 	VkCommandBufferBeginInfo begin_info = {};
 	begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -37,7 +37,6 @@ VulkanRenderCommandList::~VulkanRenderCommandList()
 {
 	DEFINE_VK_INSTANCE(context);
 	if(auto alloc = allocator.lock()) { // If the allocator no longer exists, it means 
-		static_cast<VulkanRenderResourceManager*>(RenderResourceManager::Get())->ReturnDependencyHandler(dependency_handler);
 		vkFreeCommandBuffers(context->GetVkDevice(), alloc->GetCommandPool(), 1, &command_buffer);
 	}
 }
