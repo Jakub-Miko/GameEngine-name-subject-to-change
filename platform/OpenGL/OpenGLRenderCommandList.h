@@ -29,7 +29,6 @@ public:
     virtual void GenerateMIPs(std::shared_ptr<RenderTexture2DResource> texture) override;
     virtual void SetPipeline(std::shared_ptr<Pipeline> pipeline) override;
     virtual void Clear() override;
-    virtual void SetDescriptorTable(const std::string& semantic_name, RenderDescriptorTable table) override;
     virtual void DrawSquare(glm::vec2 pos, glm::vec2 size, glm::vec4 color = { 1.f,1.f,1.f,1.f }) override;
     virtual void DrawSquare(const glm::mat4& transform, glm::vec4 color = { 1.f,1.f,1.f,1.f }) override;
     virtual void Draw(uint32_t index_count,bool use_unsined_short_as_index = false, int index_offset = 0) override;

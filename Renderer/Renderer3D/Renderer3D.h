@@ -1,5 +1,4 @@
 #pragma once
-#include <Renderer/RenderDescriptorHeap.h>
 #include "DeferredRenderingPipeline.h"
 
 class Renderer3D {

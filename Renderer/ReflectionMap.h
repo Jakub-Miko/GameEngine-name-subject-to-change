@@ -1,7 +1,6 @@
 #pragma once
 #include <Renderer/RenderResource.h>
 #include <vector>
-#include <Renderer/RenderDescriptorHeap.h>
 
 enum class ReflectionMapStatus : char {
 	UNINITIALIZED = 0, LOADING = 1, LOADED = 2, ERROR = 3

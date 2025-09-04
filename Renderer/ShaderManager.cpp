@@ -1,5 +1,5 @@
 #include "ShaderManager.h"
-#include <Renderer/Renderer3D/MaterialManager.h>
+#include <Renderer/MaterialManager.h>
 #include <FileManager.h>
 #include <json.hpp>
 #include <fstream>

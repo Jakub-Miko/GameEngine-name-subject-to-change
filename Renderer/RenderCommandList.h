@@ -3,7 +3,6 @@
 #include <glm/glm.hpp>
 #include <Core/ExecutableCommand.h>
 #include <Renderer/RenderResource.h>
-#include <Renderer/RenderDescriptorHeap.h>
 #include <Renderer/PipelineManager.h>
 
 class Renderer;
@@ -31,12 +30,10 @@ public:
     virtual void SetVertexBuffer(std::shared_ptr<RenderBufferResource> vertex_buffer) = 0;
     virtual void SetScissorRect(const RenderScissorRect& scissor_rect) = 0;
     virtual void SetViewport(const RenderViewport& viewport) = 0;
-    virtual void SetDescriptorTable(const std::string& semantic_name, RenderDescriptorTable table) = 0;
     virtual void GenerateMIPs(std::shared_ptr<RenderTexture2DResource> texture) = 0;
     virtual void Draw(uint32_t index_count, bool use_unsined_short_as_index = false,int index_offset = 0) = 0;
     virtual void DrawArray(uint32_t vertex_count) = 0;
     virtual void SetMaterial(const std::string& name, std::shared_ptr<Material> material) = 0;
-    virtual void UpdateMaterial(std::shared_ptr<Material> material) = 0;
 
     virtual void DrawSquare(glm::vec2 pos, glm::vec2 size, glm::vec4 color = {1.f,1.f,1.f,1.f}) = 0;
     virtual void DrawSquare(const glm::mat4& transform, glm::vec4 color = { 1.f,1.f,1.f,1.f }) = 0;
@@ -46,6 +43,4 @@ protected:
     // to get around encapsulation and allow the command list implementation to mutate the Material without exposing Mutable references to a public interface
     std::vector<Material::MaterialParameter>& GetMutableMaterialParameters(Material* material); 
     Material::Material_status& GetMutableMaterialStatus(Material* material); 
-    RenderDescriptorAllocationHandle& GetMutableMaterialDescriptorTable(Material* material);
-    std::shared_ptr<RenderBufferResource> GetMaterialConstantBuffer(Material* material);
 };

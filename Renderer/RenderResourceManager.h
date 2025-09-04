@@ -1,7 +1,6 @@
 #pragma once 
 #include <memory>
 #include "RenderResource.h"
-#include <Renderer/RenderDescriptorHeap.h>
 #include <Renderer/Renderer.h>
 #include <variant>
 #include <Promise.h>
@@ -41,12 +40,7 @@ public:
 		size_t offset_x, size_t offset_y, int level = 0) = 0;
 
 	virtual std::shared_ptr<RenderFrameBufferResource> CreateFrameBuffer(const RenderFrameBufferDescriptor& buffer_desc) = 0;
-
-	virtual void CreateConstantBufferDescriptor(const RenderDescriptorTable& table, int index, std::shared_ptr<RenderBufferResource> resource) = 0;
-	virtual void CreateTexture2DDescriptor(const RenderDescriptorTable& table, int index, std::shared_ptr<RenderTexture2DResource> resource) = 0;
 	virtual std::shared_ptr<Awaitable<read_pixel_data>> GetPixelValue(std::shared_ptr<RenderFrameBufferResource> framebuffer, int color_attachment_index, float x, float y) = 0;
-	virtual void CreateTexture2DArrayDescriptor(const RenderDescriptorTable& table, int index, std::shared_ptr<RenderTexture2DArrayResource> resource) = 0;
-	virtual void CreateTexture2DCubemapDescriptor(const RenderDescriptorTable& table, int index, std::shared_ptr<RenderTexture2DCubemapResource> resource) = 0;
 
 	//This may reset the framebuffer bindings
 	virtual void CopyFrameBufferDepthAttachment(std::shared_ptr<RenderCommandList>  list, std::shared_ptr<RenderFrameBufferResource> source_frame_buffer, std::shared_ptr<RenderFrameBufferResource> destination_frame_buffer) = 0;

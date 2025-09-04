@@ -2,7 +2,6 @@
 #include "VulkanRenderContext.h"
 #include "VulkanUnitConverter.h"
 #include "VulkanRenderCommandQueue.h"
-#include "VulkanRenderDescriptorHeap.h"
 #include "VulkanRenderCommandList.h"
 #include "Core/algorithm.h"
 
@@ -407,7 +406,7 @@ std::shared_ptr<RenderFrameBufferResource> VulkanRenderResourceManager::CreateFr
 	return std::shared_ptr<RenderFrameBufferResource>(new VulkanRenderFrameBufferResource(buffer_desc));
 }
 
-void VulkanRenderResourceManager::CreateConstantBufferDescriptor(const RenderDescriptorTable& table, int index, std::shared_ptr<RenderBufferResource> resource)
+void VulkanRenderResourceManager::CreateConstantBufferDescriptor(const VulkanRenderDescriptorTable& table, int index, std::shared_ptr<RenderBufferResource> resource)
 {
 	DEFINE_VK_INSTANCE(context);
 
@@ -430,7 +429,7 @@ void VulkanRenderResourceManager::CreateConstantBufferDescriptor(const RenderDes
 	vkUpdateDescriptorSets(context->GetVkDevice(), 1, &write_desc ,0,NULL);
 }
 
-void VulkanRenderResourceManager::CreateTexture2DDescriptor(const RenderDescriptorTable& table, int index, std::shared_ptr<RenderTexture2DResource> resource)
+void VulkanRenderResourceManager::CreateTexture2DDescriptor(const VulkanRenderDescriptorTable& table, int index, std::shared_ptr<RenderTexture2DResource> resource)
 {
 	DEFINE_VK_INSTANCE(context);
 
@@ -540,7 +539,7 @@ std::shared_ptr<Awaitable<read_pixel_data>> VulkanRenderResourceManager::GetPixe
 	return awaitable;
 }
 
-void VulkanRenderResourceManager::CreateTexture2DArrayDescriptor(const RenderDescriptorTable& table, int index, std::shared_ptr<RenderTexture2DArrayResource> resource)
+void VulkanRenderResourceManager::CreateTexture2DArrayDescriptor(const VulkanRenderDescriptorTable& table, int index, std::shared_ptr<RenderTexture2DArrayResource> resource)
 {
 	DEFINE_VK_INSTANCE(context);
 
@@ -563,7 +562,7 @@ void VulkanRenderResourceManager::CreateTexture2DArrayDescriptor(const RenderDes
 	vkUpdateDescriptorSets(context->GetVkDevice(), 1, &write_desc ,0,NULL);
 }
 
-void VulkanRenderResourceManager::CreateTexture2DCubemapDescriptor(const RenderDescriptorTable& table, int index, std::shared_ptr<RenderTexture2DCubemapResource> resource)
+void VulkanRenderResourceManager::CreateTexture2DCubemapDescriptor(const VulkanRenderDescriptorTable& table, int index, std::shared_ptr<RenderTexture2DCubemapResource> resource)
 {
 	DEFINE_VK_INSTANCE(context);
 
@@ -689,16 +688,6 @@ void VulkanRenderResourceManager::AddToDeferredDestructionQueue(VulkanDeferredDe
 	deletion_queue.push(item);
 }
 
-void VulkanRenderResourceManager::ReturnDescriptorAllocation(RenderDescriptorAllocation* allocation,  uint64_t deletion_timeline)
-{
-	std::unique_lock<std::mutex> lock(deletion_queue_mutex);
-	deletion_item item;
-	item.descriptor_allocation = allocation;
-	item.type = deletion_item_type::DESCRIPTOR_ALLOCATION;
-	item.deletion_timeline = deletion_timeline;
-	deletion_queue.push(item);
-}
-
 void VulkanRenderResourceManager::Update()
 {
 	FlushDeletions();
@@ -742,14 +731,6 @@ void VulkanRenderResourceManager::FlushDeletions(bool force)
 			staging_buffer_map.insert(std::make_pair(buffer->descriptor.buffer_size, buffer));
 			break;
 		}
-		case deletion_item_type::DESCRIPTOR_ALLOCATION:
-		{
-			auto allocation = static_cast<VulkanRenderDescriptorAllocation*>(resource.descriptor_allocation);
-			if(auto block = allocation->allocating_heap_block.lock()) { // Take into account that the block might already have been destroyed and the descriptors are thus already freed and invalid
-				block->GetOriginatingHeap()->ReturnAllocation(allocation);
-			}
-		}
-		break;
 		case deletion_item_type::DEFERRED_DESTROY_RESOURCE:
 		{
 			if(resource.deferred_destroy_resource->Destroy()) {

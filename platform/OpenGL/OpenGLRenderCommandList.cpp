@@ -61,15 +61,15 @@ void OpenGLRenderCommandList::Clear()
     PushCommand<decltype(command)>(command);
 }
 
-void OpenGLRenderCommandList::SetDescriptorTable(const std::string& semantic_name, RenderDescriptorTable table)
-{
-    if (current_pipeline) {
-        PushCommand<OpenGLSetDescriptorTableCommand>(current_pipeline, semantic_name, table);
-    }
-    else {
-        throw std::runtime_error("No pipeline is bound");
-    }
-}
+// void OpenGLRenderCommandList::SetDescriptorTable(const std::string& semantic_name, RenderDescriptorTable table)
+// {
+//     if (current_pipeline) {
+//         PushCommand<OpenGLSetDescriptorTableCommand>(current_pipeline, semantic_name, table);
+//     }
+//     else {
+//         throw std::runtime_error("No pipeline is bound");
+//     }
+// }
 
 void OpenGLRenderCommandList::SetConstantBuffer(RootBinding binding_id, std::shared_ptr<RenderBufferResource> buffer)
 {

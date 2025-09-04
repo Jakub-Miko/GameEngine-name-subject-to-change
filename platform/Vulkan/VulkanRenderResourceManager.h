@@ -5,6 +5,7 @@
 #include <Utilities/MemoryManagement/include/MultiPool.h>
 #include "VulkanRenderCommandList.h"
 #include "VulkanDeferredDestruction.h"
+#include "VulkanRenderDescriptorHeap.h"
 #include <mutex>
 #include <memory>
 #include <queue>
@@ -43,11 +44,11 @@ public:
 
 	virtual std::shared_ptr<RenderFrameBufferResource> CreateFrameBuffer(const RenderFrameBufferDescriptor& buffer_desc) override;
 
-	virtual void CreateConstantBufferDescriptor(const RenderDescriptorTable& table, int index, std::shared_ptr<RenderBufferResource> resource) override;
-	virtual void CreateTexture2DDescriptor(const RenderDescriptorTable& table, int index, std::shared_ptr<RenderTexture2DResource> resource) override;
+	void CreateConstantBufferDescriptor(const VulkanRenderDescriptorTable& table, int index, std::shared_ptr<RenderBufferResource> resource);
+	void CreateTexture2DDescriptor(const VulkanRenderDescriptorTable& table, int index, std::shared_ptr<RenderTexture2DResource> resource);
+	void CreateTexture2DArrayDescriptor(const VulkanRenderDescriptorTable& table, int index, std::shared_ptr<RenderTexture2DArrayResource> resource);
+	void CreateTexture2DCubemapDescriptor(const VulkanRenderDescriptorTable& table, int index, std::shared_ptr<RenderTexture2DCubemapResource> resource);
 	virtual std::shared_ptr<Awaitable<read_pixel_data>> GetPixelValue(std::shared_ptr<RenderFrameBufferResource> framebuffer, int color_attachment_index, float x, float y) override;
-	virtual void CreateTexture2DArrayDescriptor(const RenderDescriptorTable& table, int index, std::shared_ptr<RenderTexture2DArrayResource> resource) override;
-	virtual void CreateTexture2DCubemapDescriptor(const RenderDescriptorTable& table, int index, std::shared_ptr<RenderTexture2DCubemapResource> resource) override;
 
 	virtual void CopyFrameBufferDepthAttachment(std::shared_ptr<RenderCommandList>  list, std::shared_ptr<RenderFrameBufferResource> source_frame_buffer, std::shared_ptr<RenderFrameBufferResource> destination_frame_buffer) override;
 	virtual void SetFrameBufferColorAttachment(std::shared_ptr<RenderCommandList>  list, std::shared_ptr<RenderFrameBufferResource> framebuffer, std::shared_ptr<RenderResource> new_attachment, int index = 0, int level = 0) override;
@@ -67,8 +68,6 @@ public:
 	std::shared_ptr<RenderBufferResource> GetStagingBuffer(size_t size);
 
 	void AddToDeferredDestructionQueue(VulkanDeferredDestruction* resource, uint32_t last_usage_timeline_value);
-
-	void ReturnDescriptorAllocation(RenderDescriptorAllocation* allocation, uint64_t deletion_timeline);
 	
 	//Creates a texture object from a VkImage which is not managed by the resource manager (used mainly for swapchain textures)
 	VulkanRenderTexture2DResource* CreateNonManagedTexture(VkImage image, VkImageView view, RenderTexture2DDescriptor desc, RenderState default_state = RenderState::TEXTURE_SAMPLE, RenderState initial_state = RenderState::UNINITIALIZED);
@@ -93,7 +92,6 @@ private:
 	struct deletion_item {
 		union {
 			VulkanRenderResource* resource;
-			RenderDescriptorAllocation* descriptor_allocation;
 			VulkanDeferredDestruction* deferred_destroy_resource;
 		};
 		uint64_t deletion_timeline;

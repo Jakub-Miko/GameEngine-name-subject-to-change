@@ -40,48 +40,38 @@ struct MaterialLayout {
 };
 
 class MaterialTemplate : public std::enable_shared_from_this<MaterialTemplate> {
-    struct Private {}; //Used to ensure constructor is not called outside the CreateTemplate function, without making it private(since make_shared needs it)
 public:
-    MaterialTemplate();
-
-    MaterialTemplate(const MaterialTemplate& other) : material_parameters(other.material_parameters), material_parameters_map(material_parameters_map) {}
-    MaterialTemplate& operator=(const MaterialTemplate& other) {;
-        material_parameters = other.material_parameters;
-        material_parameters_map = other.material_parameters_map;
-        return *this;
-    }
-
-    ~MaterialTemplate();
-
+    MaterialTemplate() = delete;
+    MaterialTemplate(const MaterialTemplate& other) = delete;
+    MaterialTemplate& operator=(const MaterialTemplate& other) = delete;
+    
+    virtual ~MaterialTemplate() {};
+    
     static std::shared_ptr<MaterialTemplate> CreateTemplate(const MaterialLayout& layout, std::string name);
-
-    MaterialTemplate(const MaterialLayout& layout, std::string name, Private dummy);
-
+    
+    virtual std::shared_ptr<Material> CreateMaterial() = 0;
+    
     const MaterialLayoutItem& GetMaterialTemplateParameter(const std::string& name) const;
-
+    
     int GetMaterialTemplateParameterIndex(const std::string& name) const;
-
+    
     const MaterialLayout& GetMaterialTemplateParameters() const {
         return material_parameters;
     }
-
-    RenderDescriptorAllocationHandle AllocateMaterialDescriptor();
-
+    
     std::shared_ptr<Material> GetDefaultMaterial() {
         return default_material;
     }
-
+    
     const std::string& GetName() const { return material_name; }
+    
+protected:
+    struct Private {}; //Used to ensure constructor is not called outside the CreateTemplate function, without making it private(since make_shared needs it)
+    MaterialTemplate(const MaterialLayout& layout, std::string name);
 
-    RenderDescriptorHeap& GetAllocator()  {
-        return *material_allocator;
-    }
-   
-
-private:
+protected:
 
     std::string material_name = "";
-    std::unique_ptr<RenderDescriptorHeap> material_allocator;
     std::shared_ptr<Material> default_material;
     MaterialLayout material_parameters;
     std::unordered_map<std::string, size_t> material_parameters_map;
@@ -91,8 +81,7 @@ class Material : public std::enable_shared_from_this<Material> {
 public:
     Material() = default;
     Material(std::shared_ptr<MaterialTemplate> material_template);
-
-    using material_resource_type = std::variant<FrameMultiBufferResource<RenderDescriptorTable>,std::shared_ptr<RenderBufferResource>>;
+    virtual ~Material() {}
     
     enum class Material_status : char {
         OK = 0, ERROR = 1, UNINITIALIZED = 2
@@ -139,10 +128,6 @@ public:
         return parameters;
     }
 
-    std::shared_ptr<RenderBufferResource> GetConstantBuffer() {
-        return constant_buffer;
-    }
-
 
     std::shared_ptr<MaterialTemplate> GetMaterialTemplate() const {
         if(auto ptr = material_template.lock()) {
@@ -153,10 +138,10 @@ public:
         
     }
 
-    void UpdateValues(std::shared_ptr<RenderCommandList>  command_list);
+    virtual void UpdateValues(std::shared_ptr<RenderCommandList> command_list) = 0;
 
-private:
-
+    
+protected:
     void SetParameterTypeDefault(MaterialParameter& param);
     friend class MaterialManager;
     friend class RenderCommandList;
@@ -167,8 +152,6 @@ private:
     std::string material_path = "";
     std::weak_ptr<MaterialTemplate> material_template;
     std::vector<MaterialParameter> parameters = std::vector<MaterialParameter>();
-    RenderDescriptorAllocationHandle descriptor_table;
-    std::shared_ptr<RenderBufferResource> constant_buffer = nullptr;
     Material_status status = Material_status::ERROR;
 };
 

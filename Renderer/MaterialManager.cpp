@@ -14,7 +14,7 @@
 #include <Renderer/ShaderManager.h>
 
 #ifdef Vulkan_API
-#include <platform/Vulkan/VulkanRenderDescriptorHeap.h>
+#include <platform/Vulkan/VulkanMaterial.h>
 #endif
 
 
@@ -85,9 +85,7 @@ std::shared_ptr<Material> MaterialManager::GetMaterial(const std::string& path_i
 
 	}
 	catch(...) {
-		auto mat = std::make_shared<Material>();
-		mat->status = Material::Material_status::ERROR;
-		return std::make_shared<Material>();
+		return nullptr;
 	}
 }
 
@@ -138,7 +136,7 @@ std::shared_ptr<Material> MaterialManager::ParseMaterialFromString(const std::st
 		}
 	}
 
-	std::shared_ptr<Material> material = std::make_shared<Material>(material_template);
+	std::shared_ptr<Material> material = material_template->CreateMaterial();
 	if (!material_json.contains("parameters") || (!material_json["parameters"].is_array() && !material_json["parameters"].is_null())) throw std::runtime_error("Material file must contain a parameters list");
 	if (!material_json["parameters"].is_null()) {
 		for (auto& parameter : material_json["parameters"]) {
@@ -247,7 +245,7 @@ void MaterialManager::SerializeMaterial(const std::string& filepath, std::shared
 std::shared_ptr<Material> MaterialManager::CreateEmptyMaterial(const std::string& filepath_in, std::shared_ptr<MaterialTemplate> material_template)
 {
 	std::string file_path = FileManager::Get()->GetPath(filepath_in);
-	auto material = std::make_shared<Material>(material_template);
+	auto material = material_template->CreateMaterial();
 	material->material_path = filepath_in;
 	SerializeMaterial(filepath_in, material);
 	std::lock_guard<std::mutex> lock(material_mutex);
@@ -337,12 +335,6 @@ void Material::SetMaterial(std::shared_ptr<RenderCommandList>  command_list)
 //		}
 //	}
 //}
-
-// Be aware this is not thread safe
-void Material::UpdateValues(std::shared_ptr<RenderCommandList>  command_list)
-{
-	command_list->UpdateMaterial(shared_from_this());
-}
 
 void Material::SetTexture(const std::string& name, const std::string& path)
 {
@@ -491,11 +483,6 @@ const MaterialLayoutItem& MaterialTemplate::GetMaterialTemplateParameter(const s
 	}
 }
 
-MaterialTemplate::~MaterialTemplate()
-{
-
-}
-
 //
 //int MaterialTemplate::GetTableOrBufferSize(int index)
 //{
@@ -573,7 +560,7 @@ std::shared_ptr<Material> MaterialManager::CreateMaterial(const std::string& mat
 		throw std::runtime_error("Material could not be created since the material template " + material_template_name + " was not loaded.\n");
 	}
 	
-	return std::make_shared<Material>(mat_template);
+	return mat_template->CreateMaterial();
 
 }
 
@@ -673,13 +660,8 @@ std::shared_ptr<MaterialTemplate> MaterialManager::LoadMaterialTemplateFromJson(
 	return MaterialTemplate::CreateTemplate(layout, name);
 }
 
-MaterialTemplate::MaterialTemplate(const MaterialLayout& layout, std::string name, Private dummy) : material_name(name), material_parameters(layout),  material_parameters_map(), default_material(nullptr)
+MaterialTemplate::MaterialTemplate(const MaterialLayout& layout, std::string name) : material_name(name), material_parameters(layout),  material_parameters_map(), default_material(nullptr)
 {
-#ifdef Vulkan_API
-	material_allocator = std::make_unique<VulkanRenderDescriptorHeap>(material_parameters);
-#elif
-	static_assert(false, "Apis other that vulkan are currently unsupported");
-#endif
 	for (int i = 0; i < material_parameters.layout_items.size(); i++) {
 		material_parameters_map.insert(std::make_pair(material_parameters.layout_items[i].name, i));
 	}
@@ -727,24 +709,9 @@ void MaterialManager::RegisterMaterialTemplate(std::shared_ptr<MaterialTemplate>
 	material_templates.insert(std::make_pair(material_template->GetName(), material_template));
 }
 
-RenderDescriptorAllocationHandle MaterialTemplate::AllocateMaterialDescriptor()
+Material::Material(std::shared_ptr<MaterialTemplate> material_template) : material_template(material_template)
 {
-	return material_allocator->Allocate();
-}
-
-Material::Material(std::shared_ptr<MaterialTemplate> material_template) : material_template(material_template), descriptor_table()
-{
-	auto default_temp = material_template->GetDefaultMaterial();
-	descriptor_table = !default_temp ? nullptr : default_temp->descriptor_table; // Use the default values, first and on first used of set material or update create the actual table
-	auto const_size = material_template->GetMaterialTemplateParameters().const_buffer_size;
-	if (const_size != 0) {
-		RenderBufferDescriptor desc;
-		desc.buffer_size = const_size;
-		desc.type = RenderBufferType::DEFAULT;
-		desc.usage = RenderBufferUsage::CONSTANT_BUFFER;
-		constant_buffer = RenderResourceManager::Get()->CreateBuffer(desc);
-	}
-
+	
 	for (int i = 0; i < material_template->GetMaterialTemplateParameters().layout_items.size(); i++) {
 		auto& layout_item = material_template->GetMaterialTemplateParameters().layout_items[i];
 		MaterialParameter param;
@@ -772,11 +739,15 @@ std::shared_ptr<MaterialTemplate> MaterialManager::GetMaterialTemplate(const std
 
 std::shared_ptr<MaterialTemplate> MaterialTemplate::CreateTemplate(const MaterialLayout& layout, std::string name)
 {
-	auto temp = std::make_shared<MaterialTemplate>(layout, name, Private());
+#ifdef Vulkan_API
+	auto temp = std::make_shared<VulkanMaterialTemplate>(layout, name, Private());
+#elif
+	static_assert(false, "Apis other that vulkan are currently unsupported");
+#endif
 
 	temp->default_material.reset();
 
-	temp->default_material = std::make_shared<Material>(temp->shared_from_this());
+	temp->default_material = temp->CreateMaterial();
 
 	auto list = Renderer::Get()->GetRenderCommandList();
 

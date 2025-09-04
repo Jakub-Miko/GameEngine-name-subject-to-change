@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <unordered_map>
 #include <Renderer/RenderResource.h>
-#include "Renderer/Renderer3D/MaterialManager.h"
+#include "Renderer/MaterialManager.h"
 #include <string>
 
 

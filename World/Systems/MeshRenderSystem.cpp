@@ -6,7 +6,7 @@
 #include <World/Systems/BoxRenderer.h>
 #include <Renderer/Renderer3D/Renderer3D.h>
 #include <Renderer/TextureManager.h>
-#include <Renderer/Renderer3D/MaterialManager.h>
+#include <Renderer/MaterialManager.h>
 
 struct const_buf_type {
     glm::mat4 mvp_matrix;

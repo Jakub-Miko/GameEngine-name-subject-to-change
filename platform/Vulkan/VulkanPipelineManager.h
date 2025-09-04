@@ -1,7 +1,6 @@
 #pragma once
 #include <Renderer/PipelineManager.h>
 #include <Renderer/RenderResource.h>
-#include <Renderer/RenderDescriptorHeap.h>
 #include <vulkan/vulkan.h>
 
 class VulkanPipeline : public Pipeline {

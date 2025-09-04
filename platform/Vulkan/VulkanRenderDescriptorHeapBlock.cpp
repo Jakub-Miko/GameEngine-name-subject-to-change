@@ -47,12 +47,12 @@ VulkanRenderDescriptorHeapBlock::VulkanRenderDescriptorHeapBlock(VulkanRenderDes
 	vkCreateDescriptorPool(context->GetVkDevice(), &info, NULL, &pool);
 }
 
-RenderDescriptorAllocation* VulkanRenderDescriptorHeapBlock::Allocate(size_t num_of_descriptors)
+VulkanRenderDescriptorAllocation* VulkanRenderDescriptorHeapBlock::Allocate(size_t num_of_descriptors)
 {
 	return nullptr;
 }
 
-RenderDescriptorAllocation* VulkanRenderDescriptorHeapBlock::Allocate(VkDescriptorSetLayout layout)
+VulkanRenderDescriptorAllocation* VulkanRenderDescriptorHeapBlock::Allocate(VkDescriptorSetLayout layout)
 {
 	DEFINE_VK_INSTANCE(context);
 	VkDescriptorSetAllocateInfo info = {};
@@ -90,4 +90,13 @@ bool VulkanRenderDescriptorAllocation::IsInUse()
 {
 	DEFINE_VK_INSTANCE(context);
 	return timeline > context->GetCurrentGpuTimelineValue();
+}
+
+bool VulkanRenderDescriptorAllocation::Destroy()
+{
+	if(auto block = allocating_heap_block.lock()) { // Take into account that the block might already have been destroyed and the descriptors are thus already freed and invalid
+		block->GetOriginatingHeap()->ReturnAllocation(this);
+		return false;
+	}
+	return true;
 }

@@ -3,7 +3,6 @@
 #include <Profiler.h>
 #include <iostream>
 #include <States/SandboxState.h>
-#include <Renderer/RenderDescriptorHeapBlock.h>
 
 #ifdef WIN32
     #define _CRTDBG_MAP_ALLOC

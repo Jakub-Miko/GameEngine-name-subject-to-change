@@ -3,7 +3,7 @@
 #include <Renderer/Renderer.h>
 #include <FileManager.h>
 #include <Renderer/Renderer3D/Renderer3D.h>
-#include <Renderer/Renderer3D/MaterialManager.h>
+#include <Renderer/MaterialManager.h>
 #include <Application.h>
 #include <unordered_map>
 #include <Editor/Editor.h>
@@ -31,6 +31,11 @@ void MaterialEditor::OpenEditorWinow(const std::string& material_path)
 	if (open_materials.find(material_path) != open_materials.end()) return;
 	MaterialEditorWindow window;
 	window.mat = MaterialManager::Get()->GetMaterial(material_path);
+	if(!window.mat) {
+		Editor::Get()->EditorError("Invalid material file");
+		return;
+	}
+
 	window.text_buffers = std::vector<char*>();
 	for (int i = 0; i < window.mat->parameters.size(); i++) {
 		window.text_buffers.push_back(nullptr);

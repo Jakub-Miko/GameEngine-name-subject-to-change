@@ -2,7 +2,7 @@
 #include <Renderer/TextureManager.h>
 #include <Renderer/RootSignature.h>
 #include <Renderer/Renderer3D/Renderer3D.h>
-#include <Renderer/Renderer3D/MaterialManager.h>
+#include <Renderer/MaterialManager.h>
 #include <Renderer/Renderer3D/RenderPipeline.h>
 #include <Renderer/Renderer.h>
 #include <Renderer/RenderResource.h>

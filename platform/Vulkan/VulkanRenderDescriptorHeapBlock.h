@@ -1,17 +1,19 @@
 #pragma once
-#include <Renderer/RenderDescriptorHeapBlock.h>
-#include <Renderer/Renderer3D/MaterialManager.h>
 #include <vulkan/vulkan.h>
+#include "VulkanDeferredDestruction.h"
+#include <memory>
 
 class VulkanRenderDescriptorHeap;
 class VulkanRenderDescriptorHeapBlock;
 
 
-class VulkanRenderDescriptorAllocation : public RenderDescriptorAllocation {
+class VulkanRenderDescriptorAllocation : public VulkanDeferredDestruction {
 public:
 	virtual ~VulkanRenderDescriptorAllocation() {}
 	
-	virtual bool IsInUse() override;
+	bool IsInUse();
+
+	virtual bool Destroy() override;
 
 public:
 	VkDescriptorSet descritor_set;
@@ -19,7 +21,7 @@ public:
 	uint64_t timeline; // the last submit which used this table. if not yet passed a new set needs to be allocated
 };
 
-class VulkanRenderDescriptorHeapBlock : public RenderDescriptorHeapBlock, public std::enable_shared_from_this<VulkanRenderDescriptorHeapBlock> {
+class VulkanRenderDescriptorHeapBlock : public std::enable_shared_from_this<VulkanRenderDescriptorHeapBlock> {
 public:
 	VulkanRenderDescriptorHeapBlock(size_t size);
 
@@ -29,13 +31,13 @@ public:
 
 	VulkanRenderDescriptorHeapBlock(VulkanRenderDescriptorHeapBlock&& other) = delete;
 
-	virtual RenderDescriptorAllocation* Allocate(size_t num_of_descriptors) override;
+	VulkanRenderDescriptorAllocation* Allocate(size_t num_of_descriptors);
 
-	RenderDescriptorAllocation* Allocate(VkDescriptorSetLayout layout);
+	VulkanRenderDescriptorAllocation* Allocate(VkDescriptorSetLayout layout);
 
 	uint32_t GetSize() const { return size; }
 
-	virtual void FlushDescriptorDeallocations(uint32_t frame_number) override;
+	void FlushDescriptorDeallocations(uint32_t frame_number);
 
 	virtual ~VulkanRenderDescriptorHeapBlock();
 

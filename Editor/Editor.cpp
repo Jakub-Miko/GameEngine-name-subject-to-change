@@ -1,5 +1,5 @@
 #include "Editor.h"
-#include <Renderer/Renderer3D/MaterialManager.h>
+#include <Renderer/MaterialManager.h>
 #include <dependencies/imgui/imgui.h>
 #include <dependencies/Additional/impl_custom_imgui_backend.h>
 #include <dependencies/Additional/impl_custom_imgui_platform.h>

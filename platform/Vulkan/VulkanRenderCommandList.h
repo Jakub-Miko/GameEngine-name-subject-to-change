@@ -3,6 +3,7 @@
 #include <Renderer/RenderCommandList.h>
 #include "VulkanRenderCommandAllocator.h"
 #include "VulkanDeferredDestruction.h"
+#include "VulkanRenderDescriptorHeap.h"
 #include <Renderer/PipelineManager.h>
 #include "VulkanPipelineManager.h"
 #include <unordered_map>
@@ -65,7 +66,7 @@ struct VulkanDrawState {
     int expected_binding_count = 0, currently_bound_count = 0;
     std::unordered_set<uint32_t> draw_resources; 
     std::vector<VulkanDrawResource> pending_dependencies;
-    std::unordered_set<RenderDescriptorTable> used_descriptor_tables; 
+    std::unordered_set<VulkanRenderDescriptorTable> used_descriptor_tables; 
 };
 
 class VulkanDependencyHandler {
@@ -91,7 +92,7 @@ public:
 
     virtual bool IsPipelineReady() = 0; //Check if all resources have been set and are valid before launching a drawcall
 
-    virtual void AddDescriptorTableDependency(VulkanRenderCommandList* list, RenderDescriptorTable desc_table) = 0;  
+    virtual void AddDescriptorTableDependency(VulkanRenderCommandList* list, VulkanRenderDescriptorTable desc_table) = 0;  
 
     virtual VulkanCommandListDependencyState GetDependency(std::shared_ptr<RenderResource> resource) = 0;
     virtual VulkanDependencyHandlerFeedback FinalizeDependencies(RenderCommandList* list, uint64_t new_timeline_value) = 0;
@@ -114,7 +115,7 @@ public:
     
     virtual void FlushDrawDependencies(VulkanRenderCommandList* list) override;
 
-    virtual void AddDescriptorTableDependency(VulkanRenderCommandList* list, RenderDescriptorTable desc_table) override;  
+    virtual void AddDescriptorTableDependency(VulkanRenderCommandList* list, VulkanRenderDescriptorTable desc_table) override;  
 
     virtual void PipelineChange(VulkanRenderCommandList* list, std::shared_ptr<Pipeline> new_pipeline) override;
     virtual void RenderTargetChange(VulkanRenderCommandList* list, std::shared_ptr<RenderFrameBufferResource> new_framebuffer) override;
@@ -159,12 +160,10 @@ public:
     virtual void SetVertexBuffer(std::shared_ptr<RenderBufferResource> vertex_buffer) override;
     virtual void SetScissorRect(const RenderScissorRect& scissor_rect) override;
     virtual void SetViewport(const RenderViewport& viewport) override;
-    virtual void SetDescriptorTable(const std::string& semantic_name, RenderDescriptorTable table) override;
     virtual void GenerateMIPs(std::shared_ptr<RenderTexture2DResource> texture) override;
     virtual void Draw(uint32_t index_count, bool use_unsined_short_as_index = false, int index_offset = 0) override;
     virtual void DrawArray(uint32_t vertex_count) override;
     virtual void SetMaterial(const std::string& name, std::shared_ptr<Material> material) override;
-    virtual void UpdateMaterial(std::shared_ptr<Material> material) override;
 
     virtual void DrawSquare(glm::vec2 pos, glm::vec2 size, glm::vec4 color = { 1.f,1.f,1.f,1.f }) override;
     virtual void DrawSquare(const glm::mat4& transform, glm::vec4 color = { 1.f,1.f,1.f,1.f }) override;

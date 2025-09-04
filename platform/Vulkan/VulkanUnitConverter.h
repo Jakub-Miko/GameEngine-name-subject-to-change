@@ -7,7 +7,7 @@
 #include "VulkanRenderCommandList.h"
 #include "VulkanShaderManager.h"
 #include "shaderc/shaderc.hpp"
-#include "Renderer/Renderer3D/MaterialManager.h"
+#include "Renderer/MaterialManager.h"
 
 class VulkanUnitConverter {
 private:

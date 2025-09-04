@@ -3,7 +3,7 @@
 #include "VulkanRenderContext.h"
 #include "VulkanUnitConverter.h"
 #include "VulkanRenderDescriptorHeap.h"
-
+#include "VulkanMaterial.h"
 
 VulkanRootSignature::VulkanRootSignature(const RootSignatureDescriptor& descriptor_in) : parameters() , RootSignature(descriptor_in)
 {
@@ -59,7 +59,7 @@ VulkanRootSignature::VulkanRootSignature(const RootSignatureDescriptor& descript
 		if (desc.type == RootParameterType::MATERIAL) {
 			desc.set_id = set_id++;
 			desc.material_template = MaterialManager::Get()->GetMaterialTemplate(desc.name);
-			layouts.push_back(static_cast<VulkanRenderDescriptorHeap*>(&desc.material_template->GetAllocator())->GetLayout());
+			layouts.push_back(std::static_pointer_cast<VulkanMaterialTemplate>(desc.material_template)->GetAllocator().GetLayout());
 		}
 	}
 
