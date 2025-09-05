@@ -32,9 +32,9 @@ void ScriptSystemDeferredSet(World& world)
 
         for (auto iter = comps.begin() + compcol.start_index; iter != comps.begin() + compcol.start_index + compcol.size; iter++) {
             auto& dynamic_prop = world.GetRegistry().get<DynamicPropertiesComponent>((entt::entity)(*iter));
-            for (auto& change : changes) {
-                auto fnd = change.find((uint32_t)(*iter));
-                if (fnd != change.end()) {
+            for (auto change : changes) {
+                auto fnd = change->find((uint32_t)(*iter));
+                if (fnd != change->end()) {
                     for (auto& changed_props : fnd->second) {
                         dynamic_prop.m_Properties.insert_or_assign(changed_props.name, changed_props.value);
                     }
@@ -56,7 +56,7 @@ void ScriptSystemDeferredCall(World& world)
 {
     ScriptSystemManager::Get()->SwapDeferredCallCycle();
     auto* current_entities = &ScriptSystemManager::Get()->GetPendingDeferredCallEntities();
-    auto* current_calls = &ScriptSystemManager::Get()->GetDeferredCalls();
+    auto current_calls = ScriptSystemManager::Get()->GetDeferredCalls();
     
     auto func_deferred = [&world](ComponentCollection compcol, const std::vector<Entity>& comps) {
         auto script_vm = ScriptSystemManager::Get()->TryGetScriptSystemVM();
@@ -83,7 +83,7 @@ void ScriptSystemDeferredCall(World& world)
         current_entities->clear();
         ScriptSystemManager::Get()->SwapDeferredCallCycle();
         current_entities = &ScriptSystemManager::Get()->GetPendingDeferredCallEntities();
-        current_calls = &ScriptSystemManager::Get()->GetDeferredCalls();
+        current_calls = ScriptSystemManager::Get()->GetDeferredCalls();
     }
 
 }

@@ -41,7 +41,7 @@ void Renderer::PreInit() {
         auto data = manager->GetThreadLocalData<PerThreadRendererData>();
         return data->general_allocator->GetCommandList();
     } else {
-        PerThreadRendererData* data = new PerThreadRendererData;
+        auto data = std::make_shared<PerThreadRendererData>();
         data->general_allocator = RenderCommandAllocator::CreateAllocator(1024);
         manager->SetThreadLocalData(data);
         return data->general_allocator->GetCommandList();
@@ -101,6 +101,13 @@ void Renderer::SetRenderQueue(RenderCommandQueue* queue, RenderQueueTypes type)
 
 void Renderer::Destroy()
 {
+    //Destroy all per thread command allocators
+    for(auto thread : ThreadManager::Get()->GetAllThreadObjects()) {
+        if(thread->StateValueExists<PerThreadRendererData>()) {
+            auto per_thread_data = thread->GetStateValue<PerThreadRendererData>();
+            per_thread_data->general_allocator.reset();
+        }
+    }
     RenderContext::Shutdown();
 }
 

@@ -125,7 +125,7 @@ public:
      * @note The current deferred map alternates on every internal iteration of ScriptSystemDeferredCall, so deferred calls can also spawn other deferred calls
      * @warning access to the Deferred_Call_Map is not thread-safe 
     */
-    Deferred_Call_Map& GetDeferredCalls();
+    std::shared_ptr<Deferred_Call_Map> GetDeferredCalls();
     /**
      * @brief Gets a vector contaning all @ref Deferred_Call "deferred calls" pending for an Entity.
      * @param ent Entity to get the @ref Deferred_Call "deferred calls" for 
@@ -173,7 +173,7 @@ public:
      * @brief Gets a vector of maps containing @ref ScriptSystemDeferredSet "deferred property set actions", one map for every thread.
      * @return a vector of @ref Deferred_Set_Map "Deferred_Set_Maps" for every thread
     */
-    const std::vector<Deferred_Set_Map>& GetEntityChanges();
+    const std::vector<std::shared_ptr<Deferred_Set_Map>>& GetEntityChanges();
 
     /**
      * @brief Clears all @ref Deferred_Set_Map "Deferred_Set_Maps" for every thread
@@ -187,7 +187,7 @@ public:
      * The ScriptSystemVM returned is specific to the thread this function was called on, and the thread must have called ScriptSystemManager::InitializeScriptSystemVM, otherwise
      * nullptr is returned
     */
-    ScriptSystemVM* TryGetScriptSystemVM();
+    std::shared_ptr<ScriptSystemVM> TryGetScriptSystemVM();
 
     /**
      * @brief Registers an entity collision which will result in a call to OnCollision script functions call. @see ScriptSystemCollisionCallback
@@ -241,17 +241,17 @@ private:
      * 
      * @warning Only as many @ref Deferred_Set_Map "Deferred_Set_Maps" can be allocated as @ref ThreadManager::GetMaxThreadCount "Max Thread Count"
     */
-    Deferred_Set_Map* GetDeferredSetMap();
+    std::shared_ptr<Deferred_Set_Map> GetDeferredSetMap();
 
 private:
 
     std::unordered_map<std::string, ScriptObject> m_ScriptCache; ///< Cache associating script filepaths with loaded scripts
-    std::vector<ScriptSystemVM*> m_Script_system_VMs; ///< a vector containing all @ref ScriptVM "ScriptVMs" used by all threads utilizing ScriptSystemManager
+    std::vector<std::shared_ptr<ScriptSystemVM>> m_Script_system_VMs; ///< a vector containing all @ref ScriptVM "ScriptVMs" used by all threads utilizing ScriptSystemManager
     std::mutex sync_mutex; ///< Mutex for @ref m_Script_system_VMs (Only used during @ref ScriptSystemManager::InitializeScriptSystemVM "thread initialization", since no writes are performed otherwise)
     std::mutex script_cache_mutex; ///< Mutex for @ref m_ScriptCache
 
     std::mutex DeferredSetMaps_mutex; ///< Mutex for @ref m_DeferredSetMaps
-    std::vector<Deferred_Set_Map> m_DeferredSetMaps; ///< Vector of @ref Deferred_Set_Map "Deferred_Set_Maps" for all threads
+    std::vector<std::shared_ptr<Deferred_Set_Map>> m_DeferredSetMaps; ///< Vector of @ref Deferred_Set_Map "Deferred_Set_Maps" for all threads
 
     //Deferred calls have different cycles one used for reads and one for writes, they swap in the next cycle
     std::mutex Deferred_call_maps_mutex;
@@ -259,7 +259,7 @@ private:
     /**
      * @brief Contains two @ref Deferred_Call_Map "Deferred_Call_Maps" used to store @ref Deferred_Call "deferred calls", for explanation why two are needed see the detials of @ref ScriptSystemDeferredCall
     */
-    std::vector<Deferred_Call_Map> m_Deferred_call_maps;
+    std::vector<std::shared_ptr<Deferred_Call_Map>> m_Deferred_call_maps;
     /**
      * @brief Contains two vectors of entities used to store all entities on which deferred calls should be executed, for explanation why two are needed see the detials of @ref ScriptSystemDeferredCall
     */
@@ -516,10 +516,10 @@ private:
 class ScriptSystemVM {
 public:
     friend ScriptSystemManager;
-private:
+
+public:
     ScriptSystemVM();
     ~ScriptSystemVM();
-public:
     /**
      * @brief Sets the ScriptSystemVM to @ref inline_script "inline script" mode and sets its new Entity to process 
      * @param ent an Entity that will be used as the new currently processed Entity

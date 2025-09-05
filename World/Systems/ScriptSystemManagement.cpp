@@ -106,15 +106,15 @@ void ScriptSystemManager::SetEntityAsDirty(Entity ent)
     Application::GetWorld().SetComponent<DeferredUpdateComponent>(ent);
 }
 
-Deferred_Call_Map& ScriptSystemManager::GetDeferredCalls()
+std::shared_ptr<Deferred_Call_Map> ScriptSystemManager::GetDeferredCalls()
 {
     return m_Deferred_call_maps[deferred_call_cycle ? 1 : 0];
 }
 
 std::vector<Deferred_Call>& ScriptSystemManager::GetDeferredCallsForEntity(Entity ent)
 {
-    auto fnd = GetDeferredCalls().find(ent.id);
-    if (fnd != GetDeferredCalls().end()) {
+    auto fnd = GetDeferredCalls()->find(ent.id);
+    if (fnd != GetDeferredCalls()->end()) {
         return fnd->second;
     }
     else {
@@ -160,13 +160,13 @@ void ScriptSystemManager::AddDeferredCall(Entity ent, const Deferred_Call& call_
     std::lock_guard<std::mutex> lock(Deferred_call_maps_mutex);
     auto& call_map = m_Deferred_call_maps[deferred_call_cycle ? 0 : 1];
     auto& call_entities = m_Pending_Deferred_call_vectors[deferred_call_cycle ? 0 : 1];
-    auto fnd = call_map.find(ent.id);
-    if (fnd != call_map.end()) {
+    auto fnd = call_map->find(ent.id);
+    if (fnd != call_map->end()) {
         fnd->second.push_back(call_info);
     }
     else {
         call_entities.push_back(ent);
-        auto new_entry = call_map.insert(std::make_pair(ent.id, std::vector<Deferred_Call>()));
+        auto new_entry = call_map->insert(std::make_pair(ent.id, std::vector<Deferred_Call>()));
         new_entry.first->second.push_back(call_info);
     }
 }
@@ -208,7 +208,7 @@ void ScriptSystemManager::InvalidateConstructionScript(const std::string& script
     }
 }
 
-const std::vector<Deferred_Set_Map>& ScriptSystemManager::GetEntityChanges()
+const std::vector<std::shared_ptr<Deferred_Set_Map>>& ScriptSystemManager::GetEntityChanges()
 {
     std::lock_guard<std::mutex> lock(DeferredSetMaps_mutex);
     return m_DeferredSetMaps;
@@ -217,11 +217,11 @@ const std::vector<Deferred_Set_Map>& ScriptSystemManager::GetEntityChanges()
 void ScriptSystemManager::ClearEntityChanges()
 {
     for (auto& map : m_DeferredSetMaps) {
-        map.clear();
+        map->clear();
     }
 }
 
-ScriptSystemVM* ScriptSystemManager::TryGetScriptSystemVM()
+std::shared_ptr<ScriptSystemVM> ScriptSystemManager::TryGetScriptSystemVM()
 {
     if (ThreadManager::IsValidThreadContext()) {
         if (ThreadManager::ThreadLocalDataExists<ScriptSystemVM>()) {
@@ -269,7 +269,7 @@ void ScriptSystemManager::OnCollision(CollisionEvent* col_event)
 void ScriptSystemManager::InitializeScriptSystemVM()
 {
     if (ThreadManager::IsValidThreadContext()) {
-        auto vm = new ScriptSystemVM;
+        auto vm = std::make_shared<ScriptSystemVM>();
         std::lock_guard<std::mutex> lock(sync_mutex);
         m_Script_system_VMs.push_back(vm);
         ThreadManager::SetThreadLocalData<ScriptSystemVM>(vm);
@@ -288,9 +288,7 @@ void ScriptSystemManager::ResetAllScriptSystemVMs()
 
 ScriptSystemManager::~ScriptSystemManager()
 {
-    for (auto vm : m_Script_system_VMs) {
-        delete vm;
-    }
+
 }
 
 ScriptSystemManager::ScriptSystemManager() : sync_mutex(), m_DeferredSetMaps(), DeferredSetMaps_mutex(), m_ScriptCache(), m_Deferred_call_maps(), Deferred_call_maps_mutex(), m_Pending_Deferred_call_vectors(),
@@ -309,13 +307,15 @@ ScriptSystemManager::ScriptSystemManager() : sync_mutex(), m_DeferredSetMaps(), 
 
 }
 
-Deferred_Set_Map* ScriptSystemManager::GetDeferredSetMap()
+std::shared_ptr<Deferred_Set_Map> ScriptSystemManager::GetDeferredSetMap()
 {
     std::lock_guard<std::mutex> lock(DeferredSetMaps_mutex);
     if ((m_DeferredSetMaps.size() + 1) > m_DeferredSetMaps.capacity()) {
         throw std::runtime_error("Invalid number of deffred set maps allocated");
     }
-    return &(m_DeferredSetMaps.emplace_back());
+    auto map = std::make_shared<Deferred_Set_Map>();
+    m_DeferredSetMaps.push_back(map);
+    return map;
 }
 
 ScriptSystemVM::ScriptSystemVM() : m_LuaEngine(), m_LuaInitializationEngine(), 
