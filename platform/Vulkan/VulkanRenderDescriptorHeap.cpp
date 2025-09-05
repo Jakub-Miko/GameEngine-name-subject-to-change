@@ -2,7 +2,7 @@
 #include "VulkanUnitConverter.h"
 #include "VulkanRenderResourceManager.h"
 
-VulkanRenderDescriptorHeap::VulkanRenderDescriptorHeap(const std::vector<VkDescriptorPoolSize>& pool_sizes, VkDescriptorSetLayout layout) : layout(layout), heap_blocks(), heap_mutex(), current_block(0)
+VulkanRenderDescriptorHeap::VulkanRenderDescriptorHeap(const std::vector<VkDescriptorPoolSize>& pool_sizes, VkDescriptorSetLayout layout) : layout(layout), pool_sizes(pool_sizes) ,heap_blocks(), heap_mutex(), current_block(0)
 {
 	DEFINE_VK_INSTANCE(context);
 	heap_blocks.emplace_back(std::make_unique<VulkanRenderDescriptorHeapBlock>(this, 128));

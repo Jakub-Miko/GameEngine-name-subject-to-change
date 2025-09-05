@@ -24,7 +24,7 @@ void World::Init()
 	m_SpatialIndex.Init(SpatialIndexProperties());
 }
 
-World::World() : m_ECS(), m_SceneGraph(this), load_scene(std::make_shared<SceneProxy>()), deletion_queue(), deletion_mutex(), m_SpatialIndex(), m_PhysicsEngine(PhysicsEngineProps()), scene_lua_engine()
+World::World() : m_ECS(), m_SceneGraph(this), load_scene(std::make_shared<NativeSceneProxy>()), deletion_queue(), deletion_mutex(), m_SpatialIndex(), m_PhysicsEngine(PhysicsEngineProps()), scene_lua_engine()
 {
 	BindLuaFunctions();
 	RegisterComponents(Component_Types());
@@ -453,6 +453,7 @@ void World::LoadSceneSystem()
 		m_SceneGraph.clear();
 		m_PhysicsEngine.clear();
 		default_camera = Entity();
+		RegisterComponents(Component_Types());
 		
 		TextureManager::Get()->ClearTextureCache();
 		MaterialManager::Get()->ClearMaterialCache();
@@ -461,43 +462,16 @@ void World::LoadSceneSystem()
 		EntityManager::Get()->ClearPrefabCache();
 		ScriptSystemManager::Get()->ResetAllScriptSystemVMs();
 
+
 		ResetLuaEngine();
 
-		SectionList sections;
-		std::string file = FileManager::Get()->OpenFileRaw(load_scene->scene_path, &sections);
-		std::string script = "";
-		if (sections.find("Script") != sections.end()) {
-			script = FileManager::Get()->GetFileSectionFromString(file, "Script");
-			has_script = true;
-			scene_lua_engine.RunString(script);
-		}
-		else {
-			has_script = false;
-		}
-		if (sections.size() != 0) {
-			file = FileManager::Get()->GetFileSection(FileManager::Get()->GetPath(load_scene->scene_path), "Root");
-		}
+		auto load_info = load_scene->LoadScene(*this);
 
+		has_script = load_info.has_script;
+		scene_script = load_info.script;
+		scene_lua_engine.RunString(scene_script);
 
-		nlohmann::json json = nlohmann::json::parse(file);
-
-		Entity primary;
-		if (json.find("primary_entity") != json.end()) {
-			primary = json["primary_entity"].get<Entity>();
-		}
-
-
-		RegisterComponents(Component_Types());
-
-		ECS_Input_Archive archive(json["Entities"]);
-		entt::snapshot_loader(m_ECS).component<TransformComponent, PrefabComponent, DynamicPropertiesComponent, LabelComponent,MeshComponent, CameraComponent, LightComponent, ShadowCasterComponent, PhysicsComponent,
-		SkeletalMeshComponent, AudioComponent, UITextComponent, SkylightComponent>(archive);
-
-
-		m_SceneGraph.Deserialize(json);
-
-		SetPrimaryEntity(primary);
-		if (primary != Entity()) {
+		if (set_primary_entity != Entity()) {
 			if (!HasComponent<CameraComponent>(set_primary_entity)) {
 				CheckCamera();
 			}
@@ -675,12 +649,12 @@ void World::SetPrimaryEntitySystem()
 
 void World::LoadSceneFromFile(const std::string& file_path)
 {
-	load_scene = std::make_shared<SceneProxy>(file_path);
+	load_scene = std::make_shared<NativeSceneProxy>(file_path);
 }
 
 void World::LoadEmptyScene()
 {
-	load_scene = std::make_shared<SceneProxy>("engine_asset:EmptyScene.json");
+	load_scene = std::make_shared<NativeSceneProxy>("engine_asset:EmptyScene.json");
 }
 
 void World::SaveScene(const std::string& file_path)
@@ -707,7 +681,7 @@ void World::SaveScene(const std::string& file_path)
 	std::string script = "";
 
 	if (has_script) {
-		script = FileManager::Get()->GetFileSection(FileManager::Get()->GetPath(GetCurrentSceneProxy().scene_path), "Script");
+		script = FileManager::Get()->GetFileSection(FileManager::Get()->GetPath(scene_script), "Script");
 	}
 	std::ofstream file(file_path,std::ios_base::trunc);
 	if (!file.is_open()) {

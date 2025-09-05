@@ -186,6 +186,7 @@ public:
 
 private:
 	friend class GameLayer;
+	friend class NativeSceneProxy;
 	
 	/**
 	 * @brief Serializes the Scenegraph into a JSON file as a part of the Scene serialization process

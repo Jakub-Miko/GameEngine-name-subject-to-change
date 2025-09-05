@@ -547,8 +547,8 @@ public:
 	/**
 	 * @brief Returns a current SceneProxy representing the info of the currently loaded scene.
 	*/
-	const SceneProxy& GetCurrentSceneProxy() const {
-		return *current_scene;
+	std::shared_ptr<SceneProxy> GetCurrentSceneProxy() const {
+		return current_scene;
 	}
 
 	/**
@@ -655,6 +655,24 @@ public:
 		return has_script;
 	}
 
+	/**
+	 * @brief Get the current SceneScript String
+	 */
+	const std::string& GetScript() const {
+		return scene_script;
+	}
+
+	/**
+	 * @brief Unloads the old scene script, resets the scene script engine and initializes the new scene script provided.
+	 * 
+	 * @param script The new scene script to replace the old one.
+	 */
+	void ResetSceneScript(const std::string script) {
+		scene_script = script;
+		ResetLuaEngine();
+		scene_lua_engine.RunString(script);
+	}
+
 private:
 	friend class GameLayer;
 #ifdef EDITOR
@@ -758,6 +776,7 @@ private:
 
 	LuaEngine scene_lua_engine; ///< Scene Script LuaEngine
 	bool has_script = false; ///< Whether current scene has a Script
+	std::string scene_script;
 
 	std::shared_ptr<SceneProxy> current_scene = nullptr; ///< Current Scene load info
 	std::shared_ptr<SceneProxy> load_scene = nullptr; ///< Scene to be loaded info

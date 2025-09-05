@@ -494,14 +494,15 @@ void Editor::SceneScriptOptions()
 {
 	auto& world = Application::GetWorld();
 	bool has_script = world.HasSceneScript();
-	const SceneProxy& scene = world.GetCurrentSceneProxy();
-	std::string temp_path = FileManager::Get()->GetTempFilePath(FileManager::Get()->GetPathHash(scene.scene_path) + ".lua");
+	auto scene = world.GetCurrentSceneProxy();
+	auto& scene_path = scene->GetFilePath() == "" ? "temp_file" : scene->GetFilePath();
+	std::string temp_path = FileManager::Get()->GetTempFilePath(FileManager::Get()->GetPathHash(scene_path) + ".lua");
 	bool temp_file_exist = std::filesystem::exists(temp_path);
 	if (ImGui::MenuItem(has_script ? "Edit scene script" : "Create scene script")) {
 		std::ofstream file(temp_path);
 		if (!file.is_open()) throw std::runtime_error("File " + temp_path + " doesn't exist");
 		if (has_script) {
-			file << FileManager::Get()->GetFileSection(FileManager::Get()->GetPath(scene.scene_path),"Script");
+			file << world.GetScript();
 		}
 		else {
 			file << "function OnUpdate(delta_time) \n\nend\n";
@@ -510,13 +511,15 @@ void Editor::SceneScriptOptions()
 		Application::Get()->GetOsApi()->OpenFileInDefaultApp(temp_path);
 	}
 	if (temp_file_exist && ImGui::MenuItem("Apply scene script")) {
-		std::string scene_string = FileManager::Get()->OpenFileRaw(scene.scene_path);
 		std::string new_script = FileManager::Get()->OpenFileRaw(FileManager::Get()->GetRelativeFilePath(temp_path));
-		FileManager::Get()->InsertOrReplaceSection(scene_string, new_script, "Script");
-		std::ofstream file(FileManager::Get()->GetPath(scene.scene_path));
-		if (!file.is_open()) throw std::runtime_error("File " + FileManager::Get()->GetPath(scene.scene_path) + " doesn't exist");
-		file << scene_string;
-		file.close();
+		if(scene_path != "") {
+			std::string scene_string = FileManager::Get()->OpenFileRaw(scene_path);
+			FileManager::Get()->InsertOrReplaceSection(scene_string, new_script, "Script");
+			std::ofstream file(FileManager::Get()->GetPath(scene_path));
+			if (!file.is_open()) throw std::runtime_error("File " + FileManager::Get()->GetPath(scene_path) + " doesn't exist");
+			file << scene_string;
+			file.close();
+		}
 		Application::GetWorld().ResetLuaEngine();
 		Application::GetWorld().scene_lua_engine.RunString(new_script);
 	}
