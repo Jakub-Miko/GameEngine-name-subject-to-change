@@ -554,11 +554,20 @@ public:
 	/**
 	 * @brief Load a Scene into the world from a file
 	 * 
-	 * This also unload the current scene
+	 * This also unloads the current scene
 	 * 
 	 * @param file_path path to the new scene
 	*/
 	void LoadSceneFromFile(const std::string& file_path = "Empty");
+
+	/**
+	 * @brief Load a Scene into the world from a SceneProxy object
+	 * 
+	 * This also unloads the current scene
+	 * 
+	 * @param proxy SceneProxy representing the scene to load
+	*/
+	void LoadSceneFromProxy(std::shared_ptr<SceneProxy> proxy);
 
 	/**
 	 * @brief Closes the current scene and replaces it with a blank scene

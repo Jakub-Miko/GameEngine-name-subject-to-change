@@ -652,6 +652,11 @@ void World::LoadSceneFromFile(const std::string& file_path)
 	load_scene = std::make_shared<NativeSceneProxy>(file_path);
 }
 
+void World::LoadSceneFromProxy(std::shared_ptr<SceneProxy> proxy)
+{
+	load_scene = proxy;
+}
+
 void World::LoadEmptyScene()
 {
 	load_scene = std::make_shared<NativeSceneProxy>("engine_asset:EmptyScene.json");

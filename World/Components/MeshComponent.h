@@ -31,6 +31,10 @@ public:
 		file_path = FileManager::Get()->GetRelativeFilePath(filepath);
 	}
 
+	MeshComponent(std::shared_ptr<Mesh> mesh) : file_path(""), mesh(mesh){
+		compare_status = mesh->GetMeshStatus();
+	}
+
 	void ChangeMaterial(const std::string& filepath) {
 		if (filepath.empty()) {
 			material.reset();
