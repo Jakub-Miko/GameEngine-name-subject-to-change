@@ -98,7 +98,7 @@ private:
 		deletion_item_type type = deletion_item_type::RESOURCE;
 	};
 
-	std::mutex deletion_queue_mutex;
+	std::recursive_mutex deletion_queue_mutex;
 	std::queue<deletion_item> deletion_queue;
 	std::mutex staging_buffer_map_mutex;
 	std::multimap<size_t, RenderBufferResource*> staging_buffer_map;

@@ -23,5 +23,6 @@ public:
 
 private:
 	std::vector<VulkanRenderCommandList*> free_command_lists;
+	std::mutex allocation_mutex;
 	VkCommandPool pool;
 };

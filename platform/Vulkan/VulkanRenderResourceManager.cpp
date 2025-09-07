@@ -680,7 +680,7 @@ std::shared_ptr<RenderBufferResource> VulkanRenderResourceManager::GetStagingBuf
 
 void VulkanRenderResourceManager::AddToDeferredDestructionQueue(VulkanDeferredDestruction *resource, uint32_t last_usage_timeline_value)
 {
-	std::lock_guard<std::mutex> lock(deletion_queue_mutex);
+	std::lock_guard<std::recursive_mutex> lock(deletion_queue_mutex);
 	deletion_item item = {};
 	item.deferred_destroy_resource = resource;
 	item.type = deletion_item_type::DEFERRED_DESTROY_RESOURCE;
@@ -712,7 +712,7 @@ void VulkanRenderResourceManager::FlushDeletions(bool force)
 	DEFINE_VK_INSTANCE(context);
 	VmaAllocator& alloc = context->GetVmaAllocator();
 
-	std::unique_lock<std::mutex> lock(deletion_queue_mutex);
+	std::unique_lock<std::recursive_mutex> lock(deletion_queue_mutex);
 	std::lock_guard<std::mutex> lock2(staging_buffer_map_mutex);
 
 	uint64_t current_timeline = context->GetCurrentGpuTimelineValue();
@@ -749,6 +749,7 @@ void VulkanRenderResourceManager::FlushDeletions(bool force)
 
 void VulkanRenderResourceManager::ReturnResource(VulkanRenderResource* resource)
 {
+	std::lock_guard<std::recursive_mutex> lock(deletion_queue_mutex);
 	deletion_item item;
 	item.resource = resource;
 	item.type = deletion_item_type::RESOURCE;
@@ -808,7 +809,7 @@ void VulkanRenderResourceManager::TransitionImage(RenderCommandList*  list, Vulk
 
 void VulkanRenderResourceManager::ReturnStagingBufferResource(VulkanRenderBufferResource* resource)
 {
-	std::unique_lock<std::mutex> lock(deletion_queue_mutex);
+	std::lock_guard<std::recursive_mutex> lock(deletion_queue_mutex);
 	deletion_item item;
 	item.resource = resource;
 	item.type = deletion_item_type::STAGING_BUFFER;

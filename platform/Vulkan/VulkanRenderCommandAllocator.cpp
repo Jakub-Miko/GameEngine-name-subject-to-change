@@ -11,7 +11,7 @@ void VulkanRenderCommandAllocator::clear()
 	vkResetCommandPool(context->GetVkDevice(), pool, NULL);
 }
 
-VulkanRenderCommandAllocator::VulkanRenderCommandAllocator(size_t starting_size) : free_command_lists()
+VulkanRenderCommandAllocator::VulkanRenderCommandAllocator(size_t starting_size) : free_command_lists(), allocation_mutex()
 {
 	DEFINE_VK_INSTANCE(context);
 
@@ -26,9 +26,11 @@ VulkanRenderCommandAllocator::VulkanRenderCommandAllocator(size_t starting_size)
 
 std::shared_ptr<RenderCommandList> VulkanRenderCommandAllocator::GetCommandList()
 {
+	std::lock_guard<std::mutex> lock(allocation_mutex);
 	VulkanRenderCommandList* list;
     if(!free_command_lists.empty()) {
 		list = free_command_lists.back();
+		list->ResetCommandBuffer();
 		free_command_lists.pop_back();
 	} else {
 		list = new VulkanRenderCommandList(shared_from_this());
@@ -58,5 +60,6 @@ VulkanRenderCommandAllocator::~VulkanRenderCommandAllocator()
 
 void VulkanRenderCommandAllocator::ReturnCommandList(VulkanRenderCommandList *list)
 {
+	std::lock_guard<std::mutex> lock(allocation_mutex);
 	free_command_lists.push_back(list);
 }

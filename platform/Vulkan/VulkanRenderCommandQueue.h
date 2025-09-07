@@ -18,6 +18,10 @@ public:
 
 	VulkanRenderCommandQueue(VkQueue queue);
 
+	std::mutex& GetQueueMutex() {
+		return submit_mutex;
+	}
+
 	VkQueue* GetVkQueue() { return &vk_queue; }
 
 	virtual ~VulkanRenderCommandQueue() {};

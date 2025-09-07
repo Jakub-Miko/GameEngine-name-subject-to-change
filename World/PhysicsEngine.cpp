@@ -887,7 +887,7 @@ std::shared_ptr<btConvexHullShape> PhysicsEngine_BulletData::GetHullShape(const 
 		return shape;
 	}
 	else {
-		MeshManager::mesh_native_input_data mesh_data = MeshManager::Get()->Fetch_Native_Data(FileManager::Get()->GetPath(mesh_path));
+		MeshSourceData mesh_data = MeshManager::Get()->Fetch_Native_Data(FileManager::Get()->GetPath(mesh_path));
 		btConvexHullShape convexHullShape;
 		int pos_offset = mesh_data.layout.GetElement("position").offset;
 		int stride = mesh_data.layout.stride;

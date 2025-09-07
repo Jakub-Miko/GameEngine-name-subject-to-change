@@ -125,6 +125,7 @@ private:
 	bool enabled = true;
 	bool spatial_index_visualization = false;
 	bool light_bounds_visualization = false;
+	float scale_factor = 1.0f;
 
 	std::unique_ptr<Viewport> viewport;
 	std::unique_ptr<MaterialEditor> material_editor;

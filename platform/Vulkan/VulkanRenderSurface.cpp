@@ -136,8 +136,11 @@ void VulkanRenderSurface::Present(RenderPresentEvent *event)
     info.pSwapchains = &vk_swapchain;
     info.pImageIndices = &current_index;
 	
+	auto& mutex = queue->GetQueueMutex();
+	mutex.lock();
     vkQueuePresentKHR(*queue->GetVkQueue(), &info);
-	
+	mutex.unlock();
+
 	previous_index = current_index;
 	auto code = vkAcquireNextImageKHR(vk_device, vk_swapchain, 30000000000,present_semaphores[current_index], NULL, &current_index); // timeout 30 seconds
 	if (code == VK_ERROR_OUT_OF_DATE_KHR) {

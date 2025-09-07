@@ -31,7 +31,7 @@ public:
 		file_path = FileManager::Get()->GetRelativeFilePath(filepath);
 	}
 
-	MeshComponent(std::shared_ptr<Mesh> mesh) : file_path(""), mesh(mesh){
+	MeshComponent(std::shared_ptr<Mesh> mesh) : file_path(""), mesh(mesh), material(nullptr) {
 		compare_status = mesh->GetMeshStatus();
 	}
 

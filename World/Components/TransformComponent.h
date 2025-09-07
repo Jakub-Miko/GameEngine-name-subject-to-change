@@ -20,7 +20,7 @@ struct TransformComponent {
 	TransformComponent(const glm::vec3& translation, const glm::vec3& scale = glm::vec3(1.0f),
 		const glm::vec3& rotation_axis = glm::vec3(0, 1, 0), float rotation_angle = 0.0f, EntityProperties props = EntityProperties())
 		: TransformMatrix(1.0f), translation(translation), size(scale),
-		rotation(glm::angleAxis(glm::degrees(rotation_angle), glm::vec3(rotation_axis) )), props(props)
+		rotation(glm::angleAxis(rotation_angle, glm::vec3(rotation_axis) )), props(props)
 	{
 
 	}

@@ -9,38 +9,6 @@
 
 MeshManager* MeshManager::instance = nullptr;
 
-Mesh MeshManager::LoadMeshFromFileImpl(const std::string& file_path)
-{
-
-    auto import_data = Fetch_Native_Data(file_path);
-
-    Mesh mesh;
-    mesh.status = Mesh_status::READY;
-    mesh.bounding_box = import_data.bounding_box;
-    if (import_data.skeleton != nullptr) {
-        mesh.skeleton.reset(import_data.skeleton.get());\
-        import_data.skeleton.release();
-    }
-    auto command_list = Renderer::Get()->GetRenderCommandList(); //TODO:Make sure you dont use too many command lists.
-    auto command_queue = Renderer::Get()->GetCommandQueue();
-
-    mesh.num_of_indicies = import_data.index_count; //TODO: make sure the mesh is triangulated
-    RenderBufferDescriptor index_buffer_desc(sizeof(unsigned int) * mesh.num_of_indicies, RenderBufferType::DEFAULT, RenderBufferUsage::INDEX_BUFFER);
-
-    RenderBufferDescriptor vertex_buffer_desc(import_data.vertex_size * import_data.vertex_count, RenderBufferType::DEFAULT, RenderBufferUsage::VERTEX_BUFFER);
-
-    mesh.vertex_buffer = RenderResourceManager::Get()->CreateBuffer(vertex_buffer_desc);
-    RenderResourceManager::Get()->UploadDataToBuffer(command_list, mesh.vertex_buffer, import_data.vertex_buffer, import_data.vertex_size * import_data.vertex_count, 0);
-
-    mesh.index_buffer = RenderResourceManager::Get()->CreateBuffer(index_buffer_desc);
-    RenderResourceManager::Get()->UploadDataToBuffer(command_list, mesh.index_buffer, import_data.index_buffer, sizeof(unsigned int) * import_data.index_count, 0);
-
-    command_queue->ExecuteRenderCommandList(command_list);
-
-    import_data.clear();
-    return mesh;
-}
-
 void MeshManager::MakeMeshFromObjectFile(const std::string& in_file_path, const std::string& out_file_path, const VertexLayout& normal_layout, const VertexLayout& skeletal_mesh_layout, int mesh_index) {
     mesh_vertex_props props;
     VertexLayout layout = normal_layout;
@@ -174,23 +142,36 @@ std::shared_ptr<Mesh> MeshManager::LoadMeshFromFileAsync(const std::string& file
         return fnd->second;
     }
 
+    auto mesh = LoadMeshFromProxyAsync(std::make_shared<NativeMeshProxy>(file_path));
+
+    RegisterMesh(mesh, relative_path);
+
+    return mesh;
+}
+
+std::shared_ptr<Mesh> MeshManager::LoadMeshFromProxyAsync(std::shared_ptr<MeshProxy> mesh_proxy)
+{
+    using namespace std::filesystem;
+
     Mesh mesh;
 
     mesh.status = Mesh_status::LOADING;
     mesh.num_of_indicies = GetDefaultMesh()->num_of_indicies;
     mesh.index_buffer = GetDefaultMesh()->index_buffer;
     mesh.vertex_buffer = GetDefaultMesh()->vertex_buffer;
-    if (std::filesystem::path(absolute_path).extension().generic_string() == ".skel") {
+    if (mesh_proxy->IsSkeletal()) {
         mesh.skeleton.reset(new Skeleton);
     }
 
-    auto mesh_final = RegisterMesh(std::make_shared<Mesh>(mesh), relative_path);
-
+    auto mesh_final = std::make_shared<Mesh>(mesh);
+    mesh_final->mesh_proxy = mesh_proxy;
 
     auto async_queue = Application::GetAsyncDispather();
 
-    auto task = async_queue->CreateTask<Mesh>([absolute_path, this]() -> Mesh {
-            return LoadMeshFromFileImpl(absolute_path);
+    auto task = async_queue->CreateTask<Mesh>([this, mesh_proxy]() -> Mesh {
+            auto mesh = LoadMeshFromMeshSourceData(mesh_proxy->LoadMesh());
+            mesh.SetMeshProxy(mesh_proxy);
+            return mesh;
         });
 
     async_queue->Submit(task);
@@ -198,7 +179,7 @@ std::shared_ptr<Mesh> MeshManager::LoadMeshFromFileAsync(const std::string& file
     mesh_load_future future;
     future.future = task->GetFuture();
     future.mesh = mesh_final;
-    future.path = relative_path;
+    future.path = "";
 
     std::lock_guard<std::mutex> lock2(mesh_Load_queue_mutex);
     mesh_Load_queue.push_back(future);
@@ -364,6 +345,34 @@ MeshManager::mesh_assimp_input_data MeshManager::Fetch_Assimp_Data(const mesh_ve
     return data;
 }
 
+Mesh MeshManager::LoadMeshFromMeshSourceData(MeshSourceData&& data)
+{
+    Mesh mesh;
+    mesh.status = Mesh_status::READY;
+    mesh.bounding_box = data.bounding_box;
+    if (data.skeleton != nullptr) {
+        mesh.skeleton = std::move(data.skeleton);
+    }
+    auto command_list = Renderer::Get()->GetRenderCommandList(); //TODO:Make sure you dont use too many command lists.
+    auto command_queue = Renderer::Get()->GetCommandQueue();
+
+    mesh.num_of_indicies = data.index_count; //TODO: make sure the mesh is triangulated
+    RenderBufferDescriptor index_buffer_desc(sizeof(unsigned int) * mesh.num_of_indicies, RenderBufferType::DEFAULT, RenderBufferUsage::INDEX_BUFFER);
+
+    RenderBufferDescriptor vertex_buffer_desc(data.vertex_size * data.vertex_count, RenderBufferType::DEFAULT, RenderBufferUsage::VERTEX_BUFFER);
+
+    mesh.vertex_buffer = RenderResourceManager::Get()->CreateBuffer(vertex_buffer_desc);
+    RenderResourceManager::Get()->UploadDataToBuffer(command_list, mesh.vertex_buffer, data.vertex_buffer, data.vertex_size * data.vertex_count, 0);
+
+    mesh.index_buffer = RenderResourceManager::Get()->CreateBuffer(index_buffer_desc);
+    RenderResourceManager::Get()->UploadDataToBuffer(command_list, mesh.index_buffer, data.index_buffer, sizeof(unsigned int) * data.index_count, 0);
+
+    command_queue->ExecuteRenderCommandList(command_list);
+
+    data.clear();
+    return mesh;
+}
+
 void MeshManager::BuildBoneHierarchy(Skeleton& skeleton, aiNode* node, uint16_t parent_index, aiMesh* mesh, mesh_assimp_input_data* data) {
     if (!skeleton.BoneExists(node->mName.C_Str())) {
         for (int i = 0; i < node->mNumChildren; i++) {
@@ -478,7 +487,7 @@ std::shared_ptr<Mesh> MeshManager::RegisterMesh(std::shared_ptr<Mesh> mesh_to_re
     return mesh_final.first->second;
 }
 
-MeshManager::mesh_native_input_data MeshManager::Fetch_Native_Data(const std::string& in_file_path)
+MeshSourceData MeshManager::Fetch_Native_Data(const std::string& in_file_path)
 {
     std::ifstream input_file;
     try {
@@ -493,7 +502,7 @@ MeshManager::mesh_native_input_data MeshManager::Fetch_Native_Data(const std::st
     }
 
     std::string check;
-    mesh_native_input_data data;
+    MeshSourceData data;
 
     int num_of_indicies;
     int num_of_verticies;
@@ -582,8 +591,17 @@ MeshManager::mesh_native_input_data MeshManager::Fetch_Native_Data(const std::st
 
 }
 
-void MeshManager::mesh_native_input_data::clear()
+void MeshSourceData::clear()
 {
     delete[] index_buffer;
     delete[](char*)vertex_buffer;
+}
+
+MeshSourceData NativeMeshProxy::LoadMesh() {
+    return MeshManager::Get()->Fetch_Native_Data(path);
+}
+
+bool NativeMeshProxy::IsSkeletal()
+{
+    return std::filesystem::path(path).extension().generic_string() == ".skel";
 }

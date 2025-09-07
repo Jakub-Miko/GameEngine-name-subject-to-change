@@ -450,7 +450,6 @@ bool VulkanRenderCommandList::Destroy()
 {
     if(auto ptr = std::static_pointer_cast<VulkanRenderCommandAllocator>(allocator.lock())) {
 		ResetState();
-		ResetCommandBuffer();
 		ptr->ReturnCommandList(this);
 		return false;
 	} else {

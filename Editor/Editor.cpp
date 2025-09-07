@@ -156,6 +156,7 @@ void Editor::Run()
 			};
 
 			if (ImGui::MenuItem("Load from FBX")) {
+				scale_factor = 1.0f;
 				ImGui::OpenPopup(load_fbx_id);
 			};
 
@@ -280,8 +281,10 @@ void Editor::Run()
 					file_dialog_text_buffer[std::min((int)path.size(), file_dialog_text_buffer_size)] = '\0';
 				}
 
+				ImGui::DragFloat("Scale Factor", &scale_factor, 1.0f, 0.01f,100.0f, NULL, 2);
+
 				if (enter_pressed || ImGui::Button("Load")) {
-					Application::GetWorld().LoadSceneFromProxy(std::make_shared<AssimpSceneProxy>(file_dialog_text_buffer));
+					Application::GetWorld().LoadSceneFromProxy(std::make_shared<AssimpSceneProxy>(file_dialog_text_buffer, scale_factor));
 					ImGui::CloseCurrentPopup();
 					file_dialog_text_buffer[0] = '\0';
 				}

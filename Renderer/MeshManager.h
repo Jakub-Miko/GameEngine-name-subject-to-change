@@ -19,6 +19,7 @@ enum class Mesh_status : char {
 class MeshManager;
 struct aiNode;
 struct aiMesh;
+class MeshProxy;
 
 class Mesh {
 public:
@@ -28,14 +29,14 @@ public:
 	Mesh() = default;
 
 	Mesh(const Mesh& other) : index_buffer(other.index_buffer), vertex_buffer(other.vertex_buffer), num_of_indicies(other.num_of_indicies),
-		status(other.status), bounding_box(other.bounding_box), skeleton(nullptr) {
+		status(other.status), bounding_box(other.bounding_box), skeleton(nullptr), mesh_proxy(other.mesh_proxy) {
 		if (other.skeleton != nullptr) {
 			skeleton.reset(new Skeleton(*other.skeleton.get()));
 		}
 	};
 
 	Mesh(Mesh&& other) : index_buffer(other.index_buffer), vertex_buffer(other.vertex_buffer), num_of_indicies(other.num_of_indicies), 
-		status(other.status), bounding_box(other.bounding_box), skeleton(other.skeleton.get()) {
+		status(other.status), bounding_box(other.bounding_box), skeleton(other.skeleton.get()), mesh_proxy(other.mesh_proxy) {
 		other.skeleton.release();
 		other.status = Mesh_status::UNINITIALIZED;
 	};
@@ -43,6 +44,7 @@ public:
 		index_buffer = other.index_buffer;
 		vertex_buffer = other.vertex_buffer;
 		num_of_indicies = other.num_of_indicies;
+		mesh_proxy = other.mesh_proxy;
 		status = other.status;
 		bounding_box = other.bounding_box;
 		skeleton.reset(other.skeleton.get());
@@ -55,6 +57,7 @@ public:
 		index_buffer = other.index_buffer;
 		vertex_buffer = other.vertex_buffer;
 		num_of_indicies = other.num_of_indicies;
+		mesh_proxy = other.mesh_proxy;
 		status = other.status;
 		bounding_box = other.bounding_box;
 		if (other.skeleton != nullptr) {
@@ -95,6 +98,15 @@ public:
 		return *skeleton.get();
 	}
 
+	std::shared_ptr<MeshProxy> GetMeshProxy() const {
+		return mesh_proxy;
+	}
+
+
+	void SetMeshProxy(std::shared_ptr<MeshProxy> proxy) {
+		mesh_proxy = proxy;
+	}
+
 private:
 
 	size_t num_of_indicies = 0;
@@ -103,23 +115,25 @@ private:
 	std::shared_ptr<RenderBufferResource> vertex_buffer = nullptr;
 	std::shared_ptr<RenderBufferResource> index_buffer = nullptr;
 	std::unique_ptr<Skeleton> skeleton = nullptr;
+	std::shared_ptr<MeshProxy> mesh_proxy = nullptr;
+};
+
+struct MeshSourceData {
+	BoundingBox bounding_box = BoundingBox();
+	void* vertex_buffer = nullptr;
+	uint32_t vertex_count = 0;
+	unsigned int* index_buffer = nullptr;
+	uint32_t index_count = 0;
+	int vertex_size = 0;
+	VertexLayout layout;
+	std::unique_ptr<Skeleton> skeleton = nullptr;
+
+	void clear();
 };
 
 class MeshManager {
 public:
 
-	struct mesh_native_input_data {
-		BoundingBox bounding_box = BoundingBox();
-		void* vertex_buffer = nullptr;
-		uint32_t vertex_count = 0;
-		unsigned int* index_buffer = nullptr;
-		uint32_t index_count = 0;
-		int vertex_size = 0;
-		VertexLayout layout;
-		std::unique_ptr<Skeleton> skeleton = nullptr;
-
-		void clear();
-	};
 
 
 	MeshManager(const MeshManager& ref) = delete;
@@ -130,6 +144,8 @@ public:
 	void MakeMeshFromObjectFile(const std::string& in_file_path, const std::string& out_file_path, const VertexLayout& normal_layout, const VertexLayout& skeletal_mesh_layout, int mesh_index = 0);
 
 	std::shared_ptr<Mesh> LoadMeshFromFileAsync(const std::string& file_path);
+
+	std::shared_ptr<Mesh> LoadMeshFromProxyAsync(std::shared_ptr<MeshProxy> mesh_proxy);
 	
 	std::shared_ptr<Mesh> GetDefaultMesh() const {
 		return default_mesh;
@@ -139,7 +155,7 @@ public:
 		return default_skeletal_mesh;
 	}
 
-	mesh_native_input_data Fetch_Native_Data(const std::string& in_file_path);
+	MeshSourceData Fetch_Native_Data(const std::string& in_file_path);
 
 	//Only call when meshes are actively being used
 	void UpdateLoadedMeshes();
@@ -195,12 +211,12 @@ private:
 		std::string path;
 	};
 
-	Mesh LoadMeshFromFileImpl(const std::string& file_path);
-
 	std::shared_ptr<Mesh> RegisterMesh(std::shared_ptr<Mesh> file_path, const std::string& name);
 
 
 	mesh_assimp_input_data Fetch_Assimp_Data(const mesh_vertex_props& props, const std::string& in_file_path, int mesh_index = 0);
+
+	Mesh LoadMeshFromMeshSourceData(MeshSourceData&& data);
 
 	void Write_assimp_processed_data(void* vertex_data, size_t vertex_size, const mesh_assimp_input_data& import_data,const std::string& out_data, const VertexLayout& layout);
 	std::shared_ptr<Mesh> default_mesh;
@@ -211,6 +227,24 @@ private:
 	std::deque<mesh_load_future> mesh_Load_queue;
 	
 	static MeshManager* instance;
+};
+
+class MeshProxy {
+public:
+	virtual MeshSourceData LoadMesh() = 0;
+	virtual bool IsSkeletal() = 0;
+	virtual ~MeshProxy() {}
+};
+
+class NativeMeshProxy : public MeshProxy {
+public:
+	NativeMeshProxy(std::string path) : path(path) {}
+	virtual MeshSourceData LoadMesh() override;
+	virtual bool IsSkeletal() override;
+	virtual ~NativeMeshProxy() {}
+
+private:
+	std::string path;
 };
 
 NonIntrusiveRuntimeTag(std::shared_ptr<Mesh>, "Mesh")
