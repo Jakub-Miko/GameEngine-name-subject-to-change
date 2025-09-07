@@ -47,6 +47,7 @@ private:
     };
     void LoadMeshes(LoadState& state);
     void LoadLights(LoadState& state);
+    void LoadCameras(LoadState& state);
     void ProcessNode(LoadState& state, aiNode* node, aiNode* parent, Entity parent_entity);
     void LoadMaterials(LoadState& state);
 

@@ -5,6 +5,7 @@
 #include <Renderer/MeshManager.h>
 #include <World/Components/MeshComponent.h>
 #include <World/Components/LightComponent.h>
+#include <World/Components/CameraComponent.h>
 #include <World/World.h>
 #include <FileManager.h>
 #include <iostream>
@@ -229,6 +230,27 @@ void AssimpSceneProxy::LoadLights(LoadState &state)
     }
 }
 
+void AssimpSceneProxy::LoadCameras(LoadState &state)
+{
+    auto& world = state.world;
+    for(int i = 0; i < state.open_scene->scene->mNumCameras; i++) {
+        auto camera = state.open_scene->scene->mCameras[i];
+
+        auto fnd = state.name_map.find(camera->mName.C_Str());
+        if(fnd == state.name_map.end()) {
+            continue;
+        }
+        auto camera_imported_ent = fnd->second;
+        auto camera_ent = camera_imported_ent.entity;
+
+        auto props = Application::Get()->GetWindow()->GetProperties();
+		float aspect_ratio = (float)props.resolution_x / (float)props.resolution_y;
+
+        world.SetComponent<CameraComponent>(camera_ent, CameraComponent(glm::degrees(camera->mHorizontalFOV), camera->mClipPlaneNear, camera->mClipPlaneFar, aspect_ratio));
+        
+    }
+}
+
 AssimpSceneProxy::LoadInfo AssimpSceneProxy::LoadScene(World &world)
 {
     LoadInfo info = {};
@@ -268,6 +290,7 @@ AssimpSceneProxy::LoadInfo AssimpSceneProxy::LoadScene(World &world)
     ProbeSceneMetadata(state);
 
     LoadLights(state);
+    LoadCameras(state);
 
     return info;
 }
