@@ -1,10 +1,13 @@
 #pragma once
 #include <World/SceneProxy.h>
 #include <Renderer/MeshManager.h>
+#include <Renderer/MaterialManager.h>
 
 class aiNode;
 class aiScene;
 class aiMesh;
+class aiMetadata;
+class aiMetadataEntry;
 namespace Assimp {
     class Importer;
 }
@@ -31,12 +34,25 @@ public:
 private:
 
     struct LoadState {
+        struct imported_entity {
+            Entity entity;
+            aiNode* entity_node;
+        };
         std::shared_ptr<AssimpSceneProxy::AssimpOpenScene> open_scene;
         World& world;
         std::vector<std::shared_ptr<Mesh>> meshes;
+        std::vector<std::shared_ptr<Material>> materials;
+        std::unordered_map<std::string, imported_entity> name_map; 
+        aiMetadata* gltf_light_meta = nullptr;
     };
     void LoadMeshes(LoadState& state);
+    void LoadLights(LoadState& state);
     void ProcessNode(LoadState& state, aiNode* node, aiNode* parent, Entity parent_entity);
+    void LoadMaterials(LoadState& state);
+
+    void Inspect_Metadata(AssimpSceneProxy::LoadState& state, aiMetadata* data, int level = 0);
+    aiMetadataEntry* GetNestedMetadata(const std::vector<std::string>& path, aiMetadata* parent);
+    void ProbeSceneMetadata(LoadState &state);
 
     std::string path;
     float scale_factor = 1.0f;

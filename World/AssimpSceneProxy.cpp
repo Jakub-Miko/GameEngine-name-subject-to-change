@@ -4,13 +4,17 @@
 #include <assimp/postprocess.h>
 #include <Renderer/MeshManager.h>
 #include <World/Components/MeshComponent.h>
+#include <World/Components/LightComponent.h>
 #include <World/World.h>
 #include <FileManager.h>
+#include <iostream>
 
 
 void AssimpSceneProxy::ProcessNode(LoadState& state, aiNode* node, aiNode* parent_node, Entity parent_entity) {
+    // if(node->mMetaData) {
+    //     Inspect_Metadata(state, node->mMetaData);
+    // }
     auto& world = state.world;
-    
     auto transform = node->mTransformation;
     aiVector3D translate,rotate_axis, scale;
     float rotate_angle;
@@ -21,16 +25,19 @@ void AssimpSceneProxy::ProcessNode(LoadState& state, aiNode* node, aiNode* paren
 
     world.SetComponent<LabelComponent>(entity, LabelComponent(node->mName.C_Str()));
     
+    state.name_map.insert(std::make_pair(node->mName.C_Str(), LoadState::imported_entity {entity, node}));
+
     if(node->mNumMeshes > 0) {
         if(node->mNumMeshes > 1) {
             for(int i = 0; i < node->mNumMeshes; i++) {
                 auto mesh_entity = world.CreateEntity(entity);
                 auto ai_mesh = state.open_scene->scene->mMeshes[node->mMeshes[i]];
                 world.SetComponent<LabelComponent>(mesh_entity, LabelComponent(node->mName.C_Str() + std::string("_") + ai_mesh->mName.C_Str()));
-                world.SetComponent<MeshComponent>(mesh_entity, MeshComponent(state.meshes[node->mMeshes[i]]));
+                world.SetComponent<MeshComponent>(mesh_entity, MeshComponent(state.meshes[node->mMeshes[i]],state.materials[ai_mesh->mMaterialIndex]));
             }
         } else {
-            world.SetComponent<MeshComponent>(entity, MeshComponent(state.meshes[node->mMeshes[0]]));
+            auto ai_mesh = state.open_scene->scene->mMeshes[node->mMeshes[0]];
+            world.SetComponent<MeshComponent>(entity, MeshComponent(state.meshes[node->mMeshes[0]], state.materials[ai_mesh->mMaterialIndex]));
         }
     } 
 
@@ -41,10 +48,184 @@ void AssimpSceneProxy::ProcessNode(LoadState& state, aiNode* node, aiNode* paren
 
 }
 
+void AssimpSceneProxy::LoadMaterials(LoadState &state)
+{
+    auto manager = MaterialManager::Get();
+    auto mat_template = MaterialManager::Get()->GetMaterialTemplate("DeferredGPassMaterial");
+    auto root_path = std::filesystem::path(path).parent_path().generic_string() + "/";
+    for(int i = 0; i < state.open_scene->scene->mNumMaterials; i++) {
+        auto mat = state.open_scene->scene->mMaterials[i];
+        auto material = mat_template->CreateMaterial();
+        glm::vec4 color(1.0f,1.0f,1.0f,1.0f);
+        if(aiGetMaterialColor(mat, AI_MATKEY_COLOR_DIFFUSE,(aiColor4D*)glm::value_ptr(color)) == AI_SUCCESS) {
+            material->SetParameter("Base_Color", color);
+        }
+        // aiString texture_path;
+        // std::string real_path;
+        // if(aiGetMaterialTexture(mat, aiTextureType::aiTextureType_DIFFUSE,0, &texture_path) == AI_SUCCESS) {
+        //     real_path = root_path + texture_path.C_Str();
+        //     std::replace(real_path.begin(), real_path.end(), '\\', '/');
+        //     material->SetTexture("Color", real_path);
+        // }
+        state.materials.push_back(material);
+    }
+}
+
 void AssimpSceneProxy::LoadMeshes(LoadState& state) {
     auto manager = MeshManager::Get();
     for(int i = 0; i < state.open_scene->scene->mNumMeshes; i++) {
         state.meshes.push_back(manager->LoadMeshFromProxyAsync(std::make_shared<AssimpMeshProxy>(path, i, state.open_scene)));
+    }
+}
+
+void AssimpSceneProxy::Inspect_Metadata(AssimpSceneProxy::LoadState& state, aiMetadata* data, int level) {
+    for(int i = 0; i < data->mNumProperties; i++) {
+        auto key = data->mKeys[i];
+        auto value = data->mValues[i];
+
+        for(int x = 0 ; x < level; x++){
+            std::cout << "  ";
+        }
+        std::cout << key.C_Str() << "\n";
+
+
+        switch(value.mType) {
+        case aiMetadataType::AI_AIMETADATA:
+            Inspect_Metadata(state, (aiMetadata*)value.mData, level + 1);
+            break;
+        case aiMetadataType::AI_DOUBLE:
+            for(int x = 0 ; x < level; x++){
+                std::cout << "  ";
+            }
+            std::cout << *(double*)value.mData << "\n";;
+            break;
+        case aiMetadataType::AI_UINT32:
+            for(int x = 0 ; x < level; x++){
+                std::cout << "  ";
+            }
+            std::cout << *(uint32_t*)value.mData << "\n";;
+            break;
+        case aiMetadataType::AI_UINT64:
+            for(int x = 0 ; x < level; x++){
+                std::cout << "  ";
+            }
+            std::cout << *(uint64_t*)value.mData << "\n";;
+            break;
+        }
+
+    }
+}
+
+
+aiMetadataEntry* GetMetadata(const std::string& name, aiMetadata* parent) {
+    if(!parent) {
+        return nullptr;
+    }
+    for(int i = 0; i < parent->mNumProperties; i++) {
+        if(parent->mKeys[i].C_Str() == name) {
+            return &parent->mValues[i];
+        }
+    }
+    
+    return nullptr;
+}
+
+aiMetadataEntry *AssimpSceneProxy::GetNestedMetadata(const std::vector<std::string> &path, aiMetadata *parent)
+{
+    aiMetadataEntry* node = nullptr;
+    for(int i = 0; i < path.size(); i++) {
+        auto& path_segment = path[i];
+        node = GetMetadata(path_segment ,parent);
+
+        if(i == path.size() - 1 && node) {
+            return node;
+        }
+
+        if(!node || node->mType != AI_AIMETADATA) {
+            return nullptr;
+        } 
+        parent = (aiMetadata*)node->mData;
+    }
+
+    return nullptr;
+}
+
+void AssimpSceneProxy::ProbeSceneMetadata(LoadState &state) {
+    auto gltf_light_array_meta = GetNestedMetadata({"extensions", "KHR_lights_punctual", "lights"}, state.open_scene->scene->mMetaData);
+
+    if(!gltf_light_array_meta || gltf_light_array_meta->mType != AI_AIMETADATA) {
+        return;
+    }
+
+    state.gltf_light_meta = (aiMetadata*)gltf_light_array_meta->mData;
+}
+
+void AssimpSceneProxy::LoadLights(LoadState &state)
+{
+    //Inspect_Metadata(state, state.open_scene->scene->mMetaData);
+
+    auto& world = state.world;
+    for(int i = 0; i < state.open_scene->scene->mNumLights; i++) {
+        auto light = state.open_scene->scene->mLights[i];
+        auto translate = light->mPosition;
+
+        auto fnd = state.name_map.find(light->mName.C_Str());
+        if(fnd == state.name_map.end()) {
+            continue;
+        }
+        auto light_imported_ent = fnd->second;
+        auto light_ent = light_imported_ent.entity;
+        glm::vec4 color = glm::vec4(light->mColorDiffuse.r, light->mColorDiffuse.g, light->mColorDiffuse.b, 1.0f);
+
+        if(state.gltf_light_meta && light_imported_ent.entity_node->mMetaData) {
+            auto index = GetNestedMetadata({"extensions", "KHR_lights_punctual", "light"}, light_imported_ent.entity_node->mMetaData);
+            if(index && index->mType == AI_UINT64) {
+                auto index_int = *(uint64_t*)index->mData;
+                if(index_int > state.gltf_light_meta->mNumProperties) {
+                    throw std::runtime_error("Corrupted gltf light metadata.\n");
+                }
+                auto metadata_entry = state.gltf_light_meta->mValues[*(uint64_t*)index->mData];
+                if(metadata_entry.mType != AI_AIMETADATA) {
+                    throw std::runtime_error("Corrupted gltf light metadata.\n");
+                }
+                auto metadata = (aiMetadata*)metadata_entry.mData;
+
+                auto color_entry = GetMetadata("color", metadata);
+                if(color_entry && color_entry->mType == AI_AIMETADATA) {
+                    auto color_meta = (aiMetadata*)color_entry->mData;
+                    if(color_meta->mNumProperties != 3) {
+                        throw std::runtime_error("Corrupted gltf light metadata.\n");
+                    }
+                    color.r = *(double*)(color_meta->mValues[0].mData);
+                    color.g = *(double*)(color_meta->mValues[1].mData);
+                    color.b = *(double*)(color_meta->mValues[2].mData);
+                }
+
+                auto intensity_entry = GetMetadata("intensity", metadata);
+                if(intensity_entry && intensity_entry->mType == AI_DOUBLE) {
+                    color.a = *(double*)(intensity_entry->mData);
+                }
+
+            }
+        }
+
+        switch (light->mType)
+        {
+        case aiLightSourceType::aiLightSource_POINT:
+            {
+                glm::vec3 attenuation(light->mAttenuationConstant, light->mAttenuationLinear, light->mAttenuationQuadratic);
+                world.SetComponent<LightComponent>(light_ent, LightComponent(attenuation, color));                
+                break;
+            }
+        case aiLightSourceType::aiLightSource_DIRECTIONAL:
+            {
+                world.SetComponent<LightComponent>(light_ent, LightComponent(LightType::DIRECTIONAL,color));
+                break;
+            }
+        default:
+            break;
+        }
+        
     }
 }
 
@@ -57,6 +238,7 @@ AssimpSceneProxy::LoadInfo AssimpSceneProxy::LoadScene(World &world)
     Assimp::Importer* importer = new Assimp::Importer;
     importer->SetPropertyBool(AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, false);
     importer->SetPropertyFloat(AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, scale_factor);
+    importer->SetPropertyBool(AI_CONFIG_IMPORT_FBX_READ_LIGHTS, true);
 
     auto layout = VertexLayoutFactory<MeshPreset>::GetLayout();
     bool has_normal = layout->has_normal();
@@ -69,7 +251,7 @@ AssimpSceneProxy::LoadInfo AssimpSceneProxy::LoadScene(World &world)
     flags |= aiProcess_GenBoundingBoxes | (has_normal ? aiProcess_GenNormals : 0);
     flags |= aiProcess_GenBoundingBoxes | (has_tangent ? aiProcess_CalcTangentSpace : 0);
 
-    const aiScene* scene = importer->ReadFile(FileManager::Get()->GetPath(path), flags |aiProcess_Triangulate | aiProcess_GlobalScale);
+    const aiScene* scene = importer->ReadFile(FileManager::Get()->GetPath(path), flags |aiProcess_Triangulate | aiProcess_GlobalScale );
     auto open_scene = std::make_shared<AssimpOpenScene>();
     open_scene->importer = importer;
     open_scene->scene = scene;
@@ -80,8 +262,12 @@ AssimpSceneProxy::LoadInfo AssimpSceneProxy::LoadScene(World &world)
     }
 
     LoadMeshes(state);
-
+    LoadMaterials(state);
+    
     ProcessNode(state, scene->mRootNode, nullptr, Entity());
+    ProbeSceneMetadata(state);
+
+    LoadLights(state);
 
     return info;
 }
