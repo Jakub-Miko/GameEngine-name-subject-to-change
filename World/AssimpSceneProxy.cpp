@@ -161,9 +161,22 @@ void AssimpSceneProxy::ProbeSceneMetadata(LoadState &state) {
     state.gltf_light_meta = (aiMetadata*)gltf_light_array_meta->mData;
 }
 
+double GetDouble(aiMetadataEntry* entry) {
+    switch(entry->mType) {
+    case aiMetadataType::AI_DOUBLE:
+        return *(double*)entry->mData;
+    case aiMetadataType::AI_UINT32:
+        return *(uint32_t*)entry->mData;
+    case aiMetadataType::AI_UINT64:
+        return *(uint64_t*)entry->mData;
+    default:
+        return 0.0f;
+    }
+}
+ 
 void AssimpSceneProxy::LoadLights(LoadState &state)
 {
-    //Inspect_Metadata(state, state.open_scene->scene->mMetaData);
+    Inspect_Metadata(state, state.open_scene->scene->mMetaData);
 
     auto& world = state.world;
     for(int i = 0; i < state.open_scene->scene->mNumLights; i++) {
@@ -197,14 +210,14 @@ void AssimpSceneProxy::LoadLights(LoadState &state)
                     if(color_meta->mNumProperties != 3) {
                         throw std::runtime_error("Corrupted gltf light metadata.\n");
                     }
-                    color.r = *(double*)(color_meta->mValues[0].mData);
-                    color.g = *(double*)(color_meta->mValues[1].mData);
-                    color.b = *(double*)(color_meta->mValues[2].mData);
+                    color.r = GetDouble(&color_meta->mValues[0]);
+                    color.g = GetDouble(&color_meta->mValues[1]);
+                    color.b = GetDouble(&color_meta->mValues[2]);
                 }
 
                 auto intensity_entry = GetMetadata("intensity", metadata);
-                if(intensity_entry && intensity_entry->mType == AI_DOUBLE) {
-                    color.a = *(double*)(intensity_entry->mData);
+                if(intensity_entry) {
+                    color.a = GetDouble(intensity_entry);
                 }
 
             }
