@@ -225,7 +225,7 @@ void MaterialManager::SerializeMaterial(const std::string& filepath, std::shared
 			break;
 		case MaterialLayoutItemType::TEXTURE:
 			parameter_json["type"] = "TEXTURE";
-			texture = std::get<MaterialTextureType>(param.resource).path;
+			texture = std::get<MaterialTextureType>(param.resource).GetPath();
 			if (texture.empty()) throw std::runtime_error("Filepath to a texture could not be found during material serialization.");
 			parameter_json["value"] = texture;
 			break;
@@ -336,14 +336,20 @@ void Material::SetMaterial(std::shared_ptr<RenderCommandList>  command_list)
 //	}
 //}
 
+void Material::SetTexture(const std::string& name, std::shared_ptr<TextureProxy> texture_proxy) {
+	auto future = TextureManager::Get()->LoadTextureFromProxyAsync(texture_proxy);
+	MaterialManager::Get()->AddTextureLoad(shared_from_this(),name, future, texture_proxy);
+}
+
 void Material::SetTexture(const std::string& name, const std::string& path)
 {
+	auto proxy = std::make_shared<NativeTextureProxy>(path);
 	if (TextureManager::Get()->IsTextureAvailable(path)) {
-		SetParameter(name, TextureManager::Get()->LoadTextureFromFile(path, false), path);
+		SetParameter(name, TextureManager::Get()->LoadTextureFromFile(path, false), proxy);
 	}
 	else {
-		auto future = TextureManager::Get()->LoadTextureFromFileAsync(path, true);
-		MaterialManager::Get()->AddTextureLoad(shared_from_this(),name, future, path);
+		auto future = TextureManager::Get()->LoadTextureFromProxyAsync(proxy);
+		MaterialManager::Get()->AddTextureLoad(shared_from_this(),name, future, proxy);
 	}
 }
 //
@@ -520,11 +526,7 @@ void MaterialManager::UpdateMaterials()
 		if (!loaded_texture.future.IsAvailable() || loaded_texture.destroyed) continue;
 		try {
 			auto texture_1 = loaded_texture.future.GetValue();
-#ifdef EDITOR
-			loaded_texture.material->SetParameter(loaded_texture.name, texture_1, loaded_texture.path);
-#else
-			loaded_texture.material->SetParameter(loaded_texture.name, texture_1);
-#endif
+			loaded_texture.material->SetParameter(loaded_texture.name, texture_1, loaded_texture.proxy);
 			loaded_texture.destroyed = true;
 		}
 		catch (...) {
@@ -540,14 +542,10 @@ void MaterialManager::UpdateMaterials()
 
 }
 
-void MaterialManager::AddTextureLoad(std::shared_ptr<Material> material, std::string name, Future<std::shared_ptr<RenderTexture2DResource>> future, const std::string path)
+void MaterialManager::AddTextureLoad(std::shared_ptr<Material> material, std::string name, Future<std::shared_ptr<RenderTexture2DResource>> future, std::shared_ptr<TextureProxy> proxy)
 {
 	std::lock_guard<std::mutex> lock(material_load_mutex);
-#ifdef EDITOR
-	material_load.push_back(Material_loading_item{ name, material, future, false, path });
-#else
-	material_load.push_back(Material_loading_item{ name, material, future, false });
-#endif
+	material_load.push_back(Material_loading_item{ name, material, future, proxy, false });
 }
 
 std::shared_ptr<Material> MaterialManager::CreateMaterial(const std::string& material_template_name) {
@@ -639,9 +637,9 @@ std::shared_ptr<MaterialTemplate> MaterialManager::LoadMaterialTemplateFromJson(
 			if(default_exists) {
 				mat_item.default_value = item["default_value"].get<std::string>();
 			} else if (is_normal_texture) {
-				mat_item.default_value = MaterialTextureType { TextureManager::Get()->GetDefaultNormalTexture(), ""};
+				mat_item.default_value = MaterialTextureType { TextureManager::Get()->GetDefaultNormalTexture(), nullptr};
 			} else {
-				mat_item.default_value = MaterialTextureType { TextureManager::Get()->GetDefaultTexture(), ""};
+				mat_item.default_value = MaterialTextureType { TextureManager::Get()->GetDefaultTexture(), nullptr};
 			}
 		}
 		break;

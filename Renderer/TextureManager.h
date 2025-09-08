@@ -30,6 +30,26 @@ struct texture_data {
 
 };
 
+class TextureProxy {
+public:
+	virtual std::shared_ptr<RenderTexture2DResource> LoadTexture() = 0;
+	virtual const std::string& GetFilePath() = 0; 
+	virtual ~TextureProxy() {}
+};
+
+class NativeTextureProxy : public TextureProxy {
+public:
+	NativeTextureProxy(const std::string& path, bool generate_mips = false) : path(path), generate_mips(generate_mips) {}
+	virtual std::shared_ptr<RenderTexture2DResource> LoadTexture() override;
+	virtual const std::string& GetFilePath() override {
+		return path;
+	} 
+	virtual ~NativeTextureProxy() override {}
+private:
+	std::string path = "";
+	bool generate_mips = false;
+};
+
 struct TextureManager_internal;
 
 class TextureManager {
@@ -47,6 +67,8 @@ public:
 	std::shared_ptr<RenderTexture2DResource> LoadTextureFromFile(const std::string& file_path, bool generate_mips = false);
 
 	Future<std::shared_ptr<RenderTexture2DResource>> LoadTextureFromFileAsync(const std::string& file_path, bool generate_mips);
+	
+	Future<std::shared_ptr<RenderTexture2DResource>> LoadTextureFromProxyAsync(std::shared_ptr<TextureProxy> proxy);
 
 	std::shared_ptr<RenderTexture2DResource> GetDefaultTexture() const {
 		return default_texture;

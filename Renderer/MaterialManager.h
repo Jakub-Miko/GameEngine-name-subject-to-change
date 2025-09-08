@@ -4,6 +4,7 @@
 #include <deque>
 #include <AsyncTaskDispatcher.h>
 #include <Core/FrameMultiBufferResource.h>
+#include <Renderer/TextureManager.h>
 
 class Shader;
 class RenderCommandList;
@@ -11,10 +12,14 @@ class RenderCommandList;
 class Material;
 
 struct MaterialTextureType {
-    std::shared_ptr<RenderTexture2DResource> texture;
-#ifdef EDITOR
-    std::string path = "";
-#endif
+    std::string GetPath() {
+        if(texture_proxy) {
+            return texture_proxy->GetFilePath();
+        }
+        return "";
+    };
+    std::shared_ptr<RenderTexture2DResource> texture = nullptr;
+    std::shared_ptr<TextureProxy> texture_proxy = nullptr;
 };
 
 using MaterialParameterResource = std::variant<int, float, glm::vec2, glm::vec3, glm::vec4, glm::mat4, glm::mat3, MaterialTextureType, std::shared_ptr<RenderTexture2DArrayResource>, 
@@ -110,11 +115,11 @@ public:
     template<typename T>
     void SetParameter(const std::string& name, T value);
 
-    void SetParameter(const std::string& name, std::shared_ptr<RenderTexture2DResource> value);
-
-    void SetParameter(const std::string& name, std::shared_ptr<RenderTexture2DResource> value, const std::string path);
-
+    
+    void SetParameter(const std::string& name, std::shared_ptr<RenderTexture2DResource> value, std::shared_ptr<TextureProxy> proxy = nullptr);
+    
     void SetTexture(const std::string& name, const std::string& path);
+    void SetTexture(const std::string& name, std::shared_ptr<TextureProxy> texture_proxy);
 
     Material_status GetStatus() const {
         return status;
@@ -177,19 +182,6 @@ inline Material::MaterialParameter_flags operator~(Material::MaterialParameter_f
     return (Material::MaterialParameter_flags)(~(char)first);
 }
 
-inline void Material::SetParameter(const std::string& name, std::shared_ptr<RenderTexture2DResource> value, const std::string path) {
-    auto& param = parameters[GetMaterialTemplate()->GetMaterialTemplateParameterIndex(name)];
-    param.flags |= MaterialParameter_flags::DIRTY;
-    param.flags &= ~MaterialParameter_flags::DEFAULT;
-    if (param.type != MaterialLayoutItemType::TEXTURE) throw std::runtime_error("Parameter " + name + "assignment type mismatch");
-    MaterialTextureType type;
-    type.texture = value;
-#ifdef EDITOR
-    type.path = path;
-#endif
-    param.resource = type;
-}
-
 template<typename T>
 inline void Material::SetParameter(const std::string& name, T value) {
     auto& param = parameters[GetMaterialTemplate()->GetMaterialTemplateParameterIndex(name)];
@@ -200,13 +192,14 @@ inline void Material::SetParameter(const std::string& name, T value) {
 }
 
 
-inline void Material::SetParameter(const std::string& name, std::shared_ptr<RenderTexture2DResource> value) {
+inline void Material::SetParameter(const std::string& name, std::shared_ptr<RenderTexture2DResource> value, std::shared_ptr<TextureProxy> proxy) {
     auto& param = parameters[GetMaterialTemplate()->GetMaterialTemplateParameterIndex(name)];
     param.flags |= MaterialParameter_flags::DIRTY;
     param.flags &= ~MaterialParameter_flags::DEFAULT;
     if (param.type != MaterialLayoutItemType::TEXTURE) throw std::runtime_error("Parameter " + name + "assignment type mismatch");
     MaterialTextureType type;
     type.texture = value;
+    type.texture_proxy = proxy;
     param.resource = type;
 }
 
@@ -257,12 +250,10 @@ private:
         std::string name;
         std::shared_ptr<Material> material;
         Future<std::shared_ptr<RenderTexture2DResource>> future;
+        std::shared_ptr<TextureProxy> proxy;
         bool destroyed = false;
-#ifdef EDITOR
-        std::string path = "";
-#endif
     };
-    void AddTextureLoad(std::shared_ptr<Material> material, std::string name, Future<std::shared_ptr<RenderTexture2DResource>> future, const std::string path = "");
+    void AddTextureLoad(std::shared_ptr<Material> material, std::string name, Future<std::shared_ptr<RenderTexture2DResource>> future, std::shared_ptr<TextureProxy> proxy);
 
     std::shared_ptr<Material> ParseMaterialFromFile(const std::string& path);
     std::shared_ptr<Material> ParseMaterialFromString(const std::string& string, std::shared_ptr<MaterialTemplate> material_template = nullptr);

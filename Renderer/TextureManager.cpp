@@ -322,6 +322,19 @@ Future<std::shared_ptr<RenderTexture2DResource>> TextureManager::LoadTextureFrom
 
 }
 
+Future<std::shared_ptr<RenderTexture2DResource>> TextureManager::LoadTextureFromProxyAsync(std::shared_ptr<TextureProxy> proxy)
+{
+    auto async_queue = Application::GetAsyncDispather();
+
+    auto task = async_queue->CreateTask<std::shared_ptr<RenderTexture2DResource>>([proxy,this]() -> std::shared_ptr<RenderTexture2DResource> {
+        return proxy->LoadTexture();
+        });
+
+    async_queue->Submit(task);
+
+    return task->GetFuture();
+}
+
 bool TextureManager::IsTextureAvailable(const std::string& file_path_in)
 {
     std::string file_path = FileManager::Get()->GetPath(file_path_in);
@@ -591,4 +604,9 @@ void TextureManager::UpdateLoadedReflectionMaps()
     while (!reflection_map_Load_queue.empty() && reflection_map_Load_queue.front().destroyed) {
         reflection_map_Load_queue.pop_front();
     }
+}
+
+std::shared_ptr<RenderTexture2DResource> NativeTextureProxy::LoadTexture()
+{
+    return TextureManager::Get()->LoadTextureFromFile(path, generate_mips);
 }

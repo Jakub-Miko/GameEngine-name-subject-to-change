@@ -99,7 +99,7 @@ void MaterialEditor::RenderWinow(MaterialEditorWindow& window, int current_index
 				change = ImGui::DragFloat4("value", glm::value_ptr(std::get<glm::vec4>(parameter.resource)));
 				break;
 			case param_type::TEXTURE:
-				std::string& current_path = std::get<MaterialTextureType>(parameter.resource).path;
+				std::string current_path = std::get<MaterialTextureType>(parameter.resource).GetPath();
 				char* buffer;
 				bool pressed = false;
 				if (window.text_buffers[i]) {
