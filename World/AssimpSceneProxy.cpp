@@ -61,12 +61,26 @@ void AssimpSceneProxy::LoadMaterials(LoadState &state)
         if(aiGetMaterialColor(mat, AI_MATKEY_COLOR_DIFFUSE,(aiColor4D*)glm::value_ptr(color)) == AI_SUCCESS) {
             material->SetParameter("Base_Color", color);
         }
+        float roughness_factor = 1.0f;
+        if(aiGetMaterialFloat(mat, AI_MATKEY_ROUGHNESS_FACTOR,&roughness_factor) == AI_SUCCESS) {
+            material->SetParameter("roughness_gain", roughness_factor);
+        }
         aiString texture_path;
         std::string real_path;
         if(aiGetMaterialTexture(mat, aiTextureType::aiTextureType_DIFFUSE,0, &texture_path) == AI_SUCCESS) {
             real_path = root_path + texture_path.C_Str();
             std::replace(real_path.begin(), real_path.end(), '\\', '/');
             material->SetTexture("Color", std::make_shared<StbiTextureProxy>(real_path));
+        }
+        if(aiGetMaterialTexture(mat, aiTextureType::aiTextureType_NORMALS,0, &texture_path) == AI_SUCCESS) {
+            real_path = root_path + texture_path.C_Str();
+            std::replace(real_path.begin(), real_path.end(), '\\', '/');
+            material->SetTexture("Normal", std::make_shared<StbiTextureProxy>(real_path));
+        }
+        if(aiGetMaterialTexture(mat, aiTextureType::aiTextureType_DIFFUSE_ROUGHNESS,0, &texture_path) == AI_SUCCESS) {
+            real_path = root_path + texture_path.C_Str();
+            std::replace(real_path.begin(), real_path.end(), '\\', '/');
+            material->SetTexture("Roughness", std::make_shared<StbiTextureProxy>(real_path));
         }
         state.materials.push_back(material);
     }
