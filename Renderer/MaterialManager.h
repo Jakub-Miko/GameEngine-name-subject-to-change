@@ -11,6 +11,25 @@ class RenderCommandList;
 
 class Material;
 
+class MaterialProxy {
+public: 
+    virtual std::shared_ptr<Material> LoadMaterial() = 0;
+    virtual const std::string& GetFilePath() = 0;
+    virtual ~MaterialProxy() {}
+}; 
+
+class NativeMaterialProxy : public MaterialProxy {
+public: 
+    NativeMaterialProxy(const std::string& path) : path(path) {}
+    virtual std::shared_ptr<Material> LoadMaterial() override;
+    virtual const std::string& GetFilePath() {
+        return path;
+    };
+    virtual ~NativeMaterialProxy() {}
+private:
+    std::string path;
+}; 
+
 struct MaterialTextureType {
     std::string GetPath() {
         if(texture_proxy) {
@@ -85,7 +104,7 @@ protected:
 class Material : public std::enable_shared_from_this<Material> {
 public:
     Material() = default;
-    Material(std::shared_ptr<MaterialTemplate> material_template);
+    Material(std::shared_ptr<MaterialTemplate> material_template, std::shared_ptr<MaterialProxy> material_proxy = nullptr);
     virtual ~Material() {}
     
     enum class Material_status : char {
@@ -126,7 +145,15 @@ public:
     }
 
     const std::string& GetFilePath() const {
-        return material_path;
+        if(material_proxy) {
+            return material_proxy->GetFilePath();
+        } else {
+            return "";
+        }
+    }
+
+    std::shared_ptr<MaterialProxy> GetMaterialProxy() const {
+        return material_proxy;
     }
 
     const std::vector<MaterialParameter>& GetMaterialParameters() const {
@@ -154,7 +181,7 @@ protected:
     friend class MaterialEditor;
 #endif
 
-    std::string material_path = "";
+    std::shared_ptr<MaterialProxy> material_proxy = nullptr;
     std::weak_ptr<MaterialTemplate> material_template;
     std::vector<MaterialParameter> parameters = std::vector<MaterialParameter>();
     Material_status status = Material_status::ERROR;

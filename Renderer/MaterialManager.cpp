@@ -79,7 +79,7 @@ std::shared_ptr<Material> MaterialManager::GetMaterial(const std::string& path_i
 	}
 	try {
 		auto material = ParseMaterialFromFile(path);
-		material->material_path = path_in;
+		material->material_proxy = std::make_shared<NativeMaterialProxy>(path_in);
 		materials.insert(std::make_pair(path, material));
 		return material;
 
@@ -182,7 +182,7 @@ std::shared_ptr<Material> MaterialManager::ParseMaterialFromString(const std::st
 			}
 		}
 	}
-	material->material_path = "";
+	material->material_proxy = nullptr;
 	// material->UpdateValues(); Update will happen on first use
 	return material;
 }
@@ -246,14 +246,14 @@ std::shared_ptr<Material> MaterialManager::CreateEmptyMaterial(const std::string
 {
 	std::string file_path = FileManager::Get()->GetPath(filepath_in);
 	auto material = material_template->CreateMaterial();
-	material->material_path = filepath_in;
+	material->material_proxy = std::make_shared<NativeMaterialProxy>(filepath_in);
 	SerializeMaterial(filepath_in, material);
 	std::lock_guard<std::mutex> lock(material_mutex);
 	materials.insert(std::make_pair(file_path, material));
 	return material;
 }
 
-void Material::SetMaterial(std::shared_ptr<RenderCommandList>  command_list)
+void Material::SetMaterial(std::shared_ptr<RenderCommandList> command_list)
 {
 	/*UpdateValues(command_list);
 	auto& sig = material_template->GetRootSignature().GetDescriptor().parameters;
@@ -707,7 +707,7 @@ void MaterialManager::RegisterMaterialTemplate(std::shared_ptr<MaterialTemplate>
 	material_templates.insert(std::make_pair(material_template->GetName(), material_template));
 }
 
-Material::Material(std::shared_ptr<MaterialTemplate> material_template) : material_template(material_template)
+Material::Material(std::shared_ptr<MaterialTemplate> material_template, std::shared_ptr<MaterialProxy> material_proxy) : material_template(material_template), material_proxy(material_proxy)
 {
 	
 	for (int i = 0; i < material_template->GetMaterialTemplateParameters().layout_items.size(); i++) {
@@ -754,4 +754,9 @@ std::shared_ptr<MaterialTemplate> MaterialTemplate::CreateTemplate(const Materia
 	Renderer::Get()->GetCommandQueue()->ExecuteRenderCommandList(list);
 
 	return temp;
+}
+
+std::shared_ptr<Material> NativeMaterialProxy::LoadMaterial()
+{
+    return MaterialManager::Get()->GetMaterial(path);
 }
