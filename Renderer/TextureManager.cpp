@@ -257,16 +257,8 @@ std::shared_ptr<RenderTexture2DResource> TextureManager::LoadTextureFromFile(con
     }
     
     //Check if an identical sampler already exists. If not Create it.
-    std::unique_lock<std::mutex> lock2(sampler_cache_mutex);
-    std::shared_ptr<TextureSampler> sampler;
-    auto sampler_iter = sampler_cache.find(texture.sampler_desc);
-    if (sampler_iter == sampler_cache.end()) {
-        sampler = sampler_cache.insert(std::make_pair(texture.sampler_desc,TextureSampler::CreateSampler(texture.sampler_desc))).first->second;
-    }
-    else {
-        sampler = sampler_iter->second;
-    }
-    lock2.unlock();
+    std::shared_ptr<TextureSampler> sampler = GetSampler(texture.sampler_desc);
+   
 
     //Create the texture, upload data into it and optionally generate mip maps.
     RenderTexture2DDescriptor texture_desc;
@@ -335,7 +327,21 @@ Future<std::shared_ptr<RenderTexture2DResource>> TextureManager::LoadTextureFrom
     return task->GetFuture();
 }
 
-bool TextureManager::IsTextureAvailable(const std::string& file_path_in)
+std::shared_ptr<TextureSampler> TextureManager::GetSampler(const TextureSamplerDescritor &descriptor)
+{
+    std::lock_guard<std::mutex> lock2(sampler_cache_mutex);
+    std::shared_ptr<TextureSampler> sampler;
+    auto sampler_iter = sampler_cache.find(descriptor);
+    if (sampler_iter == sampler_cache.end()) {
+        sampler = sampler_cache.insert(std::make_pair(descriptor,TextureSampler::CreateSampler(descriptor))).first->second;
+    }
+    else {
+        sampler = sampler_iter->second;
+    }
+    return sampler;
+}
+
+bool TextureManager::IsTextureAvailable(const std::string &file_path_in)
 {
     std::string file_path = FileManager::Get()->GetPath(file_path_in);
     std::lock_guard<std::mutex> lock(texture_Map_mutex);
@@ -609,4 +615,85 @@ void TextureManager::UpdateLoadedReflectionMaps()
 std::shared_ptr<RenderTexture2DResource> NativeTextureProxy::LoadTexture()
 {
     return TextureManager::Get()->LoadTextureFromFile(path, generate_mips);
+}
+
+std::shared_ptr<RenderTexture2DResource> StbiTextureProxy::LoadTexture()
+{
+     std::string file_path = FileManager::Get()->GetPath(path);
+     if (!stbi_is_hdr(file_path.c_str())) {
+
+        int x, y, ch;
+        
+        //In Vulkan, force rgb images into rgba format
+        stbi_info(file_path.c_str(), &x, &y, &ch);
+        int n = 4;
+
+        unsigned char* image = stbi_load(file_path.c_str(), &x, &y, &ch, n);
+        if (!image) {
+            throw std::runtime_error(stbi_failure_reason());
+        }
+
+        RenderTexture2DDescriptor texture_desc;
+        texture_desc.format = TextureFormat::RGBA_UNSIGNED_CHAR;
+        texture_desc.width = x;
+        texture_desc.height = y;
+        texture_desc.mipmap_levels = generate_mips ? 1 + glm::floor(glm::log2((float)glm::max(x,y))) : 1;
+        if(sampler) {
+            texture_desc.sampler = sampler;
+        } else {
+            texture_desc.sampler = TextureManager::Get()->GetSampler(TextureSamplerDescritor());
+        }
+        texture_desc.usage = usage;
+
+        auto texture = RenderResourceManager::Get()->CreateTexture(texture_desc);
+
+        auto command_list = Renderer::Get()->GetRenderCommandList(); //TODO:Make sure you dont use too many command lists.
+        auto command_queue = Renderer::Get()->GetCommandQueue();
+        
+        RenderResourceManager::Get()->UploadDataToTexture2D(command_list, texture, image, x, y, 0, 0, 0);
+        if(generate_mips) command_list->GenerateMIPs(texture);
+        
+        command_queue->ExecuteRenderCommandList(command_list);
+
+        return texture;
+
+        stbi_image_free(image);
+    } else {
+        int x, y, ch;
+        
+        //In Vulkan, force rgb images into rgba format
+        stbi_info(file_path.c_str(), &x, &y, &ch);
+        int n = 4;
+
+        float* image = stbi_loadf(file_path.c_str(), &x, &y, &ch, n);
+        if (!image) {
+            throw std::runtime_error(stbi_failure_reason());
+        }
+
+        RenderTexture2DDescriptor texture_desc;
+        texture_desc.format = TextureFormat::RGB_32FLOAT;
+        texture_desc.width = x;
+        texture_desc.height = y;
+        texture_desc.mipmap_levels = generate_mips ? 1 + glm::floor(glm::log2((float)glm::max(x,y))) : 1;
+        if(sampler) {
+            texture_desc.sampler = sampler;
+        } else {
+            texture_desc.sampler = TextureManager::Get()->GetSampler(TextureSamplerDescritor());
+        }
+        texture_desc.usage = usage;
+
+        auto texture = RenderResourceManager::Get()->CreateTexture(texture_desc);
+
+        auto command_list = Renderer::Get()->GetRenderCommandList(); //TODO:Make sure you dont use too many command lists.
+        auto command_queue = Renderer::Get()->GetCommandQueue();
+        
+        RenderResourceManager::Get()->UploadDataToTexture2D(command_list, texture, image, x, y, 0, 0, 0);
+        if(generate_mips) command_list->GenerateMIPs(texture);
+        
+        command_queue->ExecuteRenderCommandList(command_list);
+
+        return texture;
+
+        stbi_image_free(image);
+    }
 }

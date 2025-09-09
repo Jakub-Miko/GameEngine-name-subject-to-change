@@ -50,6 +50,22 @@ private:
 	bool generate_mips = false;
 };
 
+class StbiTextureProxy : public TextureProxy {
+public:
+	StbiTextureProxy(const std::string& path, bool generate_mips = false, std::shared_ptr<TextureSampler> sampler = nullptr, 
+		TextureUsage usage = TextureUsage::SAMPLE_WRITABLE) : path(path), generate_mips(generate_mips), sampler(sampler), usage(usage) {}
+	virtual std::shared_ptr<RenderTexture2DResource> LoadTexture() override;
+	virtual const std::string& GetFilePath() override {
+		return path;
+	} 
+	virtual ~StbiTextureProxy() override {}
+private:
+	std::string path = "";
+	std::shared_ptr<TextureSampler> sampler = nullptr;
+	TextureUsage usage = TextureUsage::SAMPLE_WRITABLE;
+	bool generate_mips = false;
+};
+
 struct TextureManager_internal;
 
 class TextureManager {
@@ -86,6 +102,8 @@ public:
 	std::shared_ptr<RenderTexture2DResource> GetDefaultNormalTexture() const {
 		return default_normal_texture;
 	}
+
+	std::shared_ptr<TextureSampler> GetSampler(const TextureSamplerDescritor& descriptor);
 
 	bool IsTextureAvailable(const std::string& file_path);
 
