@@ -1,7 +1,7 @@
 #include "GlfwWindow.h"
-#include <GL/glew.h>
 #include <Renderer/Renderer.h>
 #ifdef OpenGL_API
+#include <GL/glew.h>
 #include <platform/OpenGL/OpenGLRenderCommandList.h>
 #elif defined(Vulkan_API)
 #include <platform/Vulkan/VulkanRenderContext.h>

@@ -24,7 +24,7 @@ public:
 		if (!mesh->IsSkeletal()) {
 			throw std::runtime_error("Skeletal mesh needs to be used in skeletal mesh component");
 		}
-		file_path = FileManager::Get()->GetRelativeFilePath(filepath);
+		file_path = FileManager::Get()->GetPath(filepath);
 		compare_status = mesh->GetMeshStatus();
 		if (!default_animation_path.empty()) {
 			SetDefaultAnimationPath(default_anim_path);
@@ -102,7 +102,7 @@ public:
 			return material->GetStatus();
 		}
 		else {
-			return Material::Material_status::ERROR;
+			return Material::Material_status::UNINITIALIZED;
 		}
 	}
 
@@ -135,7 +135,7 @@ private:
 		}
 		mesh = import_mesh;
 		compare_status = mesh->GetMeshStatus();
-		file_path = FileManager::Get()->GetRelativeFilePath(filepath);
+		file_path = FileManager::Get()->GetPath(filepath);
 	}
 
 	friend class MeshManager;

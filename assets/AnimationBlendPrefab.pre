@@ -1,7 +1,7 @@
 @Section:Skeleton_5
 @Entity 
 {
-"Components": {"LabelComponent":{"label":"Skeleton"},"SkeletalMeshComponent":{"animation_path":"/assets/multi_anim_test/Walking (2)_animations/mixamo.com.anim","material_path":"/assets/vampire_mat.mat","path":"/assets/multi_anim_test/Walking (2).skel"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":0.029999999329447746,"y":0.029999999329447746,"z":0.029999999329447746},"translation":{"x":0.0,"y":0.3134765625,"z":0.0}}},
+"Components": {"LabelComponent":{"label":"Skeleton"},"SkeletalMeshComponent":{"animation_path":"assets/multi_anim_test/Walking (2)_animations/mixamo.com.anim","material_path":"assets/vampire_mat.mat","path":"assets/multi_anim_test/Walking (2).skel"},"TransformComponent":{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":0.029999999329447746,"y":0.029999999329447746,"z":0.029999999329447746},"translation":{"x":0.0,"y":0.3134765625,"z":0.0}}},
 "Children": []
 }
 

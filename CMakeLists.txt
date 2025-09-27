@@ -13,7 +13,10 @@ set(BUILD_BULLET_ROBOTICS_GUI_EXTRA on CACHE BOOL "" FORCE)
 set(BUILD_CPU_DEMOS on CACHE BOOL "" FORCE)
 set(BUILD_OPENGL3_DEMOS on CACHE BOOL "" FORCE)
 set(BUILD_EXTRAS on CACHE BOOL "" FORCE)
-set(CMAKE_DEBUG_POSTFIX "") 
+set(CMAKE_DEBUG_POSTFIX "")
+set(OpenGL_GL_PREFERENCE GLVND)
+
+add_compile_definitions("GLM_FORCE_QUAT_DATA_WXYZ")
 
 add_compile_definitions("${RENDER_API}_API")
 add_compile_definitions("GLM_ENABLE_EXPERIMENTAL")
@@ -96,14 +99,19 @@ elseif()
 
 target_sources(EngineCore PRIVATE ${OPENGL_SRC})
 
+add_subdirectory("./dependencies/glew/build/cmake")
+
+target_include_directories(glew_s PUBLIC "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/dependencies/glew/include>")
+
+target_link_libraries(EngineCore PRIVATE glew_s)
+
+
 endif()
 
 add_subdirectory("./dependencies/FreeType")
 add_subdirectory("./dependencies/glfw")
 
 add_subdirectory("./dependencies/EnTT")
-
-add_subdirectory("./dependencies/glew/build/cmake")
 
 add_subdirectory("./dependencies/glm")
 add_subdirectory("./dependencies")
@@ -116,8 +124,6 @@ set(BUILD_SHARED_LIBS off)
 add_subdirectory("./Utilities")
 set(BUILD_SHARED_LIBS on)
 if(EDITOR)
-
-target_include_directories(glew_s PUBLIC "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/dependencies/glew/include>")
 
 file(GLOB EDITOR_FILES
  "./Editor/*.cpp"  "./Editor/*.h"
@@ -177,7 +183,7 @@ endif()
 
 if(UNIX AND NOT APPLE)
     
-target_link_libraries(EngineCore PUBLIC glfw glew_s glm Profiler MemoryManagement 
+target_link_libraries(EngineCore PUBLIC glfw glm Profiler MemoryManagement 
 TaskSystem LuaEngine RuntimeTypeIdentifier ThreadManager FileManager ConfigManager EnTT RuntimeTypeIdentifier JsonParser STB_Image assimp OpenAL ImGuizmo
 Bullet freetype)
 

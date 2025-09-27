@@ -353,7 +353,7 @@ void PropertiesPanel::RenderProperties(Entity entity, const PropertiesPanel_pers
 			ImGui::SameLine();
 			
 			if (ImGui::Button("Set Selected")) {
-				Application::GetWorld().ResetEntityPrefab(selected, FileManager::Get()->GetRelativeFilePath(Editor::Get()->GetSelectedFilePath()));
+				Application::GetWorld().ResetEntityPrefab(selected, FileManager::Get()->GetPathRelative(Editor::Get()->GetSelectedFilePath()));
 				memcpy(data.prefab_path, prefab.GetFilePath().c_str(), prefab.GetFilePath().size() + 1);
 			}
 			

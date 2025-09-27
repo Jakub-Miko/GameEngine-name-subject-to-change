@@ -44,7 +44,7 @@ void SkyLightPropertiesPanelEntry::RenderPanel(Entity ent)
 	}
 	ImGui::SameLine();
 	if (ImGui::Button("Set Selected##hdr")) {
-		comp.SetReflectionMap(FileManager::Get()->GetRelativeFilePath(Editor::Get()->GetSelectedFilePath()));
+		comp.SetReflectionMap(FileManager::Get()->GetPathRelative(Editor::Get()->GetSelectedFilePath()));
 		memcpy(buffer, comp.GetReflectionMapPath().c_str(), comp.GetReflectionMapPath().size() + 1);
 	}
 

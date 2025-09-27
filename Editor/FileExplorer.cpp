@@ -295,7 +295,7 @@ void FileExplorer::Render()
 			if (file.path().generic_string() == selected_path) {
 				if (std::chrono::duration_cast<std::chrono::milliseconds>((std::chrono::steady_clock::now() - time_selected)).count() < 500) {
 					if (file.path().extension().generic_string() == ".mat") {
-						Editor::Get()->OpenMaterialEditorWindow(FileManager::Get()->GetRelativeFilePath(file.path().generic_string()));
+						Editor::Get()->OpenMaterialEditorWindow(FileManager::Get()->GetPathRelative(file.path().generic_string()));
 					}
 					else if (!Application::Get()->GetOsApi()->OpenFileInDefaultApp(file.path().generic_string())) {
 						ImGui::OpenPopup("File not opened");

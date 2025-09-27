@@ -107,7 +107,7 @@ Application::Application()
 void Application::InitInstance()
 {
     //Initialize Config store
-    ConfigManager::Init(FileManager::GetRelativeBinaryPath("/../config.json"));
+    ConfigManager::Init(FileManager::GetWorkDirPath("/../config.json"));
     
     //Initialize FileManager
     FileManager::Init();

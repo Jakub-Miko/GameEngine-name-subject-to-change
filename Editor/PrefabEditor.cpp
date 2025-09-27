@@ -241,12 +241,12 @@ void PrefabEditor::RenderWindow(PrefabEditorWindow& window)
 		bool enter_pressed = ImGui::InputText("File path", save_prefab_buffer, buffer_size, ImGuiInputTextFlags_EnterReturnsTrue);
 		ImGui::SameLine();
 		if (ImGui::Button("Set Selected")) {
-			memcpy(save_prefab_buffer, FileManager::Get()->GetRelativeFilePath(Editor::Get()->GetSelectedFilePath()).c_str(), Editor::Get()->GetSelectedFilePath().size() + 1);
+			memcpy(save_prefab_buffer, FileManager::Get()->GetPathRelative(Editor::Get()->GetSelectedFilePath()).c_str(), Editor::Get()->GetSelectedFilePath().size() + 1);
 		}
-		std::string actual_path = FileManager::Get()->GetRelativeFilePath(FileManager::Get()->GetPath(save_prefab_buffer));
+		std::string actual_path = FileManager::Get()->GetPathRelative(FileManager::Get()->GetPath(save_prefab_buffer));
 		ImGui::Separator();
 		if (ImGui::Button("Save and Reload") || enter_pressed) {
-			Application::GetWorld().SerializePrefab(window.entity, FileManager::Get()->GetPath(actual_path));
+			Application::GetWorld().SerializePrefab(window.entity, FileManager::Get()->GetPath(actual_path, true));
 			auto& prefab = Application::GetWorld().GetComponent<PrefabComponent>(window.entity);
 			prefab.file_path = actual_path;
 			if (prefab.status == PrefabStatus::UNINITIALIZED) {
@@ -277,7 +277,7 @@ void PrefabEditor::RenderWindow(PrefabEditorWindow& window)
 		if (ImGui::BeginMenu("File")) {
 			if (ImGui::MenuItem("Save prefab")) {
 				if (is_prefab_valid) {
-					auto path = FileManager::Get()->GetRelativeFilePath(FileManager::Get()->GetPath(prefab_comp.GetFilePath()));
+					auto path = FileManager::Get()->GetPathRelative(prefab_comp.GetFilePath());
 					memcpy(save_prefab_buffer, (path + "\0").c_str(), path.size() +1);
 				}
 				else

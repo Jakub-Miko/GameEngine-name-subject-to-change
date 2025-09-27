@@ -106,7 +106,7 @@
     [
       1,
       1048576,
-      { "file_path": "/assets/AnimationBlendPrefab.pre" }
+      { "file_path": "assets/AnimationBlendPrefab.pre" }
     ],
     [
       1,
@@ -141,13 +141,13 @@
       2,
       3,
       {
-        "material_path": "/assets/GroundMat.mat",
-        "path": "/assets/Box.mesh",
+        "material_path": "assets/GroundMat.mat",
+        "path": "assets/Box.mesh",
         "visible": true
       },
       4,
       {
-        "path": "/assets/Box.mesh",
+        "path": "assets/Box.mesh",
         "visible": true
       }
     ],

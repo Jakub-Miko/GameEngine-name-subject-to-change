@@ -219,7 +219,7 @@ void Editor::Run()
 				bool enter_pressed = ImGui::InputText("Filepath", file_dialog_text_buffer, file_dialog_text_buffer_size, ImGuiInputTextFlags_EnterReturnsTrue);
 				ImGui::SameLine();
 				if (ImGui::Button("Set Selected")) {
-					std::string path = FileManager::Get()->GetRelativeFilePath(Editor::Get()->GetSelectedFilePath());
+					std::string path = FileManager::Get()->GetPathRelative(Editor::Get()->GetSelectedFilePath());
 					memcpy(file_dialog_text_buffer, path.c_str(), std::min((int)path.size(), file_dialog_text_buffer_size));
 					file_dialog_text_buffer[std::min((int)path.size(), file_dialog_text_buffer_size)] = '\0';
 				}
@@ -247,7 +247,7 @@ void Editor::Run()
 				bool enter_pressed = ImGui::InputText("Filepath", file_dialog_text_buffer, file_dialog_text_buffer_size, ImGuiInputTextFlags_EnterReturnsTrue);
 				ImGui::SameLine();
 				if (ImGui::Button("Set Selected")) {
-					std::string path = FileManager::Get()->GetRelativeFilePath(Editor::Get()->GetSelectedFilePath());
+					std::string path = FileManager::Get()->GetPathRelative(Editor::Get()->GetSelectedFilePath());
 					memcpy(file_dialog_text_buffer, path.c_str(), std::min((int)path.size(), file_dialog_text_buffer_size));
 					file_dialog_text_buffer[std::min((int)path.size(), file_dialog_text_buffer_size)] = '\0';
 				}
@@ -276,12 +276,12 @@ void Editor::Run()
 				bool enter_pressed = ImGui::InputText("Filepath", file_dialog_text_buffer, file_dialog_text_buffer_size, ImGuiInputTextFlags_EnterReturnsTrue);
 				ImGui::SameLine();
 				if (ImGui::Button("Set Selected")) {
-					std::string path = FileManager::Get()->GetRelativeFilePath(Editor::Get()->GetSelectedFilePath());
+					std::string path = FileManager::Get()->GetPathRelative(Editor::Get()->GetSelectedFilePath());
 					memcpy(file_dialog_text_buffer, path.c_str(), std::min((int)path.size(), file_dialog_text_buffer_size));
 					file_dialog_text_buffer[std::min((int)path.size(), file_dialog_text_buffer_size)] = '\0';
 				}
 
-				ImGui::DragFloat("Scale Factor", &scale_factor, 1.0f, 0.01f,100.0f, NULL, 2);
+				ImGui::DragFloat("Scale Factor", &scale_factor, 1.0f, 0.01f,100.0f, NULL, ImGuiSliderFlags_Logarithmic);
 
 				if (enter_pressed || ImGui::Button("Load")) {
 					Application::GetWorld().LoadSceneFromProxy(std::make_shared<AssimpSceneProxy>(file_dialog_text_buffer, scale_factor));
@@ -549,7 +549,7 @@ void Editor::SceneScriptOptions()
 		Application::Get()->GetOsApi()->OpenFileInDefaultApp(temp_path);
 	}
 	if (temp_file_exist && ImGui::MenuItem("Apply scene script")) {
-		std::string new_script = FileManager::Get()->OpenFileRaw(FileManager::Get()->GetRelativeFilePath(temp_path));
+		std::string new_script = FileManager::Get()->OpenFileRaw(FileManager::Get()->GetPath(temp_path));
 		if(scene_path != "") {
 			std::string scene_string = FileManager::Get()->OpenFileRaw(scene_path);
 			FileManager::Get()->InsertOrReplaceSection(scene_string, new_script, "Script");

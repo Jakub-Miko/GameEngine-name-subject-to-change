@@ -37,7 +37,7 @@ void UITextPropertiesPanelEntry::RenderPanel(Entity ent)
 	bool enter_buffer = ImGui::InputText("font path", buffer, 200, ImGuiInputTextFlags_EnterReturnsTrue);
 	if (ImGui::Button("Reload##font") || enter_buffer) {
 		if (buffer[0] != '\0') {
-			comp.SetFontObject(TextRenderer::Get()->GetFontObject(FileManager::Get()->GetPath(buffer)));
+			comp.SetFontObject(TextRenderer::Get()->GetFontObject(FileManager::Get()->GetPath(buffer, true)));
 		}
 	}
 	ImGui::SameLine();

@@ -116,7 +116,7 @@ void MaterialEditor::RenderWinow(MaterialEditorWindow& window, int current_index
 				pressed = ImGui::InputText("value", buffer,200, ImGuiInputTextFlags_EnterReturnsTrue);
 				ImGui::SameLine();
 				if (ImGui::Button("Set Selected")) {
-					std::string file_exp_path = FileManager::Get()->GetRelativeFilePath(Editor::Get()->GetSelectedFilePath());
+					std::string file_exp_path = FileManager::Get()->GetPathRelative(Editor::Get()->GetSelectedFilePath());
 					strcpy(buffer, file_exp_path.c_str());
 					pressed = true;
 				}

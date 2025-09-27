@@ -51,8 +51,7 @@ std::shared_ptr<AudioObject> AudioSystem::GetAudioObject(const std::string& inpu
 {
 	using namespace std::filesystem;
 	std::lock_guard<std::mutex> lock(audio_object_mutex);
-	std::string absolute_path = absolute(path(input_path)).generic_string();
-	std::string relative_path = FileManager::Get()->GetRelativeFilePath(absolute_path);
+	std::string relative_path = FileManager::Get()->GetPath(input_path, true);
 	auto fnd = audio_object_map.find(relative_path);
 	
 	if (fnd != audio_object_map.end()) {
@@ -70,8 +69,8 @@ std::shared_ptr<AudioObject> AudioSystem::GetAudioObject(const std::string& inpu
 
     auto async_queue = Application::GetAsyncDispather();
 
-    auto task = async_queue->CreateTask<AudioStandardObject>([absolute_path, this]() -> AudioStandardObject {
-        return LoadAudioFromFileImpl(absolute_path);
+    auto task = async_queue->CreateTask<AudioStandardObject>([input_path, this]() -> AudioStandardObject {
+        return LoadAudioFromFileImpl(input_path);
         });
 
     async_queue->Submit(task);

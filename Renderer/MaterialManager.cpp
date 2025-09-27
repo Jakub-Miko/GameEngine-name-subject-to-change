@@ -72,14 +72,14 @@ MaterialManager* MaterialManager::Get()
 std::shared_ptr<Material> MaterialManager::GetMaterial(const std::string& path_in)
 {
 	std::lock_guard<std::mutex> lock(material_mutex);
-	std::string path = FileManager::Get()->GetPath(path_in);
+	std::string path = FileManager::Get()->GetPath(path_in, true);
 	auto fnd = materials.find(path);
 	if (fnd != materials.end()) {
 		return fnd->second;
 	}
 	try {
 		auto material = ParseMaterialFromFile(path);
-		material->material_proxy = std::make_shared<NativeMaterialProxy>(path_in);
+		material->material_proxy = std::make_shared<NativeMaterialProxy>(path);
 		materials.insert(std::make_pair(path, material));
 		return material;
 
@@ -739,7 +739,7 @@ std::shared_ptr<MaterialTemplate> MaterialTemplate::CreateTemplate(const Materia
 {
 #ifdef Vulkan_API
 	auto temp = std::make_shared<VulkanMaterialTemplate>(layout, name, Private());
-#elif
+#else
 	static_assert(false, "Apis other that vulkan are currently unsupported");
 #endif
 

@@ -23,7 +23,7 @@
         {
             "name": "Roughness",
             "type": "TEXTURE",
-            "value": "/assets/Pillar_Roughness.tex"
+            "value": "assets/Pillar_Roughness.tex"
         }
     ],
     "material_template": "DeferredGPassMaterial"

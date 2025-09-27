@@ -34,8 +34,7 @@ std::shared_ptr<Animation> AnimationManager::RegisterAnimation(std::shared_ptr<A
 std::shared_ptr<Animation> AnimationManager::LoadAnimationAsync(const std::string& file_path)
 {
 	using namespace std::filesystem;
-	std::string absolute_path = absolute(path(file_path)).generic_string();
-	std::string relative_path = FileManager::Get()->GetRelativeFilePath(absolute_path);
+	std::string relative_path = FileManager::Get()->GetPath(file_path);
 
 
 	std::unique_lock<std::mutex> lock(animation_map_mutex);
@@ -56,8 +55,8 @@ std::shared_ptr<Animation> AnimationManager::LoadAnimationAsync(const std::strin
 
 	auto async_queue = Application::GetAsyncDispather();
 
-	auto task = async_queue->CreateTask<Animation>([absolute_path, this]() -> Animation {
-		return LoadAnimationFromFile_impl(absolute_path);
+	auto task = async_queue->CreateTask<Animation>([relative_path, this]() -> Animation {
+		return LoadAnimationFromFile_impl(relative_path);
 		});
 
 	async_queue->Submit(task);

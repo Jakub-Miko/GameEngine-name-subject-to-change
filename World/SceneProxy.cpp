@@ -16,7 +16,7 @@ NativeSceneProxy::NativeSceneProxy()
 SceneProxy::LoadInfo NativeSceneProxy::LoadScene(World &world)
 {
 	SectionList sections;
-	std::string file = FileManager::Get()->OpenFileRaw(path, &sections);
+	std::string file = FileManager::Get()->OpenFileRaw(FileManager::Get()->GetPath(path), &sections);
 
 	LoadInfo load_info = {};
 

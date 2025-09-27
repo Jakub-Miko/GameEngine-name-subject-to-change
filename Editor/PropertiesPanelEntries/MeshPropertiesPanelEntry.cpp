@@ -34,7 +34,7 @@ void MeshPropertiesPanelEntry::RenderPanel(Entity ent)
 	bool enter = ImGui::InputText("Mesh path", mesh_path_buffer, 200, ImGuiInputTextFlags_EnterReturnsTrue);
 	if (ImGui::Button("Reload") || enter) {
 		try {
-			Application::GetWorld().SetEntityMesh(ent, FileManager::Get()->GetPath(mesh_path_buffer));
+			Application::GetWorld().SetEntityMesh(ent, FileManager::Get()->GetPath(mesh_path_buffer, true));
 		}
 		catch (std::runtime_error* e) {
 			Editor::Get()->EditorError("Invalid or corrupted Mesh file");
@@ -72,7 +72,7 @@ void MeshPropertiesPanelEntry::RenderPanel(Entity ent)
 	}
 	ImGui::SameLine();
 	if (ImGui::Button("Set Selected##material")) {
-		mesh.ChangeMaterial(FileManager::Get()->GetRelativeFilePath(Editor::Get()->GetSelectedFilePath()));
+		mesh.ChangeMaterial(FileManager::Get()->GetPathRelative(Editor::Get()->GetSelectedFilePath()));
 		memcpy(material_path_buffer, mesh.GetMaterialPath().c_str(), mesh.GetMaterialPath().size() + 1);
 	}
 	if (mesh.material && mesh.GetMaterialStatus() == Material::Material_status::ERROR) {

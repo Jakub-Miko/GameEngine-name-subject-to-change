@@ -132,8 +132,7 @@ void MeshManager::MakeMeshFromObjectFile(const std::string& in_file_path, const 
 std::shared_ptr<Mesh> MeshManager::LoadMeshFromFileAsync(const std::string& file_path)
 {
     using namespace std::filesystem;
-    std::string absolute_path = absolute(path(file_path)).generic_string();
-    std::string relative_path = FileManager::Get()->GetRelativeFilePath(absolute_path);
+    std::string relative_path = FileManager::Get()->GetPath(file_path);
 
 
     std::unique_lock<std::mutex> lock(mesh_Map_mutex);
@@ -489,16 +488,17 @@ std::shared_ptr<Mesh> MeshManager::RegisterMesh(std::shared_ptr<Mesh> mesh_to_re
 
 MeshSourceData MeshManager::Fetch_Native_Data(const std::string& in_file_path)
 {
+    auto path = FileManager::Get()->GetPath(in_file_path);
     std::ifstream input_file;
     try {
-        input_file.open(in_file_path, std::ios_base::binary | std::ios_base::in);
+        input_file.open(path, std::ios_base::binary | std::ios_base::in);
     }
     catch(...) {
-        throw std::runtime_error("File " + in_file_path + " could not be opened");
+        throw std::runtime_error("File " + path + " could not be opened");
     }
     
     if (!input_file.is_open()) {
-        throw std::runtime_error("File " + in_file_path + " could not be opened");
+        throw std::runtime_error("File " + path + " could not be opened");
     }
 
     std::string check;

@@ -34,7 +34,7 @@ void AudioPropertiesPanelEntry::RenderPanel(Entity ent)
 	}
 	ImGui::SameLine();
 	if (ImGui::Button("Set Selected##audio")) {
-		audio.SetDefaultAudioPath(FileManager::Get()->GetRelativeFilePath(Editor::Get()->GetSelectedFilePath()));
+		audio.SetDefaultAudioPath(FileManager::Get()->GetPathRelative(Editor::Get()->GetSelectedFilePath()));
 		audio.PlayAudio();
 		memcpy(buffer, audio.GetRequestedPath().c_str(), audio.GetRequestedPath().size() + 1);
 	}

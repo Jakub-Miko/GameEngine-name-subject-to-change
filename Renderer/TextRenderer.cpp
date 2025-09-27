@@ -184,8 +184,7 @@ void TextRenderer::TextRenderSystem()
 
 std::shared_ptr<FontObject> TextRenderer::GetFontObject(const std::string& in_path)
 {
-    std::string absolute_path = std::filesystem::absolute(std::filesystem::path(in_path)).generic_string();
-    std::string relative_path = FileManager::Get()->GetRelativeFilePath(absolute_path);
+    std::string relative_path = FileManager::Get()->GetPath(in_path);
 
 
     std::unique_lock<std::mutex> lock(m_font_object_map_mutex);
@@ -206,8 +205,8 @@ std::shared_ptr<FontObject> TextRenderer::GetFontObject(const std::string& in_pa
 
     auto async_queue = Application::GetAsyncDispather();
 
-    auto task = async_queue->CreateTask<font_load_future_payload>([absolute_path, this]() -> font_load_future_payload {
-        return LoadFontFromFileImpl(absolute_path);
+    auto task = async_queue->CreateTask<font_load_future_payload>([relative_path, this]() -> font_load_future_payload {
+        return LoadFontFromFileImpl(relative_path);
         });
 
     async_queue->Submit(task);

@@ -347,7 +347,7 @@ void ScriptSystemVM::RunGarbageCollector()
 
 void ScriptSystemVM::SetEngineInitializationEntity(Entity ent, const std::string& path)
 {
-    current_Initialization_handler = InitializationScriptHandler(ent, FileManager::Get()->GetRelativeFilePath(FileManager::Get()->GetPath(path)));
+    current_Initialization_handler = InitializationScriptHandler(ent, FileManager::Get()->GetPath(path));
     m_LuaInitializationEngine.SetClassInstance(&current_Initialization_handler);
     init_mode = true;
 }

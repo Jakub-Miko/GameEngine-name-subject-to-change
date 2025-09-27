@@ -248,7 +248,7 @@
       9,
       { "file_path": "assets/DemoPrefab.pre" },
       16,
-      { "file_path": "/assets/Movable_Camera.pre" }
+      { "file_path": "assets/Movable_Camera.pre" }
     ],
     [
       2,
@@ -326,36 +326,36 @@
       6,
       12,
       {
-        "path": "/assets/Box.mesh",
+        "path": "assets/Box.mesh",
         "visible": true
       },
       6,
       {
         "material_path": "assets/Material/MaterialGeometry.mat",
-        "path": "/assets/Pillar_with_uvs.mesh",
+        "path": "assets/Pillar_with_uvs.mesh",
         "visible": true
       },
       5,
       {
         "material_path": "assets/Material/MaterialGeometry.mat",
-        "path": "/assets/Pillar_with_uvs.mesh",
+        "path": "assets/Pillar_with_uvs.mesh",
         "visible": true
       },
       4,
       {
         "material_path": "assets/Material/MaterialGeometry.mat",
-        "path": "/assets/Pillar_with_uvs.mesh",
+        "path": "assets/Pillar_with_uvs.mesh",
         "visible": true
       },
       3,
       {
         "material_path": "assets/GroundMat.mat",
-        "path": "/assets/Box.mesh",
+        "path": "assets/Box.mesh",
         "visible": true
       },
       13,
       {
-        "path": "/assets/Pillar_with_uvs.mesh",
+        "path": "assets/Pillar_with_uvs.mesh",
         "visible": true
       }
     ],

@@ -870,7 +870,7 @@ void PhysicsEngine::RefreshObject(Entity ent)
 std::shared_ptr<btConvexHullShape> PhysicsEngine_BulletData::GetHullShape(const std::string& mesh_path)
 {
 	std::lock_guard<std::mutex> lock(convex_hull_shape_mutex);
-	auto path = FileManager::Get()->GetRelativeFilePath(FileManager::Get()->GetPath(mesh_path));
+	auto path = FileManager::Get()->GetPath(mesh_path);
 	auto absolute_path = FileManager::Get()->GetPathHash(path);
 	auto fnd = convex_hull_shapes.find(path);
 	if (fnd != convex_hull_shapes.end()) {
@@ -887,7 +887,7 @@ std::shared_ptr<btConvexHullShape> PhysicsEngine_BulletData::GetHullShape(const 
 		return shape;
 	}
 	else {
-		MeshSourceData mesh_data = MeshManager::Get()->Fetch_Native_Data(FileManager::Get()->GetPath(mesh_path));
+		MeshSourceData mesh_data = MeshManager::Get()->Fetch_Native_Data(path);
 		btConvexHullShape convexHullShape;
 		int pos_offset = mesh_data.layout.GetElement("position").offset;
 		int stride = mesh_data.layout.stride;

@@ -9,7 +9,7 @@
 @Section:CollisionBox_2097152
 @Entity 
 {
-"Components": {"LabelComponent":{"label":"CollisionBox"},"MeshComponent":{"path":"/assets/Box.mesh"},"PhysicsComponent":{"is_kinematic":false,"mass":1.0,"object_type":0,"props":1,"shape_type":3},"TransformComponent":{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":0.0,"y":5.0,"z":0.0}}},
+"Components": {"LabelComponent":{"label":"CollisionBox"},"MeshComponent":{"path":"assets/Box.mesh"},"PhysicsComponent":{"is_kinematic":false,"mass":1.0,"object_type":0,"props":1,"shape_type":3},"TransformComponent":{"props":{"mode":0},"rotation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"size":{"x":1.0,"y":1.0,"z":1.0},"translation":{"x":0.0,"y":5.0,"z":0.0}}},
 "Children": ["local#Camera_2097158"]
 }
 

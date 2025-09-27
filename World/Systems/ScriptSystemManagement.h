@@ -920,7 +920,7 @@ public:
     */
     template<typename ... Args>
     void CallInitializationFunction(const std::string& file_path, const std::string& function_name, Args ... args) {
-        auto path = FileManager::Get()->GetRelativeFilePath(FileManager::Get()->GetPath(file_path));
+        auto path = FileManager::Get()->GetPath(file_path, true);
         if (m_BoundInitializationScripts.find(LuaEngineUtilities::ScriptHash(path, true)) != m_BoundInitializationScripts.end()) {
             bool success;
             {

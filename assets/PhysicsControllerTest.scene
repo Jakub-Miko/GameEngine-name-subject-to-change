@@ -106,7 +106,7 @@
     [
       1,
       5,
-      { "file_path": "/assets/PlayerController.pre" }
+      { "file_path": "assets/PlayerController.pre" }
     ],
     [
       1,
@@ -190,13 +190,13 @@
       2,
       4,
       {
-        "path": "/assets/Box.mesh",
+        "path": "assets/Box.mesh",
         "visible": true
       },
       3,
       {
-        "material_path": "/assets/GroundMat.mat",
-        "path": "/assets/Box.mesh",
+        "material_path": "assets/GroundMat.mat",
+        "path": "assets/Box.mesh",
         "visible": true
       }
     ],

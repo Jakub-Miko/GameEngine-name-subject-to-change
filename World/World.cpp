@@ -112,14 +112,14 @@ void World::SetEntitySkeletalMesh(Entity ent, const std::string& mesh_path, cons
 		auto& mesh = GetComponent<SkeletalMeshComponent>(ent);
 		mesh.ChangeMesh(mesh_path);
 		if (!default_animation_path.empty()) {
-			mesh.SetDefaultAnimationPath(FileManager::Get()->GetRelativeFilePath(default_animation_path));
+			mesh.SetDefaultAnimationPath(FileManager::Get()->GetPathRelative(default_animation_path));
 		}
 		MeshChangedEvent ev(ent, mesh_path);
 		Application::Get()->SendObservedEvent<MeshChangedEvent>(&ev);
 	}
 	else {
 		lock.unlock();
-		SetComponent<SkeletalMeshComponent>(ent, SkeletalMeshComponent(mesh_path, FileManager::Get()->GetRelativeFilePath(default_animation_path)));
+		SetComponent<SkeletalMeshComponent>(ent, SkeletalMeshComponent(mesh_path, FileManager::Get()->GetPathRelative(default_animation_path)));
 	}
 }
 

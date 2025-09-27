@@ -38,7 +38,7 @@ void SkeletalMeshPropertiesPanelEntry::RenderPanel(Entity ent)
 	bool enter = ImGui::InputText("Mesh path", mesh_path_buffer, 200, ImGuiInputTextFlags_EnterReturnsTrue);
 	if (ImGui::Button("Reload") || enter) {
 		try {
-			Application::GetWorld().SetEntitySkeletalMesh(ent, FileManager::Get()->GetPath(mesh_path_buffer));
+			Application::GetWorld().SetEntitySkeletalMesh(ent, FileManager::Get()->GetPath(mesh_path_buffer, true));
 		}
 		catch (std::runtime_error* e) {
 			Editor::Get()->EditorError("Invalid or corrupted Skeletal Mesh file");
@@ -75,7 +75,7 @@ void SkeletalMeshPropertiesPanelEntry::RenderPanel(Entity ent)
 	}
 	ImGui::SameLine();
 	if (ImGui::Button("Set Selected##material")) {
-		mesh.ChangeMaterial(FileManager::Get()->GetRelativeFilePath(Editor::Get()->GetSelectedFilePath()));
+		mesh.ChangeMaterial(FileManager::Get()->GetPathRelative(Editor::Get()->GetSelectedFilePath()));
 		memcpy(material_path_buffer, mesh.GetMaterialPath().c_str(), mesh.GetMaterialPath().size() + 1);
 	}
 	if (mesh.GetMaterialStatus() == Material::Material_status::ERROR) {
@@ -103,7 +103,7 @@ void SkeletalMeshPropertiesPanelEntry::RenderPanel(Entity ent)
 	}
 	ImGui::SameLine();
 	if (ImGui::Button("Set Selected##anim")) {
-		mesh.SetDefaultAnimationPath(FileManager::Get()->GetRelativeFilePath(Editor::Get()->GetSelectedFilePath()),true);
+		mesh.SetDefaultAnimationPath(FileManager::Get()->GetPathRelative(Editor::Get()->GetSelectedFilePath()),true);
 		memcpy(default_animation_path, mesh.GetDefaultAnimationPath().c_str(), mesh.GetDefaultAnimationPath().size() + 1);
 	}
 	if (mesh.GetAnimation().GetAnimationStatus() == Animation::animation_status::ERROR) {

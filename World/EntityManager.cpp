@@ -46,7 +46,7 @@ void EntityManager::Shutdown()
 
 Entity EntityManager::CreateEntity(const std::string& file_path, Entity parent)
 {
-	std::string path = FileManager::Get()->GetRelativeFilePath(FileManager::Get()->GetPath(file_path));
+	std::string path = FileManager::Get()->GetPath(file_path);
 	auto ent = Application::GetWorld().MakeEmptyEntity();
 	Application::GetWorld().SetComponent<ConstructionComponent>(ent, path, parent);
 	return ent;
@@ -54,7 +54,7 @@ Entity EntityManager::CreateEntity(const std::string& file_path, Entity parent)
 
 Entity EntityManager::CreateEntityInplace(const std::string& file_path, Entity parent)
 {
-	std::string path = FileManager::Get()->GetRelativeFilePath(FileManager::Get()->GetPath(file_path));
+	std::string path = FileManager::Get()->GetPath(file_path);
 	auto script_vm = ScriptSystemManager::Get()->TryGetScriptSystemVM();
 
 	if (!script_vm) {
@@ -87,7 +87,7 @@ Entity EntityManager::CreateEntityInplace(const std::string& file_path, Entity p
 
 Entity EntityManager::CreateEntityInplace(Entity base_entity, const std::string& file_path, Entity parent)
 {
-	std::string path = FileManager::Get()->GetRelativeFilePath(FileManager::Get()->GetPath(file_path));
+	std::string path = FileManager::Get()->GetPath(file_path);
 	auto script_vm = ScriptSystemManager::Get()->TryGetScriptSystemVM();
 
 	if (!script_vm) {
@@ -120,7 +120,7 @@ Entity EntityManager::CreateEntityInplace(Entity base_entity, const std::string&
 
 Entity EntityManager::CreateEntity(const std::string& name, const std::string& file_path, Entity parent)
 {
-	std::string path = FileManager::Get()->GetRelativeFilePath(FileManager::Get()->GetPath(file_path));
+	std::string path = FileManager::Get()->GetPath(file_path);
 	auto ent = Application::GetWorld().MakeEmptyEntity();
 	Application::GetWorld().SetComponent<ConstructionComponent>(ent, path, parent);
 	Application::GetWorld().SetComponent<LabelComponent>(ent, name);
@@ -219,7 +219,7 @@ void EntityManager::RemoveInlineScriptToPrefab(const std::string& prefab_name)
 
 Entity EntityManager::CreateEntityInplace(const std::string& name, const std::string& file_path, Entity parent)
 {
-	std::string path = FileManager::Get()->GetRelativeFilePath(FileManager::Get()->GetPath(file_path));
+	std::string path = FileManager::Get()->GetPath(file_path);
 	auto ent = CreateEntityInplace(path, parent);
 	Application::GetWorld().SetComponent<LabelComponent>(ent, name);
 	return ent;
@@ -227,7 +227,7 @@ Entity EntityManager::CreateEntityInplace(const std::string& name, const std::st
 
 Entity EntityManager::CreateEntityInplace(const std::string& name, Entity base_entity, const std::string& file_path, Entity parent)
 {
-	std::string path = FileManager::Get()->GetRelativeFilePath(FileManager::Get()->GetPath(file_path));
+	std::string path = FileManager::Get()->GetPath(file_path);
 	auto ent = CreateEntityInplace(base_entity, path,parent);
 	Application::GetWorld().SetComponent<LabelComponent>(ent, name);
 	return ent;
@@ -264,7 +264,7 @@ void EntityManager::InitializeFromTemplate(Entity target_entity, Entity template
 
 void EntityManager::DeserializeEntityPrefab(Entity target_entity, const std::string& file_path, Entity parent)
 {
-	std::string path = FileManager::Get()->GetRelativeFilePath(FileManager::Get()->GetPath(file_path));
+	std::string path = FileManager::Get()->GetPath(file_path);
 	auto script_vm = ScriptSystemManager::Get()->TryGetScriptSystemVM();
 
 	if (!script_vm) {
