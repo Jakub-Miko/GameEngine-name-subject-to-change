@@ -38,6 +38,7 @@ void Editor::PreShutdown()
 	viewport.reset();
 	material_editor.reset();
 	delete[] file_dialog_text_buffer;
+	delete[] second_file_dialog_text_buffer;
 	ImGui_ImplGlfw_Shutdown();
 	impl_custom_imgui_backend::PreShutdown();
 	impl_custom_imgui_backend::Shutdown();
@@ -90,7 +91,7 @@ void Editor::Run()
 		
 		auto save_id = ImGui::GetID("Save Dialog");
 		auto load_id = ImGui::GetID("Load Dialog");
-		auto load_fbx_id = ImGui::GetID("Load FBX Dialog");
+		auto load_external_id = ImGui::GetID("Load External Dialog");
 		auto mat_id = ImGui::GetID("Empty Material Dialog");
 		auto import_id = ImGui::GetID("Import Mesh Dialog");
 		auto Viewport_Settings_id = ImGui::GetID("Viewport Settings");
@@ -155,9 +156,9 @@ void Editor::Run()
 				Application::GetWorld().LoadEmptyScene();
 			};
 
-			if (ImGui::MenuItem("Load from FBX")) {
+			if (ImGui::MenuItem("Load External")) {
 				scale_factor = 1.0f;
-				ImGui::OpenPopup(load_fbx_id);
+				ImGui::OpenPopup(load_external_id);
 			};
 
 			ImGui::EndMenu();
@@ -271,7 +272,7 @@ void Editor::Run()
 		}
 
 		try {
-			if (ImGui::BeginPopupModal("Load FBX Dialog", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+			if (ImGui::BeginPopupModal("Load External Dialog", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
 
 				bool enter_pressed = ImGui::InputText("Filepath", file_dialog_text_buffer, file_dialog_text_buffer_size, ImGuiInputTextFlags_EnterReturnsTrue);
 				ImGui::SameLine();
@@ -281,17 +282,27 @@ void Editor::Run()
 					file_dialog_text_buffer[std::min((int)path.size(), file_dialog_text_buffer_size)] = '\0';
 				}
 
+				enter_pressed &= ImGui::InputText("Scene path", second_file_dialog_text_buffer, file_dialog_text_buffer_size, ImGuiInputTextFlags_EnterReturnsTrue);
+				ImGui::SameLine();
+				if (ImGui::Button("Set Selected")) {
+					std::string path = FileManager::Get()->GetPathRelative(Editor::Get()->GetSelectedFilePath());
+					memcpy(second_file_dialog_text_buffer, path.c_str(), std::min((int)path.size(), file_dialog_text_buffer_size));
+					second_file_dialog_text_buffer[std::min((int)path.size(), file_dialog_text_buffer_size)] = '\0';
+				}
+
 				ImGui::DragFloat("Scale Factor", &scale_factor, 1.0f, 0.01f,100.0f, NULL, ImGuiSliderFlags_Logarithmic);
 
 				if (enter_pressed || ImGui::Button("Load")) {
-					Application::GetWorld().LoadSceneFromProxy(std::make_shared<AssimpSceneProxy>(file_dialog_text_buffer, scale_factor));
+					Application::GetWorld().LoadSceneFromProxy(std::make_shared<AssimpSceneProxy>(file_dialog_text_buffer, scale_factor, second_file_dialog_text_buffer));
 					ImGui::CloseCurrentPopup();
 					file_dialog_text_buffer[0] = '\0';
+					second_file_dialog_text_buffer[0] = '\0';
 				}
 				ImGui::SameLine();
 				if (ImGui::Button("Close")) {
 					ImGui::CloseCurrentPopup();
 					file_dialog_text_buffer[0] = '\0';
+					second_file_dialog_text_buffer[0] = '\0';
 				}
 				ImGui::EndPopup();
 			}
@@ -571,7 +582,9 @@ Editor::Editor() : viewport(new Viewport), scene_graph(new SceneGraphViewer), pr
 	ImGui::CreateContext();
 	ImGuiIO& io_1 = ImGui::GetIO(); (void)io;
 	file_dialog_text_buffer = new char[file_dialog_text_buffer_size];
+	second_file_dialog_text_buffer = new char[file_dialog_text_buffer_size];
 	file_dialog_text_buffer[0] = '\0';
+	second_file_dialog_text_buffer[0] = '\0';
 	ImGui::StyleColorsDark();
 	io_1.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 

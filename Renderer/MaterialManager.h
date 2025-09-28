@@ -12,9 +12,10 @@ class RenderCommandList;
 class Material;
 
 class MaterialProxy {
-public: 
+public:
     virtual std::shared_ptr<Material> LoadMaterial() = 0;
     virtual const std::string& GetFilePath() = 0;
+    virtual const std::string& GetNativeFilePath() = 0;
     virtual ~MaterialProxy() {}
 }; 
 
@@ -22,9 +23,12 @@ class NativeMaterialProxy : public MaterialProxy {
 public: 
     NativeMaterialProxy(const std::string& path) : path(path) {}
     virtual std::shared_ptr<Material> LoadMaterial() override;
-    virtual const std::string& GetFilePath() {
+    virtual const std::string& GetFilePath() override {
         return path;
-    };
+    }
+    virtual const std::string& GetNativeFilePath() override {
+        return path;
+    }
     virtual ~NativeMaterialProxy() {}
 private:
     std::string path;
@@ -34,6 +38,13 @@ struct MaterialTextureType {
     std::string GetPath() {
         if(texture_proxy) {
             return texture_proxy->GetFilePath();
+        }
+        return "";
+    };
+
+    std::string GetNativePath() {
+        if(texture_proxy) {
+            return texture_proxy->GetNativeFilePath();
         }
         return "";
     };
@@ -152,8 +163,20 @@ public:
         }
     }
 
+    const std::string& GetNativeFilePath() const {
+        if(material_proxy) {
+            return material_proxy->GetNativeFilePath();
+        } else {
+            return "";
+        }
+    }
+
     std::shared_ptr<MaterialProxy> GetMaterialProxy() const {
         return material_proxy;
+    }
+
+    void SetMaterialProxy(std::shared_ptr<MaterialProxy> proxy) {
+        material_proxy = proxy;
     }
 
     const std::vector<MaterialParameter>& GetMaterialParameters() const {
@@ -246,6 +269,8 @@ public:
     std::shared_ptr<Material> GetMaterial(const std::string& path);
 
     std::shared_ptr<Material> CreateMaterial(const std::string& template_path);
+
+    std::shared_ptr<Material> CreateMaterialFromProxy(std::shared_ptr<MaterialProxy> proxy);
 
     void SerializeMaterial(const std::string& filepath, std::shared_ptr<Material> material);
 

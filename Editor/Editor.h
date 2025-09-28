@@ -120,6 +120,7 @@ private:
 	bool is_viewport_focused = false;
 
 	char* file_dialog_text_buffer;
+	char* second_file_dialog_text_buffer;
 	int file_dialog_text_buffer_size = 100;
 
 	bool enabled = true;

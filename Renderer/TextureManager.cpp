@@ -10,43 +10,40 @@
 #include "RenderContext.h"
 
 
-
 struct TextureManager_internal {
     std::shared_ptr<Pipeline> reflection_convert_pipeline;
     std::shared_ptr<RenderBufferResource> const_buffer;
     std::shared_ptr<RenderFrameBufferResource> framebuffer;
     std::shared_ptr<RenderTexture2DCubemapResource> default_cubemap;
     std::shared_ptr<RenderTexture2DCubemapResource> default_cubemap_diffuse;
-    
+
     std::shared_ptr<Pipeline> specular_generation_pipeline;
     std::shared_ptr<RenderBufferResource> const_buffer_specular;
     std::shared_ptr<TextureSampler> reflection_sampler;
 };
 
 
-
 TextureManager* TextureManager::instance = nullptr;
 
-void TextureManager::MakeTextureFromImage(const std::string& input_image_path, const std::string& output_image_path, const TextureSamplerDescritor& sampler)
-{
+void TextureManager::MakeTextureFromImage(const std::string& input_image_path, const std::string& output_image_path,
+                                          const TextureSamplerDescritor& sampler) {
     PROFILE("Texture Conversion");
-    if (!stbi_is_hdr(input_image_path.c_str())) {
-
+    if(!stbi_is_hdr(input_image_path.c_str())) {
         int x, y, ch;
-        
+
         //In Vulkan, force rgb images into rgba format
         stbi_info(input_image_path.c_str(), &x, &y, &ch);
         int n = 0;
-        if (ch == 3)
+        if(ch == 3)
             n = 4;
 
         unsigned char* image = stbi_load(input_image_path.c_str(), &x, &y, &ch, n);
-        if (!image) {
+        if(!image) {
             throw std::runtime_error(stbi_failure_reason());
         }
 
         std::ofstream output_file(output_image_path, std::ios_base::binary);
-        if (!output_file.is_open()) {
+        if(!output_file.is_open()) {
             throw std::runtime_error("File " + output_image_path + " could not be created");
         }
         auto desc = sampler;
@@ -55,7 +52,8 @@ void TextureManager::MakeTextureFromImage(const std::string& input_image_path, c
         output_file << x << " " << y << " " << ch << "\n";
         output_file << "ldr\n";
         output_file << "sampler\n";
-        output_file << (int)desc.AddressMode_U << " " << (int)desc.AddressMode_V << " " << (int)desc.AddressMode_W << "\n";
+        output_file << (int)desc.AddressMode_U << " " << (int)desc.AddressMode_V << " " << (int)desc.AddressMode_W <<
+            "\n";
         output_file << desc.border_color.r << " " << desc.border_color.g << " " << desc.border_color.b << "\n";
         output_file << (int)desc.filter << "\n";
         output_file << desc.LOD_bias << "\n";
@@ -76,16 +74,16 @@ void TextureManager::MakeTextureFromImage(const std::string& input_image_path, c
         //In Vulkan, force rgb images into rgba format
         stbi_info(input_image_path.c_str(), &x, &y, &ch);
         int n = 0;
-        if (ch == 3)
+        if(ch == 3)
             n = 4;
 
         float* image = stbi_loadf(input_image_path.c_str(), &x, &y, &ch, n);
-        if (!image) {
+        if(!image) {
             throw std::runtime_error(stbi_failure_reason());
         }
 
         std::ofstream output_file(output_image_path, std::ios_base::binary);
-        if (!output_file.is_open()) {
+        if(!output_file.is_open()) {
             throw std::runtime_error("File " + output_image_path + " could not be created");
         }
         auto desc = sampler;
@@ -94,7 +92,8 @@ void TextureManager::MakeTextureFromImage(const std::string& input_image_path, c
         output_file << x << " " << y << " " << ch << "\n";
         output_file << "hdr\n";
         output_file << "sampler\n";
-        output_file << (int)desc.AddressMode_U << " " << (int)desc.AddressMode_V << " " << (int)desc.AddressMode_W << "\n";
+        output_file << (int)desc.AddressMode_U << " " << (int)desc.AddressMode_V << " " << (int)desc.AddressMode_W <<
+            "\n";
         output_file << desc.border_color.r << " " << desc.border_color.g << " " << desc.border_color.b << "\n";
         output_file << (int)desc.filter << "\n";
         output_file << desc.LOD_bias << "\n";
@@ -109,17 +108,17 @@ void TextureManager::MakeTextureFromImage(const std::string& input_image_path, c
 
         stbi_image_free(image);
     }
-
 }
 
-Future<void> TextureManager::MakeTextureFromImageAsync(const std::string& input_image_path, const std::string& output_image_path, const TextureSamplerDescritor& sampler)
-{
+Future<void> TextureManager::MakeTextureFromImageAsync(const std::string& input_image_path,
+                                                       const std::string& output_image_path,
+                                                       const TextureSamplerDescritor& sampler) {
     auto async_queue = Application::GetAsyncDispather();
 
     auto task = async_queue->CreateTask<void>([input_image_path, output_image_path, sampler, this]() -> void {
         MakeTextureFromImage(input_image_path, output_image_path, sampler);
         return;
-        });
+    });
 
     async_queue->Submit(task);
 
@@ -134,7 +133,7 @@ unsigned char* LoadAndConvertToVulkan(std::ifstream& file, texture_data texture,
     int real_length = texture.channels * texture.res_x * texture.res_y;
     int old_size;
     int stride_y, stride_x, old_stride_x, old_stride_y;
-    if (!is_hdr) {
+    if(!is_hdr) {
         size = real_channels * texture.res_x * texture.res_y;
         old_size = texture.channels * texture.res_x * texture.res_y;
         stride_y = real_channels * texture.res_x;
@@ -155,9 +154,9 @@ unsigned char* LoadAndConvertToVulkan(std::ifstream& file, texture_data texture,
 
     auto start_pos = file.tellg();
     memset(data, 0, size);
-    for (int y = texture.res_y - 1; y >= 0; y--) {
-        file.seekg(start_pos + std::streamoff(y* old_stride_y));
-        for (int x = 0; x < texture.res_x; x++) {
+    for(int y = texture.res_y - 1; y >= 0; y--) {
+        file.seekg(start_pos + std::streamoff(y * old_stride_y));
+        for(int x = 0; x < texture.res_x; x++) {
             file.read(&data[(texture.res_y - 1 - y) * stride_y + x * stride_x], old_stride_x);
         }
     }
@@ -165,7 +164,7 @@ unsigned char* LoadAndConvertToVulkan(std::ifstream& file, texture_data texture,
     file.seekg(start_pos + std::streamoff(old_size), std::ios_base::beg);
 
     file >> check;
-    if (check != "end") throw std::runtime_error("Invalid format on file: " + path);
+    if(check != "end") throw std::runtime_error("Invalid format on file: " + path);
     return (unsigned char*)data;
 }
 
@@ -173,7 +172,7 @@ unsigned char* LoadWithoutConversion(std::ifstream& file, texture_data texture, 
     std::string check;
     char* data;
     int size;
-    if (!is_hdr) {
+    if(!is_hdr) {
         size = texture.channels * texture.res_x * texture.res_y;
         data = new char[size];
     }
@@ -184,20 +183,20 @@ unsigned char* LoadWithoutConversion(std::ifstream& file, texture_data texture, 
 
     file.read(data, size);
     file >> check;
-    if (check != "end") throw std::runtime_error("Invalid format on file: " + path);
+    if(check != "end") throw std::runtime_error("Invalid format on file: " + path);
     return (unsigned char*)data;
 }
 
 
-std::shared_ptr<RenderTexture2DResource> TextureManager::LoadTextureFromFile(const std::string& file_path_in, bool generate_mips)
-{
+std::shared_ptr<RenderTexture2DResource> TextureManager::LoadTextureFromFile(
+    const std::string& file_path_in, bool generate_mips) {
     std::string file_path = FileManager::Get()->GetPath(file_path_in);
 
     PROFILE("Texture Load");
     //Check if the texture has already been loaded.
     std::unique_lock<std::mutex> lock(texture_Map_mutex);
     auto fnd = texture_Map.find(file_path); //TODO: Make sure the file path is in an appropriate format
-    if (fnd != texture_Map.end()) {
+    if(fnd != texture_Map.end()) {
         return fnd->second;
     }
     lock.unlock();
@@ -206,7 +205,7 @@ std::shared_ptr<RenderTexture2DResource> TextureManager::LoadTextureFromFile(con
 
     //If it hasn't been loaded open a filestream of the filepath to load it.
     std::ifstream input_file(file_path, std::ios_base::binary | std::ios_base::in);
-    if (!input_file.is_open()) {
+    if(!input_file.is_open()) {
         throw std::runtime_error("File " + file_path + " could not be opened");
     }
 
@@ -217,22 +216,23 @@ std::shared_ptr<RenderTexture2DResource> TextureManager::LoadTextureFromFile(con
     input_file >> check;
     bool is_vulkan_format = check == "texture_info_vulkan_format";
     bool is_vulkan_context = RenderContext::Get()->IsVulkanContext();
-    if (check != "texture_info" && !is_vulkan_format) throw std::runtime_error("Invalid format on file: " + file_path);
+    if(check != "texture_info" && !is_vulkan_format) throw std::runtime_error("Invalid format on file: " + file_path);
     input_file >> texture.res_x >> texture.res_y >> texture.channels;
     input_file >> check;
-    if (check == "hdr") {
+    if(check == "hdr") {
         is_hdr = true;
     }
 
     input_file >> check;
-    if (check != "sampler") throw std::runtime_error("Invalid format on file: " + file_path);
+    if(check != "sampler") throw std::runtime_error("Invalid format on file: " + file_path);
     int u, v, w;
     input_file >> u >> v >> w;
     texture.sampler_desc.AddressMode_U = (TextureAddressMode)(char)u;
     texture.sampler_desc.AddressMode_V = (TextureAddressMode)(char)v;
     texture.sampler_desc.AddressMode_W = (TextureAddressMode)(char)w;
 
-    input_file >> texture.sampler_desc.border_color.r >> texture.sampler_desc.border_color.g >> texture.sampler_desc.border_color.b;
+    input_file >> texture.sampler_desc.border_color.r >> texture.sampler_desc.border_color.g >> texture.sampler_desc.
+        border_color.b;
     int filter;
     input_file >> filter;
     texture.sampler_desc.filter = (TextureFilter)(char)filter;
@@ -242,36 +242,38 @@ std::shared_ptr<RenderTexture2DResource> TextureManager::LoadTextureFromFile(con
     input_file >> texture.sampler_desc.min_LOD;
 
     input_file >> check;
-    if (check != "texture") throw std::runtime_error("Invalid format on file: " + file_path);
+    if(check != "texture") throw std::runtime_error("Invalid format on file: " + file_path);
 
     input_file.get();
 
-    if ((is_vulkan_format && is_vulkan_context) || (!is_vulkan_format && !is_vulkan_context)) {
+    if((is_vulkan_format && is_vulkan_context) || (!is_vulkan_format && !is_vulkan_context)) {
         texture.tex_data = LoadWithoutConversion(input_file, texture, is_hdr, file_path);
     }
-    else if (!is_vulkan_format && is_vulkan_context) {
+    else if(!is_vulkan_format && is_vulkan_context) {
         texture.tex_data = LoadAndConvertToVulkan(input_file, texture, is_hdr, file_path);
     }
     else {
         throw std::runtime_error("Cannot load vulkan data into opengl, please use vulkan if possible.\n");
     }
-    
+
     //Check if an identical sampler already exists. If not Create it.
     std::shared_ptr<TextureSampler> sampler = GetSampler(texture.sampler_desc);
-   
+
 
     //Create the texture, upload data into it and optionally generate mip maps.
     RenderTexture2DDescriptor texture_desc;
-    if (!is_hdr) {
-        if (is_vulkan_context) {
+    if(!is_hdr) {
+        if(is_vulkan_context) {
             texture_desc.format = TextureFormat::RGBA_UNSIGNED_CHAR;
         }
         else {
-            texture_desc.format = texture.channels == 3 ? TextureFormat::RGB_UNSIGNED_CHAR : TextureFormat::RGBA_UNSIGNED_CHAR;
+            texture_desc.format = texture.channels == 3
+                                      ? TextureFormat::RGB_UNSIGNED_CHAR
+                                      : TextureFormat::RGBA_UNSIGNED_CHAR;
         }
     }
     else {
-        if (is_vulkan_context) {
+        if(is_vulkan_context) {
             texture_desc.format = TextureFormat::RGBA_32FLOAT;
         }
         else {
@@ -286,7 +288,8 @@ std::shared_ptr<RenderTexture2DResource> TextureManager::LoadTextureFromFile(con
     auto command_queue = Renderer::Get()->GetCommandQueue();
 
     std::shared_ptr<RenderTexture2DResource> texture_res = RenderResourceManager::Get()->CreateTexture(texture_desc);
-    RenderResourceManager::Get()->UploadDataToTexture2D(command_list, texture_res, texture.tex_data, texture.res_x, texture.res_y, 0, 0, 0);
+    RenderResourceManager::Get()->UploadDataToTexture2D(command_list, texture_res, texture.tex_data, texture.res_x,
+                                                        texture.res_y, 0, 0, 0);
     if(generate_mips) command_list->GenerateMIPs(texture_res);
 
     command_queue->ExecuteRenderCommandList(command_list);
@@ -296,30 +299,16 @@ std::shared_ptr<RenderTexture2DResource> TextureManager::LoadTextureFromFile(con
     //Cache the loaded texture.
     auto texture_final = texture_Map.insert(std::make_pair(file_path, texture_res));
 
-    return texture_final.first->second; 
-
+    return texture_final.first->second;
 }
 
-Future<std::shared_ptr<RenderTexture2DResource>> TextureManager::LoadTextureFromFileAsync(const std::string& file_path, bool generate_mips)
-{
+Future<std::shared_ptr<RenderTexture2DResource>> TextureManager::LoadTextureFromFileAsync(
+    const std::string& file_path, bool generate_mips) {
     auto async_queue = Application::GetAsyncDispather();
 
-    auto task = async_queue->CreateTask<std::shared_ptr<RenderTexture2DResource>>([file_path, generate_mips,this]() -> std::shared_ptr<RenderTexture2DResource> {
-        return LoadTextureFromFile(file_path, generate_mips);
-        });
-
-    async_queue->Submit(task);
-
-    return task->GetFuture();
-
-}
-
-Future<std::shared_ptr<RenderTexture2DResource>> TextureManager::LoadTextureFromProxyAsync(std::shared_ptr<TextureProxy> proxy)
-{
-    auto async_queue = Application::GetAsyncDispather();
-
-    auto task = async_queue->CreateTask<std::shared_ptr<RenderTexture2DResource>>([proxy,this]() -> std::shared_ptr<RenderTexture2DResource> {
-        return proxy->LoadTexture();
+    auto task = async_queue->CreateTask<std::shared_ptr<RenderTexture2DResource>>(
+        [file_path, generate_mips,this]() -> std::shared_ptr<RenderTexture2DResource> {
+            return LoadTextureFromFile(file_path, generate_mips);
         });
 
     async_queue->Submit(task);
@@ -327,13 +316,27 @@ Future<std::shared_ptr<RenderTexture2DResource>> TextureManager::LoadTextureFrom
     return task->GetFuture();
 }
 
-std::shared_ptr<TextureSampler> TextureManager::GetSampler(const TextureSamplerDescritor &descriptor)
-{
+Future<std::shared_ptr<RenderTexture2DResource>> TextureManager::LoadTextureFromProxyAsync(
+    std::shared_ptr<TextureProxy> proxy) {
+    auto async_queue = Application::GetAsyncDispather();
+
+    auto task = async_queue->CreateTask<std::shared_ptr<RenderTexture2DResource>>(
+        [proxy,this]() -> std::shared_ptr<RenderTexture2DResource> {
+            return proxy->LoadTexture();
+        });
+
+    async_queue->Submit(task);
+
+    return task->GetFuture();
+}
+
+std::shared_ptr<TextureSampler> TextureManager::GetSampler(const TextureSamplerDescritor& descriptor) {
     std::lock_guard<std::mutex> lock2(sampler_cache_mutex);
     std::shared_ptr<TextureSampler> sampler;
     auto sampler_iter = sampler_cache.find(descriptor);
-    if (sampler_iter == sampler_cache.end()) {
-        sampler = sampler_cache.insert(std::make_pair(descriptor,TextureSampler::CreateSampler(descriptor))).first->second;
+    if(sampler_iter == sampler_cache.end()) {
+        sampler = sampler_cache.insert(std::make_pair(descriptor, TextureSampler::CreateSampler(descriptor))).first->
+                                second;
     }
     else {
         sampler = sampler_iter->second;
@@ -341,28 +344,24 @@ std::shared_ptr<TextureSampler> TextureManager::GetSampler(const TextureSamplerD
     return sampler;
 }
 
-bool TextureManager::IsTextureAvailable(const std::string &file_path_in)
-{
+bool TextureManager::IsTextureAvailable(const std::string& file_path_in) {
     std::string file_path = FileManager::Get()->GetPath(file_path_in);
     std::lock_guard<std::mutex> lock(texture_Map_mutex);
     auto fnd = texture_Map.find(file_path); //TODO: Make sure the file path is in an appropriate format
     return fnd != texture_Map.end();
 }
 
-void TextureManager::ReleaseTexture(const std::string& file_path_in)
-{
+void TextureManager::ReleaseTexture(const std::string& file_path_in) {
     std::string file_path = FileManager::Get()->GetPath(file_path_in);
     std::lock_guard<std::mutex> lock(texture_Map_mutex);
     texture_Map.erase(file_path);
-
 }
 
-std::shared_ptr<ReflectionMap> TextureManager::GetReflectionMap(const std::string& path_in)
-{
+std::shared_ptr<ReflectionMap> TextureManager::GetReflectionMap(const std::string& path_in) {
     auto path = FileManager::Get()->GetPath(path_in);
     std::unique_lock<std::mutex> lock(reflection_maps_mutex);
     auto fnd = reflection_maps.find(path);
-    if (fnd != reflection_maps.end()) {
+    if(fnd != reflection_maps.end()) {
         return fnd->second;
     }
     auto result = std::make_shared<ReflectionMap>();
@@ -380,14 +379,17 @@ std::shared_ptr<ReflectionMap> TextureManager::GetReflectionMap(const std::strin
         cb_desc.usage = TextureUsage::COLOR_ATTACHMENT_READABLE;
         cb_desc.sampler = data->default_cubemap->GetBufferDescriptor().sampler;
         cb_desc.res = REFLECTION_RES;
-        
-        std::shared_ptr<RenderTexture2DCubemapResource> converted_cubemap = RenderResourceManager::Get()->CreateTextureCubemap(cb_desc);
-        std::shared_ptr<RenderTexture2DCubemapResource> converted_cubemap_diffuse = RenderResourceManager::Get()->CreateTextureCubemap(cb_desc);
+
+        std::shared_ptr<RenderTexture2DCubemapResource> converted_cubemap = RenderResourceManager::Get()->
+            CreateTextureCubemap(cb_desc);
+        std::shared_ptr<RenderTexture2DCubemapResource> converted_cubemap_diffuse = RenderResourceManager::Get()->
+            CreateTextureCubemap(cb_desc);
         cb_desc.res = SPECULAR_REFLECTION_RES;
         cb_desc.generate_mips = true;
         cb_desc.sampler = data->reflection_sampler;
         cb_desc.mipmap_levels = 6;
-        std::shared_ptr<RenderTexture2DCubemapResource> converted_cubemap_specular = RenderResourceManager::Get()->CreateTextureCubemap(cb_desc);
+        std::shared_ptr<RenderTexture2DCubemapResource> converted_cubemap_specular = RenderResourceManager::Get()->
+            CreateTextureCubemap(cb_desc);
 
         auto list = Renderer::Get()->GetRenderCommandList();
         auto queue = Renderer::Get()->GetCommandQueue();
@@ -395,21 +397,29 @@ std::shared_ptr<ReflectionMap> TextureManager::GetReflectionMap(const std::strin
 
         glm::mat4 projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.01f, 1000.0f);
         glm::mat4 light_views[6];
-        light_views[RenderResourceManager::Get()->GetCubemapFaceIndex(RenderCubemapFace::CUBEMAP_RIGHT)] 
-		    = projection * glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f) + glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
-        light_views[RenderResourceManager::Get()->GetCubemapFaceIndex(RenderCubemapFace::CUBEMAP_LEFT)] 
-		    = projection * glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f) + glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
-        light_views[RenderResourceManager::Get()->GetCubemapFaceIndex(RenderCubemapFace::CUBEMAP_TOP)] 
-		    = projection * glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f) + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        light_views[RenderResourceManager::Get()->GetCubemapFaceIndex(RenderCubemapFace::CUBEMAP_BOTTOM)] 
-		    = projection * glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f) + glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f));
-        light_views[RenderResourceManager::Get()->GetCubemapFaceIndex(RenderCubemapFace::CUBEMAP_FRONT)] 
-		    = projection * glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f) + glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f));
-        light_views[RenderResourceManager::Get()->GetCubemapFaceIndex(RenderCubemapFace::CUBEMAP_BACK)] 
-		    = projection * glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f) + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f));
-        RenderResourceManager::Get()->UploadDataToBuffer(list, data->const_buffer, glm::value_ptr(light_views[0]), sizeof(glm::mat4) * 6, 0);
+        light_views[RenderResourceManager::Get()->GetCubemapFaceIndex(RenderCubemapFace::CUBEMAP_RIGHT)]
+            = projection * glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f) + glm::vec3(1.0f, 0.0f, 0.0f),
+                                       glm::vec3(0.0f, -1.0f, 0.0f));
+        light_views[RenderResourceManager::Get()->GetCubemapFaceIndex(RenderCubemapFace::CUBEMAP_LEFT)]
+            = projection * glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f) + glm::vec3(-1.0f, 0.0f, 0.0f),
+                                       glm::vec3(0.0f, -1.0f, 0.0f));
+        light_views[RenderResourceManager::Get()->GetCubemapFaceIndex(RenderCubemapFace::CUBEMAP_TOP)]
+            = projection * glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f) + glm::vec3(0.0f, 1.0f, 0.0f),
+                                       glm::vec3(0.0f, 0.0f, 1.0f));
+        light_views[RenderResourceManager::Get()->GetCubemapFaceIndex(RenderCubemapFace::CUBEMAP_BOTTOM)]
+            = projection * glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f) + glm::vec3(0.0f, -1.0f, 0.0f),
+                                       glm::vec3(0.0f, 0.0f, -1.0f));
+        light_views[RenderResourceManager::Get()->GetCubemapFaceIndex(RenderCubemapFace::CUBEMAP_FRONT)]
+            = projection * glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f) + glm::vec3(0.0f, 0.0f, 1.0f),
+                                       glm::vec3(0.0f, -1.0f, 0.0f));
+        light_views[RenderResourceManager::Get()->GetCubemapFaceIndex(RenderCubemapFace::CUBEMAP_BACK)]
+            = projection * glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f) + glm::vec3(0.0f, 0.0f, -1.0f),
+                                       glm::vec3(0.0f, -1.0f, 0.0f));
+        RenderResourceManager::Get()->UploadDataToBuffer(list, data->const_buffer, glm::value_ptr(light_views[0]),
+                                                         sizeof(glm::mat4) * 6, 0);
         RenderResourceManager::Get()->SetFrameBufferColorAttachment(list, data->framebuffer, converted_cubemap);
-        RenderResourceManager::Get()->SetFrameBufferColorAttachment(list,data->framebuffer, converted_cubemap_diffuse, 1);
+        RenderResourceManager::Get()->SetFrameBufferColorAttachment(list, data->framebuffer, converted_cubemap_diffuse,
+                                                                    1);
         list->SetPipeline(data->reflection_convert_pipeline);
         list->SetRenderTarget(data->framebuffer);
         list->SetViewport(RenderViewport(glm::vec2(0.0f), glm::vec2(800, 800)));
@@ -418,13 +428,17 @@ std::shared_ptr<ReflectionMap> TextureManager::GetReflectionMap(const std::strin
         list->SetVertexBuffer(cube_mesh->GetVertexBuffer());
         list->SetIndexBuffer(cube_mesh->GetIndexBuffer());
         list->Draw(cube_mesh->GetIndexCount());
-        
-        RenderResourceManager::Get()->UploadDataToBuffer(list, data->const_buffer_specular, glm::value_ptr(light_views[0]), sizeof(glm::mat4) * 6, 0);
-        RenderResourceManager::Get()->SetFrameBufferColorAttachment(list, data->framebuffer, data->default_cubemap_diffuse, 1);
+
+        RenderResourceManager::Get()->UploadDataToBuffer(list, data->const_buffer_specular,
+                                                         glm::value_ptr(light_views[0]), sizeof(glm::mat4) * 6, 0);
+        RenderResourceManager::Get()->SetFrameBufferColorAttachment(list, data->framebuffer,
+                                                                    data->default_cubemap_diffuse, 1);
         int i = 0;
-        for (float roughness = 0.0; roughness <= 1.0; roughness += 0.2f) {
-            RenderResourceManager::Get()->SetFrameBufferColorAttachment(list, data->framebuffer, converted_cubemap_specular, 0,i);
-            RenderResourceManager::Get()->UploadDataToBuffer(list, data->const_buffer_specular, &roughness, sizeof(float), sizeof(glm::mat4) * 6);
+        for(float roughness = 0.0; roughness <= 1.0; roughness += 0.2f) {
+            RenderResourceManager::Get()->SetFrameBufferColorAttachment(
+                list, data->framebuffer, converted_cubemap_specular, 0, i);
+            RenderResourceManager::Get()->UploadDataToBuffer(list, data->const_buffer_specular, &roughness,
+                                                             sizeof(float), sizeof(glm::mat4) * 6);
             list->SetPipeline(data->specular_generation_pipeline);
             list->SetRenderTarget(data->framebuffer);
             unsigned int res = SPECULAR_REFLECTION_RES * std::pow(0.5, i);
@@ -441,13 +455,13 @@ std::shared_ptr<ReflectionMap> TextureManager::GetReflectionMap(const std::strin
         queue->ExecuteRenderCommandList(list);
 
         result.specular_map = converted_cubemap_specular;
-              
+
         result.diffuse_map = converted_cubemap_diffuse;
-              
+
         result.status = ReflectionMapStatus::LOADED;
 
         return result;
-        });
+    });
 
     async_queue->Submit(task);
 
@@ -461,32 +475,27 @@ std::shared_ptr<ReflectionMap> TextureManager::GetReflectionMap(const std::strin
     reflection_map_Load_queue.push_back(future);
 
     return result;
-
-    
 }
 
-void TextureManager::Init()
-{
-    if (!instance) {
+void TextureManager::Init() {
+    if(!instance) {
         instance = new TextureManager;
     }
 }
 
-TextureManager* TextureManager::Get()
-{
+TextureManager* TextureManager::Get() {
     return instance;
 }
 
-void TextureManager::Shutdown()
-{
-    if (instance) {
+void TextureManager::Shutdown() {
+    if(instance) {
         delete instance->data;
         delete instance;
     }
 }
 
-TextureManager::TextureManager() : texture_Map(), texture_Map_mutex(), sampler_cache(), sampler_cache_mutex(), reflection_maps(), reflection_maps_mutex(), data(new TextureManager_internal)
-{
+TextureManager::TextureManager() : texture_Map(), texture_Map_mutex(), sampler_cache(), sampler_cache_mutex(),
+                                   reflection_maps(), reflection_maps_mutex(), data(new TextureManager_internal) {
     RenderTexture2DDescriptor tex_desc;
     tex_desc.format = TextureFormat::RGBA_UNSIGNED_CHAR;
     tex_desc.height = 1;
@@ -517,13 +526,15 @@ TextureManager::TextureManager() : texture_Map(), texture_Map_mutex(), sampler_c
     auto def_tex_cbm = RenderResourceManager::Get()->CreateTextureCubemap(tex_cubemap_desc);
     auto queue = Renderer::Get()->GetCommandQueue();
     auto command_list = Renderer::Get()->GetRenderCommandList();
-    unsigned char tex_data[4] = { 255,255,255,255 };
-    float normal_tex_data[4] = { 0.5f,0.5f,1.0f,1.0f };
+    unsigned char tex_data[4] = {255, 255, 255, 255};
+    float normal_tex_data[4] = {0.5f, 0.5f, 1.0f, 1.0f};
     RenderResourceManager::Get()->UploadDataToTexture2D(command_list, def_tex, &tex_data, 1, 1, 0, 0);
     RenderResourceManager::Get()->UploadDataToTexture2D(command_list, def_normal_tex, &normal_tex_data, 1, 1, 0, 0);
-    RenderResourceManager::Get()->UploadDataToTexture2DArray(command_list, def_tex_arr,0, &tex_data, 1, 1, 0, 0);
-    for (int i = 0; i < 6; i++) {
-        RenderResourceManager::Get()->UploadDataToTexture2DCubemap(command_list, def_tex_cbm, (CubemapFace)((char)CubemapFace::POSITIVE_X + i), &tex_data, 1, 1, 0, 0);
+    RenderResourceManager::Get()->UploadDataToTexture2DArray(command_list, def_tex_arr, 0, &tex_data, 1, 1, 0, 0);
+    for(int i = 0; i < 6; i++) {
+        RenderResourceManager::Get()->UploadDataToTexture2DCubemap(command_list, def_tex_cbm,
+                                                                   (CubemapFace)((char)CubemapFace::POSITIVE_X + i),
+                                                                   &tex_data, 1, 1, 0, 0);
     }
     queue->ExecuteRenderCommandList(command_list);
     default_texture = def_tex;
@@ -552,11 +563,14 @@ TextureManager::TextureManager() : texture_Map(), texture_Map_mutex(), sampler_c
     data->reflection_sampler = TextureSampler::CreateSampler(reflection_sampler_desc);
 
 
-    RenderBufferDescriptor const_reflection_buffer_desc(sizeof(glm::mat4)*6,RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
+    RenderBufferDescriptor const_reflection_buffer_desc(sizeof(glm::mat4) * 6, RenderBufferType::UPLOAD,
+                                                        RenderBufferUsage::CONSTANT_BUFFER);
 
     data->const_buffer = RenderResourceManager::Get()->CreateBuffer(const_reflection_buffer_desc);
 
-    RenderBufferDescriptor specular_generation_buffer_desc(sizeof(glm::mat4) * 6 + sizeof(float), RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
+    RenderBufferDescriptor specular_generation_buffer_desc(sizeof(glm::mat4) * 6 + sizeof(float),
+                                                           RenderBufferType::UPLOAD,
+                                                           RenderBufferUsage::CONSTANT_BUFFER);
 
     data->const_buffer_specular = RenderResourceManager::Get()->CreateBuffer(specular_generation_buffer_desc);
 
@@ -565,22 +579,17 @@ TextureManager::TextureManager() : texture_Map(), texture_Map_mutex(), sampler_c
     default_cubemap.usage = TextureUsage::COLOR_ATTACHMENT_READABLE;
     default_cubemap.res = REFLECTION_RES;
     default_cubemap.sampler = TextureSampler::CreateSampler(TextureSamplerDescritor());
-    
 
 
     RenderFrameBufferDescriptor frame_desc;
     data->default_cubemap = RenderResourceManager::Get()->CreateTextureCubemap(default_cubemap);
     data->default_cubemap_diffuse = RenderResourceManager::Get()->CreateTextureCubemap(default_cubemap);
-    frame_desc.color_attachments.push_back({ 0,data->default_cubemap });
-    frame_desc.color_attachments.push_back({ 0,data->default_cubemap_diffuse });
+    frame_desc.color_attachments.push_back({0, data->default_cubemap});
+    frame_desc.color_attachments.push_back({0, data->default_cubemap_diffuse});
     data->framebuffer = RenderResourceManager::Get()->CreateFrameBuffer(frame_desc);
-
-
-
 }
 
-void TextureManager::ClearTextureCache()
-{
+void TextureManager::ClearTextureCache() {
     std::lock_guard<std::mutex> lock1(sampler_cache_mutex);
     std::lock_guard<std::mutex> lock2(texture_Map_mutex);
 
@@ -588,17 +597,16 @@ void TextureManager::ClearTextureCache()
     sampler_cache.clear();
 }
 
-void TextureManager::UpdateLoadedReflectionMaps()
-{
+void TextureManager::UpdateLoadedReflectionMaps() {
     std::lock_guard<std::mutex> lock(reflection_map_Load_queue_mutex);
-    for (auto& loaded_reflection_map : reflection_map_Load_queue) {
-        if (!loaded_reflection_map.future.IsAvailable() || loaded_reflection_map.destroyed) continue;
+    for(auto& loaded_reflection_map : reflection_map_Load_queue) {
+        if(!loaded_reflection_map.future.IsAvailable() || loaded_reflection_map.destroyed) continue;
         try {
             *(loaded_reflection_map.reflection_map) = std::move(loaded_reflection_map.future.GetValue());
 
             loaded_reflection_map.destroyed = true;
         }
-        catch (...) {
+        catch(...) {
             loaded_reflection_map.reflection_map->status = ReflectionMapStatus::ERROR;
             std::lock_guard<std::mutex> lock(reflection_maps_mutex);
             reflection_maps.erase(loaded_reflection_map.path);
@@ -607,29 +615,26 @@ void TextureManager::UpdateLoadedReflectionMaps()
     }
 
 
-    while (!reflection_map_Load_queue.empty() && reflection_map_Load_queue.front().destroyed) {
+    while(!reflection_map_Load_queue.empty() && reflection_map_Load_queue.front().destroyed) {
         reflection_map_Load_queue.pop_front();
     }
 }
 
-std::shared_ptr<RenderTexture2DResource> NativeTextureProxy::LoadTexture()
-{
+std::shared_ptr<RenderTexture2DResource> NativeTextureProxy::LoadTexture() {
     return TextureManager::Get()->LoadTextureFromFile(path, generate_mips);
 }
 
-std::shared_ptr<RenderTexture2DResource> StbiTextureProxy::LoadTexture()
-{
-     std::string file_path = FileManager::Get()->GetPath(path);
-     if (!stbi_is_hdr(file_path.c_str())) {
-
+std::shared_ptr<RenderTexture2DResource> StbiTextureProxy::LoadTexture() {
+    std::string file_path = FileManager::Get()->GetPath(path);
+    if(!stbi_is_hdr(file_path.c_str())) {
         int x, y, ch;
-        
+
         //In Vulkan, force rgb images into rgba format
         stbi_info(file_path.c_str(), &x, &y, &ch);
         int n = 4;
 
         unsigned char* image = stbi_load(file_path.c_str(), &x, &y, &ch, n);
-        if (!image) {
+        if(!image) {
             throw std::runtime_error(stbi_failure_reason());
         }
 
@@ -637,36 +642,64 @@ std::shared_ptr<RenderTexture2DResource> StbiTextureProxy::LoadTexture()
         texture_desc.format = TextureFormat::RGBA_UNSIGNED_CHAR;
         texture_desc.width = x;
         texture_desc.height = y;
-        texture_desc.mipmap_levels = generate_mips ? 1 + glm::floor(glm::log2((float)glm::max(x,y))) : 1;
+        texture_desc.mipmap_levels = generate_mips ? 1 + glm::floor(glm::log2((float)glm::max(x, y))) : 1;
         if(sampler) {
             texture_desc.sampler = sampler;
-        } else {
+        }
+        else {
             texture_desc.sampler = TextureManager::Get()->GetSampler(TextureSamplerDescritor());
         }
         texture_desc.usage = usage;
 
         auto texture = RenderResourceManager::Get()->CreateTexture(texture_desc);
 
-        auto command_list = Renderer::Get()->GetRenderCommandList(); //TODO:Make sure you dont use too many command lists.
+        auto command_list = Renderer::Get()->GetRenderCommandList();
+        //TODO:Make sure you dont use too many command lists.
         auto command_queue = Renderer::Get()->GetCommandQueue();
-        
+
         RenderResourceManager::Get()->UploadDataToTexture2D(command_list, texture, image, x, y, 0, 0, 0);
         if(generate_mips) command_list->GenerateMIPs(texture);
-        
-        command_queue->ExecuteRenderCommandList(command_list);
 
-        return texture;
+        command_queue->ExecuteRenderCommandList(command_list);
+        if(native_file_path.empty()) {
+            stbi_image_free(image);
+            return texture;
+        }
+
+        std::ofstream output_file(FileManager::Get()->GetPath(native_file_path), std::ios_base::binary);
+        if (!output_file.is_open()) {
+            throw std::runtime_error("File " + native_file_path + " could not be created");
+        }
+        auto desc = texture_desc.sampler->GetDescriptor();
+
+        output_file << "texture_info_vulkan_format\n";
+        output_file << x << " " << y << " " << n << "\n";
+        output_file << "ldr\n";
+        output_file << "sampler\n";
+        output_file << (int)desc.AddressMode_U << " " << (int)desc.AddressMode_V << " " << (int)desc.AddressMode_W << "\n";
+        output_file << desc.border_color.r << " " << desc.border_color.g << " " << desc.border_color.b << "\n";
+        output_file << (int)desc.filter << "\n";
+        output_file << desc.LOD_bias << "\n";
+        output_file << desc.max_LOD << "\n";
+        output_file << desc.min_LOD << "\n";
+
+        output_file << "texture\n";
+        output_file.write(const_cast<const char*>((char*)image), x * y * n);
+        output_file << "\nend";
+
+        output_file.close();
 
         stbi_image_free(image);
+        return texture;
     } else {
         int x, y, ch;
-        
+
         //In Vulkan, force rgb images into rgba format
         stbi_info(file_path.c_str(), &x, &y, &ch);
         int n = 4;
 
         float* image = stbi_loadf(file_path.c_str(), &x, &y, &ch, n);
-        if (!image) {
+        if(!image) {
             throw std::runtime_error(stbi_failure_reason());
         }
 
@@ -674,26 +707,65 @@ std::shared_ptr<RenderTexture2DResource> StbiTextureProxy::LoadTexture()
         texture_desc.format = TextureFormat::RGB_32FLOAT;
         texture_desc.width = x;
         texture_desc.height = y;
-        texture_desc.mipmap_levels = generate_mips ? 1 + glm::floor(glm::log2((float)glm::max(x,y))) : 1;
+        texture_desc.mipmap_levels = generate_mips ? 1 + glm::floor(glm::log2((float)glm::max(x, y))) : 1;
         if(sampler) {
             texture_desc.sampler = sampler;
-        } else {
+        }
+        else {
             texture_desc.sampler = TextureManager::Get()->GetSampler(TextureSamplerDescritor());
         }
         texture_desc.usage = usage;
 
         auto texture = RenderResourceManager::Get()->CreateTexture(texture_desc);
 
-        auto command_list = Renderer::Get()->GetRenderCommandList(); //TODO:Make sure you dont use too many command lists.
+        auto command_list = Renderer::Get()->GetRenderCommandList();
+        //TODO:Make sure you dont use too many command lists.
         auto command_queue = Renderer::Get()->GetCommandQueue();
-        
+
         RenderResourceManager::Get()->UploadDataToTexture2D(command_list, texture, image, x, y, 0, 0, 0);
         if(generate_mips) command_list->GenerateMIPs(texture);
-        
+
         command_queue->ExecuteRenderCommandList(command_list);
 
-        return texture;
+        if(native_file_path.empty()) {
+            stbi_image_free(image);
+            return texture;
+        }
+
+        std::ofstream output_file(FileManager::Get()->GetPath(native_file_path), std::ios_base::binary);
+        if (!output_file.is_open()) {
+            throw std::runtime_error("File " + native_file_path + " could not be created");
+        }
+        auto desc = sampler->GetDescriptor();
+
+        output_file << "texture_info_vulkan_format\n";
+        output_file << x << " " << y << " " << n << "\n";
+        output_file << "hdr\n";
+        output_file << "sampler\n";
+        output_file << (int)desc.AddressMode_U << " " << (int)desc.AddressMode_V << " " << (int)desc.AddressMode_W << "\n";
+        output_file << desc.border_color.r << " " << desc.border_color.g << " " << desc.border_color.b << "\n";
+        output_file << (int)desc.filter << "\n";
+        output_file << desc.LOD_bias << "\n";
+        output_file << desc.max_LOD << "\n";
+        output_file << desc.min_LOD << "\n";
+
+        output_file << "texture\n";
+        output_file.write(const_cast<const char*>((char*)image), x * y * n * sizeof(float));
+        output_file << "\nend";
+
+        output_file.close();
 
         stbi_image_free(image);
+
+        return texture;
+    }
+}
+
+const std::string& StbiTextureProxy::GetNativeFilePath() {
+    if(native_file_path != "") {
+        return native_file_path;
+    }
+    else {
+        throw std::runtime_error("No native file exists for the texture.");
     }
 }

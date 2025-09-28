@@ -3,6 +3,8 @@
 #include <Renderer/MeshManager.h>
 #include <Renderer/MaterialManager.h>
 
+#include "FileManager.h"
+
 class aiNode;
 class aiScene;
 class aiMesh;
@@ -14,12 +16,16 @@ namespace Assimp {
 
 class AssimpSceneProxy : public SceneProxy {
 public:
-    AssimpSceneProxy(const std::string& path, float scale_factor = 1.0f) : path(path), scale_factor(scale_factor) {}
+    AssimpSceneProxy(const std::string& path, float scale_factor = 1.0f, const std::string& scene_save_path = "") : path(path), scale_factor(scale_factor), scene_save_path(scene_save_path) {}
 
     virtual LoadInfo LoadScene(World& world) override;
 	virtual const std::string& GetFilePath() const override {
         return path;
     }
+
+    virtual const std::string& GetNativeFilePath() const override {
+	    return scene_save_path;
+	};
 	virtual ~AssimpSceneProxy() {}
 
     /**
@@ -38,12 +44,14 @@ private:
             Entity entity;
             aiNode* entity_node;
         };
-        std::shared_ptr<AssimpSceneProxy::AssimpOpenScene> open_scene;
         World& world;
+        std::shared_ptr<AssimpSceneProxy::AssimpOpenScene> open_scene;
         std::vector<std::shared_ptr<Mesh>> meshes;
         std::vector<std::shared_ptr<Material>> materials;
-        std::unordered_map<std::string, imported_entity> name_map; 
+        std::unordered_map<std::string, imported_entity> name_map;
         aiMetadata* gltf_light_meta = nullptr;
+        std::string scene_resource_directory = "";
+        bool serialize; // Whether to serialize imported resources into a native format;
     };
     void LoadMeshes(LoadState& state);
     void LoadLights(LoadState& state);
@@ -56,18 +64,45 @@ private:
     void ProbeSceneMetadata(LoadState &state);
 
     std::string path;
+    std::string scene_save_path;
     float scale_factor = 1.0f;
 };
 
 class AssimpMeshProxy : public MeshProxy {
 public:
-    AssimpMeshProxy(const std::string& path, uint32_t mesh_index, std::shared_ptr<AssimpSceneProxy::AssimpOpenScene> open_scene = nullptr)
-        : path(path), mesh_index(mesh_index), open_scene(open_scene) {}
+    AssimpMeshProxy(const std::string& path, uint32_t mesh_index, std::shared_ptr<AssimpSceneProxy::AssimpOpenScene> open_scene, std::string native_path = "")
+        : path(path), mesh_index(mesh_index), open_scene(open_scene), native_file_path(native_path) {}
     virtual MeshSourceData LoadMesh() override;
+    virtual const std::string& GetFilePath() override {
+        return path;
+    }
+    virtual const std::string& GetNativeFilePath() override;
 	virtual bool IsSkeletal() override;
 	virtual ~AssimpMeshProxy() {}
 public:
     std::string path;
+    std::string native_file_path = "";
     uint32_t mesh_index;
+    std::shared_ptr<AssimpSceneProxy::AssimpOpenScene> open_scene = nullptr; ///< if not nullptr this scene is used to load the mesh instead of reopening it
+};
+
+class AssimpMaterialProxy : public MaterialProxy, public std::enable_shared_from_this<AssimpMaterialProxy> {
+public:
+    AssimpMaterialProxy(const std::string& path, uint32_t material_index, std::shared_ptr<AssimpSceneProxy::AssimpOpenScene> open_scene, std::string native_path = "")
+        : path(path), material_index(material_index), open_scene(open_scene), native_file_path(native_path) {}
+
+    virtual std::shared_ptr<Material> LoadMaterial();
+
+    virtual const std::string& GetFilePath() override {
+        return path;
+    }
+
+    virtual const std::string& GetNativeFilePath() override;
+
+    virtual ~AssimpMaterialProxy() {}
+public:
+    std::string path;
+    std::string native_file_path;
+    uint32_t material_index;
     std::shared_ptr<AssimpSceneProxy::AssimpOpenScene> open_scene = nullptr; ///< if not nullptr this scene is used to load the mesh instead of reopening it
 };

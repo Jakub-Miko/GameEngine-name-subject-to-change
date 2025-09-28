@@ -233,6 +233,8 @@ class MeshProxy {
 public:
 	virtual MeshSourceData LoadMesh() = 0;
 	virtual bool IsSkeletal() = 0;
+	virtual const std::string& GetFilePath() = 0;
+	virtual const std::string& GetNativeFilePath() = 0;
 	virtual ~MeshProxy() {}
 };
 
@@ -240,6 +242,12 @@ class NativeMeshProxy : public MeshProxy {
 public:
 	NativeMeshProxy(std::string path) : path(path) {}
 	virtual MeshSourceData LoadMesh() override;
+	virtual const std::string& GetFilePath() override {
+		return path;
+	}
+	virtual const std::string& GetNativeFilePath() override {
+		return path;
+	}
 	virtual bool IsSkeletal() override;
 	virtual ~NativeMeshProxy() {}
 

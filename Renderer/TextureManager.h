@@ -34,6 +34,7 @@ class TextureProxy {
 public:
 	virtual std::shared_ptr<RenderTexture2DResource> LoadTexture() = 0;
 	virtual const std::string& GetFilePath() = 0; 
+	virtual const std::string& GetNativeFilePath() = 0;
 	virtual ~TextureProxy() {}
 };
 
@@ -44,6 +45,9 @@ public:
 	virtual const std::string& GetFilePath() override {
 		return path;
 	} 
+	virtual const std::string& GetNativeFilePath() override {
+		return path;
+	}
 	virtual ~NativeTextureProxy() override {}
 private:
 	std::string path = "";
@@ -52,15 +56,17 @@ private:
 
 class StbiTextureProxy : public TextureProxy {
 public:
-	StbiTextureProxy(const std::string& path, bool generate_mips = false, std::shared_ptr<TextureSampler> sampler = nullptr, 
-		TextureUsage usage = TextureUsage::SAMPLE_WRITABLE) : path(path), generate_mips(generate_mips), sampler(sampler), usage(usage) {}
+	StbiTextureProxy(const std::string& path, std::string native_path = "", bool generate_mips = false, std::shared_ptr<TextureSampler> sampler = nullptr,
+		TextureUsage usage = TextureUsage::SAMPLE_WRITABLE) : path(path), generate_mips(generate_mips), sampler(sampler), usage(usage), native_file_path(native_path) {}
 	virtual std::shared_ptr<RenderTexture2DResource> LoadTexture() override;
 	virtual const std::string& GetFilePath() override {
 		return path;
 	} 
+	virtual const std::string& GetNativeFilePath() override;
 	virtual ~StbiTextureProxy() override {}
 private:
 	std::string path = "";
+	std::string native_file_path = "";
 	std::shared_ptr<TextureSampler> sampler = nullptr;
 	TextureUsage usage = TextureUsage::SAMPLE_WRITABLE;
 	bool generate_mips = false;

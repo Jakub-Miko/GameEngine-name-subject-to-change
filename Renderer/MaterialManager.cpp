@@ -225,7 +225,7 @@ void MaterialManager::SerializeMaterial(const std::string& filepath, std::shared
 			break;
 		case MaterialLayoutItemType::TEXTURE:
 			parameter_json["type"] = "TEXTURE";
-			texture = std::get<MaterialTextureType>(param.resource).GetPath();
+			texture = std::get<MaterialTextureType>(param.resource).GetNativePath();
 			if (texture.empty()) throw std::runtime_error("Filepath to a texture could not be found during material serialization.");
 			parameter_json["value"] = texture;
 			break;
@@ -337,8 +337,16 @@ void Material::SetMaterial(std::shared_ptr<RenderCommandList> command_list)
 //}
 
 void Material::SetTexture(const std::string& name, std::shared_ptr<TextureProxy> texture_proxy) {
+	auto param_index = GetMaterialTemplate()->GetMaterialTemplateParameterIndex(name);
+	auto& current_parameter = parameters[param_index];
+	if(current_parameter.type != MaterialLayoutItemType::TEXTURE || !std::holds_alternative<MaterialTextureType>(current_parameter.resource)) {
+		throw std::runtime_error("Material parameter supplied to SetTexture is not a texture.\n");
+	}
+
 	auto future = TextureManager::Get()->LoadTextureFromProxyAsync(texture_proxy);
 	MaterialManager::Get()->AddTextureLoad(shared_from_this(),name, future, texture_proxy);
+	current_parameter.flags &= ~MaterialParameter_flags::DEFAULT;
+	std::get<MaterialTextureType>(current_parameter.resource).texture_proxy = texture_proxy;
 }
 
 void Material::SetTexture(const std::string& name, const std::string& path)
@@ -350,6 +358,10 @@ void Material::SetTexture(const std::string& name, const std::string& path)
 	else {
 		auto future = TextureManager::Get()->LoadTextureFromProxyAsync(proxy);
 		MaterialManager::Get()->AddTextureLoad(shared_from_this(),name, future, proxy);
+		auto param_index = GetMaterialTemplate()->GetMaterialTemplateParameterIndex(name);
+		auto& current_parameter = parameters[param_index];
+		current_parameter.flags &= ~MaterialParameter_flags::DEFAULT;
+		std::get<MaterialTextureType>(current_parameter.resource).texture_proxy = proxy;
 	}
 }
 //
@@ -560,6 +572,10 @@ std::shared_ptr<Material> MaterialManager::CreateMaterial(const std::string& mat
 	
 	return mat_template->CreateMaterial();
 
+}
+
+std::shared_ptr<Material> MaterialManager::CreateMaterialFromProxy(std::shared_ptr<MaterialProxy> proxy) {
+	return proxy->LoadMaterial();
 }
 
 bool Material::MaterialParameter::IsDirty() const {

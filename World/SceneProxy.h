@@ -13,12 +13,14 @@ class SceneProxy {
 public:
 
 	struct LoadInfo {
-		bool has_script; 
+		bool has_script;
+		bool save_after_load = false;
 		std::string script;
 	};
 
 	virtual LoadInfo LoadScene(World& world) = 0;
 	virtual const std::string& GetFilePath() const = 0;
+	virtual const std::string& GetNativeFilePath() const = 0;
 	virtual ~SceneProxy() {}
 };
 
@@ -35,6 +37,10 @@ public:
 
 	virtual LoadInfo LoadScene(World& world) override;
 	virtual const std::string& GetFilePath() const override {
+		return path;
+	};
+
+	virtual const std::string& GetNativeFilePath() const override {
 		return path;
 	};
 

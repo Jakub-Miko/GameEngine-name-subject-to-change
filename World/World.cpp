@@ -485,7 +485,6 @@ void World::LoadSceneSystem()
 		}
 
 		current_scene = load_scene;
-		load_scene = nullptr;
 
 		if (GameStateMachine::Get()->current_state) {
 			GameStateMachine::Get()->ScriptOnAttach();
@@ -493,6 +492,10 @@ void World::LoadSceneSystem()
 		m_SceneGraph.CalculateMatricies();
 		m_SpatialIndex.Rebuild();
 
+		if(load_info.save_after_load) {
+			SaveScene(FileManager::Get()->GetPath(load_scene->GetNativeFilePath()));
+		}
+		load_scene = nullptr;
 	}
 }
 

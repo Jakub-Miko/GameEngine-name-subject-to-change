@@ -10,6 +10,8 @@
 #include <FileManager.h>
 #include <iostream>
 
+#include "Components/SerializableComponent.h"
+
 
 void AssimpSceneProxy::ProcessNode(LoadState& state, aiNode* node, aiNode* parent_node, Entity parent_entity) {
     // if(node->mMetaData) {
@@ -25,6 +27,9 @@ void AssimpSceneProxy::ProcessNode(LoadState& state, aiNode* node, aiNode* paren
                                                glm::vec3{rotate_axis.x, rotate_axis.y, rotate_axis.z}, rotate_angle);
 
     world.SetComponent<LabelComponent>(entity, LabelComponent(node->mName.C_Str()));
+    if(state.serialize) {
+        world.SetComponent<SerializableComponent>(entity, SerializableComponent{});
+    }
     
     state.name_map.insert(std::make_pair(node->mName.C_Str(), LoadState::imported_entity {entity, node}));
 
@@ -35,10 +40,16 @@ void AssimpSceneProxy::ProcessNode(LoadState& state, aiNode* node, aiNode* paren
                 auto ai_mesh = state.open_scene->scene->mMeshes[node->mMeshes[i]];
                 world.SetComponent<LabelComponent>(mesh_entity, LabelComponent(node->mName.C_Str() + std::string("_") + ai_mesh->mName.C_Str()));
                 world.SetComponent<MeshComponent>(mesh_entity, MeshComponent(state.meshes[node->mMeshes[i]],state.materials[ai_mesh->mMaterialIndex]));
+                if(state.serialize) {
+                    world.SetComponent<SerializableComponent>(mesh_entity);
+                }
             }
         } else {
             auto ai_mesh = state.open_scene->scene->mMeshes[node->mMeshes[0]];
             world.SetComponent<MeshComponent>(entity, MeshComponent(state.meshes[node->mMeshes[0]], state.materials[ai_mesh->mMaterialIndex]));
+            if(state.serialize) {
+                world.SetComponent<SerializableComponent>(entity, SerializableComponent{});
+            }
         }
     } 
 
@@ -54,34 +65,10 @@ void AssimpSceneProxy::LoadMaterials(LoadState &state)
     auto manager = MaterialManager::Get();
     auto mat_template = MaterialManager::Get()->GetMaterialTemplate("DeferredGPassMaterial");
     auto root_path = std::filesystem::path(path).parent_path().generic_string() + "/";
+    bool serialized = state.serialize;
     for(int i = 0; i < state.open_scene->scene->mNumMaterials; i++) {
-        auto mat = state.open_scene->scene->mMaterials[i];
-        auto material = mat_template->CreateMaterial();
-        glm::vec4 color(1.0f,1.0f,1.0f,1.0f);
-        if(aiGetMaterialColor(mat, AI_MATKEY_COLOR_DIFFUSE,(aiColor4D*)glm::value_ptr(color)) == AI_SUCCESS) {
-            material->SetParameter("Base_Color", color);
-        }
-        float roughness_factor = 1.0f;
-        if(aiGetMaterialFloat(mat, AI_MATKEY_ROUGHNESS_FACTOR,&roughness_factor) == AI_SUCCESS) {
-            material->SetParameter("roughness_gain", roughness_factor);
-        }
-        aiString texture_path;
-        std::string real_path;
-        if(aiGetMaterialTexture(mat, aiTextureType::aiTextureType_DIFFUSE,0, &texture_path) == AI_SUCCESS) {
-            real_path = root_path + texture_path.C_Str();
-            std::replace(real_path.begin(), real_path.end(), '\\', '/');
-            material->SetTexture("Color", std::make_shared<StbiTextureProxy>(real_path));
-        }
-        if(aiGetMaterialTexture(mat, aiTextureType::aiTextureType_NORMALS,0, &texture_path) == AI_SUCCESS) {
-            real_path = root_path + texture_path.C_Str();
-            std::replace(real_path.begin(), real_path.end(), '\\', '/');
-            material->SetTexture("Normal", std::make_shared<StbiTextureProxy>(real_path));
-        }
-        if(aiGetMaterialTexture(mat, aiTextureType::aiTextureType_DIFFUSE_ROUGHNESS,0, &texture_path) == AI_SUCCESS) {
-            real_path = root_path + texture_path.C_Str();
-            std::replace(real_path.begin(), real_path.end(), '\\', '/');
-            material->SetTexture("Roughness", std::make_shared<StbiTextureProxy>(real_path));
-        }
+        auto proxy = std::make_shared<AssimpMaterialProxy>(path, i, state.open_scene, serialized ? state.scene_resource_directory + "/materials/mat_" + std::to_string(i) + ".mat" : "");
+        auto material = proxy->LoadMaterial();
         state.materials.push_back(material);
     }
 }
@@ -89,7 +76,8 @@ void AssimpSceneProxy::LoadMaterials(LoadState &state)
 void AssimpSceneProxy::LoadMeshes(LoadState& state) {
     auto manager = MeshManager::Get();
     for(int i = 0; i < state.open_scene->scene->mNumMeshes; i++) {
-        state.meshes.push_back(manager->LoadMeshFromProxyAsync(std::make_shared<AssimpMeshProxy>(path, i, state.open_scene)));
+        auto proxy = std::make_shared<AssimpMeshProxy>(path, i, state.open_scene, state.serialize ? state.scene_resource_directory + "/" + state.open_scene->scene->mMeshes[i]->mName.C_Str() + ".mesh" : "");
+        state.meshes.push_back(manager->LoadMeshFromProxyAsync(proxy));
     }
 }
 
@@ -190,7 +178,7 @@ double GetDouble(aiMetadataEntry* entry) {
  
 void AssimpSceneProxy::LoadLights(LoadState &state)
 {
-    Inspect_Metadata(state, state.open_scene->scene->mMetaData);
+    //Inspect_Metadata(state, state.open_scene->scene->mMetaData);
 
     auto& world = state.world;
     for(int i = 0; i < state.open_scene->scene->mNumLights; i++) {
@@ -242,12 +230,18 @@ void AssimpSceneProxy::LoadLights(LoadState &state)
         case aiLightSourceType::aiLightSource_POINT:
             {
                 glm::vec3 attenuation(light->mAttenuationConstant, light->mAttenuationLinear, light->mAttenuationQuadratic);
-                world.SetComponent<LightComponent>(light_ent, LightComponent(attenuation, color));                
+                world.SetComponent<LightComponent>(light_ent, LightComponent(attenuation, color));
+                if(state.serialize) {
+                    world.SetComponent<SerializableComponent>(light_ent, SerializableComponent{});
+                }
                 break;
             }
         case aiLightSourceType::aiLightSource_DIRECTIONAL:
             {
                 world.SetComponent<LightComponent>(light_ent, LightComponent(LightType::DIRECTIONAL,color));
+                if(state.serialize) {
+                    world.SetComponent<SerializableComponent>(light_ent, SerializableComponent{});
+                }
                 break;
             }
         default:
@@ -274,7 +268,9 @@ void AssimpSceneProxy::LoadCameras(LoadState &state)
 		float aspect_ratio = (float)props.resolution_x / (float)props.resolution_y;
 
         world.SetComponent<CameraComponent>(camera_ent, CameraComponent(glm::degrees(camera->mHorizontalFOV), camera->mClipPlaneNear, camera->mClipPlaneFar, aspect_ratio));
-        
+        if(state.serialize) {
+            world.SetComponent<SerializableComponent>(camera_ent, SerializableComponent{});
+        }
     }
 }
 
@@ -283,6 +279,29 @@ AssimpSceneProxy::LoadInfo AssimpSceneProxy::LoadScene(World &world)
     LoadInfo info = {};
     info.has_script = false;
     info.script = "";
+
+    LoadState state = {world};
+    state.serialize = !scene_save_path.empty();
+
+    if(!scene_save_path.empty()) {
+        auto scene_path = std::filesystem::path(FileManager::Get()->GetPath(scene_save_path));
+        if(scene_path.extension() != ".scene") {
+            throw std::runtime_error("Scene path must have the .scene extension.\n");
+        }
+        auto directory = scene_path.parent_path() / scene_path.stem();
+
+        if(std::filesystem::exists(directory)) {
+            if(!std::filesystem::is_directory(directory)) {
+                throw std::runtime_error("Scene resource directory could not be created, because another file with the same name already exists. (Scene directory: " + directory.generic_string() + ")\n");
+            }
+            if(!std::filesystem::is_empty(directory)) {
+                throw std::runtime_error("Scene resource directory exists but is not an empty directory: " + directory.generic_string() + "\n");
+            }
+        } else {
+            std::filesystem::create_directory(directory);
+        }
+        state.scene_resource_directory = directory;
+    }
 
     Assimp::Importer* importer = new Assimp::Importer;
     importer->SetPropertyBool(AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, false);
@@ -304,7 +323,7 @@ AssimpSceneProxy::LoadInfo AssimpSceneProxy::LoadScene(World &world)
     auto open_scene = std::make_shared<AssimpOpenScene>();
     open_scene->importer = importer;
     open_scene->scene = scene;
-    LoadState state = {open_scene, world, {}};
+    state.open_scene = open_scene;
 
     if(!scene) {
         throw std::runtime_error("Scene could" + path + " not be loaded.\n");
@@ -318,6 +337,8 @@ AssimpSceneProxy::LoadInfo AssimpSceneProxy::LoadScene(World &world)
 
     LoadLights(state);
     LoadCameras(state);
+
+    info.save_after_load = state.serialize;
 
     return info;
 }
@@ -515,14 +536,163 @@ MeshSourceData AssimpMeshProxy::LoadMesh()
     data.vertex_count = num_of_verticies;
     data.vertex_size = layout->stride;
 
-    open_scene.reset(); 
+    if(native_file_path.empty()) {
+        open_scene.reset();
+        return data;
+    }
 
+    // Serialize into a native file
+
+    static_assert(std::numeric_limits<double>::is_iec559 && std::numeric_limits<float>::is_iec559, "This pc doesn't comply to IEEE 754 and thus isn't supported");
+
+    //bool has_bones = import_data.bone_Indicies != nullptr;
+
+    std::string out_data = FileManager::Get()->GetPath(native_file_path);
+
+    std::ofstream output_file(out_data , std::ios_base::binary);
+    if (!output_file.is_open()) {
+        throw std::runtime_error("File " + out_data + " could not be created");
+    }
+
+    output_file << "mesh_info\n";
+    output_file << data.index_count << "\n";
+    output_file << data.vertex_count << "\n";
+    output_file << num_of_uv_channels << "\n";
+    output_file << "normal_mesh" << "\n";
+    output_file << "vertex_layout\n";
+    output_file << layout->layout.size() << "\n";
+    for (auto& output_element : layout->layout) {
+        output_file << " " << output_element.name << " " << output_element.size << " " << (int)output_element.type << "\n";
+    }
+    output_file << "vertex_buffer\n";
+    output_file.write((const char*)vertex_buffer, layout->stride * data.vertex_count);
+    output_file << "\nindex_buffer\n";
+    output_file.write((const char*)data.index_buffer, sizeof(unsigned int) * data.index_count);
+    output_file << "\nbounding_box\n";
+    output_file << data.bounding_box.GetBoxSize().x << " " << data.bounding_box.GetBoxSize().y << " " << data.bounding_box.GetBoxSize().z << "\n";
+    output_file << data.bounding_box.GetBoxOffset().x << " " << data.bounding_box.GetBoxOffset().y << " " << data.bounding_box.GetBoxOffset().z << "\n";
+    // if (has_bones) {
+    //     output_file << "skeleton" << "\n";
+    //     output_file << import_data.skeleton->parent_bone_array.size() << "\n";
+    //     auto& skelton_bone_array = import_data.skeleton->parent_bone_array;
+    //     for (auto& bone : skelton_bone_array) {
+    //         auto offset_mat = glm::value_ptr(bone.offset_matrix);
+    //         output_file << bone.name << " " << bone.parent_index << " " << import_data.skeleton->GetBoneEntryByName(bone.name).animation_file_entry << " ";
+    //         output_file.write((const char*)offset_mat, sizeof(glm::mat4));
+    //         output_file << "\n";
+    //     }
+    // }
+
+    output_file << "\nend";
+
+    output_file.close();
+
+    open_scene.reset();
     return data;
+}
+
+const std::string &AssimpMeshProxy::GetNativeFilePath()
+{
+    if(!native_file_path.empty()) {
+        return native_file_path;
+    } else  {
+       throw std::runtime_error("No native file exists for the mesh.");
+    }
 }
 
 bool AssimpMeshProxy::IsSkeletal()
 {
     return false;
+}
+
+std::shared_ptr<Material> AssimpMaterialProxy::LoadMaterial() {
+
+    if(!open_scene) {
+        throw std::runtime_error("Mesh loading error: The assimp scene file " + path + "is not longer open.\n");
+    }
+
+    std::string mat_resource_path = "";
+    bool serialize = !native_file_path.empty();
+
+    if(serialize) {
+        auto filesys_path =  std::filesystem::path(FileManager::Get()->GetPath(native_file_path));
+        mat_resource_path = filesys_path.parent_path();
+
+        if(std::filesystem::exists(mat_resource_path)) {
+            if(!std::filesystem::is_directory(mat_resource_path)) {
+                throw std::runtime_error("Material texture path exists but is not a directory: " + mat_resource_path);
+            }
+        } else {
+            std::filesystem::create_directory(mat_resource_path);
+        }
+
+        mat_resource_path = mat_resource_path / filesys_path.stem();
+
+        if(std::filesystem::exists(mat_resource_path)) {
+            if(!std::filesystem::is_directory(mat_resource_path)) {
+                throw std::runtime_error("Material texture path exists but is not a directory: " + mat_resource_path);
+            }
+            if(!std::filesystem::is_empty(mat_resource_path)) {
+                throw std::runtime_error("Material texture exists but is not an empty directory: " + mat_resource_path);
+            }
+        } else {
+            std::filesystem::create_directory(mat_resource_path);
+        }
+    }
+
+    auto manager = MaterialManager::Get();
+    auto mat_template = manager->GetMaterialTemplate("DeferredGPassMaterial");
+    auto root_path = std::filesystem::path(path).parent_path().generic_string() + "/";
+    auto mat = open_scene->scene->mMaterials[material_index];
+    auto material = mat_template->CreateMaterial();
+    glm::vec4 color(1.0f,1.0f,1.0f,1.0f);
+    if(aiGetMaterialColor(mat, AI_MATKEY_COLOR_DIFFUSE,(aiColor4D*)glm::value_ptr(color)) == AI_SUCCESS) {
+        material->SetParameter("Base_Color", color);
+    }
+    float roughness_factor = 1.0f;
+    if(aiGetMaterialFloat(mat, AI_MATKEY_ROUGHNESS_FACTOR,&roughness_factor) == AI_SUCCESS) {
+        material->SetParameter("roughness_gain", roughness_factor);
+    }
+    aiString texture_path;
+    std::string real_path;
+    if(aiGetMaterialTexture(mat, aiTextureType::aiTextureType_DIFFUSE,0, &texture_path) == AI_SUCCESS) {
+        real_path = root_path + texture_path.C_Str();
+        std::replace(real_path.begin(), real_path.end(), '\\', '/');
+        auto proxy = std::make_shared<StbiTextureProxy>(real_path, serialize ? mat_resource_path+ "/diffuse.tex" : "");
+        material->SetTexture("Color", proxy);
+    }
+    if(aiGetMaterialTexture(mat, aiTextureType::aiTextureType_NORMALS,0, &texture_path) == AI_SUCCESS) {
+        real_path = root_path + texture_path.C_Str();
+        std::replace(real_path.begin(), real_path.end(), '\\', '/');
+        auto proxy = std::make_shared<StbiTextureProxy>(real_path, serialize ? mat_resource_path + "/normal.tex" : "");
+        material->SetTexture("Normal", proxy);
+    }
+    if(aiGetMaterialTexture(mat, aiTextureType::aiTextureType_DIFFUSE_ROUGHNESS,0, &texture_path) == AI_SUCCESS) {
+        real_path = root_path + texture_path.C_Str();
+        std::replace(real_path.begin(), real_path.end(), '\\', '/');
+        auto proxy = std::make_shared<StbiTextureProxy>(real_path, serialize ? mat_resource_path + "/roughness.tex" : "");
+        material->SetTexture("Roughness", proxy);
+    }
+
+    material->SetMaterialProxy(shared_from_this());
+
+    if(native_file_path.empty()) {
+        return material;
+    }
+
+    if(serialize) {
+        MaterialManager::Get()->SerializeMaterial(FileManager::Get()->GetPath(native_file_path), material);
+    }
+
+    return material;
+}
+
+const std::string& AssimpMaterialProxy::GetNativeFilePath() {
+    if(!native_file_path.empty()) {
+        return native_file_path;
+    } else  {
+        throw std::runtime_error("No native file exists for the material.");
+    }
 }
 
 AssimpSceneProxy::AssimpOpenScene::~AssimpOpenScene()
