@@ -37,7 +37,7 @@ struct PostProcessingPass::internal_data {
 
 
 void PostProcessingPass::InitPostProcessingPassData() {
-	PipelineDescriptor pipeline_desc;
+	GraphicsPipelineDescriptor pipeline_desc;
 	pipeline_desc.viewport = RenderViewport();
 	pipeline_desc.scissor_rect = RenderScissorRect();
 	pipeline_desc.blend_functions = PipelineBlendFunctions();

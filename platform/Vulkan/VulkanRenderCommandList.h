@@ -169,7 +169,7 @@ public:
     virtual void DrawSquare(const glm::mat4& transform, glm::vec4 color = { 1.f,1.f,1.f,1.f }) override;
 
     VkCommandBuffer* GetVkCommandBuffer() { return &command_buffer; }
-    std::shared_ptr<Pipeline> GetCurrentPipeline() { return std::static_pointer_cast<Pipeline>(current_pipeline); }
+    std::shared_ptr<Pipeline> GetCurrentPipeline() { return current_pipeline; }
     std::shared_ptr<RenderFrameBufferResource> GetCurrentFrameBuffer() { return std::static_pointer_cast<RenderFrameBufferResource>(current_framebuffer); }
 
     VulkanCommandListDependencyState AddDependency(std::shared_ptr<RenderResource> dep_resource ,VulkanCommandListDependencyType access_type, RenderState desired_state); //Adds or updates a dependency, and returns the previous dependency state
@@ -213,7 +213,7 @@ private:
     VulkanDependencyHandler* dependency_handler;
     std::weak_ptr<VulkanRenderCommandAllocator> allocator;
     std::shared_ptr<RenderFrameBufferResource> current_framebuffer = nullptr;
-    std::shared_ptr<VulkanPipeline> current_pipeline = nullptr;
+    std::shared_ptr<Pipeline> current_pipeline = nullptr;
     std::shared_ptr<RenderResource> vertex_buffer = nullptr;
     std::shared_ptr<RenderResource> index_buffer = nullptr;
     RenderViewport viewport = RenderViewport({0,0}, {0,0}, 0.0f, 0.0f);

@@ -17,7 +17,7 @@ enum class RenderBufferType : unsigned char
 
 enum class RenderBufferUsage : unsigned char
 {
-	VERTEX_BUFFER = 0, INDEX_BUFFER = 1, CONSTANT_BUFFER = 2, STAGING = 3, VERTEX_BUFFER_READABLE = 4, INDEX_BUFFER_READABLE = 5
+	VERTEX_BUFFER = 0, INDEX_BUFFER = 1, CONSTANT_BUFFER = 2, STAGING = 3, VERTEX_BUFFER_READABLE = 4, INDEX_BUFFER_READABLE = 5, STORAGE_BUFFER = 6
 };
 
 enum class TextureUsage : unsigned char
@@ -161,11 +161,11 @@ enum class RenderQueueTypes : unsigned char
 using RootBinding = unsigned int;
 
 enum class RootParameterType : unsigned char {
-	UNDEFINED = 0, CONSTANT_BUFFER = 1, TEXTURE_2D = 2, MATERIAL = 3, TEXTURE_2D_ARRAY = 4, TEXTURE_2D_CUBEMAP = 5
+	UNDEFINED = 0, CONSTANT_BUFFER = 1, TEXTURE_2D = 2, MATERIAL = 3, TEXTURE_2D_ARRAY = 4, TEXTURE_2D_CUBEMAP = 5, STORAGE_BUFFER = 6
 };
 
 enum class RootDescriptorType : unsigned char {
-	CONSTANT_BUFFER = 0, TEXTURE_2D = 1, TEXTURE_2D_ARRAY = 2, TEXTURE_2D_CUBEMAP = 3
+	CONSTANT_BUFFER = 0, TEXTURE_2D = 1, TEXTURE_2D_ARRAY = 2, TEXTURE_2D_CUBEMAP = 3, STORAGE_BUFFER = 4
 };
 
 struct VertexLayoutElement {

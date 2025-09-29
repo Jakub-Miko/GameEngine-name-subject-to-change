@@ -67,7 +67,7 @@ TextRenderer::TextRenderer() : m_Internal_data(new Internal_data), m_font_object
     sampler_desc.max_LOD = 1;
 
     m_Internal_data->sampler = TextureSampler::CreateSampler(sampler_desc);
-    PipelineDescriptor pipeline_desc;
+    GraphicsPipelineDescriptor pipeline_desc;
     pipeline_desc.blend_equation = BlendEquation::ADD;
     pipeline_desc.blend_functions = PipelineBlendFunctions{BlendFunction::SRC_ALPHA, BlendFunction::ONE_MINUS_SRC_ALPHA, BlendFunction::ONE , BlendFunction::ZERO};
     pipeline_desc.cull_mode = CullMode::NONE;

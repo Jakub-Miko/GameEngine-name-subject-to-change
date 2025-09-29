@@ -63,7 +63,7 @@ struct DeferredLightingPass::internal_data {
 };
 
 void DeferredLightingPass::InitPostProcessingPassData() {
-	PipelineDescriptor pipeline_desc;
+	GraphicsPipelineDescriptor pipeline_desc;
 	pipeline_desc.viewport = RenderViewport();
 	pipeline_desc.scissor_rect = RenderScissorRect();
 	PipelineBlendFunctions blend_function;

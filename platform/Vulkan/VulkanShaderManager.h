@@ -8,7 +8,7 @@
 
 
 enum class VulkanShaderStages {
-	VERTEX = 0, FRAGMENT, GEOMETRY, NUM_OF_STAGES //NUM_OF_STAGES needs to be last
+	VERTEX = 0, FRAGMENT, GEOMETRY, COMPUTE, NUM_OF_STAGES //NUM_OF_STAGES needs to be last
 };
 
 struct VulkanShaderSource {

@@ -145,7 +145,7 @@ struct Render_Box_data {
         auto command_list = Renderer::Get()->GetRenderCommandList();
         auto command_queue = Renderer::Get()->GetCommandQueue();
 
-        PipelineDescriptor pipeline_desc;
+        GraphicsPipelineDescriptor pipeline_desc;
         pipeline_desc.flags = PipelineFlags::ENABLE_DEPTH_TEST;
         pipeline_desc.layout = VertexLayoutFactory<BoxPreset>::GetLayout();
         pipeline_desc.scissor_rect = RenderScissorRect();
@@ -154,7 +154,7 @@ struct Render_Box_data {
 
         pipeline = PipelineManager::Get()->CreatePipeline(pipeline_desc);
 
-        PipelineDescriptor pipeline_desc_wireframe;
+        GraphicsPipelineDescriptor pipeline_desc_wireframe;
         pipeline_desc_wireframe.flags = PipelineFlags::ENABLE_DEPTH_TEST;
         pipeline_desc_wireframe.layout = VertexLayoutFactory<BoxPreset>::GetLayout();
         pipeline_desc_wireframe.scissor_rect = RenderScissorRect();

@@ -44,7 +44,7 @@ struct DeferredGeometryPass::internal_data {
 };
 
 void DeferredGeometryPass::InitPostProcessingPassData() {
-	PipelineDescriptor pipeline_desc;
+	GraphicsPipelineDescriptor pipeline_desc;
 	pipeline_desc.viewport = RenderViewport();
 	pipeline_desc.scissor_rect = RenderScissorRect();
 	pipeline_desc.blend_functions = PipelineBlendFunctions();

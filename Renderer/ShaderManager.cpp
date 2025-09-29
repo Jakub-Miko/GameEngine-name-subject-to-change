@@ -129,6 +129,10 @@ RootSignature* ShaderManager::ParseRootSignature(const std::string& signature_st
 				desc.parameters.push_back(RootSignatureDescriptorElement(name, RootParameterType::CONSTANT_BUFFER));
 				mapping_table.insert(std::make_pair(name, RootMappingEntry(sig_entry_num)));
 			}
+			else if (type == "storage_buffer") {
+				desc.parameters.push_back(RootSignatureDescriptorElement(name, RootParameterType::STORAGE_BUFFER));
+				mapping_table.insert(std::make_pair(name, RootMappingEntry(sig_entry_num)));
+			}
 			else if (type == "texture_2D") {
 				desc.parameters.push_back(RootSignatureDescriptorElement(name, RootParameterType::TEXTURE_2D));
 				mapping_table.insert(std::make_pair(name, RootMappingEntry(sig_entry_num)));
