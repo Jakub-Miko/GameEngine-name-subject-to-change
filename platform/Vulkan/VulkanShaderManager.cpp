@@ -34,6 +34,7 @@ VulkanParsedShader VulkanShaderManager::ParseShader(const std::string& source_co
 	auto fnd_vertex = source_code.find("#Vertex");
 	auto fnd_fragment = source_code.find("#Fragment");
 	auto fnd_geometry = source_code.find("#Geometry");
+	auto fnd_compute = source_code.find("#Compute");
 	if (fnd_vertex != source_code.npos && fnd_fragment != source_code.npos) {
 		auto end_vertex = source_code.find("#end", fnd_vertex) ;
 		auto end_fragment = source_code.find("#end", fnd_fragment);
@@ -63,8 +64,19 @@ VulkanParsedShader VulkanShaderManager::ParseShader(const std::string& source_co
 		return parsed;
 
 	}
-	else {
-		throw std::runtime_error("Shader format unsupported");
+	else if(fnd_compute != source_code.npos) {
+		auto end_compute = source_code.find("#end", fnd_compute) ;
+		fnd_compute += strlen("#Compute");
+		VulkanParsedShader parsed;
+
+		VulkanShaderSource compute;
+		compute.type = VulkanShaderStages::COMPUTE;
+		compute.source = source_code.substr(fnd_compute, end_compute - fnd_compute);
+		parsed.push_back(compute);
+
+		return parsed;
+	} else {
+		throw std::runtime_error("Unsupported shader type.\n");
 	}
 }
 

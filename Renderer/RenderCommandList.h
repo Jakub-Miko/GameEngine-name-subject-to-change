@@ -19,6 +19,7 @@ public:
 
     virtual void SetConstantBuffer(RootBinding binding_id, std::shared_ptr<RenderBufferResource> buffer) = 0;
     virtual void SetConstantBuffer(const std::string& semantic_name, std::shared_ptr<RenderBufferResource> buffer) = 0;
+    virtual void SetStorageBuffer(const std::string& semantic_name, std::shared_ptr<RenderBufferResource> buffer) = 0;
     virtual void SetTexture2D(const std::string& semantic_name, std::shared_ptr<RenderTexture2DResource> texture) = 0;
     virtual void SetTexture2DArray(const std::string& semantic_name, std::shared_ptr<RenderTexture2DArrayResource> texture) = 0;
     virtual void SetTexture2DCubemap(const std::string& semantic_name, std::shared_ptr<RenderTexture2DCubemapResource> texture) = 0;
@@ -31,6 +32,7 @@ public:
     virtual void SetScissorRect(const RenderScissorRect& scissor_rect) = 0;
     virtual void SetViewport(const RenderViewport& viewport) = 0;
     virtual void GenerateMIPs(std::shared_ptr<RenderTexture2DResource> texture) = 0;
+    virtual void Dispatch(uint32_t thread_group_count_x, uint32_t thread_group_count_y, uint32_t thread_group_count_z) = 0;
     virtual void Draw(uint32_t index_count, bool use_unsined_short_as_index = false,int index_offset = 0) = 0;
     virtual void DrawArray(uint32_t vertex_count) = 0;
     virtual void SetMaterial(const std::string& name, std::shared_ptr<Material> material) = 0;

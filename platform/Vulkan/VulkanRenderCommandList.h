@@ -149,6 +149,7 @@ public:
     virtual void Execute() override;
     virtual void SetConstantBuffer(RootBinding binding_id, std::shared_ptr<RenderBufferResource> buffer) override;
     virtual void SetConstantBuffer(const std::string& semantic_name, std::shared_ptr<RenderBufferResource> buffer) override;
+    virtual void SetStorageBuffer(const std::string& semantic_name, std::shared_ptr<RenderBufferResource> buffer) override;
     virtual void SetTexture2D(const std::string& semantic_name, std::shared_ptr<RenderTexture2DResource> texture) override;
     virtual void SetTexture2DArray(const std::string& semantic_name, std::shared_ptr<RenderTexture2DArrayResource> texture) override;
     virtual void SetTexture2DCubemap(const std::string& semantic_name, std::shared_ptr<RenderTexture2DCubemapResource> texture) override;
@@ -163,6 +164,7 @@ public:
     virtual void GenerateMIPs(std::shared_ptr<RenderTexture2DResource> texture) override;
     virtual void Draw(uint32_t index_count, bool use_unsined_short_as_index = false, int index_offset = 0) override;
     virtual void DrawArray(uint32_t vertex_count) override;
+    virtual void Dispatch(uint32_t thread_group_count_x, uint32_t thread_group_count_y, uint32_t thread_group_count_z) override;
     virtual void SetMaterial(const std::string& name, std::shared_ptr<Material> material) override;
 
     virtual void DrawSquare(glm::vec2 pos, glm::vec2 size, glm::vec4 color = { 1.f,1.f,1.f,1.f }) override;

@@ -225,13 +225,8 @@ std::shared_ptr<Pipeline> VulkanPipelineManager::CreatePipeline(const ComputePip
 	stage.stage = VulkanUnitConverter::ShaderStageToVkShaderStage(VulkanShaderStages::COMPUTE);
 	stage.module = *shader->GetStage(VulkanShaderStages::COMPUTE);
 
-	VkPipelineViewportStateCreateInfo viewport_state = {};
-	viewport_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-	viewport_state.viewportCount = 1;
-	viewport_state.scissorCount = 1;
-
 	VkComputePipelineCreateInfo info = {};
-	info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+	info.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
 	info.layout = layout;
 	info.stage = stage;
 	info.pNext = nullptr;
