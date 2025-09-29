@@ -56,7 +56,7 @@ using MaterialParameterResource = std::variant<int, float, glm::vec2, glm::vec3,
     std::shared_ptr<RenderTexture2DCubemapResource>, std::shared_ptr<RenderBufferResource>, std::string, std::monostate>;
 
 enum class MaterialLayoutItemType : char {
-    SCALAR = 0, VEC2 = 1, VEC3 = 2, VEC4 = 3, TEXTURE = 4, MAT3 = 5, MAT4 = 6, INT = 7, TEXTURE_2D_ARRAY = 8, TEXTURE_2D_CUBEMAP = 9, CONSTANT_BUFFER = 10,  INVALID_PARAMETER = -1
+    SCALAR = 0, VEC2 = 1, VEC3 = 2, VEC4 = 3, TEXTURE = 4, MAT3 = 5, MAT4 = 6, INT = 7, TEXTURE_2D_ARRAY = 8, TEXTURE_2D_CUBEMAP = 9, CONSTANT_BUFFER = 10, STORAGE_BUFFER = 11 ,  INVALID_PARAMETER = -1
 };
 
 struct MaterialLayoutItem {

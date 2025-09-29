@@ -542,7 +542,7 @@ TextureManager::TextureManager() : texture_Map(), texture_Map_mutex(), sampler_c
     default_texture_array = def_tex_arr;
     default_texture_cubemap = def_tex_cbm;
 
-    PipelineDescriptor pipeline_desc;
+    GraphicsPipelineDescriptor pipeline_desc;
     pipeline_desc.cull_mode = CullMode::NONE;
     pipeline_desc.enable_depth_clip = false;
     pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/ReflectionMapConversion.glsl");

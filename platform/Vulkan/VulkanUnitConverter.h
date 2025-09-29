@@ -58,6 +58,9 @@ public:
 		case MaterialLayoutItemType::CONSTANT_BUFFER:
 			is_uniform = false;
 			return VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		case MaterialLayoutItemType::STORAGE_BUFFER:
+			is_uniform = false;
+			return VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		default:
 			throw std::runtime_error("Conversion failed");
 		}
@@ -73,6 +76,8 @@ public:
 			return VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		case RootParameterType::CONSTANT_BUFFER:
 			return VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		case RootParameterType::STORAGE_BUFFER:
+			return VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		default:
 			throw std::runtime_error("Conversion failed");
 		}
@@ -403,6 +408,7 @@ public:
 	static VkBufferUsageFlags BufferUsageToVkFlags(RenderBufferUsage mode) {
 		switch (mode) {
 		case RenderBufferUsage::CONSTANT_BUFFER:			return VkBufferUsageFlagBits::VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+		case RenderBufferUsage::STORAGE_BUFFER:			return VkBufferUsageFlagBits::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 		case RenderBufferUsage::VERTEX_BUFFER:			return VkBufferUsageFlagBits::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 		case RenderBufferUsage::INDEX_BUFFER:			return VkBufferUsageFlagBits::VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 		case RenderBufferUsage::STAGING:			return VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_DST_BIT;
@@ -459,6 +465,7 @@ public:
 		case VulkanShaderStages::FRAGMENT:		return shaderc_shader_kind::shaderc_fragment_shader;
 		case VulkanShaderStages::VERTEX:		return shaderc_shader_kind::shaderc_vertex_shader;
 		case VulkanShaderStages::GEOMETRY:		return shaderc_shader_kind::shaderc_geometry_shader;
+		case VulkanShaderStages::COMPUTE:		return shaderc_shader_kind::shaderc_compute_shader;
 		default:
 			throw std::runtime_error("Conversion failed");
 		}
@@ -469,6 +476,7 @@ public:
 		case VulkanShaderStages::FRAGMENT:		return VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT;
 		case VulkanShaderStages::VERTEX:		return VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT;
 		case VulkanShaderStages::GEOMETRY:		return VkShaderStageFlagBits::VK_SHADER_STAGE_GEOMETRY_BIT;
+		case VulkanShaderStages::COMPUTE:		return VkShaderStageFlagBits::VK_SHADER_STAGE_COMPUTE_BIT;
 		default:
 			throw std::runtime_error("Conversion failed");
 		}
@@ -477,6 +485,7 @@ public:
 	static VkDescriptorType DescriptorTypeToVkDescriptorType(RootDescriptorType type) {
 		switch (type) {
 		case RootDescriptorType::CONSTANT_BUFFER:		return VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		case RootDescriptorType::STORAGE_BUFFER:		return VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		case RootDescriptorType::TEXTURE_2D:		return VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		case RootDescriptorType::TEXTURE_2D_ARRAY:		return VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		case RootDescriptorType::TEXTURE_2D_CUBEMAP:		return VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -488,6 +497,7 @@ public:
 	static RootParameterType DescriptorTypeToVkRootParameterType(RootDescriptorType type) {
 		switch (type) {
 		case RootDescriptorType::CONSTANT_BUFFER:		return RootParameterType::CONSTANT_BUFFER;
+		case RootDescriptorType::STORAGE_BUFFER:		return RootParameterType::STORAGE_BUFFER;
 		case RootDescriptorType::TEXTURE_2D:		return RootParameterType::TEXTURE_2D;
 		case RootDescriptorType::TEXTURE_2D_ARRAY:		return RootParameterType::TEXTURE_2D_ARRAY;
 		case RootDescriptorType::TEXTURE_2D_CUBEMAP:		return RootParameterType::TEXTURE_2D_CUBEMAP;

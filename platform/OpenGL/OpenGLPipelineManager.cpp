@@ -10,7 +10,7 @@
 #include <memory>
 #include <Renderer/Renderer.h>
 
-std::shared_ptr<Pipeline> OpenGLPipelineManager::CreatePipeline(const PipelineDescriptor& desc)
+std::shared_ptr<Pipeline> OpenGLPipelineManager::CreatePipeline(const GraphicsPipelineDescriptor& desc)
 {
 	Pipeline* pipeline = new OpenGLPipeline(desc);
 	OpenGLRenderCommandQueue* queue = static_cast<OpenGLRenderCommandQueue*>(Renderer::Get()->GetCommandQueue());
@@ -212,12 +212,12 @@ void OpenGLPipeline::EndVertexContext()
 //}
 
 
-OpenGLPipeline::OpenGLPipeline(const PipelineDescriptor& desc) : Pipeline(desc)
+OpenGLPipeline::OpenGLPipeline(const GraphicsPipelineDescriptor& desc) : Pipeline(desc)
 {
 
 }
 
-OpenGLPipeline::OpenGLPipeline(PipelineDescriptor&& desc) : Pipeline(std::move(desc))
+OpenGLPipeline::OpenGLPipeline(GraphicsPipelineDescriptor&& desc) : Pipeline(std::move(desc))
 {
 
 }

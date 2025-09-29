@@ -46,8 +46,8 @@ void VulkanRenderCommandList::SetPipeline(std::shared_ptr<Pipeline> pipeline)
 {
 	dependency_handler->PipelineChange(this, pipeline);
 
-	current_pipeline = std::dynamic_pointer_cast<VulkanPipeline>(pipeline);
-	auto vulkan_pipeline = static_cast<VulkanPipeline*>(pipeline.get());
+	current_pipeline = pipeline;
+	auto vulkan_pipeline = std::static_pointer_cast<VulkanPipeline>(pipeline->GetPipelineNativeExtension());
 	auto vk_pipeline = vulkan_pipeline->GetVkPipeline();
 	vkCmdBindPipeline(command_buffer, VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS, *vk_pipeline);
 }

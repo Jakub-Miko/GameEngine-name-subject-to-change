@@ -95,7 +95,7 @@ void InitMeshRenderSystem()
 
     std::shared_ptr<Pipeline> pipeline;
 
-    PipelineDescriptor pipeline_desc;
+    GraphicsPipelineDescriptor pipeline_desc;
     pipeline_desc.flags = PipelineFlags::ENABLE_DEPTH_TEST;
     pipeline_desc.layout = VertexLayoutFactory<MeshPreset>::GetLayout();
     pipeline_desc.scissor_rect = RenderScissorRect();

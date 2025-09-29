@@ -98,7 +98,7 @@ static void CreateShaders() {
 }
 
 static void CreatePipeline() {
-    PipelineDescriptor desc;
+    GraphicsPipelineDescriptor desc;
 
     desc.enable_depth_clip = false;
     desc.depth_function = DepthFunction::ALWAYS;

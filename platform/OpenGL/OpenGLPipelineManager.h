@@ -25,8 +25,8 @@ public:
 	/*void SetDescriptorTable(const std::string& semantic_name, RenderDescriptorTable table);*/
 
 private:
-	OpenGLPipeline(const PipelineDescriptor& desc);
-	OpenGLPipeline(PipelineDescriptor&& desc);
+	OpenGLPipeline(const GraphicsPipelineDescriptor& desc);
+	OpenGLPipeline(GraphicsPipelineDescriptor&& desc);
 private:
 	uint32_t extra_id = 0;
 
@@ -36,7 +36,7 @@ private:
 class OpenGLPipelineManager : public PipelineManager {
 public:
 	friend PipelineManager;
-	virtual std::shared_ptr<Pipeline> CreatePipeline(const PipelineDescriptor& desc) override;
+	virtual std::shared_ptr<Pipeline> CreatePipeline(const GraphicsPipelineDescriptor& desc) override;
 	
 private:
 	virtual ~OpenGLPipelineManager() {}

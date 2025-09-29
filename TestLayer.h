@@ -78,7 +78,7 @@ public:
     EventObserverBase* test_observer;
 
     //std::shared_ptr<TextureSampler> sampler;
-    //std::shared_ptr<Pipeline> pipeline;
+    //std::shared_ptr<GraphicsPipeline> pipeline;
     //FrameMultiBufferResource<std::shared_ptr<RenderBufferResource>> resource2;
     //glm::vec2 position = { 0,0 };
     //glm::vec3 camerapos = {1.0f, 1.5f, -5.0f};
@@ -258,13 +258,13 @@ public:
             RenderResourceManager::Get()->UploadDataToBuffer(list, resource_vertex, &pos, sizeof(pos), 0);
             RenderResourceManager::Get()->UploadDataToBuffer(list, resource_index, &ind, sizeof(ind), 0);
 
-            PipelineDescriptor descr;
+            GraphicsPipelineDescriptor descr;
             descr.shader = ShaderManager::Get()->GetShader("Default_shader.glsl");
             descr.signature = RootSignatureFactory<TestPreset>::GetRootSignature();
             descr.layout = VertexLayoutFactory<TestPreset>::GetLayout();
             pipeline = PipelineManager::Get()->CreatePipeline(descr);
 
-            PipelineDescriptor descr_2;
+            GraphicsPipelineDescriptor descr_2;
             descr_2.shader = ShaderManager::Get()->GetShader("Default_shader_2.glsl");
             descr_2.signature = RootSignatureFactory<TestPreset>::GetRootSignature();
             descr_2.layout = VertexLayoutFactory<TestPreset>::GetLayout();
@@ -330,7 +330,7 @@ public:
           //  auto command_list = Renderer::Get()->GetRenderCommandList();
           //  auto command_queue = Renderer::Get()->GetCommandQueue();
 
-          //  PipelineDescriptor pipeline_desc;
+          //  GraphicsPipelineDescriptor pipeline_desc;
           //  pipeline_desc.flags = PipelineFlags::ENABLE_DEPTH_TEST;
           //  pipeline_desc.layout = VertexLayoutFactory<MeshPreset>::GetLayout();
           //  pipeline_desc.scissor_rect = RenderScissorRect();

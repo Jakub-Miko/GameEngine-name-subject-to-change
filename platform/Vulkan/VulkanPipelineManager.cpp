@@ -4,22 +4,25 @@
 #include "VulkanRootSignature.h"
 #include "VulkanShaderManager.h"
 
-RootBinding VulkanPipeline::GetBindingId(const std::string& name)
-{
-	return RootBinding();
-}
-
-VulkanPipeline::~VulkanPipeline()
-{
+VulkanPipeline::~VulkanPipeline() {
 	DEFINE_VK_INSTANCE(context);
 	vkDestroyPipeline(context->GetVkDevice(), pipeline, NULL);
 }
 
-VulkanPipeline::VulkanPipeline(const PipelineDescriptor& desc, VkPipeline pipeline) : Pipeline(desc), pipeline(pipeline)
+RootBinding VulkanGraphicsPipeline::GetBindingId(const std::string& name)
+{
+	return RootBinding();
+}
+
+VulkanGraphicsPipeline::~VulkanGraphicsPipeline()
 {
 }
 
-VulkanPipeline::VulkanPipeline(PipelineDescriptor&& desc) : Pipeline(std::move(desc))
+VulkanGraphicsPipeline::VulkanGraphicsPipeline(const GraphicsPipelineDescriptor& desc, VkPipeline pipeline) : GraphicsPipeline(desc), VulkanPipeline(pipeline)
+{
+}
+
+VulkanGraphicsPipeline::VulkanGraphicsPipeline(GraphicsPipelineDescriptor&& desc) : GraphicsPipeline(std::move(desc)), VulkanPipeline(VK_NULL_HANDLE)
 {
 }
 
@@ -41,7 +44,7 @@ std::vector<VkVertexInputAttributeDescription> GetVertexInputStateFromVertexLayo
 	return attributes;
 }
 
-std::vector<VkPipelineColorBlendAttachmentState> GetBlendState(const PipelineDescriptor& desc) {	
+std::vector<VkPipelineColorBlendAttachmentState> GetBlendState(const GraphicsPipelineDescriptor& desc) {
 	std::vector<VkPipelineColorBlendAttachmentState> blend_attachments;
 	blend_attachments.reserve(desc.framebuffer_format.color_attachemt_formats.size());
 
@@ -65,7 +68,22 @@ std::vector<VkPipelineColorBlendAttachmentState> GetBlendState(const PipelineDes
 
 }
 
-std::shared_ptr<Pipeline> VulkanPipelineManager::CreatePipeline(const PipelineDescriptor& desc)
+RootBinding VulkanComputePipeline::GetBindingId(const std::string& name) {
+	return RootBinding();
+}
+
+VulkanComputePipeline::~VulkanComputePipeline() {
+}
+
+VulkanComputePipeline::VulkanComputePipeline(const ComputePipelineDescriptor& desc, VkPipeline pipeline) : ComputePipeline(desc), VulkanPipeline(pipeline) {
+
+}
+
+VulkanComputePipeline::VulkanComputePipeline(ComputePipelineDescriptor&& desc) : ComputePipeline(std::move(desc)), VulkanPipeline(VK_NULL_HANDLE) {
+
+}
+
+std::shared_ptr<Pipeline> VulkanPipelineManager::CreatePipeline(const GraphicsPipelineDescriptor& desc)
 {
 	DEFINE_VK_INSTANCE(context);
 	VkStencilOpState stencil_ops = {};
@@ -188,9 +206,41 @@ std::shared_ptr<Pipeline> VulkanPipelineManager::CreatePipeline(const PipelineDe
 
 	vkCreateGraphicsPipelines(context->GetVkDevice(), VK_NULL_HANDLE, 1, &info, NULL, &pipeline);
 
-	VulkanPipeline* new_pipeline = new VulkanPipeline(desc, pipeline);
+	return std::make_shared<VulkanGraphicsPipeline>(desc, pipeline);
+}
 
-	return std::shared_ptr<Pipeline>(new_pipeline);
+std::shared_ptr<Pipeline> VulkanPipelineManager::CreatePipeline(const ComputePipelineDescriptor& desc) {
+	DEFINE_VK_INSTANCE(context);
+	VkPipelineLayout layout = static_cast<const VulkanRootSignature*>(&desc.GetSignature())->GetPipelineLayout();
+
+	VulkanShader* shader = static_cast<VulkanShader*>(desc.shader.get());
+
+	if(!shader->GetStage(VulkanShaderStages::COMPUTE)) {
+		throw std::runtime_error("The shader provided to the Compute pipeline doesn't contain a computer shader stage.\n");
+	}
+
+	VkPipelineShaderStageCreateInfo stage = {};
+	stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	stage.pName = "main";
+	stage.stage = VulkanUnitConverter::ShaderStageToVkShaderStage(VulkanShaderStages::COMPUTE);
+	stage.module = *shader->GetStage(VulkanShaderStages::COMPUTE);
+
+	VkPipelineViewportStateCreateInfo viewport_state = {};
+	viewport_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+	viewport_state.viewportCount = 1;
+	viewport_state.scissorCount = 1;
+
+	VkComputePipelineCreateInfo info = {};
+	info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+	info.layout = layout;
+	info.stage = stage;
+	info.pNext = nullptr;
+
+	VkPipeline pipeline;
+
+	vkCreateComputePipelines(context->GetVkDevice(), VK_NULL_HANDLE, 1, &info, NULL, &pipeline);
+
+	return std::make_shared<VulkanComputePipeline>(desc, pipeline);
 }
 
 VulkanPipelineManager::VulkanPipelineManager()

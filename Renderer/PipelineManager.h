@@ -37,13 +37,13 @@ struct FramebufferFormat {
 	DepthAttachmentFormat depth_attachemt_format = DepthAttachmentFormat();
 };
 
-struct PipelineDescriptor {
+struct GraphicsPipelineDescriptor {
 	
-	friend class Pipeline;
+	friend class GraphicsPipeline;
 
-	PipelineDescriptor() = default;
+	GraphicsPipelineDescriptor() = default;
 
-	PipelineDescriptor(const PipelineDescriptor& desc) : layout(desc.layout), shader(desc.shader), viewport(desc.viewport), scissor_rect(desc.scissor_rect),
+	GraphicsPipelineDescriptor(const GraphicsPipelineDescriptor& desc) : layout(desc.layout), shader(desc.shader), viewport(desc.viewport), scissor_rect(desc.scissor_rect),
 		flags(desc.flags), polygon_render_mode(desc.polygon_render_mode), blend_functions(desc.blend_functions), 
 		blend_equation(desc.blend_equation), cull_mode(desc.cull_mode), depth_function(desc.depth_function), enable_depth_clip(desc.enable_depth_clip), framebuffer_format(desc.framebuffer_format)
 	{
@@ -114,19 +114,50 @@ public:
 	bool enable_depth_clip = true;
 };
 
-using PipelineState = PipelineDescriptor;
+using PipelineState = GraphicsPipelineDescriptor;
+
+class Pipeline;
+
+class PipelineNativeExtension {
+public:
+	virtual ~PipelineNativeExtension() = default;
+};
 
 class Pipeline {
 public:
 	virtual ~Pipeline() { }
 	virtual RootBinding GetBindingId(const std::string& name) = 0;
 
-	const VertexLayout& GetLayout() const {
-		return *layout;
-	}
+	virtual std::shared_ptr<PipelineNativeExtension> GetPipelineNativeExtension() = 0;
 
 	const RootSignature& GetSignature() const {
 		return shader->GetRootSignature();
+	}
+
+	const std::shared_ptr<Shader> GetShader() const {
+		return shader;
+	}
+
+	const PipelineFlags& GetPipelineFlags() const {
+		return flags;
+	}
+
+protected:
+	Pipeline(std::shared_ptr<Shader> shader, PipelineFlags flags) : shader(shader), flags(flags)
+	{
+
+	}
+
+	std::shared_ptr<Shader> shader = nullptr;
+	PipelineFlags flags = PipelineFlags::DEFAULT;
+};
+
+class GraphicsPipeline : public Pipeline {
+public:
+	virtual ~GraphicsPipeline() { }
+
+	const VertexLayout& GetLayout() const {
+		return *layout;
 	}
 
 	const RenderViewport& GetViewport() const {
@@ -137,16 +168,8 @@ public:
 		return scissor_rect;
 	}
 
-	const std::shared_ptr<Shader> GetShader() const {
-		return shader;
-	}
-
 	const PipelineBlendFunctions& GetPipelineBlendFunctions() const {
 		return blend_functions;
-	}
-
-	const PipelineFlags& GetPipelineFlags() const {
-		return flags;
 	}
 
 	const PrimitivePolygonRenderMode& GetPrimitivePolygonRenderMode() const {
@@ -170,21 +193,20 @@ public:
 	}
 
 protected:
-	Pipeline(const PipelineDescriptor& desc) : layout(desc.layout), shader(desc.shader), viewport(desc.viewport), scissor_rect(desc.scissor_rect),
-		flags(desc.flags), polygon_render_mode(desc.polygon_render_mode), blend_functions(desc.blend_functions), blend_equation(desc.blend_equation),cull_mode(desc.cull_mode), depth_function(desc.depth_function), enable_depth_clip(desc.enable_depth_clip)
+	GraphicsPipeline(const GraphicsPipelineDescriptor& desc) : Pipeline(desc.shader, desc.flags), layout(desc.layout), viewport(desc.viewport), scissor_rect(desc.scissor_rect),
+		polygon_render_mode(desc.polygon_render_mode), blend_functions(desc.blend_functions), blend_equation(desc.blend_equation),cull_mode(desc.cull_mode), depth_function(desc.depth_function), enable_depth_clip(desc.enable_depth_clip)
 	{
 
 	}
-	Pipeline(PipelineDescriptor&& desc) : layout(desc.layout), shader(desc.shader), viewport(desc.viewport), scissor_rect(desc.scissor_rect),
-		flags(desc.flags), polygon_render_mode(desc.polygon_render_mode), blend_equation(desc.blend_equation), blend_functions(desc.blend_functions), cull_mode(desc.cull_mode), depth_function(desc.depth_function), enable_depth_clip(desc.enable_depth_clip)
+	GraphicsPipeline(GraphicsPipelineDescriptor&& desc) : Pipeline(desc.shader, desc.flags), layout(desc.layout), viewport(desc.viewport), scissor_rect(desc.scissor_rect),
+		polygon_render_mode(desc.polygon_render_mode), blend_equation(desc.blend_equation), blend_functions(desc.blend_functions), cull_mode(desc.cull_mode), depth_function(desc.depth_function), enable_depth_clip(desc.enable_depth_clip)
 	{
 
 	}
+
 	VertexLayout* layout = nullptr;
-	std::shared_ptr<Shader> shader = nullptr;
 	RenderViewport viewport = RenderViewport();
 	RenderScissorRect scissor_rect = RenderScissorRect();
-	PipelineFlags flags = PipelineFlags::DEFAULT;
 	PipelineBlendFunctions blend_functions;
 	BlendEquation blend_equation = BlendEquation::ADD;
 	DepthFunction depth_function = DepthFunction::LESS;
@@ -193,6 +215,49 @@ protected:
 	bool enable_depth_clip = true;
 };
 
+struct ComputePipelineDescriptor {
+
+	friend class Pipeline;
+
+	ComputePipelineDescriptor() = default;
+
+	ComputePipelineDescriptor(const GraphicsPipelineDescriptor& desc) : shader(desc.shader), flags(desc.flags) {
+
+	}
+
+	const RootSignature& GetSignature() const {
+		return shader->GetRootSignature();
+	}
+
+	const std::shared_ptr<Shader> GetShader() const {
+		return shader;
+	}
+
+	const PipelineFlags& GetPipelineFlags() const {
+		return flags;
+	}
+
+public:
+
+	std::shared_ptr<Shader> shader = nullptr;
+	PipelineFlags flags = PipelineFlags::DEFAULT;
+};
+
+class ComputePipeline : public Pipeline {
+public:
+	virtual ~ComputePipeline() { }
+
+protected:
+	ComputePipeline(const ComputePipelineDescriptor& desc) : Pipeline(desc.shader, desc.flags)
+	{
+
+	}
+
+	ComputePipeline(ComputePipelineDescriptor&& desc) : Pipeline(desc.shader, desc.flags)
+	{
+
+	}
+};
 
 class PipelineManager {
 public:
@@ -207,7 +272,8 @@ public:
 	static PipelineManager* Get();
 	static void Shutdown();
 
-	virtual std::shared_ptr<Pipeline> CreatePipeline(const PipelineDescriptor& desc) = 0;
+	virtual std::shared_ptr<Pipeline> CreatePipeline(const GraphicsPipelineDescriptor& desc) = 0;
+	virtual std::shared_ptr<Pipeline> CreatePipeline(const ComputePipelineDescriptor& desc) = 0;
 	virtual ~PipelineManager();
 
 	PipelineManager();
