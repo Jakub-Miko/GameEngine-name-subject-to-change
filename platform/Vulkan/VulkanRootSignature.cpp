@@ -34,6 +34,7 @@ VulkanRootSignature::VulkanRootSignature(const RootSignatureDescriptor& descript
 		case RootParameterType::TEXTURE_2D:
 		case RootParameterType::TEXTURE_2D_ARRAY:
 		case RootParameterType::TEXTURE_2D_CUBEMAP:
+		case RootParameterType::STORAGE_BUFFER:
 			desc.binding_id = binding_id++;
 			binding.descriptorType = type;
 			binding.binding = desc.binding_id;

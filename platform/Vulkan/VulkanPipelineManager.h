@@ -6,9 +6,12 @@
 class VulkanPipeline : public PipelineNativeExtension {
 public:
 
-	virtual VkPipeline* GetVkPipeline() {
+	VkPipeline* GetVkPipeline() {
 		return &pipeline;
 	};
+
+	virtual VkPipelineBindPoint GetBindPoint() = 0;
+
 	virtual ~VulkanPipeline();
 protected:
 	VulkanPipeline(VkPipeline pipeline) : pipeline(pipeline) {};
@@ -20,6 +23,9 @@ class VulkanGraphicsPipeline : public GraphicsPipeline, public VulkanPipeline, p
 public:
 	friend class VulkanPipelineManager;
 	VulkanGraphicsPipeline(const GraphicsPipelineDescriptor& desc, VkPipeline pipeline);
+	VkPipelineBindPoint GetBindPoint() override {
+		return VK_PIPELINE_BIND_POINT_GRAPHICS;
+	}
 	virtual RootBinding GetBindingId(const std::string& name) override;
 	virtual std::shared_ptr<PipelineNativeExtension> GetPipelineNativeExtension() override {
 		return shared_from_this();
@@ -35,6 +41,9 @@ class VulkanComputePipeline : public ComputePipeline, public VulkanPipeline, pub
 public:
 	friend class VulkanPipelineManager;
 	VulkanComputePipeline(const ComputePipelineDescriptor& desc, VkPipeline pipeline);
+	VkPipelineBindPoint GetBindPoint() override {
+		return VK_PIPELINE_BIND_POINT_COMPUTE;
+	}
 	virtual RootBinding GetBindingId(const std::string& name) override;
 	virtual std::shared_ptr<PipelineNativeExtension> GetPipelineNativeExtension() override {
 		return shared_from_this();

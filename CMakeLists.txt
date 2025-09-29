@@ -40,6 +40,7 @@ file(GLOB SRCS
 "./World/*/*.cpp"
 "./Audio/*.cpp"
 "./Audio/*/*.cpp"
+"./TestLayers/*.cpp"
 "./Renderer/*.cpp" "./Renderer/*.h"
 "./Renderer/Renderer3D/*.cpp" "./Renderer/Renderer3D/*.h"
 "./Renderer/Renderer3D/RenderPasses/*.cpp" "./Renderer/Renderer3D/RenderPasses/*.h"
