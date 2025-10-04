@@ -412,9 +412,10 @@ void VulkanRenderCommandList::SetMaterial(const std::string& name, std::shared_p
 
 	dependency_handler->AddMaterialDependency(this, material, param_id);
 
-	if (auto buffer = vk_mat->GetConstantBuffer()) {
-		AddDependency(buffer, VulkanCommandListDependencyType::READ, RenderState::COMMON);
-	}
+	// This shouldn't be here since not constant buffer operations are performed on the setting of material.
+	// if (auto buffer = vk_mat->GetConstantBuffer()) {
+	// 	AddDependency(buffer, VulkanCommandListDependencyType::READ, RenderState::COMMON);
+	// }
 
 	auto pipeline_bind_point = std::static_pointer_cast<VulkanPipeline>(current_pipeline->GetPipelineNativeExtension())->GetBindPoint();
 
@@ -664,6 +665,9 @@ void VulkanDrawState::SetMatertialResources(VulkanRenderCommandList* list, std::
 		case MaterialLayoutItemType::CONSTANT_BUFFER:
 			resource = std::get<std::shared_ptr<RenderBufferResource>>(parameter.resource);
 			break;
+		case MaterialLayoutItemType::STORAGE_BUFFER:
+			resource = std::get<std::shared_ptr<RenderBufferResource>>(parameter.resource);
+			break;
 		case MaterialLayoutItemType::TEXTURE:
 			if (std::holds_alternative<MaterialTextureType>(parameter.resource)) {
 				resource = std::get<MaterialTextureType>(parameter.resource).texture;
@@ -679,6 +683,7 @@ void VulkanDrawState::SetMatertialResources(VulkanRenderCommandList* list, std::
 			continue;
 		}
 		dep.desired_state = parameter.type == MaterialLayoutItemType::CONSTANT_BUFFER ? RenderState::COMMON : RenderState::TEXTURE_SAMPLE;
+		dep.access_type = parameter.type == MaterialLayoutItemType::STORAGE_BUFFER ? VulkanCommandListDependencyType::WRITE : VulkanCommandListDependencyType::READ;
 
 		VulkanDrawResource res;
 		res.resource = resource;

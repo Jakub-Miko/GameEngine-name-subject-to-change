@@ -1,5 +1,5 @@
 #include "ComputeTest.h"
-
+#include <random>
 #include "Renderer/RenderResourceManager.h"
 
 ComputeTestLayer::ComputeTestLayer() {
@@ -20,11 +20,22 @@ ComputeTestLayer::ComputeTestLayer() {
     setting_material->SetParameter("buffer_size", 1000);
     setting_material->SetParameter("block_count", 1);
     setting_material->SetParameter("data_buffer", buffer);
+
+
 }
 
 void ComputeTestLayer::OnUpdate(float delta_time) {
     auto list = Renderer::Get()->GetRenderCommandList();
 
+
+    int random_nums[1000];
+    std::random_device generator;
+    std::uniform_int_distribution<int> distribution(0,1000);
+    for(int i = 0; i < 1000; i++) {
+        random_nums[i] = distribution(generator);
+    }
+
+    RenderResourceManager::Get()->UploadDataToBuffer(list, buffer,&random_nums, sizeof(int) * 1000,0);
 
     list->SetPipeline(pipeline);
     list->SetMaterial("ComputeSetting",setting_material);
