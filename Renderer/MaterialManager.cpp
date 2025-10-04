@@ -45,7 +45,8 @@ NLOHMANN_JSON_SERIALIZE_ENUM(MaterialLayoutItemType, {
 	{MaterialLayoutItemType::TEXTURE_2D_CUBEMAP , "texture_cubemap"},
 	{MaterialLayoutItemType::TEXTURE_2D_CUBEMAP , "texture_2d_cubemap"},
 	{MaterialLayoutItemType::TEXTURE_2D_CUBEMAP , "texture_2D_cubemap"},
-	{MaterialLayoutItemType::CONSTANT_BUFFER , "constant_buffer"}
+	{MaterialLayoutItemType::CONSTANT_BUFFER , "constant_buffer"},
+	{MaterialLayoutItemType::STORAGE_BUFFER , "storage_buffer"}
 	})
 
 MaterialManager* MaterialManager::instance = nullptr;
@@ -661,9 +662,11 @@ std::shared_ptr<MaterialTemplate> MaterialManager::LoadMaterialTemplateFromJson(
 		break;
 		case MaterialLayoutItemType::TEXTURE_2D_ARRAY:		// Texture arrays, cubemaps, and constant buffers, cannot be have defaults specified
 		case MaterialLayoutItemType::TEXTURE_2D_CUBEMAP:	
-		case MaterialLayoutItemType::CONSTANT_BUFFER:		
+		case MaterialLayoutItemType::CONSTANT_BUFFER:
+		case MaterialLayoutItemType::STORAGE_BUFFER:
 			mat_item.default_value = std::monostate();
 			break;
+
 		default:
 			throw std::runtime_error("Invalid material type.\n");
 		}

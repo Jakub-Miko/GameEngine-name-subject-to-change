@@ -147,6 +147,10 @@ void VulkanMaterial::UpdateValues(std::shared_ptr<RenderCommandList> command_lis
 				buffer_update_num++;
 				needs_table_update = true;
 				continue;
+			case MaterialLayoutItemType::STORAGE_BUFFER:
+				buffer_update_num++;
+				needs_table_update = true;
+				continue;
 			default:
 				throw std::runtime_error("Invalid material type.\n");
 			}
@@ -256,6 +260,7 @@ void VulkanMaterial::UpdateValues(std::shared_ptr<RenderCommandList> command_lis
 				break;
 			}
 			case MaterialLayoutItemType::CONSTANT_BUFFER:
+			case MaterialLayoutItemType::STORAGE_BUFFER:
 			{
 				auto buffer = std::get<std::shared_ptr<RenderBufferResource>>(param.resource);
 				auto vk_buffer = std::static_pointer_cast<VulkanRenderBufferResource>(std::get<std::shared_ptr<RenderBufferResource>>(param.resource));
