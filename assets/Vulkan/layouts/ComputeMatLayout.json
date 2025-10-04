@@ -1,0 +1,16 @@
+{
+  "ComputeSetting": [
+    {
+      "name": "data_buffer",
+      "type": "storage_buffer"
+    },
+    {
+      "name": "buffer_size",
+      "type": "INT"
+    },
+    {
+      "name" : "block_count",
+      "type" : "INT"
+    }
+  ]
+}
