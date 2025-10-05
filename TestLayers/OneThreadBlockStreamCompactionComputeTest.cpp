@@ -1,10 +1,10 @@
-#include "ComputeTest.h"
+#include "OneThreadBlockStreamCompactionComputeTest.h"
 
 #include <iostream>
 #include <random>
 #include "Renderer/RenderResourceManager.h"
 
-ComputeTestLayer::ComputeTestLayer() {
+OneThreadBlockStreamCompactionComputeTest::OneThreadBlockStreamCompactionComputeTest() {
     ComputePipelineDescriptor descriptor = {};
     descriptor.shader = ShaderManager::Get()->GetShader("compute/OneThreadblockStreamCompaction.glsl");
     pipeline = PipelineManager::Get()->CreatePipeline(descriptor);
@@ -30,7 +30,7 @@ ComputeTestLayer::ComputeTestLayer() {
 
 }
 
-void ComputeTestLayer::OnUpdate(float delta_time) {
+void OneThreadBlockStreamCompactionComputeTest::OnUpdate(float delta_time) {
     std::cout << "Running Compute\n";
     auto list = Renderer::Get()->GetRenderCommandList();
 
