@@ -62,7 +62,7 @@ std::shared_ptr<Shader> ShaderManager::GetShader(const std::string& path_in)
 	auto fnd_root = shader_str.find("#RootSignature");
 	if (fnd_root == root_sig_str.npos) throw std::runtime_error("Shader file " + path + " does not contain RootSignatureDefinition");
 	if (fnd_root != shader_str.npos) {
-		auto end_root = shader_str.find("#end", fnd_root);
+		auto end_root = shader_str.find("#end\n", fnd_root);
 		fnd_root += strlen("#RootSignature");
 		root_sig_str = shader_str.substr(fnd_root, end_root - fnd_root);
 	};
@@ -82,7 +82,7 @@ std::shared_ptr<Shader> ShaderManager::CreateShaderFromString(const std::string&
 	auto fnd_root = shader_in.find("#RootSignature");
 	if (fnd_root == root_sig_str.npos) throw std::runtime_error("Shader string does not contain RootSignatureDefinition");
 	if (fnd_root != shader_in.npos) {
-		auto end_root = shader_in.find("#end", fnd_root);
+		auto end_root = shader_in.find("#end\n", fnd_root);
 		fnd_root += strlen("#RootSignature");
 		root_sig_str = shader_in.substr(fnd_root, end_root - fnd_root);
 	}

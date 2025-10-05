@@ -36,8 +36,8 @@ VulkanParsedShader VulkanShaderManager::ParseShader(const std::string& source_co
 	auto fnd_geometry = source_code.find("#Geometry");
 	auto fnd_compute = source_code.find("#Compute");
 	if (fnd_vertex != source_code.npos && fnd_fragment != source_code.npos) {
-		auto end_vertex = source_code.find("#end", fnd_vertex) ;
-		auto end_fragment = source_code.find("#end", fnd_fragment);
+		auto end_vertex = source_code.find("#end\n", fnd_vertex) ;
+		auto end_fragment = source_code.find("#end\n", fnd_fragment);
 		fnd_vertex += strlen("#Vertex");
 		fnd_fragment += strlen("#Fragment");
 		VulkanParsedShader parsed;
@@ -54,7 +54,7 @@ VulkanParsedShader VulkanShaderManager::ParseShader(const std::string& source_co
 
 		if (fnd_geometry != source_code.npos) {
 			fnd_geometry += strlen("#Geometry");
-			auto end_geometry = source_code.find("#end", fnd_geometry);
+			auto end_geometry = source_code.find("#end\n", fnd_geometry);
 			VulkanShaderSource geometry;
 			geometry.type = VulkanShaderStages::GEOMETRY;
 			geometry.source = source_code.substr(fnd_geometry, end_geometry - fnd_geometry);
@@ -65,7 +65,7 @@ VulkanParsedShader VulkanShaderManager::ParseShader(const std::string& source_co
 
 	}
 	else if(fnd_compute != source_code.npos) {
-		auto end_compute = source_code.find("#end", fnd_compute) ;
+		auto end_compute = source_code.find("#end\n", fnd_compute) ;
 		fnd_compute += strlen("#Compute");
 		VulkanParsedShader parsed;
 

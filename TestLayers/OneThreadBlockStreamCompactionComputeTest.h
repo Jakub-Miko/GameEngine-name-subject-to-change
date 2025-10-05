@@ -4,9 +4,9 @@
 #include "Layer.h"
 #include "Renderer/PipelineManager.h"
 
-class ComputeTestLayer : public Layer {
+class OneThreadBlockStreamCompactionComputeTest : public Layer {
 public:
-    ComputeTestLayer();
+    OneThreadBlockStreamCompactionComputeTest();
     void OnUpdate(float delta_time) override;
 private:
     std::shared_ptr<Pipeline> pipeline;
