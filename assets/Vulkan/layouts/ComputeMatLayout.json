@@ -5,12 +5,20 @@
       "type": "storage_buffer"
     },
     {
+      "name": "output_buffer",
+      "type": "storage_buffer"
+    },
+    {
       "name": "buffer_size",
       "type": "INT"
     },
     {
       "name" : "block_count",
       "type" : "INT"
+    },
+    {
+      "name": "key_lookup",
+      "type": "INT"
     }
   ]
 }
