@@ -3,7 +3,7 @@
 #include <TestLayer.h>
 #include <FileManager.h>
 
-#include "TestLayers/OneThreadBlockPrefixSum.h"
+#include "TestLayers/MultiThreadBlockPrefixSum.h"
 
 SandboxState::SandboxState() : GameState(), m_TestLayer(nullptr) {
 
@@ -22,7 +22,7 @@ bool SandboxState::OnEvent(Event* e)
 
 void SandboxState::OnAttach()
 {
-	m_TestLayer = new OneThreadBlockPrefixSum();
+	m_TestLayer = new MultiThreadBlockPrefixSum();
 }
 
 void SandboxState::OnDeattach()
