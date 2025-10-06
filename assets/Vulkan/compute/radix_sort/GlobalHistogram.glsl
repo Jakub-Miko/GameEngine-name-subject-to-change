@@ -21,10 +21,6 @@
                 {
                   "name": "block_count",
                   "type": "INT"
-                },
-                {
-                    "name": "validate_buffer",
-                    "type": "storage_buffer"
                 }
             ]
         }
@@ -68,10 +64,6 @@ layout(std430, set=0, binding = 2) buffer histogram_buffer_block
     HistogramEntry histogram_buffer[HISTOGRAM_SIZE];
 };
 
-layout(std430, set=0, binding = 3) buffer validation_buffer_block
-{
-    HistogramEntry validation_buffer[HISTOGRAM_SIZE];
-};
 
 layout(local_size_x = THREADS_PER_THREADBLOCK, local_size_y = 1, local_size_z = 1) in;
 
