@@ -43,10 +43,10 @@
 #extension GL_KHR_shader_subgroup_basic: enable
 #extension GL_KHR_shader_subgroup_arithmetic: enable
 
-#define NUM_OF_THREADBLOCKS 10
-#define NUM_OF_THREADS_IN_THREADBLOCK 1000
+#define NUM_OF_THREADBLOCKS 2000
+#define NUM_OF_THREADS_IN_THREADBLOCK 512
 #define NUM_OF_THREADS NUM_OF_THREADBLOCKS * NUM_OF_THREADS_IN_THREADBLOCK
-#define STATE_BUFFER_SIZE 3 * 4 * NUM_OF_THREADBLOCKS
+#define STATE_BUFFER_SIZE 4 * NUM_OF_THREADBLOCKS
 
 layout(set = 0, binding = 0) uniform Setting {
     int buffer_size;
@@ -55,23 +55,21 @@ layout(set = 0, binding = 0) uniform Setting {
 
 layout(std430, set=0, binding = 1) buffer data_buffer
 {
-    int numbers[1000];
+    int numbers[NUM_OF_THREADS];
 };
 
 layout(std430, set=0, binding = 2) buffer output_buffer
 {
-    int output_numbers[1000];
+    int output_numbers[NUM_OF_THREADS];
 };
 
 layout(std430, set=0, binding = 3) buffer validation_buffer
 {
-    int validation_numbers[1000];
+    int validation_numbers[NUM_OF_THREADS];
 };
 
 struct StateBlock {
     uint state_flag;
-    uint reduction;
-    uint prefix;
 };
 
 layout(std430, set=0, binding = 4) buffer state_buffer
@@ -90,7 +88,7 @@ void main() {
     if(gl_LocalInvocationIndex == NUM_OF_THREADS_IN_THREADBLOCK-1) {
         group_id = atomicAdd(work_group_counter, 1);
     }
-    groupMemoryBarrier();
+    memoryBarrierShared();
     barrier();
     int value = numbers[gl_LocalInvocationIndex + group_id * NUM_OF_THREADS_IN_THREADBLOCK];
 
@@ -99,39 +97,35 @@ void main() {
         reductions[gl_SubgroupID] = subgroup_prefix + value;
     }
 
-    groupMemoryBarrier();
+    memoryBarrierShared();
     barrier();
 
-    if(gl_LocalInvocationIndex < ceil(1000.0 / gl_SubgroupSize)) {
+    if(gl_LocalInvocationIndex < ceil(float(NUM_OF_THREADS_IN_THREADBLOCK) / gl_SubgroupSize)) {
         reductions[gl_LocalInvocationIndex] = subgroupExclusiveAdd(reductions[gl_LocalInvocationIndex]);
     }
 
-    groupMemoryBarrier();
+    memoryBarrierShared();
     barrier();
 
     if(gl_LocalInvocationIndex == NUM_OF_THREADS_IN_THREADBLOCK-1) {
         uint exclusive_prefix = reductions[gl_SubgroupID] + subgroup_prefix + value;
-        state_blocks[group_id].reduction = exclusive_prefix;
-        memoryBarrierBuffer();
-        atomicExchange(state_blocks[group_id].state_flag, 1);
+        //memoryBarrierBuffer();
+        atomicExchange(state_blocks[group_id].state_flag, exclusive_prefix << 2 | 1);
         uint aggregate = 0;
         for(int block = int(group_id - 1); block >= 0; block--) {
             uint flag = 0;
-            while((flag = atomicAdd(state_blocks[block].state_flag, 0)) == 0);
-            if(flag == 1) {
-                aggregate += state_blocks[block].reduction;
-            } else if(flag == 2) {
-                aggregate += state_blocks[block].prefix;
+            while(((flag = atomicAdd(state_blocks[block].state_flag, 0)) & 3) == 0);
+            aggregate += flag >> 2;
+            if((flag & 3) == 2) {
                 break;
             }
         }
-        state_blocks[group_id].prefix = exclusive_prefix + aggregate;
-        memoryBarrierBuffer();
-        atomicExchange(state_blocks[group_id].state_flag, 2);
+        atomicExchange(state_blocks[group_id].state_flag, (exclusive_prefix + aggregate) << 2 | 2);
+        //memoryBarrierBuffer();
         inclusive_group_prefix = aggregate;
     }
 
-    groupMemoryBarrier();
+    memoryBarrierShared();
     barrier();
 
     subgroup_prefix += inclusive_group_prefix + reductions[gl_SubgroupID];
