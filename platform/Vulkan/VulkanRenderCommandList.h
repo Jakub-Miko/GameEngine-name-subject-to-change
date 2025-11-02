@@ -10,9 +10,28 @@
 #include <unordered_set>
 #include <vulkan/vulkan.h>
 
-enum class VulkanCommandListDependencyType : char {
-    WRITE, READ, INVALID, NONE
+enum class VulkanCommandListDependencyType : unsigned char {
+    WRITE = 1,
+    READ = 2,
+    INVALID = 4,
+    NONE = 0
 };
+
+inline VulkanCommandListDependencyType operator|(const VulkanCommandListDependencyType& type_1, const VulkanCommandListDependencyType& type_2) {
+    return (VulkanCommandListDependencyType)((unsigned char)type_1 | (unsigned char)type_2);
+}
+
+inline VulkanCommandListDependencyType operator|=(const VulkanCommandListDependencyType& type_1, const VulkanCommandListDependencyType& type_2) {
+    return (VulkanCommandListDependencyType)((unsigned char)type_1 | (unsigned char)type_2);
+}
+
+inline VulkanCommandListDependencyType operator&(const VulkanCommandListDependencyType& type_1, const VulkanCommandListDependencyType& type_2) {
+    return (VulkanCommandListDependencyType)((unsigned char)type_1 & (unsigned char)type_2);
+}
+
+inline VulkanCommandListDependencyType operator&=(const VulkanCommandListDependencyType& type_1, const VulkanCommandListDependencyType& type_2) {
+    return (VulkanCommandListDependencyType)((unsigned char)type_1 & (unsigned char)type_2);
+}
 
 class VulkanRenderCommandList;
 

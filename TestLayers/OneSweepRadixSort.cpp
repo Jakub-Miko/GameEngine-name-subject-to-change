@@ -10,11 +10,12 @@
 #define ITEMS 1000000
 #define ITEMS_PER_THREAD 16
 #define THREAD_BLOCKS 245
+#define DIGIT_COUNT 4
 //#define VALIDATE_HISTOGRAM
 #define VALIDATE_PREFIX_SUM
 
 struct DigitBinningInfo {
-    uint32_t thread_block_number = 0;
+    uint32_t thread_block_number[DIGIT_COUNT] = {};
     uint32_t thread_block_data[256][THREAD_BLOCKS] = {};
 };
 
@@ -38,6 +39,7 @@ OneSweepRadixSort::OneSweepRadixSort() {
     buffer_desc.buffer_size = ITEMS * sizeof(uint32_t);
     input_buffer = RenderResourceManager::Get()->CreateBuffer(buffer_desc);
     alt_buffer = RenderResourceManager::Get()->CreateBuffer(buffer_desc);
+    alt2_buffer = RenderResourceManager::Get()->CreateBuffer(buffer_desc);
 
     buffer_desc.buffer_size = sizeof(DigitBinningInfo);
     digit_binning_buffer = RenderResourceManager::Get()->CreateBuffer(buffer_desc);
@@ -74,7 +76,7 @@ OneSweepRadixSort::OneSweepRadixSort() {
 
     std::random_device seed_gen;
     std::mt19937_64 rng(seed_gen());
-    std::uniform_int_distribution<> item_dist(0, 100);
+    std::uniform_int_distribution<> item_dist(0, 5000);
     std::unique_ptr<uint32_t[]> input_numbers(new uint32_t[ITEMS]());
 
     for (int i = 0; i < ITEMS; i++) {
@@ -155,8 +157,33 @@ void OneSweepRadixSort::OnUpdate(float delta_time) {
     list->Dispatch(4,1,1);
 
     list->SetPipeline(digit_binning_pipeline);
+
+    digit_binning_mat->SetParameter("input_buffer", input_buffer);
+    digit_binning_mat->SetParameter("output_buffer", alt_buffer);
+    digit_binning_mat->SetParameter("shift", 0);
     list->SetMaterial("DigitBinningSettings", digit_binning_mat);
     list->Dispatch(THREAD_BLOCKS,1,1);
+
+    //RenderResourceManager::Get()->UploadDataToBuffer(list, digit_binning_buffer, histogram_data, sizeof(DigitBinningInfo), 0);
+    digit_binning_mat->SetParameter("input_buffer", alt_buffer);
+    digit_binning_mat->SetParameter("output_buffer", alt2_buffer);
+    digit_binning_mat->SetParameter("shift", 8);
+    list->SetMaterial("DigitBinningSettings", digit_binning_mat);
+    list->Dispatch(THREAD_BLOCKS,1,1);
+
+
+    // digit_binning_mat->SetParameter("input_buffer", input_buffer);
+    // digit_binning_mat->SetParameter("output_buffer", alt_buffer);
+    // digit_binning_mat->SetParameter("shift", 16);
+    // list->SetMaterial("DigitBinningSettings", digit_binning_mat);
+    // list->Dispatch(THREAD_BLOCKS,1,1);
+    //
+    // digit_binning_mat->SetParameter("input_buffer", alt_buffer);
+    // digit_binning_mat->SetParameter("output_buffer", input_buffer);
+    // digit_binning_mat->SetParameter("shift", 24);
+    // list->SetMaterial("DigitBinningSettings", digit_binning_mat);
+    // list->Dispatch(THREAD_BLOCKS,1,1);
+
 
     Renderer::Get()->GetCommandQueue()->ExecuteRenderCommandList(list);
 }

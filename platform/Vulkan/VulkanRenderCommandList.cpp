@@ -114,7 +114,7 @@ void VulkanRenderCommandList::SetStorageBuffer(const std::string& semantic_name,
 	auto bind_point = param.binding_id;
 
 
-	dependency_handler->AddDrawDependency(this, buffer, VulkanCommandListDependencyType::WRITE, RenderState::COMMON, param_id);
+	dependency_handler->AddDrawDependency(this, buffer, VulkanCommandListDependencyType::WRITE | VulkanCommandListDependencyType::READ, RenderState::COMMON, param_id);
 
 	auto vk_buffer_handle = std::static_pointer_cast<VulkanRenderBufferResource>(buffer)->GetBuffer();
 
@@ -525,9 +525,7 @@ VulkanCommandListDependencyState DefaultVulkanDependencyHandler::AddDependency(V
 	if (found = fnd != dependencies.end() && fnd->second.type != VulkanCommandListDependencyType::NONE) { // never overwrite the expected value, only the first command matters
 		current_dep = fnd->second;
 		fnd->second.previous_access = access_type;
-		if (access_type == VulkanCommandListDependencyType::WRITE) { // Make sure Read doesnt overwrite write
-			fnd->second.type = access_type;
-		}
+		fnd->second.type |= access_type;
 		fnd->second.current_state = desired_state;
 	} else {
 		auto default_state = static_cast<VulkanRenderResource*>(resource->GetExtensionData())->GetDefaultState();
@@ -537,7 +535,7 @@ VulkanCommandListDependencyState DefaultVulkanDependencyHandler::AddDependency(V
 		dep.expected_state = default_state; // Write access is allowed to use uninitialized resources
 		dep.previous_access = access_type;
 		dep.type = access_type;
-		dep.allow_uninitialized = access_type == VulkanCommandListDependencyType::WRITE;
+		dep.allow_uninitialized = (access_type & VulkanCommandListDependencyType::WRITE) != VulkanCommandListDependencyType::NONE;
 		dependencies.insert_or_assign(resource, dep);
 		current_dep = dep;
 		current_dep.type = VulkanCommandListDependencyType::INVALID; // used to identify the first occurrence of a dependency which doesn't need to be synchronized
@@ -552,7 +550,8 @@ VulkanCommandListDependencyState DefaultVulkanDependencyHandler::AddDependency(V
 		}
 		
 		VulkanRenderBufferResource* vk_resource = static_cast<VulkanRenderBufferResource*>(resource.get());
-		if (current_dep.previous_access == VulkanCommandListDependencyType::WRITE && access_type == VulkanCommandListDependencyType::READ) { //Synchronize and Make Data available
+		if ((current_dep.previous_access & VulkanCommandListDependencyType::WRITE) != VulkanCommandListDependencyType::NONE
+			&& (access_type & VulkanCommandListDependencyType::READ) != VulkanCommandListDependencyType::NONE) { //Synchronize and Make Data available
 			list->OutsideRenderPass(); // Emiting a barrier pauses a rendering pass
 			manager->BufferBarrier(list, std::static_pointer_cast<RenderBufferResource>(resource), extra.source_stage, extra.target_stage, current_dep.type, access_type);
 		}
@@ -683,7 +682,7 @@ void VulkanDrawState::SetMatertialResources(VulkanRenderCommandList* list, std::
 			continue;
 		}
 		dep.desired_state = parameter.type == MaterialLayoutItemType::CONSTANT_BUFFER ? RenderState::COMMON : RenderState::TEXTURE_SAMPLE;
-		dep.access_type = parameter.type == MaterialLayoutItemType::STORAGE_BUFFER ? VulkanCommandListDependencyType::WRITE : VulkanCommandListDependencyType::READ;
+		dep.access_type = parameter.type == MaterialLayoutItemType::STORAGE_BUFFER ? VulkanCommandListDependencyType::WRITE | VulkanCommandListDependencyType::READ : VulkanCommandListDependencyType::READ;
 
 		VulkanDrawResource res;
 		res.resource = resource;
@@ -845,22 +844,20 @@ DefaultVulkanDependencyHandler::VulkanDependencyHandlerFeedback DefaultVulkanDep
 		}
 
 		if(transitioned) {
-			dependency.second.type = VulkanCommandListDependencyType::WRITE; // Transition counts as write
+			dependency.second.type |= VulkanCommandListDependencyType::WRITE; // Transition counts as write
 		}
 
-		switch (dependency.second.type)
-		{
-		case VulkanCommandListDependencyType::READ:
-			timeline_requirement = std::max(resource->write_timeline, timeline_requirement); // On read we need to wait for all writes to finish, we dont care about other reads
+		if((dependency.second.type & VulkanCommandListDependencyType::READ) != VulkanCommandListDependencyType::NONE) {
+			timeline_requirement = std::max(resource->read_timeline, timeline_requirement); // On read we need to wait for all writes to finish, we dont care about other reads
 			resource->read_timeline = new_timeline_value;
-			break;
-		case VulkanCommandListDependencyType::WRITE:
-			timeline_requirement = std::max(std::max(resource->write_timeline, resource->read_timeline), timeline_requirement); // On write we need to wait for reads as well
+		}
+
+		if((dependency.second.type & VulkanCommandListDependencyType::WRITE) != VulkanCommandListDependencyType::NONE) {
+			timeline_requirement = std::max(resource->write_timeline, timeline_requirement); // On write we need to wait for reads as well
 			resource->write_timeline = new_timeline_value;
-			break;
-		case VulkanCommandListDependencyType::NONE:
-			break; // Ignore none since its only used when changing default state, and if actual layout transition occurs WRITE type is used instead
-		default:
+		}
+
+		if((dependency.second.type & VulkanCommandListDependencyType::INVALID) != VulkanCommandListDependencyType::NONE) {
 			throw std::runtime_error("Invalid dependency type.\n");
 		}
 	}
