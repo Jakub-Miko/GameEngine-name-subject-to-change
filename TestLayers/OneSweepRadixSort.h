@@ -17,6 +17,7 @@ private:
     std::shared_ptr<Material> digit_binning_mat;
     std::shared_ptr<RenderBufferResource> input_buffer;
     std::shared_ptr<RenderBufferResource> alt_buffer;
+    std::shared_ptr<RenderBufferResource> alt2_buffer;
     std::shared_ptr<RenderBufferResource> global_histogram_buffer;
     std::shared_ptr<RenderBufferResource> global_prefix_sum_buffer;
     std::shared_ptr<RenderBufferResource> digit_binning_buffer;

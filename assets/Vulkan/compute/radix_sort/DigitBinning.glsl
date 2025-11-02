@@ -92,7 +92,7 @@ layout(std430, set=0, binding = 3) buffer output_buffer_block
 
 layout(std430, set=0, binding = 4) buffer digit_binning_data_block
 {
-    uint thread_block_number_counter;
+    uint thread_block_number_counter[DIGIT_COUNT];
     ThreadBlockInfo thread_block_info[];
 };
 
@@ -110,9 +110,14 @@ shared uint local_sort[ITEMS_PER_THREADBLOCK];
 shared uint thread_block_number;
 
 uint get_digit(uint key) {
-    return key >> (shift * HISTOGRAM_BITS) & ((1 << HISTOGRAM_BITS)-1);
+    return (key >> shift) & ((1 << HISTOGRAM_BITS)-1);
 }
 
+
+// every iteration the final prefix flag swaps values, so the next iteration doesnt see it as valid.
+uint prefix_flag() {
+    return ((shift >> 3) & 1) == 0 ? 2 : 3;
+}
 
 layout(local_size_x = THREADS_PER_THREADBLOCK, local_size_y = 1, local_size_z = 1) in;
 void main() {
@@ -123,7 +128,7 @@ void main() {
     // Assign dynamic ID to each threadblock to ensure the order in which they began execution
 
     if(gl_LocalInvocationIndex == 0) {
-        thread_block_number = atomicAdd(thread_block_number_counter,1);
+        thread_block_number = atomicAdd(thread_block_number_counter[shift >> 3],1);
     }
     memoryBarrierShared();
     barrier();
@@ -158,7 +163,7 @@ void main() {
         //Subgroup ranking (Wave multi-split)
         uint flags = 0xffffffff;
         for(int digit_bit = 0; digit_bit < HISTOGRAM_BITS; digit_bit++) {
-            bool bit_value = (uint(keys[i]) >> (shift*HISTOGRAM_BITS + digit_bit) & 1) == 0 ? false : true;
+            bool bit_value = (uint(keys[i]) >> (shift + digit_bit) & 1) == 0 ? false : true;
             uint mask = subgroupBallot(bit_value).x;
             flags &= (bit_value ? 0x0 : 0xffffffff) ^ mask;
         }
@@ -269,14 +274,16 @@ void main() {
             if((block_digit_data & 3) == 1) {
                 reduction += block_digit_data >> 2;
                 block--;
-            } else if( (block_digit_data & 3) == 2) {
+            } else if( (block_digit_data & 3) == prefix_flag()) {
                 reduction += block_digit_data >> 2;
                 // we use flag 1(REDUCTION) instead of two besause we are adding, and before it was already 1,
                 // this means after adding the flag is going to be 2(PREFIX) as intended.
                 break;
             }
         }
-        atomicAdd(thread_block_info[block_index].thread_block_reductions[gl_LocalInvocationIndex], 1 | (reduction << 2));
+        if(block_index < block_count - 1) {
+            atomicAdd(thread_block_info[block_index].thread_block_reductions[gl_LocalInvocationIndex], (prefix_flag() - 1) | (reduction << 2));
+        }
         block_global_offsets[gl_LocalInvocationIndex] += reduction - exclusive_hist_reduction; // we subtract the start of the digit in the local sort
     }
     memoryBarrierShared();

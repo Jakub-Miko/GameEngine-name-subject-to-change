@@ -99,13 +99,15 @@ public:
 	}
 
 	static VkAccessFlagBits2 DependencyToVkAccess(VulkanCommandListDependencyType dependency) {
-		switch (dependency) {
-		case VulkanCommandListDependencyType::READ:				return VK_ACCESS_2_MEMORY_READ_BIT;
-		case VulkanCommandListDependencyType::WRITE:			return VK_ACCESS_2_MEMORY_WRITE_BIT;
-		case VulkanCommandListDependencyType::INVALID:			return VK_ACCESS_2_NONE;
-		default:
-			throw std::runtime_error("Conversion failed");
+		VkAccessFlagBits2 result = 0;
+		if((dependency & VulkanCommandListDependencyType::READ) != VulkanCommandListDependencyType::NONE) {
+			result |= VK_ACCESS_2_MEMORY_READ_BIT;
 		}
+
+		if((dependency & VulkanCommandListDependencyType::WRITE) != VulkanCommandListDependencyType::NONE) {
+			result |= VK_ACCESS_2_MEMORY_WRITE_BIT;
+		}
+		return result;
 	}
 
 	static VkFormat PrimitiveAndSizeToVulkan(RenderPrimitiveType type, int size, bool normalized = false) {
