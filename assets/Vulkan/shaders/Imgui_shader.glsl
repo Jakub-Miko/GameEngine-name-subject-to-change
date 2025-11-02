@@ -1,3 +1,4 @@
+/*
 #RootSignature
 {
 	"RootSignature": [
@@ -13,8 +14,8 @@
 	]
 }
 #end
-)"        
-#Vertex //--------------------------------------------------
+*/
+// #Vertex //--------------------------------------------------
 #version 430
 
 layout(set = 0, binding = 0) uniform conf 
@@ -32,8 +33,8 @@ void main()
     Frag_Color = Color;
     gl_Position = ProjMtx * vec4(Position.xy,0,1);
 }
-#end
-#Fragment //------------------------------------------------
+// #end
+// #Fragment //------------------------------------------------
 #version 430
 in vec2 Frag_UV;
 in vec4 Frag_Color;
@@ -43,4 +44,4 @@ void main()
 {
     Out_Color = Frag_Color * texture(Texture[0], Frag_UV.st);
 }
-#end
+// #end
