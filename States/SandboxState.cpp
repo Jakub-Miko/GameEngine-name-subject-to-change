@@ -3,8 +3,6 @@
 #include <TestLayer.h>
 #include <FileManager.h>
 
-#include "TestLayers/OneSweepRadixSort.h"
-
 SandboxState::SandboxState() : GameState(), m_TestLayer(nullptr) {
 
 }
@@ -22,7 +20,7 @@ bool SandboxState::OnEvent(Event* e)
 
 void SandboxState::OnAttach()
 {
-	m_TestLayer = new OneSweepRadixSort();
+	m_TestLayer = new TestLayer();
 }
 
 void SandboxState::OnDeattach()
