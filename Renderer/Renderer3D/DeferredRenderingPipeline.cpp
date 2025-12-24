@@ -1,13 +1,13 @@
 #include "DeferredRenderingPipeline.h"
 #include "Renderer3D.h"
 #include "RenderPassBuilder.h"
-#include "RenderPasses/PostProcessingPass.h"
-#include "RenderPasses/RenderSubmissionPass.h"
-#include "RenderPasses/DeferredGeometryPass.h"
-#include "RenderPasses/ShadowMappingPass.h"
-#include "RenderPasses/DeferredLightingPass.h"
-#include "RenderPasses/DeferredSkeletalGeometryPass.h"
-#include "RenderPasses/GenerateGBufferPass.h"
+#include "CommonRenderPasses/PostProcessingPass.h"
+#include "CommonRenderPasses/RenderSubmissionPass.h"
+#include "DeferredRenderer/DeferredGeometryPass.h"
+#include "CommonRenderPasses/ShadowMappingPass.h"
+#include "DeferredRenderer/DeferredLightingPass.h"
+#include "DeferredRenderer/DeferredSkeletalGeometryPass.h"
+#include "DeferredRenderer/GenerateGBufferPass.h"
 
 std::shared_ptr<RenderPipeline> DeferredRenderingPipeline::CreatePipeline()
 {
