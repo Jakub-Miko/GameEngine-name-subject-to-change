@@ -7,10 +7,7 @@ struct RenderResourceCollection {
 	RenderResourceCollection() = default;
 	RenderResourceCollection(const RenderResourceCollection& other) : resources(other.resources) {  };
 	RenderResourceCollection(RenderResourceCollection&& other) : resources(std::move(other.resources)) {  };
-	RenderResourceCollection& operator=(const RenderResourceCollection& other) {
-		resources = other.resources;
-		return *this;
-	}
+	RenderResourceCollection& operator=(const RenderResourceCollection& other) = default;
 
 	RenderResourceCollection& operator=(RenderResourceCollection&& other) {
 		resources = std::move(other.resources);
