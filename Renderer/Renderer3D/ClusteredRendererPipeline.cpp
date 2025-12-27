@@ -17,7 +17,7 @@ std::shared_ptr<RenderPipeline> ClusteredRendererPipeline::CreatePipeline() {
     builder.AddPass(new RenderSubmissionPass("RenderObjects", "SkeletalRenderObjects", "RenderLights", "RenderShadowedDirectionalLights","RenderShadowedPointLights"));
     builder.AddPass(new DeferredGeometryPass("RenderObjects","InitialGBuffer", "RenderMeshOutput"));
     builder.AddPass(new DeferredSkeletalGeometryPass("SkeletalRenderObjects","RenderMeshOutput", "RenderOutput"));
-    builder.AddPass(new ClusteredLightingPass("RenderOutput", "GBufferMaterial" , "RenderLights", "RenderShadowedDirectionalLights", "RenderShadowedPointLights", "ColorBuffer", "ShadowsGeneratedTag", "ShadowCascades"));
+    builder.AddPass(new ClusteredLightingPass("RenderOutput", "GBufferMaterial" , "ClusteredLightLists", "RenderShadowedDirectionalLights", "RenderShadowedPointLights", "ColorBuffer", "ShadowsGeneratedTag", "ShadowCascades"));
     builder.AddPass(new ShadowMappingPass("RenderShadowedDirectionalLights","RenderShadowedPointLights", "ShadowsGeneratedTag", "ShadowCascades"));
     return std::make_shared<RenderPipeline>(std::move(builder.Build()));
 }

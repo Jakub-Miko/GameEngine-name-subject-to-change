@@ -11,7 +11,6 @@
 struct ClusteredLightCullingPass::internal_data {
     std::shared_ptr<Pipeline> culling_pipeline;
     std::shared_ptr<RenderBufferResource> config_buffer;
-    std::shared_ptr<RenderBufferResource> light_buffer;
     std::shared_ptr<RenderBufferResource> allocator_buffer;
     ClusteredLightLists output_lists;
 };
@@ -47,7 +46,7 @@ void ClusteredLightCullingPass::InitPass() {
     data->output_lists.light_assignment_buffer = RenderResourceManager::Get()->CreateBuffer(buffer_desc);
 
     buffer_desc.buffer_size = 5000 * sizeof(glm::vec4);
-    data->light_buffer = RenderResourceManager::Get()->CreateBuffer(buffer_desc);
+    data->output_lists.light_buffer = RenderResourceManager::Get()->CreateBuffer(buffer_desc);
 
     RenderBufferDescriptor config_buffer_desc(sizeof(ConfigBufferStruct), RenderBufferType::DEFAULT, RenderBufferUsage::CONSTANT_BUFFER);
     data->config_buffer = RenderResourceManager::Get()->CreateBuffer(config_buffer_desc);
@@ -68,33 +67,49 @@ void ClusteredLightCullingPass::Setup(RenderPassResourceDefinnition& setup_build
 void ClusteredLightCullingPass::Render(RenderPipelineResourceManager& resource_manager) {
     auto global_light_list = resource_manager.GetResource<RenderResourceCollection<Entity>>(input_global_light_list_name);
 
-    if(global_light_list.resources.empty()) return;
+    if(global_light_list.resources.empty()) {
+        ClusteredLightLists empty_lists = {};
+        resource_manager.SetResource<ClusteredLightLists>(output_clustered_light_lists_name, empty_lists);
+        return;
+    };
 
     auto& world = Application::GetWorld();
     auto camera = world.GetPrimaryEntity();
     auto& camera_trans = world.GetComponent<TransformComponent>(camera);
     auto& camera_props = world.GetComponent<CameraComponent>(camera);
     auto list = Renderer::Get()->GetRenderCommandList();
-    std::vector<glm::vec4> light_positions_and_radii;
+    std::vector<ClusteredLightData> light_positions_and_radii;
     light_positions_and_radii.reserve(global_light_list.resources.size());
 
     for(auto entity : global_light_list.resources ) {
         auto transform = glm::inverse(camera_trans.TransformMatrix) * world.GetComponent<TransformComponent>(entity).TransformMatrix;
         auto& light = world.GetComponent<LightComponent>(entity);
-        glm::vec4 position_and_radius = glm::vec4(glm::vec3(transform[3]), light.CalcRadiusFromAttenuation());
-        light_positions_and_radii.push_back(position_and_radius);
+        ClusteredLightData light_data = {};
+        light_data.attenuation_constants = glm::vec4(light.GetAttenuation(),1.0);
+        light_data.Light_Color = light.GetLightColor();
+        light_data.light_type = (int)light.type;
+
+        switch(light.type) {
+        case LightType::DIRECTIONAL:
+                light_data.position_or_direction_and_radius = glm::vec4(glm::mat3(transform) * glm::vec3(0.0f, 0.0f, -1.0f), 0.0f);
+                break;
+            case LightType::POINT:
+                light_data.position_or_direction_and_radius = glm::vec4(glm::vec3(transform[3]), light.CalcRadiusFromAttenuation());
+            default: break;
+        }
+        light_positions_and_radii.push_back(light_data);
     }
 
     CullingData culling_data = {};
     RenderResourceManager::Get()->UploadDataToBuffer(list, data->allocator_buffer, &culling_data, sizeof(CullingData), 0);
 
-    RenderResourceManager::Get()->UploadDataToBuffer(list, data->light_buffer, light_positions_and_radii.data(), sizeof(glm::vec4) * light_positions_and_radii.size(), 0);
+    RenderResourceManager::Get()->UploadDataToBuffer(list, data->output_lists.light_buffer, light_positions_and_radii.data(), sizeof(ClusteredLightData) * light_positions_and_radii.size(), 0);
 
     ConfigBufferStruct config_buffer_struct = {};
     config_buffer_struct.projection_matrix = camera_props.GetProjectionMatrix();
     config_buffer_struct.view_matrix = glm::inverse(camera_trans.TransformMatrix);
     config_buffer_struct.light_count = static_cast<uint32_t>(light_positions_and_radii.size());
-    config_buffer_struct.cluster_grid_size = glm::uvec3(16, 16, 16);
+    config_buffer_struct.cluster_grid_size = glm::uvec3(CLUSTER_GRID_X, CLUSTER_GRID_Y, CLUSTER_GRID_Z);
     config_buffer_struct.near_plane = camera_props.zNear;
     config_buffer_struct.far_plane = camera_props.zFar;
     config_buffer_struct.fov = camera_props.fov;
@@ -107,11 +122,14 @@ void ClusteredLightCullingPass::Render(RenderPipelineResourceManager& resource_m
 
     list->SetPipeline(data->culling_pipeline);
     list->SetConstantBuffer("config_buffer", data->config_buffer);
-    list->SetStorageBuffer("light_buffer", data->light_buffer);
+    list->SetStorageBuffer("light_buffer", data->output_lists.light_buffer);
     list->SetStorageBuffer("light_assignment_buffer", data->output_lists.light_assignment_buffer);
     list->SetStorageBuffer("cluster_buffer", data->output_lists.cluster_buffer);
     list->SetStorageBuffer("allocator_buffer", data->allocator_buffer);
     list->Dispatch(num_of_thread_groups, 1, 1);
 
     Renderer::Get()->GetCommandQueue()->ExecuteRenderCommandList(list);
+
+    data->output_lists.num_of_lights = light_positions_and_radii.size();
+    resource_manager.SetResource<ClusteredLightLists>(output_clustered_light_lists_name, data->output_lists);
 }

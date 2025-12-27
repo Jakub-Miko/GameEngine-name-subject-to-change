@@ -10,7 +10,7 @@ class CameraComponent;
 class ClusteredLightingPass : public RenderPass {
 public:
 	struct internal_data;
-	ClusteredLightingPass(const std::string& input_gbuffer, const std::string& input_gbuffer_material, const std::string& input_lights, const std::string& input_directional_shadowed_lights,
+	ClusteredLightingPass(const std::string& input_gbuffer, const std::string& input_gbuffer_material, const std::string& input_clustered_lights, const std::string& input_directional_shadowed_lights,
 		const std::string& input_point_shadowed_lights, const std::string& output_buffer, const std::string& shadow_map_dependency_tag, const std::string& input_directional_shadowed_cascades);
 	virtual void Setup(RenderPassResourceDefinnition& setup_builder) override;
 	virtual void Render(RenderPipelineResourceManager& resource_manager) override;
@@ -34,7 +34,7 @@ private:
 	void InitPassData();
 	std::string input_gbuffer;
 	std::string input_gbuffer_material;
-	std::string input_lights;
+	std::string input_clustered_lights;
 	std::string input_directional_shadowed_lights;
 	std::string input_directional_shadowed_cascades;
 	std::string input_point_shadowed_lights;

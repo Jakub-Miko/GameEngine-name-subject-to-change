@@ -16,6 +16,7 @@
 #include <World/Components/LightComponent.h>
 #include <Application.h>
 #include <Window.h>
+#include "ClusteredLightCullingPass.h"
 
 struct LightingPassPreset;
 
@@ -46,6 +47,17 @@ struct LightData {
 	glm::vec4 attenuation_constants;
 	int light_type;
 	uint8_t padding[12]; // pad to match 16 byte alignment requirements of vec4 and mat4
+};
+
+struct ConfigData {
+	glm::mat4 projection_matrix;
+	glm::vec2 pixel_size;
+	float depth_constant_a;
+	float depth_constant_b;
+	glm::uvec3 cluster_grid_size;
+	int light_count;
+	float near_plane;
+	float far_plane;
 };
 
 struct ClusteredLightingPass::internal_data {
@@ -200,9 +212,9 @@ void ClusteredLightingPass::InitPassData() {
 }
 
 
-ClusteredLightingPass::ClusteredLightingPass(const std::string& input_gbuffer, const std::string& input_gbuffer_material, const std::string& input_lights, const std::string& input_directional_shadowed_lights,
+ClusteredLightingPass::ClusteredLightingPass(const std::string& input_gbuffer, const std::string& input_gbuffer_material, const std::string& input_clustered_lights, const std::string& input_directional_shadowed_lights,
 	const std::string& input_point_shadowed_lights, const std::string& output_buffer, const std::string& shadow_map_dependency_tag, const std::string&  input_directional_shadowed_cascades)
-	: input_gbuffer(input_gbuffer), output_buffer(output_buffer), input_lights(input_lights), input_directional_shadowed_lights(input_directional_shadowed_lights),
+	: input_gbuffer(input_gbuffer), output_buffer(output_buffer), input_clustered_lights(input_clustered_lights), input_directional_shadowed_lights(input_directional_shadowed_lights),
 	input_point_shadowed_lights(input_point_shadowed_lights), shadow_map_dependency_tag(shadow_map_dependency_tag), input_directional_shadowed_cascades(input_directional_shadowed_cascades),
 	input_gbuffer_material(input_gbuffer_material)
 {
@@ -212,7 +224,7 @@ ClusteredLightingPass::ClusteredLightingPass(const std::string& input_gbuffer, c
 
 void ClusteredLightingPass::Setup(RenderPassResourceDefinnition& setup_builder)
 {
-	setup_builder.AddResource<RenderResourceCollection<Entity>>(input_lights, RenderPassResourceDescriptor_Access::READ);
+	setup_builder.AddResource<ClusteredLightLists>(input_clustered_lights, RenderPassResourceDescriptor_Access::READ);
 	setup_builder.AddResource<RenderResourceCollection<Entity>>(input_directional_shadowed_lights, RenderPassResourceDescriptor_Access::READ);
 	setup_builder.AddResource<RenderResourceCollection<Entity>>(input_point_shadowed_lights, RenderPassResourceDescriptor_Access::READ);
 	setup_builder.AddResource<std::shared_ptr<RenderFrameBufferResource>>(output_buffer, RenderPassResourceDescriptor_Access::WRITE);
@@ -265,62 +277,33 @@ ClusteredLightingPass::~ClusteredLightingPass()
 
 void ClusteredLightingPass::RenderLights(RenderPipelineResourceManager& resource_manager,std::shared_ptr<RenderCommandList>  list, const CameraComponent& camera,const render_props& props)
 {
-	auto& geometry = resource_manager.GetResource<RenderResourceCollection<Entity>>(input_lights);
-	int light_count = geometry.resources.size();
+	auto& clustered_lights = resource_manager.GetResource<ClusteredLightLists>(input_clustered_lights);
 
-	if (light_count == 0) {
-		return;
-	}
+	if(clustered_lights.num_of_lights == 0) return;
 
-	auto& gbuffer = resource_manager.GetResource<std::shared_ptr<RenderFrameBufferResource>>(input_gbuffer);
 	auto& gbuffer_material = resource_manager.GetResource<std::shared_ptr<Material>>(input_gbuffer_material);
-	auto& world = Application::GetWorld();
-	auto ViewProjection = props.projection * props.view;
-	auto view_matrix = props.view;
 	list->SetPipeline(data->pipeline);
 	list->SetRenderTarget(data->output_buffer_resource);
 	gbuffer_material->SetMaterial(list);
-	float depth_constant_a = props.depth_constant_a;
-	float depth_constant_b = props.depth_constant_b;
-	auto projection = props.projection;
 	glm::vec2 pixel_size = { 1.0f / Application::Get()->GetWindow()->GetProperties().resolution_x,
 		1.0f / Application::Get()->GetWindow()->GetProperties().resolution_y };
-	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, &depth_constant_a, sizeof(float), sizeof(glm::mat4) + sizeof(glm::vec2));
-	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, &depth_constant_b, sizeof(float), sizeof(glm::mat4) + sizeof(glm::vec2) + sizeof(float));
-	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, &light_count, sizeof(int), sizeof(glm::mat4) + sizeof(glm::vec2) + 2 * sizeof(float));
-	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, &projection, sizeof(glm::mat4), 0);
-	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, &pixel_size, sizeof(glm::vec2), sizeof(glm::mat4));
 
-	std::vector<LightData> lights;
-	lights.reserve(light_count);
+	ConfigData config_data = {};
+	config_data.light_count = clustered_lights.num_of_lights;
+	config_data.cluster_grid_size = glm::uvec3(CLUSTER_GRID_X, CLUSTER_GRID_Y, CLUSTER_GRID_Z);
+	config_data.depth_constant_a = props.depth_constant_a;
+	config_data.depth_constant_b = props.depth_constant_b;
+	config_data.far_plane = camera.zFar;
+	config_data.near_plane = camera.zNear;
+	config_data.pixel_size = pixel_size;
+	config_data.projection_matrix = props.projection;
 
-	if(light_count > data->light_list->GetBufferDescriptor().buffer_size) {
-		throw std::runtime_error("Too many lights in the scene");
-	}
+	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, &config_data, sizeof(ConfigData), 0);
 
-	for (auto& entity : geometry.resources) {
-		auto& transform_component = world.GetComponent<TransformComponent>(entity);
-		auto transform = transform_component.TransformMatrix;
-		auto& light = world.GetComponent<LightComponent>(entity);
-		glm::mat4 mv_matrix;
-		LightData light_data = {};
-		light_data.light_type = (int)light.type;
-		light_data.light_color = light.GetLightColor();
-		light_data.attenuation_constants = glm::vec4(light.GetAttenuation(), 0.0f);
-		if (light.type == LightType::DIRECTIONAL) {
-			light_data.view_model_matrix = view_matrix * transform;
-		}
-		else if (light.type == LightType::POINT) {
-			glm::mat4 model_sphere = glm::translate(glm::mat4(1.0f), (glm::vec3)transform_component.TransformMatrix[3]) * glm::scale(glm::mat4(1.0), glm::vec3(light.CalcRadiusFromAttenuation()));
-			light_data.view_model_matrix = view_matrix * model_sphere;
-
-		}
-		lights.push_back(light_data);
-	}
-
-	RenderResourceManager::Get()->UploadDataToBuffer(list, data->light_list, lights.data(), lights.size() * sizeof(LightData), 0);
 	list->SetConstantBuffer("conf", data->constant_scene_buf);
-	list->SetStorageBuffer("light_buffer", data->light_list);
+	list->SetStorageBuffer("light_buffer", clustered_lights.light_buffer);
+	list->SetStorageBuffer("light_assignment_buffer", clustered_lights.light_assignment_buffer);
+	list->SetStorageBuffer("cluster_buffer", clustered_lights.cluster_buffer);
 	list->SetVertexBuffer(data->card_mesh->GetVertexBuffer());
 	list->SetIndexBuffer(data->card_mesh->GetIndexBuffer());
 	list->Draw(data->card_mesh->GetIndexCount());

@@ -1,3 +1,4 @@
+/*-
 #RootSignature
 {
 	"RootSignature": [
@@ -10,29 +11,30 @@
 			"type" : "storage_buffer"
 		},
 		{
+			"name" : "light_assignment_buffer",
+			"type" : "storage_buffer"
+		},
+		{
+			"name" : "cluster_buffer",
+			"type" : "storage_buffer"
+		},
+		{
 			"name" : "GBufferMaterial",
 			"type" : "material",
 			"material_path": "api:GBufferMaterialLayout.json"
 		}
 	]
-	
+
 }
 #end
-
-#Vertex //--------------------------------------------------
+*/
+// #Vertex //--------------------------------------------------
 #version 430
 
 layout(location = 0) in vec3 position;
 layout(location = 1) in vec3 normal;
 layout(location = 2) in vec3 tangent;
 layout(location = 3) in vec2 uv;
-
-struct Light {
-	mat4 view_model_matrix;
-	vec4 Light_Color;
-	vec4 attenuation_constants;
-	int light_type;
-};
 
 layout(set = 0, binding = 0) uniform conf {
 	mat4 projection_matrix;
@@ -41,34 +43,16 @@ layout(set = 0, binding = 0) uniform conf {
 	float depth_constant_b;
 	int light_count;
 };
-layout(set = 0, binding = 1) readonly buffer light_buffer {
-	Light lights[];
-};
 
 out vec3 light_volume_pos;
 
 void main() {
-//	if (light_type == 0) {
-//		gl_Position = vec4(position, 1.0);
-//		light_volume_pos = vec3(inverse(projection_matrix) * vec4(position.xy, -1.0, 1.0));
-//		light_pos = vec3(view_model_matrix[3]);
-//		light_direction_in = normalize(mat3(view_model_matrix) * vec3(0.0, 0.0, -1.0));
-//	}
-//	else {
-//		gl_Position = projection_matrix * view_model_matrix * vec4(position, 1.0);
-//		light_volume_pos = vec3(view_model_matrix * vec4(position, 1.0));
-//		light_pos = vec3(view_model_matrix[3]);
-//		light_direction_in = normalize(mat3(view_model_matrix) * vec3(0.0, 0.0, -1.0));
-//	}
-
 	gl_Position = vec4(position, 1.0);
 	light_volume_pos = vec3(inverse(projection_matrix) * vec4(position.xy, -1.0, 1.0));
-
 }
 
-
-#end
-#Fragment //------------------------------------------------
+// #end
+// #Fragment //------------------------------------------------
 #version 430
 
 layout(location = 0) out vec4 color_out;
@@ -79,7 +63,7 @@ layout(set = 1, binding = 2) uniform sampler2D Roughness;
 layout(set = 1, binding = 3) uniform sampler2D DepthBuffer;
 
 struct Light {
-	mat4 view_model_matrix;
+	vec4 position_or_direction_and_radius;
 	vec4 Light_Color;
 	vec4 attenuation_constants;
 	int light_type;
@@ -90,12 +74,31 @@ layout(set = 0, binding = 0) uniform conf {
 	vec2 pixel_size;
 	float depth_constant_a;
 	float depth_constant_b;
+	uvec3 cluster_grid_size;
 	int light_count;
+	float near_plane;
+	float far_plane;
 };
 
 layout(set = 0, binding = 1) readonly buffer light_buffer {
 	Light lights[];
 };
+
+layout(std430, set=0, binding = 2) buffer light_assignment_buffer
+{
+	uint light_assignment_indicies[];
+};
+
+struct ClusterLightAssignment {
+	uint start_index;
+	uint count;
+};
+
+layout(std430, set=0, binding = 3) buffer cluster_buffer
+{
+	ClusterLightAssignment cluster_assignments[];
+};
+
 
 in vec3 light_volume_pos;
 
@@ -109,6 +112,27 @@ vec3 GetFragmentPosition(vec3 coordinates) {
 }
 
 
+uint get_depth_slice_index(float depth) {
+	float scale = cluster_grid_size.z / (log2(far_plane/near_plane));
+	float bias = -scale*log2(near_plane);
+	return int(max(log2(depth)*scale + bias, 0.0f));
+}
+
+uint get_cluster_index(vec3 coords) {
+	float depth = texture(DepthBuffer, coords.xy).x;
+	float linearized_depth = depth_constant_b / (depth - depth_constant_a);
+
+	coords.y = 1.0f - coords.y;
+	uvec3 cluster_coords = uvec3(min(uvec2(coords.xy * vec2(cluster_grid_size.xy)), cluster_grid_size.xy - 1u),
+		get_depth_slice_index(linearized_depth));
+
+	uint index = cluster_coords.x
+		+ cluster_coords.y * cluster_grid_size.x
+		+ cluster_coords.z * cluster_grid_size.x * cluster_grid_size.y;
+
+	return index;
+}
+
 void main() {
 	vec3 coords = vec3((gl_FragCoord.x * pixel_size.x), (gl_FragCoord.y * pixel_size.y), 0.0);
 	vec3 view_space_pos = GetFragmentPosition(coords);
@@ -117,20 +141,25 @@ void main() {
 	float roughness = texture(Roughness, coords.xy).x;
 	vec3 color_accum = vec3(0.0);
 
-	for(int i = 0; i < light_count; i++) {
+	uint index = get_cluster_index(coords);
+
+	ClusterLightAssignment list = cluster_assignments[index];
+
+	for(int i = 0; i < list.count; i++) {
 		vec3 light_direction;
-		if (lights[i].light_type == 0) {
-			light_direction = normalize(mat3(lights[i].view_model_matrix) * vec3(0.0, 0.0, - 1.0));
+		uint light_index = light_assignment_indicies[list.start_index + i];
+		if (lights[light_index].light_type == 0) {
+			light_direction = normalize(vec3(lights[light_index].position_or_direction_and_radius));
 		}
 		else {
-			light_direction = - normalize(vec3(lights[i].view_model_matrix[3]) - view_space_pos);
+			light_direction = - normalize(vec3(lights[light_index].position_or_direction_and_radius) - view_space_pos);
 		}
 
 		float attenuation_factor = 1;
 
-		if (lights[i].light_type == 1) {
-			float distance = length(vec3(lights[i].view_model_matrix[3]) - view_space_pos);
-			vec3 attenuation_constants = lights[i].attenuation_constants.xyz;
+		if (lights[light_index].light_type == 1) {
+			float distance = length(vec3(lights[light_index].position_or_direction_and_radius) - view_space_pos);
+			vec3 attenuation_constants = lights[light_index].attenuation_constants.xyz;
 			attenuation_factor = 1.0 / (attenuation_constants.x + (attenuation_constants.y * distance) + attenuation_constants.z * (distance * distance));
 		}
 
@@ -139,11 +168,11 @@ void main() {
 
 		float contribution = diffuse_contribution + specular_contribution;
 
-		vec4 Light_Color = lights[i].Light_Color;
+		vec4 Light_Color = lights[light_index].Light_Color;
 		color_accum += vec3(color.xyz * Light_Color.xyz * attenuation_factor * Light_Color.w * contribution);
 	}
-
 	color_out = vec4(color_accum, 1.0);
+	color_out += vec4(0,list.count / 20.0f,0,0);
 }
 
-#end
+// #end

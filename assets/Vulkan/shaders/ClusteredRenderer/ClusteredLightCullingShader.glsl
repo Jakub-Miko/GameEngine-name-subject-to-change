@@ -43,7 +43,10 @@ layout(set = 0, binding = 0) uniform config_buffer
 };
 
 struct Light {
-    vec4 position_and_radius;
+    vec4 position_or_direction_and_radius;
+    vec4 Light_Color;
+    vec4 attenuation_constants;
+    int light_type;
 };
 
 layout(std430, set=0, binding = 1) readonly buffer light_buffer
@@ -139,7 +142,7 @@ void main() {
 
     uint count = 0;
     for(int i = 0; i < light_count; i++) {
-        if(sphere_aabb_overlap_test(lights[i].position_and_radius, bounding_box)) {
+        if(sphere_aabb_overlap_test(lights[i].position_or_direction_and_radius, bounding_box)) {
             count++;
         }
     }
@@ -154,7 +157,7 @@ void main() {
 
     uint write_index = 0;
     for(int i = 0; i < light_count && write_index < count; i++) {
-        if(sphere_aabb_overlap_test(lights[i].position_and_radius, bounding_box)) {
+        if(sphere_aabb_overlap_test(lights[i].position_or_direction_and_radius, bounding_box)) {
             light_assignment_indicies[allocated_offset + write_index] = i;
             write_index++;
         }
