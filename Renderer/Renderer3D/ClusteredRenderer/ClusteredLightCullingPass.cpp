@@ -112,7 +112,7 @@ void ClusteredLightCullingPass::Render(RenderPipelineResourceManager& resource_m
     config_buffer_struct.cluster_grid_size = glm::uvec3(CLUSTER_GRID_X, CLUSTER_GRID_Y, CLUSTER_GRID_Z);
     config_buffer_struct.near_plane = camera_props.zNear;
     config_buffer_struct.far_plane = camera_props.zFar;
-    config_buffer_struct.fov = camera_props.fov;
+    config_buffer_struct.fov = glm::radians(camera_props.fov);
     config_buffer_struct.aspect_ratio = camera_props.aspect_ratio;
     config_buffer_struct.light_assignment_size = static_cast<uint32_t>(data->output_lists.light_assignment_buffer->GetBufferDescriptor().buffer_size / sizeof(uint32_t));
     RenderResourceManager::Get()->UploadDataToBuffer(list, data->config_buffer, &config_buffer_struct, sizeof(ConfigBufferStruct), 0);
