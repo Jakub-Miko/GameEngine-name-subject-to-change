@@ -102,7 +102,7 @@ BoundingBox GetAABB(uvec3 cluster_coords, uvec3 cluster_grid_size) {
     float near_slice = depth_slice(cluster_coords.z, cluster_grid_size.z, near_plane, far_plane);
     float far_slice = depth_slice(cluster_coords.z + 1, cluster_grid_size.z, near_plane, far_plane);
 
-    float tangent = tan(fov/2);
+    float tangent = tan(fov/2.0);
 
     vec3 points[4] = {
         get_cluster_point(uvec2(cluster_coords.x, cluster_coords.y), near_slice, tangent),
@@ -121,11 +121,67 @@ BoundingBox GetAABB(uvec3 cluster_coords, uvec3 cluster_grid_size) {
     return BoundingBox((maximum + minimum) / 2, (maximum - minimum) / 2);
 }
 
-bool sphere_aabb_overlap_test(vec4 sphere_pos_and_radius, BoundingBox box) {
-    vec3 center_line = sphere_pos_and_radius.xyz - box.center;
-    vec3 bounded_center_line = clamp(center_line, -box.half_extents, box.half_extents);
-    float len = length(center_line) - length(bounded_center_line);
-    return len < sphere_pos_and_radius.w;
+bool sphere_aabb_overlap_test(vec4 sphere_pos_and_radius, uvec3 cluster_coords) {
+    float near_z = depth_slice(cluster_coords.z, cluster_grid_size.z, near_plane, far_plane);
+    float far_z = depth_slice(cluster_coords.z + 1u, cluster_grid_size.z, near_plane, far_plane);
+    float tan_fov = tan(fov * 0.5);
+
+    if (sphere_pos_and_radius.z + sphere_pos_and_radius.w < -far_z ||
+        sphere_pos_and_radius.z - sphere_pos_and_radius.w > -near_z) return false;
+
+    float new_z, new_radius;
+    if (sphere_pos_and_radius.z <= -near_z && sphere_pos_and_radius.z >= -far_z) {
+        new_z = cz;
+        new_radius = r;
+    } else {
+        float d_near = abs(sphere_pos_and_radius.z + near_z);
+        float d_far = abs(sphere_pos_and_radius.z + far_z);
+        new_z = (d_near < d_far) ? -near_z : -far_z;
+        float dist = min(d_near, d_far);
+        new_radius = sqrt(r * r - dist * dist);
+    }
+
+    float y_extent = tan_fov * abs(new_z);
+    float x_extent = y_extent * aspect_ratio;
+
+    float y_step = 2.0 * y_extent / float(cluster_grid_size.y);
+    float x_step = 2.0 * x_extent / float(cluster_grid_size.x);
+
+    float y_min = -y_extent + y_step * float(cluster_coords.y);
+    float y_max = y_min + y_step;
+    float x_min = -x_extent + x_step * float(cluster_coords.x);
+    float x_max = x_min + x_step;
+
+    vec3 n_bot = normalize(vec3(0.0, -new_z, y_min));
+    vec3 n_top = normalize(vec3(0.0, new_z, -y_max));
+
+    vec3 center = vec3(sphere_pos_and_radius.xy, new_z);
+    float d_bot = dot(n_bot, center);
+    float d_top = dot(n_top, center);
+
+    if (d_bot < -new_radius || d_top < -new_radius) return false;
+
+    vec3 new_center;
+    if (d_bot >= 0.0 && d_top >= 0.0) {
+        // Inside Y bounds
+        new_center = center;
+        new_radius = new_radius;
+    } else {
+        float y_dist;
+        if (d_bot < 0.0) {
+            y_dist = -d_bot;
+            new_center = center - n_bot * d_bot;
+        } else {
+            y_dist = -d_top;
+            new_center = center - n_bot * d_bot;
+        }
+        new_radius = sqrt(new_radius * new_radius - y_dist * y_dist);
+    }
+
+    float d_left = dot(vec3(-new_z, 0.0, x_min), new_center);
+    float d_right = dot(vec3(new_z, 0.0, -x_max), new_center);
+
+    return (d_left >= -new_radius && d_right >= -new_radius);
 }
 
 void main() {
@@ -138,11 +194,9 @@ void main() {
     cluster_coords.y = (index / cluster_grid_size.x) % cluster_grid_size.y;
     cluster_coords.z = (index / (cluster_grid_size.y * cluster_grid_size.x));
 
-    BoundingBox bounding_box = GetAABB(cluster_coords, cluster_grid_size);
-
     uint count = 0;
     for(int i = 0; i < light_count; i++) {
-        if(sphere_aabb_overlap_test(lights[i].position_or_direction_and_radius, bounding_box)) {
+        if(sphere_aabb_overlap_test(lights[i].position_or_direction_and_radius, cluster_coords)) {
             count++;
         }
     }
@@ -157,7 +211,7 @@ void main() {
 
     uint write_index = 0;
     for(int i = 0; i < light_count && write_index < count; i++) {
-        if(sphere_aabb_overlap_test(lights[i].position_or_direction_and_radius, bounding_box)) {
+        if(sphere_aabb_overlap_test(lights[i].position_or_direction_and_radius, cluster_coords)) {
             light_assignment_indicies[allocated_offset + write_index] = i;
             write_index++;
         }

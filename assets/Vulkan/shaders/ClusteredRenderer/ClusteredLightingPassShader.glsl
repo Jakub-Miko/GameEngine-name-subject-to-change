@@ -6,7 +6,7 @@
 			"name" : "conf",
 			"type" : "constant_buffer"
 		},
-		{
+		{s
 			"name" : "light_buffer",
 			"type" : "storage_buffer"
 		},
@@ -84,7 +84,7 @@ layout(set = 0, binding = 1) readonly buffer light_buffer {
 	Light lights[];
 };
 
-layout(std430, set=0, binding = 2) buffer light_assignment_buffer
+layout(std430, set=0, binding = 2) readonly buffer light_assignment_buffer
 {
 	uint light_assignment_indicies[];
 };
@@ -94,7 +94,7 @@ struct ClusterLightAssignment {
 	uint count;
 };
 
-layout(std430, set=0, binding = 3) buffer cluster_buffer
+layout(std430, set=0, binding = 3) readonly buffer cluster_buffer
 {
 	ClusterLightAssignment cluster_assignments[];
 };
