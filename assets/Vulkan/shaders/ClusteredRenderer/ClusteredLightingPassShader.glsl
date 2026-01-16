@@ -118,19 +118,41 @@ uint get_depth_slice_index(float depth) {
 	return int(max(log2(depth)*scale + bias, 0.0f));
 }
 
-uint get_cluster_index(vec3 coords) {
+uint pixel_depth_slice(vec3 coords) {
 	float depth = texture(DepthBuffer, coords.xy).x;
 	float linearized_depth = depth_constant_b / (depth - depth_constant_a);
+	uint slice = get_depth_slice_index(linearized_depth);
+	return slice;
+}
+
+uint get_cluster_index(vec3 coords) {
+	uint slice = pixel_depth_slice(coords);
 
 	coords.y = 1.0f - coords.y;
 	uvec3 cluster_coords = uvec3(min(uvec2(coords.xy * vec2(cluster_grid_size.xy)), cluster_grid_size.xy - 1u),
-		get_depth_slice_index(linearized_depth));
+		slice);
 
 	uint index = cluster_coords.x
 		+ cluster_coords.y * cluster_grid_size.x
 		+ cluster_coords.z * cluster_grid_size.x * cluster_grid_size.y;
 
 	return index;
+}
+
+vec3 random(uint x)
+{
+	//From https://nullprogram.com/blog/2018/07/31/
+	x ^= x >> 16;
+	x *= 0x7feb352dU;
+	x ^= x >> 15;
+	x *= 0x846ca68bU;
+	x ^= x >> 16;
+
+	vec3 color;
+	color.r = float(x & 256) / 255.0;
+	color.g = float(x >> 8 & 256) / 255.0;
+	color.b = float(x >> 16 & 256) / 255.0;
+	return color;
 }
 
 void main() {
@@ -175,6 +197,14 @@ void main() {
 
 	#ifdef DEBUG_LIGHT_COUNT
 	color_out += vec4(0,list.count / 20.0f,0,0);
+	#endif
+
+	#ifdef DEBUG_CLUSTERS
+	color_out = vec4(random(index),1.0f);
+	#endif
+
+	#ifdef DEBUG_DEPTH_SLICES
+	color_out = vec4(random(pixel_depth_slice(coords)),1.0f);
 	#endif
 }
 

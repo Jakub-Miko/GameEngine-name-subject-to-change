@@ -146,6 +146,8 @@ void ClusteredLightingPass::InitPassData() {
 
 	data->output_mode_compiler_definitions[OutputModes::NORMAL] = {};
 	data->output_mode_compiler_definitions[OutputModes::LIGHT_COUNT] = {"DEBUG_LIGHT_COUNT"};
+	data->output_mode_compiler_definitions[OutputModes::CLUSTERS] = {"DEBUG_CLUSTERS"};
+	data->output_mode_compiler_definitions[OutputModes::DEPTH_SLICES] = {"DEBUG_DEPTH_SLICES"};
 
 	pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/LightingPassShaderSkylight.glsl");
 	data->pipeline_skylight = PipelineManager::Get()->CreatePipeline(pipeline_desc);
@@ -276,7 +278,7 @@ void ClusteredLightingPass::Setup(RenderPassResourceDefinnition& setup_builder)
 	setup_builder.AddResource<std::shared_ptr<Material>>(input_gbuffer_material, RenderPassResourceDescriptor_Access::READ);
 	setup_builder.AddResource<DependencyTag>(shadow_map_dependency_tag, RenderPassResourceDescriptor_Access::READ);
 	setup_builder.AddResource<RenderResourceCollection<glm::mat4>>(input_directional_shadowed_cascades, RenderPassResourceDescriptor_Access::READ);
-	setup_builder.GetProperties()->SetProperty("OutputMode", MultiChoice({"Normal", "Light count"}, "Normal"));
+	setup_builder.GetProperties()->SetProperty("OutputMode", MultiChoice({"Normal", "Light count", "Clusters", "Depth slices"}, "Normal"));
 }
 
 void ClusteredLightingPass::Render(RenderPipelineResourceManager& resource_manager)
@@ -301,6 +303,8 @@ void ClusteredLightingPass::Render(RenderPipelineResourceManager& resource_manag
 	auto output_mode = resource_manager.GetProperties()->GetProperty<MultiChoice>("OutputMode")->GetValueTyped().GetValue();
 	if(output_mode == "Normal") active_output_mode = OutputModes::NORMAL;
 	else if(output_mode == "Light count") active_output_mode = OutputModes::LIGHT_COUNT;
+	else if(output_mode == "Clusters") active_output_mode = OutputModes::CLUSTERS;
+	else if(output_mode == "Depth slices") active_output_mode = OutputModes::DEPTH_SLICES;
 
 
 	RenderResourceManager::Get()->CopyFrameBufferDepthAttachment(list, gbuffer, data->output_buffer_resource);

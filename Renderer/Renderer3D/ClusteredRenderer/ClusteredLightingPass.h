@@ -18,7 +18,9 @@ public:
 
 	enum class OutputModes : unsigned char {
 		NORMAL = 0,
-		LIGHT_COUNT = 1
+		LIGHT_COUNT = 1,
+		CLUSTERS = 2,
+		DEPTH_SLICES = 3
 	};
 
 	[[nodiscard]] OutputModes GetActiveOutputMode() const { return active_output_mode; }
