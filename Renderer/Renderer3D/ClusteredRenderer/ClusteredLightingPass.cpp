@@ -61,7 +61,10 @@ struct ConfigData {
 };
 
 struct ClusteredLightingPass::internal_data {
-	std::shared_ptr<Pipeline> pipeline;
+	std::unordered_map<OutputModes, std::shared_ptr<Pipeline>> output_mode_pipelines;
+	std::unordered_map<OutputModes, std::vector<std::string>> output_mode_compiler_definitions;
+
+
 	std::shared_ptr<Pipeline> pipeline_skylight;
 	std::shared_ptr<Pipeline> pipeline_shadowed_point;
 	std::shared_ptr<Pipeline> pipeline_shadowed_directional;
@@ -80,6 +83,45 @@ struct ClusteredLightingPass::internal_data {
 	std::shared_ptr<RenderBufferResource> constant_scene_buf_bg;
 	bool initialized = false;
 };
+
+std::shared_ptr<Pipeline> ClusteredLightingPass::GetPipelineForMode(OutputModes mode) {
+	auto fnd = data->output_mode_pipelines.find(mode);
+	if(fnd != data->output_mode_pipelines.end()) {
+		return fnd->second;
+	}
+
+	auto compiler_definitions = data->output_mode_compiler_definitions.find(mode);
+
+	if(compiler_definitions == data->output_mode_compiler_definitions.end()) {
+		throw std::runtime_error("No pipeline for output mode." + std::to_string(static_cast<int>(mode)));
+	}
+
+	GraphicsPipelineDescriptor pipeline_desc;
+	pipeline_desc.viewport = RenderViewport();
+	pipeline_desc.scissor_rect = RenderScissorRect();
+	PipelineBlendFunctions blend_function;
+	blend_function.dstAlpha = BlendFunction::ONE;
+	blend_function.srcAlpha = BlendFunction::ONE;
+	blend_function.srcRGB = BlendFunction::ONE;
+	blend_function.dstRGB = BlendFunction::ONE;
+	pipeline_desc.blend_functions = blend_function;
+	pipeline_desc.enable_depth_clip = false;
+	pipeline_desc.flags = PipelineFlags::ENABLE_BLEND;
+	pipeline_desc.cull_mode = CullMode::FRONT;
+	pipeline_desc.blend_equation = BlendEquation::ADD;
+	pipeline_desc.layout = VertexLayoutFactory<LightingPassPreset>::GetLayout();
+	pipeline_desc.polygon_render_mode = PrimitivePolygonRenderMode::DEFAULT;
+	pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/ClusteredRenderer/ClusteredLightingPassShader.glsl", compiler_definitions->second);
+	pipeline_desc.framebuffer_format.color_attachemt_formats = {
+		{ TextureFormat::BGRA_SRGB }
+	};
+
+	auto new_pipeline = PipelineManager::Get()->CreatePipeline(pipeline_desc);
+
+	data->output_mode_pipelines[mode] = new_pipeline;
+
+	return new_pipeline;
+}
 
 void ClusteredLightingPass::InitPassData() {
 	GraphicsPipelineDescriptor pipeline_desc;
@@ -101,7 +143,9 @@ void ClusteredLightingPass::InitPassData() {
 	pipeline_desc.framebuffer_format.color_attachemt_formats = {
 		{ TextureFormat::BGRA_SRGB }
 	};
-	data->pipeline = PipelineManager::Get()->CreatePipeline(pipeline_desc);
+
+	data->output_mode_compiler_definitions[OutputModes::NORMAL] = {};
+	data->output_mode_compiler_definitions[OutputModes::LIGHT_COUNT] = {"DEBUG_LIGHT_COUNT"};
 
 	pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/LightingPassShaderSkylight.glsl");
 	data->pipeline_skylight = PipelineManager::Get()->CreatePipeline(pipeline_desc);
@@ -282,7 +326,7 @@ void ClusteredLightingPass::RenderLights(RenderPipelineResourceManager& resource
 	if(clustered_lights.num_of_lights == 0) return;
 
 	auto& gbuffer_material = resource_manager.GetResource<std::shared_ptr<Material>>(input_gbuffer_material);
-	list->SetPipeline(data->pipeline);
+	list->SetPipeline(GetPipelineForMode(active_output_mode));
 	list->SetRenderTarget(data->output_buffer_resource);
 	gbuffer_material->SetMaterial(list);
 	glm::vec2 pixel_size = { 1.0f / Application::Get()->GetWindow()->GetProperties().resolution_x,

@@ -41,11 +41,22 @@ ShaderManager::~ShaderManager()
 {
 }
 
-std::shared_ptr<Shader> ShaderManager::GetShader(const std::string& path_in)
+std::shared_ptr<Shader> ShaderManager::GetShader(const std::string& path_in, const std::vector<std::string>& compiler_definitions)
 {
 	std::string path = FileManager::Get()->ResolvePath(FileManager::Get()->GetRenderApiAssetFilePath(path_in));
 	std::lock_guard<std::mutex> lock(shader_map_mutex);
-	auto fnd = shader_map.find(path);
+
+	std::string key_path = path;
+	if(!compiler_definitions.empty()) {
+		std::stringstream ss;
+		ss << path << "#";
+		for(auto& def : compiler_definitions) {
+			ss << def << ";";
+		}
+		key_path = ss.str();
+	}
+
+	auto fnd = shader_map.find(key_path);
 	if (fnd != shader_map.end()) {
 		return fnd->second;
 	}
@@ -56,7 +67,7 @@ std::shared_ptr<Shader> ShaderManager::GetShader(const std::string& path_in)
 	std::stringstream s_stream;
 	s_stream << file_stream.rdbuf();
 	std::string shader_str = s_stream.str();
-	Shader* shader = CreateShaderFromString_impl(shader_str);
+	Shader* shader = CreateShaderFromString_impl(shader_str, compiler_definitions);
 
 	std::string root_sig_str;
 	auto fnd_root = shader_str.find("#RootSignature");
@@ -69,14 +80,14 @@ std::shared_ptr<Shader> ShaderManager::GetShader(const std::string& path_in)
 	shader->signature = std::unique_ptr<RootSignature>(ParseRootSignature(root_sig_str));
 	shader->path = path_in;
 	std::shared_ptr<Shader> shader_out = std::shared_ptr<Shader>(shader);
-	shader_map.insert(std::make_pair(path, shader_out));
+	shader_map.insert(std::make_pair(key_path, shader_out));
 	file_stream.close();
 	return shader_out;
 }
 
-std::shared_ptr<Shader> ShaderManager::CreateShaderFromString(const std::string& shader_in)
+std::shared_ptr<Shader> ShaderManager::CreateShaderFromString(const std::string& shader_in, const std::vector<std::string>& compiler_definitions)
 {
-	Shader* shader = CreateShaderFromString_impl(shader_in);
+	Shader* shader = CreateShaderFromString_impl(shader_in, compiler_definitions);
 	shader->path = "";
 	std::string root_sig_str;
 	auto fnd_root = shader_in.find("#RootSignature");

@@ -23,8 +23,6 @@
 // #Compute //--------------------------------------------------
 #version 430
 
-#extension GL_EXT_debug_printf : enable
-
 layout(set = 0, binding = 0) uniform config_buffer
 {
 	uvec3 cluster_dimensions;
@@ -102,10 +100,6 @@ void main() {
 		for(int i = 0; i < BITMASK_SIZE;i++) {
 			if((tile_mask.mask_element[i >> 5] & 1u << (i & 31u)) != 0) {
 				uint cluster_key = tile_index.x | (tile_index.y << y_offset) | (i << z_offset);
-				if(index + element >= 4096) {
-					debugPrintfEXT("OOB! index: %u element: %u\n",
-								   index, element);
-				}
 				active_clusters[index + element] = cluster_key;
 				element++;
 			}

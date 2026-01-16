@@ -172,7 +172,10 @@ void main() {
 		color_accum += vec3(color.xyz * Light_Color.xyz * attenuation_factor * Light_Color.w * contribution);
 	}
 	color_out = vec4(color_accum, 1.0);
+
+	#ifdef DEBUG_LIGHT_COUNT
 	color_out += vec4(0,list.count / 20.0f,0,0);
+	#endif
 }
 
 // #end

@@ -80,7 +80,7 @@ VulkanParsedShader VulkanShaderManager::ParseShader(const std::string& source_co
 	}
 }
 
-VkShaderModule VulkanShaderManager::CompileShaderStage(VulkanShaderStages type, const std::string& source)
+VkShaderModule VulkanShaderManager::CompileShaderStage(VulkanShaderStages type, const std::string& source, const std::vector<std::string>& compiler_definitions)
 {
 	DEFINE_VK_INSTANCE(context);
 	
@@ -92,6 +92,16 @@ VkShaderModule VulkanShaderManager::CompileShaderStage(VulkanShaderStages type, 
 	shaderc_compile_options_set_vulkan_rules_relaxed(options, true);
 	shaderc_compile_options_set_auto_bind_uniforms(options, true);
 	shaderc_compile_options_set_auto_map_locations(options, true);
+	for(auto& def: compiler_definitions) {
+		auto equal_sign = def.find('=');
+		if(equal_sign != std::string::npos) {
+			std::string key = def.substr(0, equal_sign);
+			std::string value = def.substr(equal_sign + 1);
+			shaderc_compile_options_add_macro_definition(options, key.c_str(), key.size(), value.c_str(), value.size());
+		} else {
+			shaderc_compile_options_add_macro_definition(options, def.c_str(), def.size(), nullptr, 0);
+		}
+	}
 	shaderc_compile_options_set_source_language(options, shaderc_source_language_glsl);
 #ifndef NDEBUG
 	shaderc_compile_options_set_generate_debug_info(options);
@@ -119,11 +129,11 @@ VkShaderModule VulkanShaderManager::CompileShaderStage(VulkanShaderStages type, 
 	return module;
 }
 
-VulkanParsedShader VulkanShaderManager::LinkShader(VulkanParsedShader shader)
+VulkanParsedShader VulkanShaderManager::LinkShader(VulkanParsedShader shader, const std::vector<std::string>& compiler_definitions)
 {
 
 	for (auto& shader_stage : shader) {
-		VkShaderModule shader_stage_compiled = CompileShaderStage(shader_stage.type, shader_stage.source);
+		VkShaderModule shader_stage_compiled = CompileShaderStage(shader_stage.type, shader_stage.source, compiler_definitions);
 		shader_stage.module = shader_stage_compiled;
 	}
 
@@ -161,10 +171,10 @@ Shader* VulkanShaderManager::CreateShader_impl(const std::string& path)
 	return static_cast<Shader*>(new_shader);
 }
 
-Shader* VulkanShaderManager::CreateShaderFromString_impl(const std::string& source)
+Shader* VulkanShaderManager::CreateShaderFromString_impl(const std::string& source, const std::vector<std::string>& compiler_definitions)
 {
 	VulkanShader* new_shader = new VulkanShader;
-	VulkanParsedShader shader_stages = LinkShader(ParseShader(source));
+	VulkanParsedShader shader_stages = LinkShader(ParseShader(source), compiler_definitions);
 	for (auto& shader_stage : shader_stages) {
 		new_shader->SetStage(shader_stage.module, shader_stage.type);
 	}

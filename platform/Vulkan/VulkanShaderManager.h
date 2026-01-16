@@ -59,15 +59,15 @@ private:
 
 	virtual Shader* GetShader_impl(const std::string& name) override;
 	virtual Shader* CreateShader_impl(const std::string& path) override;
-	virtual Shader* CreateShaderFromString_impl(const std::string& source) override;
+	virtual Shader* CreateShaderFromString_impl(const std::string& source, const std::vector<std::string>& compiler_definitions = std::vector<std::string>()) override;
 
 	VulkanShaderManager();
 	virtual ~VulkanShaderManager() override;
 
 	static VulkanParsedShader CompileShader(const std::string& name);
 	static VulkanParsedShader ParseShader(const std::string& source_code);
-	static VkShaderModule CompileShaderStage(VulkanShaderStages type, const std::string& source);
-	static VulkanParsedShader LinkShader(VulkanParsedShader shader);
+	static VkShaderModule CompileShaderStage(VulkanShaderStages type, const std::string& source, const std::vector<std::string>& compiler_definitions = std::vector<std::string>());
+	static VulkanParsedShader LinkShader(VulkanParsedShader shader, const std::vector<std::string>& compiler_definitions = std::vector<std::string>());
 
 private:
 	std::unordered_map<std::string,VulkanShader*> m_Shaders;

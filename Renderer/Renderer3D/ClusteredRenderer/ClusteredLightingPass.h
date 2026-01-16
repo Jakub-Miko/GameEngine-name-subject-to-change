@@ -4,6 +4,7 @@
 #include <string>
 #include <World/Components/LightComponent.h>
 
+class Pipeline;
 class RenderCommandList;
 class CameraComponent;
 
@@ -14,6 +15,15 @@ public:
 		const std::string& input_point_shadowed_lights, const std::string& output_buffer, const std::string& shadow_map_dependency_tag, const std::string& input_directional_shadowed_cascades);
 	virtual void Setup(RenderPassResourceDefinnition& setup_builder) override;
 	virtual void Render(RenderPipelineResourceManager& resource_manager) override;
+
+	enum class OutputModes : unsigned char {
+		NORMAL = 0,
+		LIGHT_COUNT = 1
+	};
+
+	[[nodiscard]] OutputModes GetActiveOutputMode() const { return active_output_mode; }
+	void SetActiveOutputMode(OutputModes mode) { active_output_mode = mode; }
+
 	virtual ~ClusteredLightingPass();
 private:
 
@@ -23,6 +33,8 @@ private:
 		float depth_constant_a;
 		float depth_constant_b;
 	};
+
+	std::shared_ptr<Pipeline> GetPipelineForMode(OutputModes mode);
 
 	void RenderLights(RenderPipelineResourceManager& resource_manager, std::shared_ptr<RenderCommandList>  list, const CameraComponent& camera, const render_props& props);
 	
@@ -40,5 +52,6 @@ private:
 	std::string input_point_shadowed_lights;
 	std::string output_buffer;
 	std::string shadow_map_dependency_tag;
+	OutputModes active_output_mode = OutputModes::NORMAL;
 	internal_data* data;
 };
