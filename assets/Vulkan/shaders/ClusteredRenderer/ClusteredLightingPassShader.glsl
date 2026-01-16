@@ -149,9 +149,9 @@ vec3 random(uint x)
 	x ^= x >> 16;
 
 	vec3 color;
-	color.r = float(x & 256) / 255.0;
-	color.g = float(x >> 8 & 256) / 255.0;
-	color.b = float(x >> 16 & 256) / 255.0;
+	color.r = float(x & 255) / 255.0;
+	color.g = float(x >> 8 & 255) / 255.0;
+	color.b = float(x >> 16 & 255) / 255.0;
 	return color;
 }
 
