@@ -23,7 +23,7 @@ struct ClusteredLightData {
 
 class ClusteredLightCullingPass : public RenderPass {
 public:
-    explicit ClusteredLightCullingPass(const std::string& input_global_light_list_name, const std::string& output_clustered_light_lists_name);
+    explicit ClusteredLightCullingPass(const std::string& input_global_light_list_name, const std::string& output_clustered_light_lists_name, const std::string& active_cluster_list);
 
     ~ClusteredLightCullingPass() override = default;
 
@@ -35,6 +35,7 @@ private:
 
     void InitPass();
 
+    std::string active_cluster_list;
     std::string input_global_light_list_name;
     std::string output_clustered_light_lists_name;
     std::unique_ptr<internal_data> data;

@@ -1,4 +1,4 @@
-/*-
+/*
 #RootSignature
 {
 	"RootSignature": [
@@ -6,7 +6,7 @@
 			"name" : "conf",
 			"type" : "constant_buffer"
 		},
-		{s
+		{
 			"name" : "light_buffer",
 			"type" : "storage_buffer"
 		},

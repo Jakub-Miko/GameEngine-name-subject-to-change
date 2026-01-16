@@ -32,8 +32,8 @@ struct CullingData {
     int32_t success_flag = 1;
 };
 
-ClusteredLightCullingPass::ClusteredLightCullingPass(const std::string& input_global_light_list_name, const std::string& output_clustered_light_lists_name)
-    : input_global_light_list_name(input_global_light_list_name), output_clustered_light_lists_name(output_clustered_light_lists_name), data(new internal_data)
+ClusteredLightCullingPass::ClusteredLightCullingPass(const std::string& input_global_light_list_name, const std::string& output_clustered_light_lists_name, const std::string& active_cluster_list)
+    : input_global_light_list_name(input_global_light_list_name), output_clustered_light_lists_name(output_clustered_light_lists_name), data(new internal_data), active_cluster_list(active_cluster_list)
 {
     InitPass();
 }
@@ -62,11 +62,12 @@ void ClusteredLightCullingPass::InitPass() {
 void ClusteredLightCullingPass::Setup(RenderPassResourceDefinnition& setup_builder) {
     setup_builder.AddResource<RenderResourceCollection<Entity>>(input_global_light_list_name, RenderPassResourceDescriptor_Access::READ);
     setup_builder.AddResource<ClusteredLightLists>(output_clustered_light_lists_name, RenderPassResourceDescriptor_Access::WRITE);
+    setup_builder.AddResource<std::shared_ptr<RenderBufferResource>>(active_cluster_list, RenderPassResourceDescriptor_Access::READ);
 }
 
 void ClusteredLightCullingPass::Render(RenderPipelineResourceManager& resource_manager) {
     auto global_light_list = resource_manager.GetResource<RenderResourceCollection<Entity>>(input_global_light_list_name);
-
+    auto active_clusters = resource_manager.GetResource<std::shared_ptr<RenderBufferResource>>(active_cluster_list);
     if(global_light_list.resources.empty()) {
         ClusteredLightLists empty_lists = {};
         resource_manager.SetResource<ClusteredLightLists>(output_clustered_light_lists_name, empty_lists);
@@ -126,6 +127,7 @@ void ClusteredLightCullingPass::Render(RenderPipelineResourceManager& resource_m
     list->SetStorageBuffer("light_assignment_buffer", data->output_lists.light_assignment_buffer);
     list->SetStorageBuffer("cluster_buffer", data->output_lists.cluster_buffer);
     list->SetStorageBuffer("allocator_buffer", data->allocator_buffer);
+    list->SetStorageBuffer("active_cluster_buffer", active_clusters);
     list->Dispatch(num_of_thread_groups, 1, 1);
 
     Renderer::Get()->GetCommandQueue()->ExecuteRenderCommandList(list);

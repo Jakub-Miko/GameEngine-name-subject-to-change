@@ -21,13 +21,19 @@
         {
             "name": "allocator_buffer",
             "type": "storage_buffer"
-        }
+        },
+        {
+			"name" : "active_cluster_buffer",
+			"type" : "storage_buffer"
+		}
 	]
 }
 #end
 */
 // #Compute //--------------------------------------------------
 #version 430
+
+#extension GL_EXT_debug_printf : enable
 
 layout(set = 0, binding = 0) uniform config_buffer
 {
@@ -73,6 +79,12 @@ layout(std430, set=0, binding = 4) buffer allocator_buffer
 {
     uint allocator_index;
     int success;
+};
+
+layout(std430, set=0, binding = 5) readonly buffer active_cluster_buffer
+{
+    uint active_cluster_count;
+    uint active_cluster_indicies[];
 };
 
 layout(local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
@@ -131,14 +143,14 @@ bool sphere_aabb_overlap_test(vec4 sphere_pos_and_radius, uvec3 cluster_coords) 
 
     float new_z, new_radius;
     if (sphere_pos_and_radius.z <= -near_z && sphere_pos_and_radius.z >= -far_z) {
-        new_z = cz;
-        new_radius = r;
+        new_z = sphere_pos_and_radius.z;
+        new_radius = sphere_pos_and_radius.w;
     } else {
         float d_near = abs(sphere_pos_and_radius.z + near_z);
         float d_far = abs(sphere_pos_and_radius.z + far_z);
         new_z = (d_near < d_far) ? -near_z : -far_z;
         float dist = min(d_near, d_far);
-        new_radius = sqrt(r * r - dist * dist);
+        new_radius = sqrt(sphere_pos_and_radius.w * sphere_pos_and_radius.w - dist * dist);
     }
 
     float y_extent = tan_fov * abs(new_z);
@@ -165,7 +177,6 @@ bool sphere_aabb_overlap_test(vec4 sphere_pos_and_radius, uvec3 cluster_coords) 
     if (d_bot >= 0.0 && d_top >= 0.0) {
         // Inside Y bounds
         new_center = center;
-        new_radius = new_radius;
     } else {
         float y_dist;
         if (d_bot < 0.0) {
@@ -178,21 +189,27 @@ bool sphere_aabb_overlap_test(vec4 sphere_pos_and_radius, uvec3 cluster_coords) 
         new_radius = sqrt(new_radius * new_radius - y_dist * y_dist);
     }
 
-    float d_left = dot(vec3(-new_z, 0.0, x_min), new_center);
-    float d_right = dot(vec3(new_z, 0.0, -x_max), new_center);
+    float d_left = dot(normalize(vec3(-new_z, 0.0, x_min)), new_center);
+    float d_right = dot(normalize(vec3(new_z, 0.0, -x_max)), new_center);
 
     return (d_left >= -new_radius && d_right >= -new_radius);
 }
 
 void main() {
     uint index = gl_LocalInvocationIndex + gl_WorkGroupID.x * 256;
-    uint num_of_clusters = cluster_grid_size.x * cluster_grid_size.y * cluster_grid_size.z;
-    if(index >= num_of_clusters) return;
+    if(index >= active_cluster_count) {
+        return;
+    }
 
+    uint num_of_clusters = cluster_grid_size.x * cluster_grid_size.y * cluster_grid_size.z;
+
+    uint cluster_key = active_cluster_indicies[index];
     uvec3 cluster_coords; // we can optimize this quite heavily by using powers of two
-    cluster_coords.x = index % cluster_grid_size.x;
-    cluster_coords.y = (index / cluster_grid_size.x) % cluster_grid_size.y;
-    cluster_coords.z = (index / (cluster_grid_size.y * cluster_grid_size.x));
+    uint xmask = uint(ceil(log2(cluster_grid_size.x)));
+    uint ymask = uint(ceil(log2(cluster_grid_size.y)));
+    cluster_coords.x = cluster_key & ~(~0u << xmask);
+    cluster_coords.y = (cluster_key >> xmask) & ~(~0u << ymask);
+    cluster_coords.z = cluster_key >> (xmask + ymask);
 
     uint count = 0;
     for(int i = 0; i < light_count; i++) {
@@ -206,8 +223,9 @@ void main() {
         atomicExchange(success, 0);
         return;
     }
-    cluster_assignments[index].count = count;
-    cluster_assignments[index].start_index = allocated_offset;
+    uint cluster_index = cluster_coords.x + cluster_coords.y * cluster_grid_size.x + cluster_coords.z * cluster_grid_size.x * cluster_grid_size.y;
+    cluster_assignments[cluster_index].count = count;
+    cluster_assignments[cluster_index].start_index = allocated_offset;
 
     uint write_index = 0;
     for(int i = 0; i < light_count && write_index < count; i++) {
