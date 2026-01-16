@@ -26,6 +26,8 @@ public:
 
 	RenderPipeline Build();
 
+	std::shared_ptr<DynamicPropertyStore> GetProperties() { return properties; }
+
 private:
 	void CompileDependencies();
 	void TopologicalSortDFT(std::stack<size_t>& render_pass_dft_stack, size_t pass, std::vector<bool>& visited, std::vector<bool>& visited_cycle);
@@ -33,5 +35,6 @@ private:
 	std::unordered_map<std::string, RenderPassBuilder_Resource_data> resource_data;
 	std::unordered_map<std::string, PersistentRenderPassResource> persistent_resources;
 	std::vector<RenderPassBuilder_RenderPass_data> render_passes;
+	std::shared_ptr<DynamicPropertyStore> properties;
 	std::vector<size_t> root_passes;
 };

@@ -9,7 +9,8 @@ void RenderPipeline::Render()
 }
 
 RenderPipeline::RenderPipeline(std::vector<RenderPassData>&& render_passes, std::unordered_map<std::string, RenderPipelineResourceData_internal>&& resources, 
-	std::unordered_map<std::string, RenderPipelineResourceData_internal>&& persistent_resources) : passes(std::move(render_passes)) , resources(std::move(resources)), persistent_resources(std::move(persistent_resources))
+	std::unordered_map<std::string, RenderPipelineResourceData_internal>&& persistent_resources, std::shared_ptr<DynamicPropertyStore> properties)
+	: passes(std::move(render_passes)) , resources(std::move(resources)), persistent_resources(std::move(persistent_resources)), properties(properties)
 {
 
 

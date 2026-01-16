@@ -5,6 +5,8 @@
 #include <vector>
 #include <any>
 
+#include "Core/DynamicPropertyStore.h"
+
 struct DependencyTag {
 	RUNTIME_TAG("DependencyTag");
 };
@@ -52,12 +54,15 @@ public:
 		persistent_resources.push_back(persistent_data);
 	}
 
+	std::shared_ptr<DynamicPropertyStore> GetProperties() { return properties; }
+
 private:
 	friend class RenderPassBuilder;
 	friend class RenderPipeline;
 	friend class RenderPipelineResourceManager;
 	std::vector<RenderPassResourceDescriptor> descriptors;
 	std::vector< PersistentRenderPassResource> persistent_resources;
+	std::shared_ptr<DynamicPropertyStore> properties;
 };
 
 class RenderPass {
@@ -65,5 +70,4 @@ public:
 	virtual ~RenderPass() {};
 	virtual void Setup(RenderPassResourceDefinnition& setup_builder) = 0;
 	virtual void Render(RenderPipelineResourceManager& resource_manager) = 0;
-
 };

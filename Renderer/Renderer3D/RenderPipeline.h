@@ -4,11 +4,68 @@
 #include <unordered_map>
 #include <any>
 
+#include "Core/DynamicProperties.h"
+#include "Core/DynamicPropertyStore.h"
+
 class RenderPipeline;
 
 struct RenderPassData {
 	std::shared_ptr<RenderPass> render_pass;
 	RenderPassResourceDefinnition def;
+};
+
+
+class RenderPipeline {
+public:
+
+	void Render();
+
+	template<typename T>
+	const T& GetPersistentResource(const std::string& name) const {
+		auto fnd = persistent_resources.find(name);
+
+		if (fnd != persistent_resources.end()) {
+			if (fnd->second.desc.type_id != RuntimeTag<T>::GetId()) {
+				throw std::runtime_error("Type mismatch when getting resource " + fnd->second.desc.resource_name);
+			}
+			try {
+				return *std::any_cast<T>(&((fnd->second).data));
+			}
+			catch (const std::bad_any_cast&) {
+				throw std::runtime_error("Type mismatch when getting resource " + fnd->second.desc.resource_name);
+			}
+		}
+		else {
+			throw std::runtime_error("Persistent Resource " + name + " doesn't exist");
+		}
+
+
+	}
+
+	std::vector<std::shared_ptr<RenderPass>> GetPasses() const {
+		auto pass_list = std::vector<std::shared_ptr<RenderPass>>();
+		for (auto& pass : passes) {
+			pass_list.push_back(pass.render_pass);
+		}
+		return pass_list;
+	};
+
+	std::shared_ptr<DynamicPropertyStore>& GetProperties() { return properties; }
+
+private:
+	friend class RenderPipelineResourceManager;
+	friend class RenderPassBuilder;
+	struct RenderPipelineResourceData_internal {
+		std::any data;
+		RenderPassResourceDescriptor desc;
+	};
+	RenderPipeline(std::vector<RenderPassData>&& render_passes, std::unordered_map<std::string, RenderPipelineResourceData_internal>&& resources,
+		std::unordered_map<std::string, RenderPipelineResourceData_internal>&& persistent_resources, std::shared_ptr<DynamicPropertyStore> properties);
+	std::unordered_map<std::string, RenderPipelineResourceData_internal> resources;
+	std::unordered_map<std::string, RenderPipelineResourceData_internal> persistent_resources;
+	std::shared_ptr<DynamicPropertyStore> properties;
+	std::vector<RenderPassData> passes;
+
 };
 
 class RenderPipelineResourceManager {
@@ -93,6 +150,8 @@ public:
 		}
 	}
 
+	std::shared_ptr<DynamicPropertyStore>& GetProperties() { return pipeline->GetProperties(); }
+
 private:
 	RenderPipeline* pipeline = nullptr;
 	RenderPassData* current_pass = nullptr;
@@ -101,44 +160,3 @@ private:
 };
 
 
-class RenderPipeline {
-public:
-
-	void Render();
-
-	template<typename T>
-	const T& GetPersistentResource(const std::string& name) const {
-		auto fnd = persistent_resources.find(name);
-
-		if (fnd != persistent_resources.end()) {
-			if (fnd->second.desc.type_id != RuntimeTag<T>::GetId()) {
-				throw std::runtime_error("Type mismatch when getting resource " + fnd->second.desc.resource_name);
-			}
-			try {
-				return *std::any_cast<T>(&((fnd->second).data));
-			}
-			catch (const std::bad_any_cast&) {
-				throw std::runtime_error("Type mismatch when getting resource " + fnd->second.desc.resource_name);
-			}
-		}
-		else {
-			throw std::runtime_error("Persistent Resource " + name + " doesn't exist");
-		}
-
-
-	}
-
-private:
-	friend class RenderPipelineResourceManager;
-	friend class RenderPassBuilder;
-	struct RenderPipelineResourceData_internal {
-		std::any data;
-		RenderPassResourceDescriptor desc;
-	};
-	RenderPipeline(std::vector<RenderPassData>&& render_passes, std::unordered_map<std::string, RenderPipelineResourceData_internal>&& resources,
-		std::unordered_map<std::string, RenderPipelineResourceData_internal>&& persistent_resources);
-	std::unordered_map<std::string, RenderPipelineResourceData_internal> resources;
-	std::unordered_map<std::string, RenderPipelineResourceData_internal> persistent_resources;
-	std::vector<RenderPassData> passes;
-
-};

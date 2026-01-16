@@ -14,7 +14,7 @@ void Renderer3D::Init()
 		instance = new Renderer3D;
 		MaterialManager::Init();
 		AnimationManager::Init();
-		instance->deferred_pipeline = ClusteredRendererPipeline::CreatePipeline();
+		instance->rendering_pipeline = ClusteredRendererPipeline::CreatePipeline();
 	}
 }
 
@@ -39,10 +39,10 @@ Renderer3D* Renderer3D::Get()
 void Renderer3D::Update(float delta_time)
 {
 	MaterialManager::Get()->UpdateMaterials();
-	deferred_pipeline->Render();
+	rendering_pipeline->Render();
 }
 
-Renderer3D::Renderer3D() : deferred_pipeline()
+Renderer3D::Renderer3D() : rendering_pipeline()
 {
 
 }

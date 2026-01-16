@@ -1,5 +1,5 @@
 #pragma once
-#include "DeferredRenderingPipeline.h"
+#include "RenderPipeline.h"
 
 class Renderer3D {
 public:
@@ -18,13 +18,15 @@ public:
 
     template<typename T>
     const T& GetPersistentResource(const std::string& name) const {
-        return deferred_pipeline->template GetPersistentResource<T>(name);
+        return rendering_pipeline->template GetPersistentResource<T>(name);
     }
+
+    std::shared_ptr<RenderPipeline> GetPipeline() { return rendering_pipeline; }
 
 private:
     Renderer3D();
     static Renderer3D* instance;
 
 private:
-    std::shared_ptr<RenderPipeline> deferred_pipeline;
+    std::shared_ptr<RenderPipeline> rendering_pipeline;
 };

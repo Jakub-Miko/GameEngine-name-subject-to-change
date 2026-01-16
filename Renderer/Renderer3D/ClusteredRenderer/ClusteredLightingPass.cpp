@@ -276,6 +276,7 @@ void ClusteredLightingPass::Setup(RenderPassResourceDefinnition& setup_builder)
 	setup_builder.AddResource<std::shared_ptr<Material>>(input_gbuffer_material, RenderPassResourceDescriptor_Access::READ);
 	setup_builder.AddResource<DependencyTag>(shadow_map_dependency_tag, RenderPassResourceDescriptor_Access::READ);
 	setup_builder.AddResource<RenderResourceCollection<glm::mat4>>(input_directional_shadowed_cascades, RenderPassResourceDescriptor_Access::READ);
+	setup_builder.GetProperties()->SetProperty("OutputMode", MultiChoice({"Normal", "Light count"}, "Normal"));
 }
 
 void ClusteredLightingPass::Render(RenderPipelineResourceManager& resource_manager)
@@ -296,6 +297,11 @@ void ClusteredLightingPass::Render(RenderPipelineResourceManager& resource_manag
 	
 	list->SetRenderTarget(data->output_buffer_resource);
 	list->Clear();
+
+	auto output_mode = resource_manager.GetProperties()->GetProperty<MultiChoice>("OutputMode")->GetValueTyped().GetValue();
+	if(output_mode == "Normal") active_output_mode = OutputModes::NORMAL;
+	else if(output_mode == "Light count") active_output_mode = OutputModes::LIGHT_COUNT;
+
 
 	RenderResourceManager::Get()->CopyFrameBufferDepthAttachment(list, gbuffer, data->output_buffer_resource);
 	RenderLights(resource_manager, list, camera, props);

@@ -15,6 +15,7 @@ enum class EventType : unsigned char
 
 class Event {
 public:
+	virtual ~Event() = default;
 	virtual RuntimeTagIdType GetType() = 0;
 
 public:

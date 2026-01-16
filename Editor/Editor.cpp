@@ -11,6 +11,10 @@
 #include <World/AssimpSceneProxy.h>
 #include <ImGuizmo.h>
 
+#include "EditorDynamicParameterUIAdapters.h"
+#include "Core/DynamicPropertyProjector.h"
+#include "Core/DynamicPropertyStore.h"
+
 #ifdef OpenGL
 #include <GLFW/glfw3.h>
 #include <platform/OpenGL/OpenGLRenderCommandQueue.h>
@@ -204,9 +208,17 @@ void Editor::Run()
 		ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
 		if (ImGui::BeginPopupModal("Viewport Settings", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
-
 			ImGui::Checkbox("Spatial Index Visualization", &spatial_index_visualization);
 			ImGui::Checkbox("Lighting Bounds Visualization", &light_bounds_visualization);
+
+			ImGui::Separator();
+			ImGui::Text("Rendering Pipeline");
+			auto render_pipeline_props = Renderer3D::Get()->GetPipeline()->GetProperties();
+			auto ui_props_projector = MakeProjector<UIModuleAdapterBase>(DynamicPropertyBase::Types{});
+			auto ui_props =ui_props_projector.Project(Renderer3D::Get()->GetPipeline()->GetProperties());
+			for(auto& prop : ui_props) {
+				prop->RenderUI();
+			}
 
 			if (ImGui::Button("Close")) {
 				ImGui::CloseCurrentPopup();

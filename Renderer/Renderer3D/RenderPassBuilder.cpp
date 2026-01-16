@@ -1,7 +1,7 @@
 #include "RenderPassBuilder.h"
 #include <unordered_set>
 
-RenderPassBuilder::RenderPassBuilder() : resource_data(), render_passes()
+RenderPassBuilder::RenderPassBuilder() : resource_data(), render_passes(), properties(std::make_shared<DynamicPropertyStore>())
 {
 }
 
@@ -11,6 +11,7 @@ void RenderPassBuilder::AddPass(RenderPass* render_pass)
 	RenderPassBuilder_RenderPass_data render_pass_data;
 	render_pass_data.render_pass = std::shared_ptr<RenderPass>(render_pass);
 	RenderPassResourceDefinnition def;
+	def.properties = properties;
 	render_pass->Setup(def);
 	render_pass_data.resources = def;
 	render_passes.push_back(render_pass_data);
@@ -110,7 +111,7 @@ RenderPipeline RenderPassBuilder::Build()
 		out_persistent_resources.insert(std::make_pair(persistent_resource_entry.first, RenderPipeline::RenderPipelineResourceData_internal{ persistent_resource_entry.second.resource,  persistent_resource_entry.second.resource_desc }));
 	}
 
-	return RenderPipeline(std::move(render_pass_order), std::move(resources), std::move(out_persistent_resources));
+	return RenderPipeline(std::move(render_pass_order), std::move(resources), std::move(out_persistent_resources), properties);
 }
 
 void RenderPassBuilder::CompileDependencies()
