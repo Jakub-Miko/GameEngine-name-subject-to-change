@@ -17,6 +17,7 @@
 #include <Application.h>
 #include <Window.h>
 #include "ClusteredLightCullingPass.h"
+#include "dependencies/OpenAL/fmt-11.1.4/include/fmt/base.h"
 
 struct LightingPassPreset;
 
@@ -90,7 +91,7 @@ std::shared_ptr<Pipeline> ClusteredLightingPass::GetPipelineForMode(OutputModes 
 		return fnd->second;
 	}
 
-	auto compiler_definitions = data->output_mode_compiler_definitions.find(mode);
+	auto compiler_definitions = data->output_mode_compiler_definitions.find((OutputModes)((unsigned char)mode & (unsigned char)7));
 
 	if(compiler_definitions == data->output_mode_compiler_definitions.end()) {
 		throw std::runtime_error("No pipeline for output mode." + std::to_string(static_cast<int>(mode)));
@@ -148,6 +149,8 @@ void ClusteredLightingPass::InitPassData() {
 	data->output_mode_compiler_definitions[OutputModes::LIGHT_COUNT] = {"DEBUG_LIGHT_COUNT"};
 	data->output_mode_compiler_definitions[OutputModes::CLUSTERS] = {"DEBUG_CLUSTERS"};
 	data->output_mode_compiler_definitions[OutputModes::DEPTH_SLICES] = {"DEBUG_DEPTH_SLICES"};
+	data->output_mode_compiler_definitions[OutputModes::RADIUS] = {"DEBUG_RADIUS"};
+	data->output_mode_compiler_definitions[OutputModes::TILES] = {"DEBUG_TILES"};
 
 	pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/LightingPassShaderSkylight.glsl");
 	data->pipeline_skylight = PipelineManager::Get()->CreatePipeline(pipeline_desc);
@@ -278,7 +281,7 @@ void ClusteredLightingPass::Setup(RenderPassResourceDefinnition& setup_builder)
 	setup_builder.AddResource<std::shared_ptr<Material>>(input_gbuffer_material, RenderPassResourceDescriptor_Access::READ);
 	setup_builder.AddResource<DependencyTag>(shadow_map_dependency_tag, RenderPassResourceDescriptor_Access::READ);
 	setup_builder.AddResource<RenderResourceCollection<glm::mat4>>(input_directional_shadowed_cascades, RenderPassResourceDescriptor_Access::READ);
-	setup_builder.GetProperties()->SetProperty("OutputMode", MultiChoice({"Normal", "Light count", "Clusters", "Depth slices"}, "Normal"));
+	setup_builder.GetProperties()->SetProperty("OutputMode", MultiChoice({"Normal", "Light count", "Clusters", "Depth slices", "Radius", "Tiles"}, "Normal"));
 }
 
 void ClusteredLightingPass::Render(RenderPipelineResourceManager& resource_manager)
@@ -300,12 +303,14 @@ void ClusteredLightingPass::Render(RenderPipelineResourceManager& resource_manag
 	list->SetRenderTarget(data->output_buffer_resource);
 	list->Clear();
 
-	auto output_mode = resource_manager.GetProperties()->GetProperty<MultiChoice>("OutputMode")->GetValueTyped().GetValue();
+	auto dynamic_props = resource_manager.GetProperties();
+	auto output_mode = dynamic_props->GetProperty<MultiChoice>("OutputMode")->GetValueTyped().GetValue();
 	if(output_mode == "Normal") active_output_mode = OutputModes::NORMAL;
 	else if(output_mode == "Light count") active_output_mode = OutputModes::LIGHT_COUNT;
 	else if(output_mode == "Clusters") active_output_mode = OutputModes::CLUSTERS;
 	else if(output_mode == "Depth slices") active_output_mode = OutputModes::DEPTH_SLICES;
-
+	else if(output_mode == "Radius") active_output_mode = OutputModes::RADIUS;
+	else if(output_mode == "Tiles") active_output_mode = OutputModes::TILES;
 
 	RenderResourceManager::Get()->CopyFrameBufferDepthAttachment(list, gbuffer, data->output_buffer_resource);
 	RenderLights(resource_manager, list, camera, props);

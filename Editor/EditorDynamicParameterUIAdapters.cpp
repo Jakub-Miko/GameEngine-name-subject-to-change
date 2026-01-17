@@ -20,3 +20,10 @@ void UIModuleAdapter<MultiChoice>::RenderUI() {
         std::memcpy(text_buffer.get(), value->GetValueTyped().GetValue().c_str(), std::min((size_t)MAX_INPUT_TEXT_SIZE, value->GetValueTyped().GetValue().size()));
     };
 }
+
+void UIModuleAdapter<bool>::RenderUI() {
+    bool val = value->GetValueTyped();
+    if(ImGui::Checkbox(value->GetName().c_str(), &val)) {
+        value->SetValue(val);
+    }
+}

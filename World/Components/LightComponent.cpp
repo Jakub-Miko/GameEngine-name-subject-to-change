@@ -106,5 +106,5 @@ void LightComponent::SetLightColor(glm::vec4 color_in, Entity ent)
 
 float LightComponent::CalcRadiusFromAttenuation()
 {
-	return std::sqrt(1.0 / (attenuation.b * (0.035 / color.w)));;
+	return std::sqrt(1.0 / (attenuation.b * (0.005 / color.w)));;
 }

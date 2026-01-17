@@ -167,6 +167,10 @@ void main() {
 
 	ClusterLightAssignment list = cluster_assignments[index];
 
+	#ifdef DEBUG_RADIUS
+		int inside = 0;
+	#endif
+
 	for(int i = 0; i < list.count; i++) {
 		vec3 light_direction;
 		uint light_index = light_assignment_indicies[list.start_index + i];
@@ -179,8 +183,17 @@ void main() {
 
 		float attenuation_factor = 1;
 
+
+
 		if (lights[light_index].light_type == 1) {
 			float distance = length(vec3(lights[light_index].position_or_direction_and_radius) - view_space_pos);
+
+			#ifdef DEBUG_RADIUS
+				if(distance < lights[light_index].position_or_direction_and_radius.w) {
+					inside = 1;
+				}
+			#endif
+
 			vec3 attenuation_constants = lights[light_index].attenuation_constants.xyz;
 			attenuation_factor = 1.0 / (attenuation_constants.x + (attenuation_constants.y * distance) + attenuation_constants.z * (distance * distance));
 		}
@@ -205,6 +218,19 @@ void main() {
 
 	#ifdef DEBUG_DEPTH_SLICES
 	color_out = vec4(random(pixel_depth_slice(coords)),1.0f);
+	#endif
+
+	#ifdef DEBUG_TILES
+	uvec2 cluster_coords = uvec2(min(uvec2(coords.xy * vec2(cluster_grid_size.xy)), cluster_grid_size.xy - 1u));
+	color_out = vec4(random(cluster_coords.x + cluster_coords.y * cluster_grid_size.x),1.0f);
+	#endif
+
+	#ifdef DEBUG_RADIUS
+	if(inside == 1) {
+		color_out = vec4(random(index),1.0f);
+	} else {
+		color = vec4(vec3(0), 1);
+	}
 	#endif
 }
 

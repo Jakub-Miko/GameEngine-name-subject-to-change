@@ -131,7 +131,14 @@ BoundingBox GetAABB(uvec3 cluster_coords, uvec3 cluster_grid_size) {
     return BoundingBox((maximum + minimum) / 2, (maximum - minimum) / 2);
 }
 
-bool sphere_aabb_overlap_test(vec4 sphere_pos_and_radius, uvec3 cluster_coords) {
+bool sphere_aabb_overlap_test(vec4 sphere_pos_and_radius, BoundingBox box) {
+    vec3 center_line = sphere_pos_and_radius.xyz - box.center;
+    vec3 bounded_center_line = clamp(center_line, -box.half_extents, box.half_extents);
+    float len = length(center_line) - length(bounded_center_line);
+    return len < sphere_pos_and_radius.w;
+}
+
+bool sphere_frustum_overlap_test(vec4 sphere_pos_and_radius, uvec3 cluster_coords) {
     float near_z = depth_slice(cluster_coords.z, cluster_grid_size.z, near_plane, far_plane);
     float far_z = depth_slice(cluster_coords.z + 1u, cluster_grid_size.z, near_plane, far_plane);
     float tan_fov = tan(fov * 0.5);
@@ -140,6 +147,7 @@ bool sphere_aabb_overlap_test(vec4 sphere_pos_and_radius, uvec3 cluster_coords) 
         sphere_pos_and_radius.z - sphere_pos_and_radius.w > -near_z) return false;
 
     float new_z, new_radius;
+    #ifdef REDUCE_SPHERES_ON_INTERSECTING_PLANES
     if (sphere_pos_and_radius.z <= -near_z && sphere_pos_and_radius.z >= -far_z) {
         new_z = sphere_pos_and_radius.z;
         new_radius = sphere_pos_and_radius.w;
@@ -150,6 +158,10 @@ bool sphere_aabb_overlap_test(vec4 sphere_pos_and_radius, uvec3 cluster_coords) 
         float dist = min(d_near, d_far);
         new_radius = sqrt(sphere_pos_and_radius.w * sphere_pos_and_radius.w - dist * dist);
     }
+    #else
+        new_z = sphere_pos_and_radius.z;
+        new_radius = sphere_pos_and_radius.w;
+    #endif
 
     float y_extent = tan_fov * abs(new_z);
     float x_extent = y_extent * aspect_ratio;
@@ -172,6 +184,7 @@ bool sphere_aabb_overlap_test(vec4 sphere_pos_and_radius, uvec3 cluster_coords) 
     if (d_bot < -new_radius || d_top < -new_radius) return false;
 
     vec3 new_center;
+    #ifdef REDUCE_SPHERES_ON_INTERSECTING_PLANES
     if (d_bot >= 0.0 && d_top >= 0.0) {
         // Inside Y bounds
         new_center = center;
@@ -186,11 +199,29 @@ bool sphere_aabb_overlap_test(vec4 sphere_pos_and_radius, uvec3 cluster_coords) 
         }
         new_radius = sqrt(new_radius * new_radius - y_dist * y_dist);
     }
+    #else
+        new_center = center;
+    #endif
 
     float d_left = dot(normalize(vec3(-new_z, 0.0, x_min)), new_center);
     float d_right = dot(normalize(vec3(new_z, 0.0, -x_max)), new_center);
 
     return (d_left >= -new_radius && d_right >= -new_radius);
+}
+
+
+bool sphere_overlap_test(vec4 sphere_pos_and_radius, BoundingBox box, uvec3 cluster_coords) {
+    bool result = true;
+
+    #ifdef CULL_WITH_PLANES
+        result = result && sphere_frustum_overlap_test(sphere_pos_and_radius, cluster_coords);
+    #endif
+
+    #ifdef CULL_WITH_BOXES
+        result = result && sphere_aabb_overlap_test(sphere_pos_and_radius, box);
+    #endif
+
+    return result;
 }
 
 void main() {
@@ -209,9 +240,15 @@ void main() {
     cluster_coords.y = (cluster_key >> xmask) & ~(~0u << ymask);
     cluster_coords.z = cluster_key >> (xmask + ymask);
 
+    #ifdef CULL_WITH_BOXES
+    BoundingBox aabb = GetAABB(cluster_coords, cluster_grid_size);
+    #else
+    BoundingBox aabb;
+    #endif
+
     uint count = 0;
     for(int i = 0; i < light_count; i++) {
-        if(sphere_aabb_overlap_test(lights[i].position_or_direction_and_radius, cluster_coords)) {
+        if(sphere_overlap_test(lights[i].position_or_direction_and_radius,aabb,  cluster_coords)) {
             count++;
         }
     }
@@ -227,7 +264,7 @@ void main() {
 
     uint write_index = 0;
     for(int i = 0; i < light_count && write_index < count; i++) {
-        if(sphere_aabb_overlap_test(lights[i].position_or_direction_and_radius, cluster_coords)) {
+        if(sphere_overlap_test(lights[i].position_or_direction_and_radius,aabb,  cluster_coords)) {
             light_assignment_indicies[allocated_offset + write_index] = i;
             write_index++;
         }

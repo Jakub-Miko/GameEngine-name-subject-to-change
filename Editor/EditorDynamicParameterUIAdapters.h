@@ -65,3 +65,16 @@ private:
     std::unique_ptr<char[]> text_buffer;
     std::shared_ptr<DynamicProperty<MultiChoice>> value;
 };
+
+template<>
+class UIModuleAdapter<bool> : public UIModuleAdapterBase {
+public:
+    UIModuleAdapter() {}
+    UIModuleAdapter(std::shared_ptr<DynamicProperty<bool>> value) : value(value) {}
+
+    void RenderUI() override;
+
+    ~UIModuleAdapter() override {}
+private:
+    std::shared_ptr<DynamicProperty<bool>> value;
+};

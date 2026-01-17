@@ -9,10 +9,13 @@
 #include "World/Components/LightComponent.h"
 
 struct ClusteredLightCullingPass::internal_data {
-    std::shared_ptr<Pipeline> culling_pipeline;
+    std::unordered_map<char, std::shared_ptr<Pipeline>> pipelines;
     std::shared_ptr<RenderBufferResource> config_buffer;
     std::shared_ptr<RenderBufferResource> allocator_buffer;
     ClusteredLightLists output_lists;
+    bool cull_with_planes = true;
+    bool cull_with_boxes = true;
+    bool reduce_spheres = true;
 };
 
 struct ConfigBufferStruct {
@@ -53,16 +56,46 @@ void ClusteredLightCullingPass::InitPass() {
 
     RenderBufferDescriptor allocator_buffer_desc(sizeof(CullingData), RenderBufferType::DEFAULT, RenderBufferUsage::STORAGE_BUFFER);
     data->allocator_buffer = RenderResourceManager::Get()->CreateBuffer(allocator_buffer_desc);
-
-    ComputePipelineDescriptor pipeline_desc = {};
-    pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/ClusteredRenderer/ClusteredLightCullingShader.glsl");
-    data->culling_pipeline = PipelineManager::Get()->CreatePipeline(pipeline_desc);
 }
+
+std::shared_ptr<Pipeline> ClusteredLightCullingPass::GetPipeline() {
+    char key = (char)data->cull_with_boxes | (char)data->cull_with_planes << 1 | (char)data->reduce_spheres << 2;
+	auto fnd = data->pipelines.find(key);
+	if(fnd != data->pipelines.end()) {
+		return fnd->second;
+	}
+
+	std::vector<std::string> compiler_definitions;
+
+	if(data->cull_with_planes) {
+		compiler_definitions.emplace_back("CULL_WITH_PLANES");
+	}
+
+	if(data->cull_with_boxes) {
+		compiler_definitions.emplace_back("CULL_WITH_BOXES");
+	}
+
+	if(data->reduce_spheres) {
+		compiler_definitions.emplace_back("REDUCE_SPHERES_ON_INTERSECTING_PLANES");
+	}
+
+	ComputePipelineDescriptor pipeline_desc = {};
+	pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/ClusteredRenderer/ClusteredLightCullingShader.glsl", compiler_definitions);
+	auto new_pipeline = PipelineManager::Get()->CreatePipeline(pipeline_desc);
+
+    data->pipelines[key] = new_pipeline;
+
+	return new_pipeline;
+}
+
 
 void ClusteredLightCullingPass::Setup(RenderPassResourceDefinnition& setup_builder) {
     setup_builder.AddResource<RenderResourceCollection<Entity>>(input_global_light_list_name, RenderPassResourceDescriptor_Access::READ);
     setup_builder.AddResource<ClusteredLightLists>(output_clustered_light_lists_name, RenderPassResourceDescriptor_Access::WRITE);
     setup_builder.AddResource<std::shared_ptr<RenderBufferResource>>(active_cluster_list, RenderPassResourceDescriptor_Access::READ);
+    setup_builder.GetProperties()->SetProperty("Cull lights with frustum planes", true);
+    setup_builder.GetProperties()->SetProperty("Cull lights with bounding boxes", true);
+    setup_builder.GetProperties()->SetProperty("Reduce culling spheres on intersecting planes", true);
 }
 
 void ClusteredLightCullingPass::Render(RenderPipelineResourceManager& resource_manager) {
@@ -73,6 +106,12 @@ void ClusteredLightCullingPass::Render(RenderPipelineResourceManager& resource_m
         resource_manager.SetResource<ClusteredLightLists>(output_clustered_light_lists_name, empty_lists);
         return;
     };
+
+    auto dynamic_props = resource_manager.GetProperties();
+
+    data->cull_with_planes = dynamic_props->GetProperty<bool>("Cull lights with frustum planes")->GetValueTyped();
+    data->cull_with_boxes = dynamic_props->GetProperty<bool>("Cull lights with bounding boxes")->GetValueTyped();
+    data->reduce_spheres = dynamic_props->GetProperty<bool>("Reduce culling spheres on intersecting planes")->GetValueTyped();
 
     auto& world = Application::GetWorld();
     auto camera = world.GetPrimaryEntity();
@@ -121,7 +160,7 @@ void ClusteredLightCullingPass::Render(RenderPipelineResourceManager& resource_m
     auto num_of_clusters = config_buffer_struct.cluster_grid_size.x * config_buffer_struct.cluster_grid_size.y * config_buffer_struct.cluster_grid_size.z;
     auto num_of_thread_groups = static_cast<int>(ceil(static_cast<double>(num_of_clusters) / 256.0));
 
-    list->SetPipeline(data->culling_pipeline);
+    list->SetPipeline(GetPipeline());
     list->SetConstantBuffer("config_buffer", data->config_buffer);
     list->SetStorageBuffer("light_buffer", data->output_lists.light_buffer);
     list->SetStorageBuffer("light_assignment_buffer", data->output_lists.light_assignment_buffer);

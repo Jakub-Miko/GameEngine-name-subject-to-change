@@ -5,6 +5,8 @@
 #define CLUSTER_GRID_Y 16
 #define CLUSTER_GRID_Z 16
 
+class Pipeline;
+
 struct ClusteredLightLists {
     RUNTIME_TAG("ClusteredLightLists")
     std::shared_ptr<RenderBufferResource> cluster_buffer;
@@ -34,6 +36,7 @@ private:
     struct internal_data;
 
     void InitPass();
+    std::shared_ptr<Pipeline> GetPipeline();
 
     std::string active_cluster_list;
     std::string input_global_light_list_name;

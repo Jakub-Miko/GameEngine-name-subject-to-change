@@ -20,7 +20,9 @@ public:
 		NORMAL = 0,
 		LIGHT_COUNT = 1,
 		CLUSTERS = 2,
-		DEPTH_SLICES = 3
+		DEPTH_SLICES = 3,
+		RADIUS = 4,
+		TILES = 5,
 	};
 
 	[[nodiscard]] OutputModes GetActiveOutputMode() const { return active_output_mode; }
