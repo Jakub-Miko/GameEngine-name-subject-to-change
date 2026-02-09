@@ -12,8 +12,12 @@
 #include <Application.h>
 #include <Window.h>
 
-VulkanRenderCommandList::VulkanRenderCommandList(std::shared_ptr<VulkanRenderCommandAllocator> alloc) : dependency_handler(), allocator(alloc), timeline_submitted(0), 
-	current_framebuffer(nullptr), current_pipeline(nullptr)
+uint32_t VulkanDependencyHandler::GetFreeIndividualDependencyIndex() {
+	individual_resource_dependency_storage.push_back({});
+	return individual_resource_dependency_storage.size() - 1;
+}
+
+VulkanRenderCommandList::VulkanRenderCommandList(std::shared_ptr<VulkanRenderCommandAllocator> alloc) : allocator(alloc)
 {
 	DEFINE_VK_INSTANCE(context);
 
@@ -25,8 +29,6 @@ VulkanRenderCommandList::VulkanRenderCommandList(std::shared_ptr<VulkanRenderCom
 	info.commandBufferCount = 1;
 
 	vkAllocateCommandBuffers(context->GetVkDevice(), &info, &command_buffer);
-	
-	dependency_handler = new DefaultVulkanDependencyHandler;
 	
 	VkCommandBufferBeginInfo begin_info = {};
 	begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -44,7 +46,7 @@ VulkanRenderCommandList::~VulkanRenderCommandList()
 
 void VulkanRenderCommandList::SetPipeline(std::shared_ptr<Pipeline> pipeline)
 {
-	dependency_handler->PipelineChange(this, pipeline);
+	dependency_handler.PipelineChange(this, pipeline);
 
 	current_pipeline = pipeline;
 	auto vulkan_pipeline = std::static_pointer_cast<VulkanPipeline>(pipeline->GetPipelineNativeExtension());
@@ -76,7 +78,7 @@ void VulkanRenderCommandList::SetConstantBuffer(const std::string& semantic_name
 	auto bind_point = param.binding_id;
 
 
-	dependency_handler->AddDrawDependency(this, buffer, VulkanCommandListDependencyType::READ, RenderState::COMMON, param_id);
+	dependency_handler.AddDrawDependency(this, buffer, VulkanCommandListDependencyType::READ, RenderState::COMMON, param_id);
 
 	auto vk_buffer_handle = std::static_pointer_cast<VulkanRenderBufferResource>(buffer)->GetBuffer();
 	
@@ -114,7 +116,7 @@ void VulkanRenderCommandList::SetStorageBuffer(const std::string& semantic_name,
 	auto bind_point = param.binding_id;
 
 
-	dependency_handler->AddDrawDependency(this, buffer, VulkanCommandListDependencyType::WRITE | VulkanCommandListDependencyType::READ, RenderState::COMMON, param_id);
+	dependency_handler.AddDrawDependency(this, buffer, VulkanCommandListDependencyType::WRITE | VulkanCommandListDependencyType::READ, RenderState::COMMON, param_id);
 
 	auto vk_buffer_handle = std::static_pointer_cast<VulkanRenderBufferResource>(buffer)->GetBuffer();
 
@@ -152,7 +154,7 @@ void VulkanRenderCommandList::SetTexture2D(const std::string& semantic_name, std
 
 	auto bind_point = param.binding_id;
 
-	dependency_handler->AddDrawDependency(this, texture, VulkanCommandListDependencyType::READ, RenderState::TEXTURE_SAMPLE, param_id);
+	dependency_handler.AddDrawDependency(this, texture, VulkanCommandListDependencyType::READ, RenderState::TEXTURE_SAMPLE, param_id);
 
 	auto vk_image_view = std::static_pointer_cast<VulkanRenderTexture2DResource>(texture)->GetImageView();
 	
@@ -190,7 +192,7 @@ void VulkanRenderCommandList::SetTexture2DArray(const std::string& semantic_name
 
 	auto bind_point = param.binding_id;
 
-	dependency_handler->AddDrawDependency(this, texture, VulkanCommandListDependencyType::READ, RenderState::TEXTURE_SAMPLE, param_id);
+	dependency_handler.AddDrawDependency(this, texture, VulkanCommandListDependencyType::READ, RenderState::TEXTURE_SAMPLE, param_id);
 
 	auto vk_image_view = std::static_pointer_cast<VulkanRenderTexture2DArrayResource>(texture)->GetImageView();
 	
@@ -228,7 +230,7 @@ void VulkanRenderCommandList::SetTexture2DCubemap(const std::string& semantic_na
 
 	auto bind_point = param.binding_id;
 
-	dependency_handler->AddDrawDependency(this, texture, VulkanCommandListDependencyType::READ, RenderState::TEXTURE_SAMPLE, param_id);
+	dependency_handler.AddDrawDependency(this, texture, VulkanCommandListDependencyType::READ, RenderState::TEXTURE_SAMPLE, param_id);
 
 	auto vk_image_view = std::static_pointer_cast<VulkanRenderTexture2DCubemapResource>(texture)->GetImageView();
 	
@@ -253,14 +255,14 @@ void VulkanRenderCommandList::SetTexture2DCubemap(const std::string& semantic_na
 
 void VulkanRenderCommandList::SetResourceDefaultState(std::shared_ptr<RenderResource> resource, RenderState state)
 {
-	dependency_handler->SetResourceDefaultState(resource, state);
+	dependency_handler.SetResourceDefaultState(resource, state);
 }
 
 void VulkanRenderCommandList::SetRenderTarget(std::shared_ptr<RenderFrameBufferResource> framebuffer)
 {
 	OutsideRenderPass(); // if a render pass was active, end it, so we can set a new framebuffer and the next rendering command will resume it
 	current_framebuffer = framebuffer;
-	dependency_handler->RenderTargetChange(this, framebuffer);
+	dependency_handler.RenderTargetChange(this, framebuffer);
 }
 
 void VulkanRenderCommandList::SetDefaultRenderTarget()
@@ -285,7 +287,7 @@ void VulkanRenderCommandList::Clear()
 	if (current_framebuffer) {
 		for (auto color_attachment : desc.color_attachments) {
 			auto vk_res = static_cast<VulkanRenderTextureResource*>(color_attachment.resource->GetExtensionData());
-			dependency_handler->AddDependency(this, color_attachment.resource, VulkanCommandListDependencyType::WRITE, RenderState::TEXTURE_TRANSFER_DST);
+			dependency_handler.AddDependency(this, color_attachment.resource, VulkanCommandListDependencyType::WRITE, RenderState::TEXTURE_TRANSFER_DST);
 			VkImageSubresourceRange range;
 			range.aspectMask = VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT;
 			range.baseArrayLayer = 0;
@@ -298,7 +300,7 @@ void VulkanRenderCommandList::Clear()
 		}
 
 		auto vk_depth_res = static_cast<VulkanRenderTextureResource*>(desc.depth_stencil_attachment.resource->GetExtensionData());
-		dependency_handler->AddDependency(this, desc.depth_stencil_attachment.resource, VulkanCommandListDependencyType::WRITE, RenderState::TEXTURE_TRANSFER_DST);
+		dependency_handler.AddDependency(this, desc.depth_stencil_attachment.resource, VulkanCommandListDependencyType::WRITE, RenderState::TEXTURE_TRANSFER_DST);
 		VkImageSubresourceRange range;
 		range.aspectMask = VkImageAspectFlagBits::VK_IMAGE_ASPECT_DEPTH_BIT;
 		range.baseArrayLayer = 0;
@@ -345,7 +347,7 @@ void VulkanRenderCommandList::GenerateMIPs(std::shared_ptr<RenderTexture2DResour
 
 void VulkanRenderCommandList::Draw(uint32_t index_count, bool use_unsined_short_as_index, int index_offset)
 {
-	dependency_handler->FlushDrawDependencies(this);
+	dependency_handler.FlushDrawDependencies(this);
 	InsideRenderPass();
 	FlushDrawState();
 
@@ -367,7 +369,7 @@ void VulkanRenderCommandList::Draw(uint32_t index_count, bool use_unsined_short_
 
 void VulkanRenderCommandList::DrawArray(uint32_t vertex_count)
 {
-	dependency_handler->FlushDrawDependencies(this);
+	dependency_handler.FlushDrawDependencies(this);
 	InsideRenderPass();
 	FlushDrawState();
 
@@ -385,7 +387,7 @@ void VulkanRenderCommandList::DrawArray(uint32_t vertex_count)
 
 void VulkanRenderCommandList::Dispatch(uint32_t thread_group_count_x, uint32_t thread_group_count_y, uint32_t thread_group_count_z) {
 	OutsideRenderPass();
-	dependency_handler->FlushDrawDependencies(this);
+	dependency_handler.FlushDrawDependencies(this);
 	vkCmdDispatch(command_buffer, thread_group_count_x, thread_group_count_y, thread_group_count_z);
 }
 
@@ -410,7 +412,7 @@ void VulkanRenderCommandList::SetMaterial(const std::string& name, std::shared_p
 	auto desc_table = vk_mat->GetDescriptorTable();
 
 
-	dependency_handler->AddMaterialDependency(this, material, param_id);
+	dependency_handler.AddMaterialDependency(this, material, param_id);
 
 	// This shouldn't be here since not constant buffer operations are performed on the setting of material.
 	// if (auto buffer = vk_mat->GetConstantBuffer()) {
@@ -419,7 +421,7 @@ void VulkanRenderCommandList::SetMaterial(const std::string& name, std::shared_p
 
 	auto pipeline_bind_point = std::static_pointer_cast<VulkanPipeline>(current_pipeline->GetPipelineNativeExtension())->GetBindPoint();
 
-	dependency_handler->AddDescriptorTableDependency(this, desc_table);
+	dependency_handler.AddDescriptorTableDependency(this, desc_table);
 	vkCmdBindDescriptorSets(command_buffer, pipeline_bind_point, sig->GetPipelineLayout(), bind_point, 1, &desc_table->descritor_set, 0, NULL);
 
 }
@@ -434,12 +436,12 @@ void VulkanRenderCommandList::DrawSquare(const glm::mat4& transform, glm::vec4 c
 
 VulkanCommandListDependencyState VulkanRenderCommandList::AddDependency(std::shared_ptr<RenderResource> dep_resource, VulkanCommandListDependencyType access_type, RenderState desired_state)
 {
-	return dependency_handler->AddDependency(this,dep_resource, access_type, desired_state);
+	return dependency_handler.AddDependency(this,dep_resource, access_type, desired_state);
 }	
 
 VulkanCommandListDependencyState VulkanRenderCommandList::GetDependency(std::shared_ptr<RenderResource> dep_resource)
 {
-	return dependency_handler->GetDependency(dep_resource);
+	return dependency_handler.GetDependency(dep_resource);
 }
 
 void VulkanRenderCommandList::InsideRenderPass()
@@ -515,38 +517,76 @@ bool VulkanRenderCommandList::Destroy()
 // If this works, i'll name it the GOD FUNCTION, since basically performs most if not all implicit synchronization.
 // Also in a year since writing this, only god will know whats going on here
 // Scratch that, it's been a couple of months and I'm already lost.
-VulkanCommandListDependencyState DefaultVulkanDependencyHandler::AddDependency(VulkanRenderCommandList* list, std::shared_ptr<RenderResource> resource, 
+VulkanCommandListDependencyState VulkanDependencyHandler::AddDependency(VulkanRenderCommandList* list, std::shared_ptr<RenderResource> resource, 
 	VulkanCommandListDependencyType access_type, RenderState desired_state ,VulkanCommandListDependencyExtra extra)
 {
-	auto fnd = dependencies.find(resource);
-	VulkanCommandListDependencyState current_dep; 
-	auto manager = static_cast<VulkanRenderResourceManager*>(RenderResourceManager::Get());
-	bool found;
-	if (found = fnd != dependencies.end() && fnd->second.type != VulkanCommandListDependencyType::NONE) { // never overwrite the expected value, only the first command matters
-		current_dep = fnd->second;
-		fnd->second.previous_access = access_type;
-		fnd->second.type |= access_type;
-		fnd->second.current_state = desired_state;
-	} else {
+	auto fnd = individual_resource_dependencies_map.find(resource);
+	bool new_dependency = false;
+	if(fnd == individual_resource_dependencies_map.end()) {
+		auto index = GetFreeIndividualDependencyIndex();
+		fnd = individual_resource_dependencies_map.insert_or_assign(resource, index).first;
+		individual_resource_dependency_storage[index].resource = resource;
+		new_dependency = true;
+	}
+
+	auto& dependency = individual_resource_dependency_storage[fnd->second];
+	auto& store = dependency.store_it;
+
+	VulkanCommandListDependencyState current_dep;
+	if(new_dependency || dependency.state.type == VulkanCommandListDependencyType::NONE) { // if dependency was not yet recorded or empty initialize it.
 		auto default_state = static_cast<VulkanRenderResource*>(resource->GetExtensionData())->GetDefaultState();
 		VulkanCommandListDependencyState dep = {};
 		dep.current_state = desired_state;
-		dep.desired_final_state = found ? fnd->second.desired_final_state : RenderState::EMPTY; // if a previous entry that was empty was found, it was used to set the desired state
+		dep.desired_final_state = !new_dependency ? dependency.state.desired_final_state : RenderState::EMPTY; // if a previous entry that was empty was found, it was used to set the desired state
 		dep.expected_state = default_state; // Write access is allowed to use uninitialized resources
 		dep.previous_access = access_type;
 		dep.type = access_type;
 		dep.allow_uninitialized = (access_type & VulkanCommandListDependencyType::WRITE) != VulkanCommandListDependencyType::NONE;
-		dependencies.insert_or_assign(resource, dep);
+		dependency.state = dep;
 		current_dep = dep;
 		current_dep.type = VulkanCommandListDependencyType::INVALID; // used to identify the first occurrence of a dependency which doesn't need to be synchronized
+		if(resource->GetResourceStore()) {
+			auto store = resource->GetResourceStore();
+			auto fnd_store = resource_store_dependencies_map.find(store);
+			if(fnd_store == resource_store_dependencies_map.end()) {
+				dependency.store_it =
+					resource_store_dependencies_map.insert_or_assign(store,RenderResourceStoreDependency()).first;
+			} else {
+				dependency.store_it = fnd_store;
+				//if the store was already used we can count it as the previous usage of this resource.
+				if(fnd_store->second.store_version != 0) {
+					current_dep.previous_access = store->IsReadOnly() ? VulkanCommandListDependencyType::READ : VulkanCommandListDependencyType::WRITE | VulkanCommandListDependencyType::READ;
+					current_dep.type = current_dep.previous_access;
+					current_dep.current_state = store->GetDescriptor().default_image_resource_state;
+				}
+			}
+			AddIndividualResourceOverride(fnd->second); // add the new resource as an override.
+		}
+	} else {
+		current_dep = dependency.state;
+		dependency.state.previous_access = access_type;
+		dependency.state.type |= access_type;
+		dependency.state.current_state = desired_state;
+		if(dependency.store_it.has_value()) {
+			auto store = dependency.store_it.value();
+			if(store->second.store_version > dependency.store_version) {
+				//if the last usage of the store happened after the last individual dependency, then use the state from the store operation.
+				current_dep.previous_access = store->first->IsReadOnly() ? VulkanCommandListDependencyType::READ : VulkanCommandListDependencyType::WRITE | VulkanCommandListDependencyType::READ;
+				current_dep.type |= current_dep.previous_access;
+				current_dep.current_state = store->first->GetDescriptor().default_image_resource_state;
+				AddIndividualResourceOverride(fnd->second); // add the resource as override.
+			}
+		}
 	}
+
+	auto manager = static_cast<VulkanRenderResourceManager*>(RenderResourceManager::Get());
 
 	switch (resource->GetResourceType())
 	{
 	case RenderResourceType::RenderBufferResource:
 	{
 		if (current_dep.type == VulkanCommandListDependencyType::INVALID) {
-			break; // First access to a buffer resource is implicityly synchronized and all memory is always visible so we dont need to do anything
+			break; // First access to a buffer resource is implicitly synchronized and all memory is always visible so we dont need to do anything
 		}
 		
 		VulkanRenderBufferResource* vk_resource = static_cast<VulkanRenderBufferResource*>(resource.get());
@@ -563,7 +603,7 @@ VulkanCommandListDependencyState DefaultVulkanDependencyHandler::AddDependency(V
 	}
 	case RenderResourceType::RenderTexture2DResource:
 	case RenderResourceType::RenderTexture2DArrayResource:
-	case RenderResourceType::RenderTexture2DCubemapResource: // TODO: we are needlessly emmiting a pipeline barrier when no dependency entry for a texture yet exists.
+	case RenderResourceType::RenderTexture2DCubemapResource: // TODO: we are needlessly emitting a pipeline barrier when no dependency entry for a texture yet exists.
 	{
 		// In the first access, execution and memory_barrier are always false, but we may need to transition the image.
 		RenderState source = current_dep.type == VulkanCommandListDependencyType::INVALID ? resource->GetRenderState() : current_dep.current_state;
@@ -581,7 +621,7 @@ VulkanCommandListDependencyState DefaultVulkanDependencyHandler::AddDependency(V
 			range.layerCount = VK_REMAINING_ARRAY_LAYERS;
 			range.levelCount = VK_REMAINING_MIP_LEVELS;
 
-			list->OutsideRenderPass(); // Emiting a barrier pauses a rendering pass
+			list->OutsideRenderPass(); // Emitting a barrier pauses a rendering pass
 			manager->TransitionImage(list, vk_resource, range, source, desired_state,
 				extra.source_stage, extra.target_stage, current_dep.type, access_type);
 		}
@@ -595,24 +635,49 @@ VulkanCommandListDependencyState DefaultVulkanDependencyHandler::AddDependency(V
 	return current_dep;
 }
 
-void DefaultVulkanDependencyHandler::SetResourceDefaultState(std::shared_ptr<RenderResource> resource, RenderState state)
+void VulkanDependencyHandler::AddStoreUsage(VulkanRenderCommandList* list, std::shared_ptr<RenderResourceStore> store) {
+	auto fnd = resource_store_dependencies_map.find(store);
+	if(fnd == resource_store_dependencies_map.end()) {
+		RenderResourceStoreDependency dep = {};
+		dep.store_version = 0;
+		dep.first_resource_override = -1;
+		dep.previous_access = VulkanCommandListDependencyType::NONE;
+		dep.type = VulkanCommandListDependencyType::NONE;
+		fnd = resource_store_dependencies_map.insert_or_assign(store,dep).first;
+	}
+	auto& dep = fnd->second;
+	uint32_t override_index = dep.first_resource_override;
+	while(override_index != -1) {
+		auto& override = individual_resource_dependency_storage[override_index];
+		auto usage = store->IsReadOnly() ? VulkanCommandListDependencyType::READ : VulkanCommandListDependencyType::WRITE | VulkanCommandListDependencyType::READ;
+		AddDependency(list, override.resource, usage, override.state.expected_state);
+		override_index = override.next_resource;
+	}
+	dep.first_resource_override = -1;
+
+}
+
+void VulkanDependencyHandler::SetResourceDefaultState(std::shared_ptr<RenderResource> resource, RenderState state)
 {
-	auto fnd = dependencies.find(resource);
-	if(fnd != dependencies.end()) {
-		fnd->second.desired_final_state = state;
+	auto fnd = individual_resource_dependencies_map.find(resource);
+	if(fnd == individual_resource_dependencies_map.end()) {
+		auto index = GetFreeIndividualDependencyIndex();
+		fnd = individual_resource_dependencies_map.insert_or_assign(resource, index).first;
+		auto& dependency = individual_resource_dependency_storage[index];
+		auto& dependency_state = dependency.state;
+		dependency.resource = resource;
+		dependency_state.expected_state = static_cast<VulkanRenderResource*>(resource->GetExtensionData())->GetDefaultState();
+		dependency_state.current_state = dependency_state.expected_state;
+		dependency_state.previous_access = VulkanCommandListDependencyType::NONE;
+		dependency_state.type = VulkanCommandListDependencyType::NONE;
+		dependency_state.desired_final_state = state;
+		dependency_state.allow_uninitialized = true;
 	} else {
-		VulkanCommandListDependencyState dependency = {};
-		dependency.expected_state = static_cast<VulkanRenderResource*>(resource->GetExtensionData())->GetDefaultState();
-		dependency.current_state = dependency.expected_state;
-		dependency.previous_access = VulkanCommandListDependencyType::NONE;
-		dependency.type = VulkanCommandListDependencyType::NONE;
-		dependency.desired_final_state = state;
-		dependency.allow_uninitialized = true;
-		dependencies.insert(std::make_pair(resource, dependency));
+		individual_resource_dependency_storage[fnd->second].state.desired_final_state = state;
 	}
 }
 
-void DefaultVulkanDependencyHandler::AddDrawDependency(VulkanRenderCommandList *list, std::shared_ptr<RenderResource> resource, VulkanCommandListDependencyType access_type, RenderState desired_state, uint32_t bind_id)
+void VulkanDependencyHandler::AddDrawDependency(VulkanRenderCommandList *list, std::shared_ptr<RenderResource> resource, VulkanCommandListDependencyType access_type, RenderState desired_state, uint32_t bind_id)
 {
 	draw_state.AddDrawDependency(list, resource, access_type, desired_state, bind_id);
 }
@@ -629,7 +694,7 @@ void VulkanDrawState::AddDrawDependency(VulkanRenderCommandList* list, std::shar
 	pending_dependencies.push_back(res);
 }
 
-void DefaultVulkanDependencyHandler::AddMaterialDependency(VulkanRenderCommandList *list, std::shared_ptr<Material> material, uint32_t bind_id)
+void VulkanDependencyHandler::AddMaterialDependency(VulkanRenderCommandList *list, std::shared_ptr<Material> material, uint32_t bind_id)
 {
 	draw_state.SetMatertialResources(list, material, bind_id);
 }
@@ -712,7 +777,7 @@ bool VulkanDrawState::IsPipelineReady()
 }
 
 //TODO: Separate draw and dispatch dependencies.
-void DefaultVulkanDependencyHandler::FlushDrawDependencies(VulkanRenderCommandList* list)
+void VulkanDependencyHandler::FlushDrawDependencies(VulkanRenderCommandList* list)
 {
 	if(!draw_state.IsPipelineReady()) {
 		throw std::runtime_error("Pipeline Resources were not fully bound before pipeline usage.\n");
@@ -756,12 +821,12 @@ void DefaultVulkanDependencyHandler::FlushDrawDependencies(VulkanRenderCommandLi
 
 }
 
-void DefaultVulkanDependencyHandler::AddDescriptorTableDependency(VulkanRenderCommandList *list, VulkanRenderDescriptorTable desc_table)
+void VulkanDependencyHandler::AddDescriptorTableDependency(VulkanRenderCommandList *list, VulkanRenderDescriptorTable desc_table)
 {
 	draw_state.used_descriptor_tables.insert(desc_table);
 }
 
-void DefaultVulkanDependencyHandler::PipelineChange(VulkanRenderCommandList *list, std::shared_ptr<Pipeline> new_pipeline)
+void VulkanDependencyHandler::PipelineChange(VulkanRenderCommandList *list, std::shared_ptr<Pipeline> new_pipeline)
 {
 	auto current_pipeline = list->GetCurrentPipeline();
 	// If pipeline signatures dont match invalidate the current dependencies, we compare pointers, since signatures should originate from the same layout
@@ -770,7 +835,7 @@ void DefaultVulkanDependencyHandler::PipelineChange(VulkanRenderCommandList *lis
 	}
 }
 
-void DefaultVulkanDependencyHandler::RenderTargetChange(VulkanRenderCommandList *list, std::shared_ptr<RenderFrameBufferResource> new_framebuffer)
+void VulkanDependencyHandler::RenderTargetChange(VulkanRenderCommandList *list, std::shared_ptr<RenderFrameBufferResource> new_framebuffer)
 {
 	framebuffer_dependency_pending = true;
 }
@@ -783,54 +848,55 @@ void VulkanDrawState::InvalidateDrawDependencies(VulkanRenderCommandList* list, 
 	expected_binding_count = new_pipeline->GetSignature().GetDescriptor().parameters.size();
 }
 
-bool DefaultVulkanDependencyHandler::IsPipelineReady()
+bool VulkanDependencyHandler::IsPipelineReady()
 {
 	return draw_state.IsPipelineReady();
 }
 
-VulkanCommandListDependencyState DefaultVulkanDependencyHandler::GetDependency(std::shared_ptr<RenderResource> resource)
+VulkanCommandListDependencyState VulkanDependencyHandler::GetDependency(std::shared_ptr<RenderResource> resource)
 {
-	auto fnd = dependencies.find(resource);
-	if (fnd != dependencies.end()) {
-		return fnd->second;
+	auto fnd = individual_resource_dependencies_map.find(resource);
+	if (fnd != individual_resource_dependencies_map.end()) {
+		return individual_resource_dependency_storage[fnd->second].state;
 	}
 
 	return VulkanCommandListDependencyState();
 }
 
-DefaultVulkanDependencyHandler::VulkanDependencyHandlerFeedback DefaultVulkanDependencyHandler::FinalizeDependencies(RenderCommandList* list, uint64_t new_timeline_value)
+VulkanDependencyHandler::VulkanDependencyHandlerFeedback VulkanDependencyHandler::FinalizeDependencies(RenderCommandList* list, uint64_t new_timeline_value)
 {
 	DEFINE_VK_INSTANCE(context);
 	uint64_t timeline_requirement = 0;
 	VulkanRenderResource* resource;
 	VulkanRenderCommandList* vk_command_list = static_cast<VulkanRenderCommandList*>(list);
 	auto manager = static_cast<VulkanRenderResourceManager*>(RenderResourceManager::Get());
-	for (auto& dependency : dependencies) {
-		resource = static_cast<VulkanRenderResource*>(dependency.first->GetExtensionData());
+	for (auto& dependency_entry : individual_resource_dependencies_map) {
+		auto& dependency = individual_resource_dependency_storage[dependency_entry.second].state;
+		resource = static_cast<VulkanRenderResource*>(dependency_entry.first->GetExtensionData());
 
-		if (!dependency.second.allow_uninitialized && dependency.first->GetRenderState() == RenderState::UNINITIALIZED) { // If we allow uninitialed resource then accept the resource
+		if (!dependency.allow_uninitialized && dependency_entry.first->GetRenderState() == RenderState::UNINITIALIZED) { // If we allow uninitialed resource then accept the resource
 			throw std::runtime_error("Attempted to read an uninitialized resource or the resource changed type between command recording and command list submit.\n");
 		}
 
 		
 		auto old_default_state = resource->GetDefaultState();
-		auto requested_default_state = dependency.second.desired_final_state;
+		auto requested_default_state = dependency.desired_final_state;
 		auto new_state = requested_default_state == RenderState::EMPTY ? old_default_state : requested_default_state;
 		
-		if(old_default_state != dependency.second.expected_state) {
+		if(old_default_state != dependency.expected_state) {
 			throw std::runtime_error("Default state of a resource was changed before command buffer was submitted which invalidated the command buffer, check for misplaced usage of SetDefaultResouce.\n");
 		}
 		
-		dependency.first->SetRenderState(new_state); // Change the resource back to its default state, this also serves to mark the resource initialized
+		dependency_entry.first->SetRenderState(new_state); // Change the resource back to its default state, this also serves to mark the resource initialized
 		
 		bool transitioned = false;
 
-		if (dependency.first->GetExtensionData()->IsTexture()) {
-			auto texture = static_cast<VulkanRenderTextureResource*>(dependency.first->GetExtensionData());
+		if (dependency_entry.first->GetExtensionData()->IsTexture()) {
+			auto texture = static_cast<VulkanRenderTextureResource*>(dependency_entry.first->GetExtensionData());
 			if(requested_default_state != RenderState::EMPTY) {
 				texture->default_state = requested_default_state;
 			}
-			if (new_state != dependency.second.current_state) {
+			if (new_state != dependency.current_state) {
 				VkImageSubresourceRange range;
 				range.aspectMask = VulkanUnitConverter::IsTextureFormatDepth(texture->GetFormat()) ? VkImageAspectFlagBits::VK_IMAGE_ASPECT_DEPTH_BIT : VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT;
 				range.baseArrayLayer = 0;
@@ -838,26 +904,26 @@ DefaultVulkanDependencyHandler::VulkanDependencyHandlerFeedback DefaultVulkanDep
 				range.layerCount = VK_REMAINING_ARRAY_LAYERS;
 				range.levelCount = VK_REMAINING_MIP_LEVELS; 
 				
-				manager->TransitionImage(list, texture, range, dependency.second.current_state, new_state, PipelineStage::ALL_STAGES, PipelineStage::ALL_STAGES);
+				manager->TransitionImage(list, texture, range, dependency.current_state, new_state, PipelineStage::ALL_STAGES, PipelineStage::ALL_STAGES);
 				transitioned = true;
 			}
 		}
 
 		if(transitioned) {
-			dependency.second.type |= VulkanCommandListDependencyType::WRITE; // Transition counts as write
+			dependency.type |= VulkanCommandListDependencyType::WRITE; // Transition counts as write
 		}
 
-		if((dependency.second.type & VulkanCommandListDependencyType::READ) != VulkanCommandListDependencyType::NONE) {
+		if((dependency.type & VulkanCommandListDependencyType::READ) != VulkanCommandListDependencyType::NONE) {
 			timeline_requirement = std::max(resource->read_timeline, timeline_requirement); // On read we need to wait for all writes to finish, we dont care about other reads
 			resource->read_timeline = new_timeline_value;
 		}
 
-		if((dependency.second.type & VulkanCommandListDependencyType::WRITE) != VulkanCommandListDependencyType::NONE) {
+		if((dependency.type & VulkanCommandListDependencyType::WRITE) != VulkanCommandListDependencyType::NONE) {
 			timeline_requirement = std::max(resource->write_timeline, timeline_requirement); // On write we need to wait for reads as well
 			resource->write_timeline = new_timeline_value;
 		}
 
-		if((dependency.second.type & VulkanCommandListDependencyType::INVALID) != VulkanCommandListDependencyType::NONE) {
+		if((dependency.type & VulkanCommandListDependencyType::INVALID) != VulkanCommandListDependencyType::NONE) {
 			throw std::runtime_error("Invalid dependency type.\n");
 		}
 	}
@@ -875,7 +941,7 @@ DefaultVulkanDependencyHandler::VulkanDependencyHandlerFeedback DefaultVulkanDep
 
 void VulkanRenderCommandList::ResetState()
 {
-	dependency_handler->Reset();
+	dependency_handler.Reset();
 	are_index_vertex_buffers_bound = false;
 	current_framebuffer.reset();
 	current_pipeline.reset();
@@ -899,10 +965,28 @@ void VulkanRenderCommandList::ResetCommandBuffer()
 	vkBeginCommandBuffer(command_buffer, &begin_info);
 }
 
-void DefaultVulkanDependencyHandler::Reset()
+void VulkanDependencyHandler::Reset()
 {
-	dependencies.clear();
-	non_dependent_resources.clear();
+	individual_resource_dependency_storage.clear();
+	individual_resource_dependencies_map.clear();
+	resource_store_dependencies_map.clear();
+	individual_resource_dependency_free_list.head = -1;
 	draw_state = VulkanDrawState();
 	framebuffer_dependency_pending = true;
+}
+
+void VulkanDependencyHandler::AddIndividualResourceOverride(int individual_resource_index) {
+	auto& dependency = individual_resource_dependency_storage[individual_resource_index];
+	if(dependency.store_it.has_value()) {
+		auto& store = dependency.store_it.value()->second;
+		if(dependency.store_version != -1 && dependency.store_version >= store.store_version) {
+			// when a store version is invalid it means the resource was just emitted and needs to be added as an override
+			// if its smaller than stores current version it was already added
+			return;
+		}
+
+		dependency.next_resource = store.first_resource_override;
+		store.first_resource_override = individual_resource_index;
+		dependency.store_version = store.store_version;
+	}
 }

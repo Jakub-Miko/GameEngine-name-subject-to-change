@@ -5,6 +5,8 @@
 #include <variant>
 #include <Promise.h>
 
+#include "RenderResourceStore.h"
+
 
 using read_pixel_data = typename std::template variant<glm::vec4, glm::vec3, glm::vec2, glm::uvec4, glm::uvec2, float, unsigned int, char>;
 
@@ -47,6 +49,8 @@ public:
 	virtual void SetFrameBufferColorAttachment(std::shared_ptr<RenderCommandList>  list, std::shared_ptr<RenderFrameBufferResource> framebuffer, std::shared_ptr<RenderResource> new_attachment, int index = 0, int level = 0) = 0;
 
 	virtual int GetCubemapFaceIndex(RenderCubemapFace face) = 0;
+
+	virtual std::shared_ptr<RenderResourceStore> CreateResourceStore(const RenderResourceStoreDescriptor& store_descriptor) = 0;
 
 	virtual ~RenderResourceManager() {};
 

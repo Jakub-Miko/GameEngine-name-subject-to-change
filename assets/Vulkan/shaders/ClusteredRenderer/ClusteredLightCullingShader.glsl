@@ -248,7 +248,7 @@ void main() {
 
     uint count = 0;
     for(int i = 0; i < light_count; i++) {
-        if(sphere_overlap_test(lights[i].position_or_direction_and_radius,aabb,  cluster_coords)) {
+        if(sphere_overlap_test(lights[i].position_or_direction_and_radius,aabb,  cluster_coords) || lights[i].light_type == 0) {
             count++;
         }
     }
@@ -264,7 +264,7 @@ void main() {
 
     uint write_index = 0;
     for(int i = 0; i < light_count && write_index < count; i++) {
-        if(sphere_overlap_test(lights[i].position_or_direction_and_radius,aabb,  cluster_coords)) {
+        if(sphere_overlap_test(lights[i].position_or_direction_and_radius,aabb,  cluster_coords) || lights[i].light_type == 0) {
             light_assignment_indicies[allocated_offset + write_index] = i;
             write_index++;
         }

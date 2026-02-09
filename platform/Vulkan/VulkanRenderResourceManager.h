@@ -43,16 +43,16 @@ public:
 		size_t offset_x, size_t offset_y, int level = 0) override;
 
 	virtual std::shared_ptr<RenderFrameBufferResource> CreateFrameBuffer(const RenderFrameBufferDescriptor& buffer_desc) override;
+	virtual std::shared_ptr<RenderResourceStore> CreateResourceStore(const RenderResourceStoreDescriptor& store_descriptor) override;
 
 	void CreateConstantBufferDescriptor(const VulkanRenderDescriptorTable& table, int index, std::shared_ptr<RenderBufferResource> resource);
 	void CreateTexture2DDescriptor(const VulkanRenderDescriptorTable& table, int index, std::shared_ptr<RenderTexture2DResource> resource);
 	void CreateTexture2DArrayDescriptor(const VulkanRenderDescriptorTable& table, int index, std::shared_ptr<RenderTexture2DArrayResource> resource);
 	void CreateTexture2DCubemapDescriptor(const VulkanRenderDescriptorTable& table, int index, std::shared_ptr<RenderTexture2DCubemapResource> resource);
-	virtual std::shared_ptr<Awaitable<read_pixel_data>> GetPixelValue(std::shared_ptr<RenderFrameBufferResource> framebuffer, int color_attachment_index, float x, float y) override;
 
+	virtual std::shared_ptr<Awaitable<read_pixel_data>> GetPixelValue(std::shared_ptr<RenderFrameBufferResource> framebuffer, int color_attachment_index, float x, float y) override;
 	virtual void CopyFrameBufferDepthAttachment(std::shared_ptr<RenderCommandList>  list, std::shared_ptr<RenderFrameBufferResource> source_frame_buffer, std::shared_ptr<RenderFrameBufferResource> destination_frame_buffer) override;
 	virtual void SetFrameBufferColorAttachment(std::shared_ptr<RenderCommandList>  list, std::shared_ptr<RenderFrameBufferResource> framebuffer, std::shared_ptr<RenderResource> new_attachment, int index = 0, int level = 0) override;
-
 	virtual int GetCubemapFaceIndex(RenderCubemapFace face) override;
 
 	void ReturnResource(VulkanRenderResource* resource);
@@ -61,9 +61,10 @@ public:
 		PipelineStage write_scope = PipelineStage::ALL_STAGES, PipelineStage read_scope = PipelineStage::ALL_STAGES,
 		VulkanCommandListDependencyType src_access = VulkanCommandListDependencyType::READ, VulkanCommandListDependencyType dst_access = VulkanCommandListDependencyType::WRITE);
 
+
 	void TransitionImage(RenderCommandList* list, VulkanRenderTextureResource* image, VkImageSubresourceRange range, RenderState source_state, RenderState target_state,
-		PipelineStage source_scope = PipelineStage::ALL_STAGES, PipelineStage target_scope = PipelineStage::ALL_STAGES, 
-		VulkanCommandListDependencyType src_access = VulkanCommandListDependencyType::READ, VulkanCommandListDependencyType dst_access = VulkanCommandListDependencyType::WRITE);
+	                     PipelineStage source_scope = PipelineStage::ALL_STAGES, PipelineStage target_scope = PipelineStage::ALL_STAGES,
+	                     VulkanCommandListDependencyType src_access = VulkanCommandListDependencyType::READ, VulkanCommandListDependencyType dst_access = VulkanCommandListDependencyType::WRITE);
 
 	std::shared_ptr<RenderBufferResource> GetStagingBuffer(size_t size);
 

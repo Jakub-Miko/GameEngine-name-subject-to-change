@@ -6,6 +6,8 @@
 #include <unordered_map>
 #include <Renderer/RendererDefines.h>
 
+class RenderResourceStore;
+
 enum class RenderResourceType : char  {
 	INVALID = 0, RenderBufferResource = 1, RenderTexture2DResource = 2, RenderFrameBufferResource = 3, RenderTexture2DArrayResource = 4, RenderTexture2DCubemapResource = 5
 };
@@ -57,12 +59,13 @@ public:
 	virtual RenderResourceType GetResourceType() = 0;
 	virtual void* Map() = 0;
 	virtual void UnMap() = 0;
+	virtual std::shared_ptr<RenderResourceStore> GetResourceStore() { return nullptr; }
+	virtual uint32_t GetResourceStoreIndex() { return -1; }
 
 	virtual ~RenderResource() {};
 
 protected:
 	RenderState render_state = RenderState::UNINITIALIZED;
-
 };
 
 class RenderBufferResource : public RenderResource {

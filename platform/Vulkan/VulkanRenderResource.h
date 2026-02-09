@@ -5,15 +5,26 @@
 
 class VulkanRenderResourceManager;
 
+enum class VulkanRenderResourceExtensionType {
+	NONE = 0, RESOURCE_STORE = 1
+};
+
+struct VulkanRenderResourceStoreAttachment {
+	std::shared_ptr<RenderResourceStore> store;
+	uint32_t binding_index = 0;
+};
+
 class VulkanRenderResource : public RenderResourceExtension {
 public:
 	VulkanRenderResource() = default;
 	virtual ~VulkanRenderResource() {};
 	virtual RenderState GetDefaultState() { return RenderState::COMMON;  };
 	virtual bool IsTexture() override { return false;  };
+	virtual void SetStoreAttachment(const VulkanRenderResourceStoreAttachment& attachment) = 0;
+	virtual void ResetStoreAttachment() = 0;
 
 	uint64_t read_timeline = 0;
-	uint64_t write_timeline = 0; 
+	uint64_t write_timeline = 0;
 private:
 	/**
 	 * Override this instead of using the destructor, these resources are just cpu handles and should not directly destroy the underlying resource when destroyed.
@@ -51,6 +62,22 @@ public:
 
 	VkBuffer GetBuffer() { return buffer;  }
 
+	std::shared_ptr<RenderResourceStore> GetResourceStore() override {
+		return resource_store ? resource_store->store : nullptr;
+	}
+
+	void SetStoreAttachment(const VulkanRenderResourceStoreAttachment& attachment) override {
+		resource_store = std::make_unique<VulkanRenderResourceStoreAttachment>(attachment);
+	}
+
+	uint32_t GetResourceStoreIndex() override {
+		return resource_store ? resource_store->binding_index : -1;
+	}
+
+	void ResetStoreAttachment() override {
+		resource_store = nullptr;
+	}
+
 private:
 	virtual ~VulkanRenderBufferResource();
 	virtual void DestroyResource() override;
@@ -76,6 +103,7 @@ private:
 
 	VkBuffer buffer;
 	VmaAllocation alloc;
+	std::unique_ptr<VulkanRenderResourceStoreAttachment> resource_store;
 };
 
 
@@ -117,6 +145,22 @@ public:
 
 	virtual std::shared_ptr<TextureSampler> GetSampler() { return descriptor.sampler; }
 
+	std::shared_ptr<RenderResourceStore> GetResourceStore() override {
+		return resource_store ? resource_store->store : nullptr;
+	}
+
+	void SetStoreAttachment(const VulkanRenderResourceStoreAttachment& attachment) override {
+		resource_store = std::make_unique<VulkanRenderResourceStoreAttachment>(attachment);
+	}
+
+	uint32_t GetResourceStoreIndex() override {
+		return resource_store ? resource_store->binding_index : -1;
+	}
+
+	void ResetStoreAttachment() override {
+		resource_store = nullptr;
+	}
+
 private:
 	virtual ~VulkanRenderTexture2DResource();
 	virtual void DestroyResource() override;
@@ -127,6 +171,7 @@ private:
 	VkImage image;
 	std::vector<VkImageView> views; ///< one view for each mip level if we need to bind individual levels as attachments
 	VmaAllocation alloc;
+	std::unique_ptr<VulkanRenderResourceStoreAttachment> resource_store;
 };
 
 class VulkanRenderTexture2DArrayResource : public RenderTexture2DArrayResource, public VulkanRenderTextureResource {
@@ -153,6 +198,22 @@ public:
 
 	virtual std::shared_ptr<TextureSampler> GetSampler() { return descriptor.sampler; }
 
+	std::shared_ptr<RenderResourceStore> GetResourceStore() override {
+		return resource_store ? resource_store->store : nullptr;
+	}
+
+	void SetStoreAttachment(const VulkanRenderResourceStoreAttachment& attachment) override {
+		resource_store = std::make_unique<VulkanRenderResourceStoreAttachment>(attachment);
+	}
+
+	uint32_t GetResourceStoreIndex() override {
+		return resource_store ? resource_store->binding_index : -1;
+	}
+
+	void ResetStoreAttachment() override {
+		resource_store = nullptr;
+	}
+
 private:
 	VulkanRenderTexture2DArrayResource(const RenderTexture2DArrayDescriptor& desc, RenderState initial_state = RenderState::UNINITIALIZED, unsigned int render_id = 0)
 		: RenderTexture2DArrayResource(desc, initial_state), views() {
@@ -164,6 +225,7 @@ private:
 	VkImage image;
 	std::vector<VkImageView> views; ///< one view for each mip level if we need to bind individual levels as attachments
 	VmaAllocation alloc;
+	std::unique_ptr<VulkanRenderResourceStoreAttachment> resource_store;
 };
 
 class VulkanRenderTexture2DCubemapResource : public RenderTexture2DCubemapResource, public VulkanRenderTextureResource {
@@ -190,6 +252,22 @@ public:
 
 	virtual std::shared_ptr<TextureSampler> GetSampler() { return descriptor.sampler; }
 
+	std::shared_ptr<RenderResourceStore> GetResourceStore() override {
+		return resource_store ? resource_store->store : nullptr;
+	}
+
+	void SetStoreAttachment(const VulkanRenderResourceStoreAttachment& attachment) override {
+		resource_store = std::make_unique<VulkanRenderResourceStoreAttachment>(attachment);
+	}
+
+	uint32_t GetResourceStoreIndex() override {
+		return resource_store ? resource_store->binding_index : -1;
+	}
+
+	void ResetStoreAttachment() override {
+		resource_store = nullptr;
+	}
+
 private:
 	VulkanRenderTexture2DCubemapResource(const RenderTexture2DCubemapDescriptor& desc, RenderState initial_state = RenderState::UNINITIALIZED, unsigned int render_id = 0)
 		: RenderTexture2DCubemapResource(desc, initial_state), views() {
@@ -201,6 +279,7 @@ private:
 	VkImage image;
 	std::vector<VkImageView> views; ///< one view for each mip level if we need to bind individual levels as attachments
 	VmaAllocation alloc;
+	std::unique_ptr<VulkanRenderResourceStoreAttachment> resource_store;
 };
 
 

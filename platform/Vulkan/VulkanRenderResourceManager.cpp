@@ -3,6 +3,7 @@
 #include "VulkanUnitConverter.h"
 #include "VulkanRenderCommandQueue.h"
 #include "VulkanRenderCommandList.h"
+#include "VulkanRenderResourceStore.h"
 #include "Core/algorithm.h"
 
 
@@ -779,9 +780,63 @@ void VulkanRenderResourceManager::BufferBarrier(RenderCommandList* list, std::sh
 
 }
 
+std::shared_ptr<RenderResourceStore> VulkanRenderResourceManager::CreateResourceStore( const RenderResourceStoreDescriptor& store_descriptor) {
+	DEFINE_VK_INSTANCE(context);
+	auto* store = new VulkanRenderResourceStore(store_descriptor);
+
+	VkDescriptorSetLayoutBinding layout_binding = {};
+	layout_binding.binding = 0;
+	layout_binding.descriptorType = VulkanUnitConverter::RootParameterTypeToDescritorType(store_descriptor.resource_parameter_type);
+	layout_binding.descriptorCount = store_descriptor.max_resource_count;
+	layout_binding.stageFlags = VK_SHADER_STAGE_ALL;
+
+	VkDescriptorBindingFlags binding_flags = VkDescriptorBindingFlagBits::VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT
+		| VkDescriptorBindingFlagBits::VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT
+		| VkDescriptorBindingFlagBits::VK_DESCRIPTOR_BINDING_UPDATE_UNUSED_WHILE_PENDING_BIT_EXT;
+
+	VkDescriptorSetLayoutBindingFlagsCreateInfo layout_binding_flags = {};
+	layout_binding_flags.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
+	layout_binding_flags.bindingCount = 1;
+	layout_binding_flags.pBindingFlags = &binding_flags;
+
+	VkDescriptorSetLayoutCreateInfo layout_info = {};
+	layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	layout_info.bindingCount = 1;
+	layout_info.pBindings = &layout_binding;
+	layout_info.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT;
+	layout_info.pNext = &layout_binding_flags;
+
+	vkCreateDescriptorSetLayout(context->GetVkDevice(), &layout_info, nullptr, &store->descriptor_set_layout);
+
+	VkDescriptorPoolSize pool_size = {};
+	pool_size.descriptorCount = store_descriptor.max_resource_count;
+	pool_size.type = VulkanUnitConverter::RootParameterTypeToDescritorType(store_descriptor.resource_parameter_type);
+
+	VkDescriptorPoolCreateInfo pool_info = {};
+	pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	pool_info.maxSets = 1;
+	pool_info.poolSizeCount = 1;
+	pool_info.pPoolSizes = &pool_size;
+	pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT;
+
+	vkCreateDescriptorPool(context->GetVkDevice(), &pool_info, nullptr, &store->descriptor_pool);
+
+	VkDescriptorSetAllocateInfo alloc_info = {};
+	alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	alloc_info.descriptorPool = store->descriptor_pool;
+	alloc_info.descriptorSetCount = 1;
+	alloc_info.pSetLayouts = &store->descriptor_set_layout;
+
+	vkAllocateDescriptorSets(context->GetVkDevice(), &alloc_info, &store->descriptor_set);
+
+	return std::shared_ptr<VulkanRenderResourceStore>(store, [this](VulkanRenderResourceStore* resource) {
+		AddToDeferredDestructionQueue(resource, std::max(resource->read_timeline, resource->write_timeline));
+	});
+}
+
 void VulkanRenderResourceManager::TransitionImage(RenderCommandList*  list, VulkanRenderTextureResource* image, VkImageSubresourceRange range, RenderState source_state, RenderState target_state,
-	PipelineStage source_scope, PipelineStage target_scope,
-	VulkanCommandListDependencyType src_access, VulkanCommandListDependencyType dst_access)
+                                                  PipelineStage source_scope, PipelineStage target_scope,
+                                                  VulkanCommandListDependencyType src_access, VulkanCommandListDependencyType dst_access)
 {
 	VkImageMemoryBarrier2 barrier = {};
 	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
