@@ -46,7 +46,7 @@ struct VulkanCommandListDependencyState {
 
     VulkanCommandListDependencyState() = default;
 
-    VulkanCommandListDependencyType type = VulkanCommandListDependencyType::INVALID; // aggregate access type of all accesses in a command buffer.
+    VulkanCommandListDependencyType type = VulkanCommandListDependencyType::NONE; // aggregate access type of all accesses in a command buffer.
     VulkanCommandListDependencyType previous_access = VulkanCommandListDependencyType::INVALID; // type of the previous access to the resource in the command buffer
     RenderState current_state = RenderState::COMMON; // The state after the previous operation on the resource in the command buffer
     RenderState expected_state = RenderState::COMMON; // The state the resource is expected to be in at the beginning of the command buffer, dictated by the default_state of the resource
@@ -129,33 +129,30 @@ private:
     void AddIndividualResourceOverride(int individual_resource_index);
 
     struct RenderResourceStoreDependency {
-        VulkanCommandListDependencyType type = VulkanCommandListDependencyType::INVALID;
-        VulkanCommandListDependencyType previous_access = VulkanCommandListDependencyType::INVALID;
-        uint32_t store_version = 0;
+        int32_t store_version = 0;
         uint32_t first_resource_override = -1;
     };
 
-    using render_store_map = std::unordered_map<std::shared_ptr<RenderResourceStore>, RenderResourceStoreDependency>;
+    using render_store_map_t = std::unordered_map<std::shared_ptr<RenderResourceStore>, RenderResourceStoreDependency>;
+    using individual_resource_map_t = std::unordered_map<std::shared_ptr<RenderResource>, uint32_t>;
 
     struct IndividualResourceDependency {
+        bool IsInitialized() {
+            return state.type != VulkanCommandListDependencyType::NONE;
+        }
+
         std::shared_ptr<RenderResource> resource;
         VulkanCommandListDependencyState state;
-        std::optional<render_store_map::iterator> store_it;
-        uint32_t store_version = -1; // The state version of the resource store when the dependency was created.
+        std::optional<render_store_map_t::iterator> store_it;
+        int32_t store_version = -1; // The state version of the resource store when the dependency was created.
         uint32_t next_resource = -1; // Index of the next dirty resource belonging to the same resource store
     };
 
+    individual_resource_map_t::iterator GetNewIndividualResourceRecord(std::shared_ptr<RenderResource> resource);
 
-    struct IndividualResourceDependencyFreeList {
-        uint32_t head = -1;
-    };
-
-    uint32_t GetFreeIndividualDependencyIndex();
-
-    std::unordered_map<std::shared_ptr<RenderResourceStore>, RenderResourceStoreDependency> resource_store_dependencies_map;
-    std::unordered_map<std::shared_ptr<RenderResource>, uint32_t> individual_resource_dependencies_map;
+    render_store_map_t resource_store_dependencies_map;
+    individual_resource_map_t individual_resource_dependencies_map;
     std::vector<IndividualResourceDependency> individual_resource_dependency_storage;
-    IndividualResourceDependencyFreeList individual_resource_dependency_free_list;
 
     VulkanDrawState draw_state; // dependencies which will be used be the next drawcall
     bool framebuffer_dependency_pending = true;

@@ -786,7 +786,7 @@ std::shared_ptr<RenderResourceStore> VulkanRenderResourceManager::CreateResource
 
 	VkDescriptorSetLayoutBinding layout_binding = {};
 	layout_binding.binding = 0;
-	layout_binding.descriptorType = VulkanUnitConverter::RootParameterTypeToDescritorType(store_descriptor.resource_parameter_type);
+	layout_binding.descriptorType = VulkanUnitConverter::DescriptorTypeToVkDescriptorType(store_descriptor.resource_descriptor_type);
 	layout_binding.descriptorCount = store_descriptor.max_resource_count;
 	layout_binding.stageFlags = VK_SHADER_STAGE_ALL;
 
@@ -810,7 +810,7 @@ std::shared_ptr<RenderResourceStore> VulkanRenderResourceManager::CreateResource
 
 	VkDescriptorPoolSize pool_size = {};
 	pool_size.descriptorCount = store_descriptor.max_resource_count;
-	pool_size.type = VulkanUnitConverter::RootParameterTypeToDescritorType(store_descriptor.resource_parameter_type);
+	pool_size.type = VulkanUnitConverter::DescriptorTypeToVkDescriptorType(store_descriptor.resource_descriptor_type);
 
 	VkDescriptorPoolCreateInfo pool_info = {};
 	pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -830,7 +830,7 @@ std::shared_ptr<RenderResourceStore> VulkanRenderResourceManager::CreateResource
 	vkAllocateDescriptorSets(context->GetVkDevice(), &alloc_info, &store->descriptor_set);
 
 	return std::shared_ptr<VulkanRenderResourceStore>(store, [this](VulkanRenderResourceStore* resource) {
-		AddToDeferredDestructionQueue(resource, std::max(resource->read_timeline, resource->write_timeline));
+		AddToDeferredDestructionQueue(resource, resource->GetTimelineValue());
 	});
 }
 

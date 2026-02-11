@@ -12,9 +12,26 @@
 #include <Application.h>
 #include <Window.h>
 
-uint32_t VulkanDependencyHandler::GetFreeIndividualDependencyIndex() {
-	individual_resource_dependency_storage.push_back({});
-	return individual_resource_dependency_storage.size() - 1;
+#include "VulkanRenderResourceStore.h"
+
+VulkanDependencyHandler::individual_resource_map_t::iterator VulkanDependencyHandler::GetNewIndividualResourceRecord(std::shared_ptr<RenderResource> resource) {
+	auto fnd = individual_resource_dependencies_map.find(resource);
+	if (fnd == individual_resource_dependencies_map.end()) {
+		individual_resource_dependency_storage.push_back({});
+		auto index = individual_resource_dependency_storage.size() - 1;
+		auto& record = individual_resource_dependency_storage[index];
+		auto default_state = static_cast<VulkanRenderResource*>(resource->GetExtensionData())->GetDefaultState();
+		record.resource = resource;
+		record.state.current_state = default_state;
+		record.state.desired_final_state = RenderState::EMPTY; //Assume default desired state.
+		record.state.expected_state = default_state;
+		record.state.previous_access = VulkanCommandListDependencyType::NONE;
+		record.state.type = VulkanCommandListDependencyType::NONE;
+		record.state.allow_uninitialized = false;
+		return individual_resource_dependencies_map.insert_or_assign(resource, index).first;
+	} else {
+		return fnd;
+	}
 }
 
 VulkanRenderCommandList::VulkanRenderCommandList(std::shared_ptr<VulkanRenderCommandAllocator> alloc) : allocator(alloc)
@@ -520,31 +537,20 @@ bool VulkanRenderCommandList::Destroy()
 VulkanCommandListDependencyState VulkanDependencyHandler::AddDependency(VulkanRenderCommandList* list, std::shared_ptr<RenderResource> resource, 
 	VulkanCommandListDependencyType access_type, RenderState desired_state ,VulkanCommandListDependencyExtra extra)
 {
-	auto fnd = individual_resource_dependencies_map.find(resource);
-	bool new_dependency = false;
-	if(fnd == individual_resource_dependencies_map.end()) {
-		auto index = GetFreeIndividualDependencyIndex();
-		fnd = individual_resource_dependencies_map.insert_or_assign(resource, index).first;
-		individual_resource_dependency_storage[index].resource = resource;
-		new_dependency = true;
-	}
+	auto fnd = GetNewIndividualResourceRecord(resource);
 
 	auto& dependency = individual_resource_dependency_storage[fnd->second];
 	auto& store = dependency.store_it;
 
 	VulkanCommandListDependencyState current_dep;
-	if(new_dependency || dependency.state.type == VulkanCommandListDependencyType::NONE) { // if dependency was not yet recorded or empty initialize it.
-		auto default_state = static_cast<VulkanRenderResource*>(resource->GetExtensionData())->GetDefaultState();
-		VulkanCommandListDependencyState dep = {};
-		dep.current_state = desired_state;
-		dep.desired_final_state = !new_dependency ? dependency.state.desired_final_state : RenderState::EMPTY; // if a previous entry that was empty was found, it was used to set the desired state
-		dep.expected_state = default_state; // Write access is allowed to use uninitialized resources
-		dep.previous_access = access_type;
-		dep.type = access_type;
-		dep.allow_uninitialized = (access_type & VulkanCommandListDependencyType::WRITE) != VulkanCommandListDependencyType::NONE;
-		dependency.state = dep;
-		current_dep = dep;
+	if(!dependency.IsInitialized()) { // if dependency was not yet recorded or empty, initialize it.
+		dependency.state.current_state = desired_state;
+		dependency.state.previous_access = access_type;
+		dependency.state.type = access_type;
+		dependency.state.allow_uninitialized = (access_type & VulkanCommandListDependencyType::WRITE) != VulkanCommandListDependencyType::NONE;
+		current_dep = dependency.state;
 		current_dep.type = VulkanCommandListDependencyType::INVALID; // used to identify the first occurrence of a dependency which doesn't need to be synchronized
+
 		if(resource->GetResourceStore()) {
 			auto store = resource->GetResourceStore();
 			auto fnd_store = resource_store_dependencies_map.find(store);
@@ -553,30 +559,24 @@ VulkanCommandListDependencyState VulkanDependencyHandler::AddDependency(VulkanRe
 					resource_store_dependencies_map.insert_or_assign(store,RenderResourceStoreDependency()).first;
 			} else {
 				dependency.store_it = fnd_store;
-				//if the store was already used we can count it as the previous usage of this resource.
-				if(fnd_store->second.store_version != 0) {
-					current_dep.previous_access = store->IsReadOnly() ? VulkanCommandListDependencyType::READ : VulkanCommandListDependencyType::WRITE | VulkanCommandListDependencyType::READ;
-					current_dep.type = current_dep.previous_access;
-					current_dep.current_state = store->GetDescriptor().default_image_resource_state;
-				}
 			}
-			AddIndividualResourceOverride(fnd->second); // add the new resource as an override.
 		}
 	} else {
 		current_dep = dependency.state;
 		dependency.state.previous_access = access_type;
 		dependency.state.type |= access_type;
 		dependency.state.current_state = desired_state;
-		if(dependency.store_it.has_value()) {
-			auto store = dependency.store_it.value();
-			if(store->second.store_version > dependency.store_version) {
-				//if the last usage of the store happened after the last individual dependency, then use the state from the store operation.
-				current_dep.previous_access = store->first->IsReadOnly() ? VulkanCommandListDependencyType::READ : VulkanCommandListDependencyType::WRITE | VulkanCommandListDependencyType::READ;
-				current_dep.type |= current_dep.previous_access;
-				current_dep.current_state = store->first->GetDescriptor().default_image_resource_state;
-				AddIndividualResourceOverride(fnd->second); // add the resource as override.
-			}
+	}
+
+	if(dependency.store_it.has_value()) {
+		auto store = dependency.store_it.value();
+		if(store->second.store_version > dependency.store_version && store->second.store_version != 0) {
+			//if the last usage of the store happened after the last individual dependency, then use the state from the store operation.
+			current_dep.previous_access = store->first->IsReadOnly() ? VulkanCommandListDependencyType::READ : VulkanCommandListDependencyType::WRITE | VulkanCommandListDependencyType::READ;
+			current_dep.type |= current_dep.previous_access;
+			current_dep.current_state = store->first->GetDescriptor().default_image_resource_state;
 		}
+		AddIndividualResourceOverride(fnd->second); // add the resource as override.
 	}
 
 	auto manager = static_cast<VulkanRenderResourceManager*>(RenderResourceManager::Get());
@@ -588,14 +588,8 @@ VulkanCommandListDependencyState VulkanDependencyHandler::AddDependency(VulkanRe
 		if (current_dep.type == VulkanCommandListDependencyType::INVALID) {
 			break; // First access to a buffer resource is implicitly synchronized and all memory is always visible so we dont need to do anything
 		}
-		
-		VulkanRenderBufferResource* vk_resource = static_cast<VulkanRenderBufferResource*>(resource.get());
-		if ((current_dep.previous_access & VulkanCommandListDependencyType::WRITE) != VulkanCommandListDependencyType::NONE
-			&& (access_type & VulkanCommandListDependencyType::READ) != VulkanCommandListDependencyType::NONE) { //Synchronize and Make Data available
-			list->OutsideRenderPass(); // Emiting a barrier pauses a rendering pass
-			manager->BufferBarrier(list, std::static_pointer_cast<RenderBufferResource>(resource), extra.source_stage, extra.target_stage, current_dep.type, access_type);
-		}
-		else if (current_dep.previous_access != VulkanCommandListDependencyType::READ || access_type != VulkanCommandListDependencyType::READ) { // for write after write, or write affter read, no visibility operations are required, but we must ensure ordering
+
+		if (current_dep.previous_access != VulkanCommandListDependencyType::READ || access_type != VulkanCommandListDependencyType::READ) { // for write after write, or write affter read, no visibility operations are required, but we must ensure ordering
 			list->OutsideRenderPass(); // Emiting a barrier pauses a rendering pass
 			manager->BufferBarrier(list, std::static_pointer_cast<RenderBufferResource>(resource), extra.source_stage, extra.target_stage, current_dep.type, access_type);
 		}
@@ -611,7 +605,6 @@ VulkanCommandListDependencyState VulkanDependencyHandler::AddDependency(VulkanRe
 		VulkanRenderTextureResource* vk_resource = static_cast<VulkanRenderTextureResource*>(resource->GetExtensionData());
 		bool transition = source != desired_state; // if the requested type differs then change it.
 		bool execution_barrier = current_dep.previous_access != VulkanCommandListDependencyType::READ || access_type != VulkanCommandListDependencyType::READ; // if the requested type differs then change it.
-
 
 		if (transition || execution_barrier) {
 			VkImageSubresourceRange range;
@@ -641,8 +634,6 @@ void VulkanDependencyHandler::AddStoreUsage(VulkanRenderCommandList* list, std::
 		RenderResourceStoreDependency dep = {};
 		dep.store_version = 0;
 		dep.first_resource_override = -1;
-		dep.previous_access = VulkanCommandListDependencyType::NONE;
-		dep.type = VulkanCommandListDependencyType::NONE;
 		fnd = resource_store_dependencies_map.insert_or_assign(store,dep).first;
 	}
 	auto& dep = fnd->second;
@@ -655,21 +646,32 @@ void VulkanDependencyHandler::AddStoreUsage(VulkanRenderCommandList* list, std::
 	}
 	dep.first_resource_override = -1;
 
+	if(dep.store_version != 0 && !store->IsReadOnly()) {
+		VkMemoryBarrier2 barrier = {};
+		barrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2;
+		barrier.dstAccessMask = store->IsReadOnly() ? VK_ACCESS_MEMORY_READ_BIT : VK_ACCESS_MEMORY_WRITE_BIT;
+		barrier.srcAccessMask = barrier.dstAccessMask; // The store has a single canonical access type
+		barrier.srcStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+		barrier.dstStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+
+		VkDependencyInfo info = {};
+		info.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+		info.memoryBarrierCount = 1;
+		info.pMemoryBarriers = &barrier;
+
+		auto vk_command_list = static_cast<VulkanRenderCommandList*>(list);
+		vkCmdPipelineBarrier2(*vk_command_list->GetVkCommandBuffer(),&info);
+	}
+
+	dep.store_version++;
 }
 
 void VulkanDependencyHandler::SetResourceDefaultState(std::shared_ptr<RenderResource> resource, RenderState state)
 {
 	auto fnd = individual_resource_dependencies_map.find(resource);
 	if(fnd == individual_resource_dependencies_map.end()) {
-		auto index = GetFreeIndividualDependencyIndex();
-		fnd = individual_resource_dependencies_map.insert_or_assign(resource, index).first;
-		auto& dependency = individual_resource_dependency_storage[index];
-		auto& dependency_state = dependency.state;
-		dependency.resource = resource;
-		dependency_state.expected_state = static_cast<VulkanRenderResource*>(resource->GetExtensionData())->GetDefaultState();
-		dependency_state.current_state = dependency_state.expected_state;
-		dependency_state.previous_access = VulkanCommandListDependencyType::NONE;
-		dependency_state.type = VulkanCommandListDependencyType::NONE;
+		auto dependency = GetNewIndividualResourceRecord(resource);
+		auto& dependency_state = individual_resource_dependency_storage[dependency->second].state;
 		dependency_state.desired_final_state = state;
 		dependency_state.allow_uninitialized = true;
 	} else {
@@ -878,7 +880,6 @@ VulkanDependencyHandler::VulkanDependencyHandlerFeedback VulkanDependencyHandler
 			throw std::runtime_error("Attempted to read an uninitialized resource or the resource changed type between command recording and command list submit.\n");
 		}
 
-		
 		auto old_default_state = resource->GetDefaultState();
 		auto requested_default_state = dependency.desired_final_state;
 		auto new_state = requested_default_state == RenderState::EMPTY ? old_default_state : requested_default_state;
@@ -913,19 +914,28 @@ VulkanDependencyHandler::VulkanDependencyHandlerFeedback VulkanDependencyHandler
 			dependency.type |= VulkanCommandListDependencyType::WRITE; // Transition counts as write
 		}
 
+		uint64_t read_timeline = resource->read_timeline;
+		uint64_t write_timeline = resource->write_timeline;
+
 		if((dependency.type & VulkanCommandListDependencyType::READ) != VulkanCommandListDependencyType::NONE) {
-			timeline_requirement = std::max(resource->read_timeline, timeline_requirement); // On read we need to wait for all writes to finish, we dont care about other reads
+			timeline_requirement = std::max(write_timeline, timeline_requirement); // On read we need to wait for all writes to finish, we dont care about other reads
 			resource->read_timeline = new_timeline_value;
 		}
 
 		if((dependency.type & VulkanCommandListDependencyType::WRITE) != VulkanCommandListDependencyType::NONE) {
-			timeline_requirement = std::max(resource->write_timeline, timeline_requirement); // On write we need to wait for reads as well
+			timeline_requirement = std::max(std::max(write_timeline, read_timeline), timeline_requirement); // On write we need to wait for reads as well
 			resource->write_timeline = new_timeline_value;
 		}
 
 		if((dependency.type & VulkanCommandListDependencyType::INVALID) != VulkanCommandListDependencyType::NONE) {
 			throw std::runtime_error("Invalid dependency type.\n");
 		}
+	}
+
+	for(auto store : resource_store_dependencies_map) {
+		auto vk_store = std::static_pointer_cast<VulkanRenderResourceStore>(store.first);
+		timeline_requirement = std::max(timeline_requirement, vk_store->GetTimelineValue());
+		vk_store->SetTimelineValue(new_timeline_value);
 	}
 
 	for(auto table : draw_state.used_descriptor_tables) {
@@ -970,7 +980,6 @@ void VulkanDependencyHandler::Reset()
 	individual_resource_dependency_storage.clear();
 	individual_resource_dependencies_map.clear();
 	resource_store_dependencies_map.clear();
-	individual_resource_dependency_free_list.head = -1;
 	draw_state = VulkanDrawState();
 	framebuffer_dependency_pending = true;
 }
@@ -979,9 +988,7 @@ void VulkanDependencyHandler::AddIndividualResourceOverride(int individual_resou
 	auto& dependency = individual_resource_dependency_storage[individual_resource_index];
 	if(dependency.store_it.has_value()) {
 		auto& store = dependency.store_it.value()->second;
-		if(dependency.store_version != -1 && dependency.store_version >= store.store_version) {
-			// when a store version is invalid it means the resource was just emitted and needs to be added as an override
-			// if its smaller than stores current version it was already added
+		if(dependency.store_version >= store.store_version) {
 			return;
 		}
 

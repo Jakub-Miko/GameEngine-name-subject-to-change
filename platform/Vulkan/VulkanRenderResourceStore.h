@@ -11,6 +11,13 @@ public:
     uint32_t AttachResource(std::shared_ptr<RenderResource> resource) override;
     bool DeattachResource(std::shared_ptr<RenderResource> resource) override;
     bool IsReadOnly() override;
+    uint64_t GetTimelineValue() const {
+        return timeline;
+    }
+
+    void SetTimelineValue(uint64_t value) {
+        timeline = value;
+    }
 
     ~VulkanRenderResourceStore() override = default;
 
@@ -24,5 +31,5 @@ private:
     uint32_t last_allocated_binding = 0;
     std::unordered_map<uint32_t,std::shared_ptr<RenderResource>> resource_bindings;
     std::vector<uint32_t> free_indices;
-    uint32_t write_timeline = 0, read_timeline = 0;
+    uint64_t timeline = 0;
 };

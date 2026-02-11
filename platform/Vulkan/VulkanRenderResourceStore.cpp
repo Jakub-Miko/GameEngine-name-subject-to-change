@@ -2,6 +2,7 @@
 
 #include "VulkanRenderContext.h"
 #include "VulkanUnitConverter.h"
+#include "dependencies/spirv-tools/source/opt/desc_sroa_util.h"
 
 bool VulkanRenderResourceStore::Destroy() {
     DEFINE_VK_INSTANCE(context)
@@ -27,6 +28,14 @@ uint32_t VulkanRenderResourceStore::AttachResource(std::shared_ptr<RenderResourc
 
     uint32_t binding_index;
 
+    if(resource->GetRenderState() == RenderState::UNINITIALIZED) {
+        if(IsReadOnly()) {
+            throw std::runtime_error("Resources attached to a read-only store must be initialized.");
+        } else {
+            resource->SetRenderState(vk_res->GetDefaultState()); // we never know when a resource in a store will be written to, so we consider it initialized.
+        }
+    }
+
     if(!free_indices.empty()) {
         binding_index = free_indices.back();
         free_indices.pop_back();
@@ -50,7 +59,7 @@ uint32_t VulkanRenderResourceStore::AttachResource(std::shared_ptr<RenderResourc
     writeDescriptorSet.dstBinding = 0;
     writeDescriptorSet.dstArrayElement = binding_index;
     writeDescriptorSet.descriptorCount = 1;
-    writeDescriptorSet.descriptorType = VulkanUnitConverter::RootParameterTypeToDescritorType(descriptor.resource_parameter_type);
+    writeDescriptorSet.descriptorType = VulkanUnitConverter::DescriptorTypeToVkDescriptorType(descriptor.resource_descriptor_type);
 
     VkDescriptorBufferInfo buffer_info = {};
     VkDescriptorImageInfo image_info = {};
@@ -104,7 +113,6 @@ bool VulkanRenderResourceStore::DeattachResource(std::shared_ptr<RenderResource>
     resource_bindings.erase(resource->GetResourceStoreIndex());
     vk_res->ResetStoreAttachment();
     return true;
-
 }
 
 bool VulkanRenderResourceStore::IsReadOnly() {
