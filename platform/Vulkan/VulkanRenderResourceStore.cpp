@@ -2,7 +2,6 @@
 
 #include "VulkanRenderContext.h"
 #include "VulkanUnitConverter.h"
-#include "dependencies/spirv-tools/source/opt/desc_sroa_util.h"
 
 bool VulkanRenderResourceStore::Destroy() {
     DEFINE_VK_INSTANCE(context)
