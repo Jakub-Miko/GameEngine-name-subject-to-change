@@ -95,6 +95,12 @@ void VulkanRenderContext::PreInit()
 	features_12.descriptorIndexing = true;
 	features_12.timelineSemaphore = true;
 	features_12.scalarBlockLayout = true;
+	features_12.descriptorBindingVariableDescriptorCount = true;
+	features_12.descriptorBindingSampledImageUpdateAfterBind = true;
+	features_12.descriptorBindingStorageBufferUpdateAfterBind = true;
+	features_12.descriptorBindingUniformBufferUpdateAfterBind = true;
+	features_12.descriptorBindingPartiallyBound = true;
+	features_12.descriptorBindingUpdateUnusedWhilePending = true;
 
 	VkPhysicalDeviceVulkan13Features features_13 = {};
 	features_13.dynamicRendering = true;

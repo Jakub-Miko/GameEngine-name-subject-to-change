@@ -155,6 +155,9 @@ RootSignature* ShaderManager::ParseRootSignature(const std::string& signature_st
 			else if (type == "texture_2D_cubemap") {
 				desc.parameters.push_back(RootSignatureDescriptorElement(name, RootParameterType::TEXTURE_2D_CUBEMAP));
 				mapping_table.insert(std::make_pair(name, RootMappingEntry(sig_entry_num)));
+			} else if (type == "resource_store") {
+				desc.parameters.push_back(RootSignatureDescriptorElement(name, RootParameterType::RESOURCE_STORE));
+				mapping_table.insert(std::make_pair(name, RootMappingEntry(sig_entry_num)));
 			}
 			else {
 				throw std::runtime_error("Root Signature parameter type: " + type + " isn't supported");

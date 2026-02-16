@@ -81,10 +81,17 @@ struct VulkanBarrier {
 
     void AddBarrier(std::shared_ptr<RenderResource> resource, const VulkanDependencyState& source_dependency_state, const VulkanDependencyState& target_dependency_state);
 
+    void AddGlobalMemoryBarrier(const VulkanDependencyState& source_dependency_state, const VulkanDependencyState& target_dependency_state);
+
 private:
     friend class VulkanDependencyHandler;
     struct DependencyUpdate {
         uint32_t dependency_index = 0;
+        VulkanDependencyState target_state;
+    };
+
+    struct StoreUpdate {
+
         VulkanDependencyState target_state;
     };
 
@@ -130,13 +137,14 @@ public:
     VulkanDependencyState UpdateDependency(VulkanRenderCommandList* list, std::shared_ptr<RenderResource> resource, const VulkanDependencyState& dependency_target_state);
 
     void PrepareDependencyForEmission(VulkanRenderCommandList* list, std::shared_ptr<RenderResource> resource, VulkanDependencyState dependency_target_state);
+    void PrepareStoreDependencyForEmission(VulkanRenderCommandList* list, std::shared_ptr<RenderResourceStore> store);
     void FlushPreparedDependencies(VulkanRenderCommandList* list);
 
     void AddDependency(VulkanRenderCommandList* list, std::shared_ptr<RenderResource> resource, const VulkanDependencyState& dependency_target_state);
 
     void AddDependencyToBarrier(VulkanRenderCommandList* list, std::shared_ptr<RenderResource> resource, VulkanDependencyState dependency_target_state, VulkanBarrier& barrier);
 
-    void AddStoreUsage(VulkanRenderCommandList* list, std::shared_ptr<RenderResourceStore> store);
+    void AddStoreUsage(VulkanRenderCommandList* list, std::shared_ptr<RenderResourceStore> store, uint32_t bind_id);
 
     void IterateStoreDependencies(std::shared_ptr<RenderResourceStore> store, std::function<void(const VulkanDrawResource&)> dependency_callback, bool clear_after_iteration = false);
 
@@ -155,6 +163,8 @@ public:
     void RenderTargetChange(VulkanRenderCommandList* list, std::shared_ptr<RenderFrameBufferResource> new_framebuffer);
 
     bool IsPipelineReady();
+
+    void EnsureInitialization(std::shared_ptr<RenderResource> resource);
 
     VulkanCommandListDependencyState GetDependency(std::shared_ptr<RenderResource> resource);
     VulkanDependencyHandlerFeedback FinalizeDependencies(RenderCommandList* list, uint64_t new_timeline_value);
@@ -233,9 +243,13 @@ public:
     virtual void DrawArray(uint32_t vertex_count) override;
     virtual void Dispatch(uint32_t thread_group_count_x, uint32_t thread_group_count_y, uint32_t thread_group_count_z) override;
     virtual void SetMaterial(const std::string& name, std::shared_ptr<Material> material) override;
+    virtual void SetResourceStore(const std::string& name, std::shared_ptr<RenderResourceStore> resource_store) override;
+    virtual void AttachResourceToStoreAfterSubmission(std::shared_ptr<RenderResourceStore> store, std::shared_ptr<RenderResource> resource) override;
 
     virtual void DrawSquare(glm::vec2 pos, glm::vec2 size, glm::vec4 color = { 1.f,1.f,1.f,1.f }) override;
     virtual void DrawSquare(const glm::mat4& transform, glm::vec4 color = { 1.f,1.f,1.f,1.f }) override;
+
+    void AddSubmissionCallback(std::function<void()> callback);
 
     VkCommandBuffer* GetVkCommandBuffer() { return &command_buffer; }
     std::shared_ptr<Pipeline> GetCurrentPipeline() { return current_pipeline; }
@@ -288,6 +302,7 @@ private:
     std::shared_ptr<Pipeline> current_pipeline = nullptr;
     std::shared_ptr<RenderResource> vertex_buffer = nullptr;
     std::shared_ptr<RenderResource> index_buffer = nullptr;
+    std::vector<std::function<void()>> submission_callbacks;
     RenderViewport viewport = RenderViewport({0,0}, {0,0}, 0.0f, 0.0f);
     RenderScissorRect scissor_rect = RenderScissorRect({0,0}, {0,0});
     uint32_t timeline_submitted = 0; // The last time this command buffer was submitted, 0 means never

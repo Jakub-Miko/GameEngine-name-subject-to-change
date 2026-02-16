@@ -440,12 +440,35 @@ void VulkanRenderCommandList::SetMaterial(const std::string& name, std::shared_p
 
 }
 
+void VulkanRenderCommandList::SetResourceStore(const std::string& name,
+	std::shared_ptr<RenderResourceStore> resource_store) {
+	auto sig = static_cast<const VulkanRootSignature*>(&current_pipeline->GetSignature());
+	auto param_id = sig->GetRootParameterId(name).parameter_id;
+	auto param = sig->GetDescriptor().parameters[param_id];
+	if (param.type != RootParameterType::RESOURCE_STORE) {
+		throw std::runtime_error("The parameter " + name + " is not a resource store.\n");
+	}
+	dependency_handler.AddStoreUsage(this,resource_store, param_id);
+}
+
+void VulkanRenderCommandList::AttachResourceToStoreAfterSubmission(std::shared_ptr<RenderResourceStore> store,
+	std::shared_ptr<RenderResource> resource) {
+	dependency_handler.EnsureInitialization(resource);
+	AddSubmissionCallback([resource, store] () {
+		store->AttachResource(resource);
+	});
+}
+
 void VulkanRenderCommandList::DrawSquare(glm::vec2 pos, glm::vec2 size, glm::vec4 color)
 {
 }
 
 void VulkanRenderCommandList::DrawSquare(const glm::mat4& transform, glm::vec4 color)
 {
+}
+
+void VulkanRenderCommandList::AddSubmissionCallback(std::function<void()> callback) {
+	submission_callbacks.push_back(callback);
 }
 
 void VulkanRenderCommandList::AddDependency(std::shared_ptr<RenderResource> dep_resource, VulkanCommandListDependencyType access_type, RenderState desired_state)
@@ -628,6 +651,43 @@ void VulkanDependencyHandler::PrepareDependencyForEmission(VulkanRenderCommandLi
 	barrier.dependency_updates.push_back({fnd->second, dependency_target_state});
 }
 
+void VulkanDependencyHandler::PrepareStoreDependencyForEmission(VulkanRenderCommandList* list,
+	std::shared_ptr<RenderResourceStore> store) {
+
+	auto fnd = resource_store_dependencies_map.find(store);
+
+
+	if(fnd == resource_store_dependencies_map.end()) {
+		RenderResourceStoreDependency dep = {};
+		dep.store_version = 0;
+		dep.first_resource_override = -1;
+		fnd = resource_store_dependencies_map.insert_or_assign(store,dep).first;
+	}
+
+	auto& dep = fnd->second;
+
+	bool forced_emission = dep.last_render_pass_used != list->GetRenderPassCounter();
+
+	uint32_t override_index = dep.first_resource_override;
+	while(override_index != -1) {
+		auto& override = individual_resource_dependency_storage[override_index];
+		auto usage = store->IsReadOnly() ? VulkanCommandListDependencyType::READ : VulkanCommandListDependencyType::WRITE | VulkanCommandListDependencyType::READ;
+		PrepareDependencyForEmission(list, override.resource, {usage, store->GetDescriptor().default_image_resource_state});
+		override_index = override.next_resource;
+	}
+
+	if(dep.store_version != 0 && !store->IsReadOnly()) {
+		auto access_type = store->IsReadOnly() ? VulkanCommandListDependencyType::READ : VulkanCommandListDependencyType::WRITE | VulkanCommandListDependencyType::READ;
+		auto state = VulkanDependencyState {access_type, RenderState::COMMON, PipelineStage::ALL_STAGES};
+		barrier.AddGlobalMemoryBarrier(state, state);
+	}
+
+	dep.first_resource_override = -1;
+	dep.store_version++;
+
+	barrier.force_emission |= forced_emission;
+}
+
 void VulkanDependencyHandler::FlushPreparedDependencies(VulkanRenderCommandList* list) {
 	bool inside_pass = list->IsRenderPassActive();
 	bool defer_emission = inside_pass && !barrier.force_emission;
@@ -698,42 +758,8 @@ void VulkanDependencyHandler::AddDependencyToBarrier(VulkanRenderCommandList* li
 	barrier.AddBarrier(resource, current_state, dependency_target_state);
 }
 
-void VulkanDependencyHandler::AddStoreUsage(VulkanRenderCommandList* list, std::shared_ptr<RenderResourceStore> store) {
-	auto fnd = resource_store_dependencies_map.find(store);
-	if(fnd == resource_store_dependencies_map.end()) {
-		RenderResourceStoreDependency dep = {};
-		dep.store_version = 0;
-		dep.first_resource_override = -1;
-		fnd = resource_store_dependencies_map.insert_or_assign(store,dep).first;
-	}
-	auto& dep = fnd->second;
-	uint32_t override_index = dep.first_resource_override;
-	while(override_index != -1) {
-		auto& override = individual_resource_dependency_storage[override_index];
-		auto usage = store->IsReadOnly() ? VulkanCommandListDependencyType::READ : VulkanCommandListDependencyType::WRITE | VulkanCommandListDependencyType::READ;
-		AddDependency(list, override.resource, {usage, override.state.expected_state});
-		override_index = override.next_resource;
-	}
-	dep.first_resource_override = -1;
-
-	if(dep.store_version != 0 && !store->IsReadOnly()) {
-		VkMemoryBarrier2 barrier = {};
-		barrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2;
-		barrier.dstAccessMask = store->IsReadOnly() ? VK_ACCESS_MEMORY_READ_BIT : VK_ACCESS_MEMORY_WRITE_BIT;
-		barrier.srcAccessMask = barrier.dstAccessMask; // The store has a single canonical access type
-		barrier.srcStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
-		barrier.dstStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
-
-		VkDependencyInfo info = {};
-		info.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
-		info.memoryBarrierCount = 1;
-		info.pMemoryBarriers = &barrier;
-
-		auto vk_command_list = static_cast<VulkanRenderCommandList*>(list);
-		vkCmdPipelineBarrier2(*vk_command_list->GetVkCommandBuffer(),&info);
-	}
-
-	dep.store_version++;
+void VulkanDependencyHandler::AddStoreUsage(VulkanRenderCommandList* list, std::shared_ptr<RenderResourceStore> store, uint32_t bind_id) {
+	draw_state.AddStoreUsage(list, store, bind_id);
 }
 
 void VulkanDependencyHandler::IterateStoreDependencies(std::shared_ptr<RenderResourceStore> store,
@@ -915,6 +941,17 @@ void VulkanBarrier::AddBarrier(std::shared_ptr<RenderResource> resource,
 	}
 }
 
+void VulkanBarrier::AddGlobalMemoryBarrier(const VulkanDependencyState& source_dependency_state, const VulkanDependencyState& target_dependency_state) {
+	VkMemoryBarrier2 barrier = {};
+	barrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2;
+	barrier.dstAccessMask = VulkanUnitConverter::DependencyToVkAccess(target_dependency_state.access_type);
+	barrier.srcAccessMask = VulkanUnitConverter::DependencyToVkAccess(source_dependency_state.access_type); // The store has a single canonical access type
+	barrier.srcStageMask = VulkanUnitConverter::PipelineStageToVulkanPipelineStage(source_dependency_state.stage);
+	barrier.dstStageMask = VulkanUnitConverter::PipelineStageToVulkanPipelineStage(target_dependency_state.stage);
+
+	global_memory_barriers.push_back(barrier);
+}
+
 void VulkanDrawState::SetMaterialResources(VulkanRenderCommandList* list, std::shared_ptr<Material> material, uint32_t bind_id)
 {
 
@@ -1062,6 +1099,10 @@ void VulkanDependencyHandler::FlushDrawDependencies(VulkanRenderCommandList* lis
 		PrepareDependencyForEmission(list, dep.resource, dep.dependency_target_state);
 	}
 
+	for(auto& store : draw_state.pending_stores) {
+		PrepareStoreDependencyForEmission(list, store);
+	}
+
 	FlushPreparedDependencies(list);
 
 	draw_state.dirty = false;
@@ -1094,6 +1135,17 @@ void VulkanDrawState::InvalidateDrawDependencies(VulkanRenderCommandList* list, 
 bool VulkanDependencyHandler::IsPipelineReady()
 {
 	return draw_state.IsPipelineReady();
+}
+
+void VulkanDependencyHandler::EnsureInitialization(std::shared_ptr<RenderResource> resource) {
+	auto fnd = individual_resource_dependencies_map.find(resource);
+	if(fnd == individual_resource_dependencies_map.end()) {
+		auto dependency = GetNewIndividualResourceRecord(resource);
+		auto& dependency_state = individual_resource_dependency_storage[dependency->second].state;
+		dependency_state.allow_uninitialized = false;
+	} else {
+		individual_resource_dependency_storage[fnd->second].state.allow_uninitialized = false;
+	}
 }
 
 VulkanCommandListDependencyState VulkanDependencyHandler::GetDependency(std::shared_ptr<RenderResource> resource)
@@ -1205,6 +1257,7 @@ void VulkanRenderCommandList::ResetState()
 	scissor_rect = RenderScissorRect({0,0}, {0,0});
 	viewport = RenderViewport({0,0}, {0,0}, 0.0f, 0.0f);
 	timeline_submitted = 0;
+	submission_callbacks.clear();
 }
 
 void VulkanRenderCommandList::ResetCommandBuffer()

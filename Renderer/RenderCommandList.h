@@ -36,6 +36,8 @@ public:
     virtual void Draw(uint32_t index_count, bool use_unsined_short_as_index = false,int index_offset = 0) = 0;
     virtual void DrawArray(uint32_t vertex_count) = 0;
     virtual void SetMaterial(const std::string& name, std::shared_ptr<Material> material) = 0;
+    virtual void SetResourceStore(const std::string& name, std::shared_ptr<RenderResourceStore> resource_store) = 0;
+    virtual void AttachResourceToStoreAfterSubmission(std::shared_ptr<RenderResourceStore> store, std::shared_ptr<RenderResource> resource) = 0;
 
     virtual void DrawSquare(glm::vec2 pos, glm::vec2 size, glm::vec4 color = {1.f,1.f,1.f,1.f}) = 0;
     virtual void DrawSquare(const glm::mat4& transform, glm::vec4 color = { 1.f,1.f,1.f,1.f }) = 0;
