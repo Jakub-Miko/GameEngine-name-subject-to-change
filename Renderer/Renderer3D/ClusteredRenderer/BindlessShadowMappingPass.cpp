@@ -51,7 +51,7 @@ void BindlessShadowMappingPass::Setup(RenderPassResourceDefinnition& setup_build
 
 void BindlessShadowMappingPass::Render(RenderPipelineResourceManager& resource_manager)
 {
-
+	PROFILE("BindlessShadowMappingPass");
 	Render_impl<LightType::DIRECTIONAL>(resource_manager);
 	Render_impl<LightType::POINT>(resource_manager);
 
@@ -99,7 +99,7 @@ void BindlessShadowMappingPass::InitShadowComponent(Entity ent, LightType light_
 		depth_text_desc.sampler = data->depth_sampler_point;
 
 		auto depth_text = RenderResourceManager::Get()->CreateTextureCubemap(depth_text_desc);
-		list->AttachResourceToStoreAfterSubmission(data->cascaded_shadow_map_store, depth_text);
+		list->AttachResourceToStoreAfterSubmission(data->cubemap_shadow_map_store, depth_text);
 		framebuffer_desc.depth_stencil_attachment = { 0, depth_text };
 	}
 

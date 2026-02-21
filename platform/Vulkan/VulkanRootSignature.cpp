@@ -4,6 +4,8 @@
 #include "VulkanUnitConverter.h"
 #include "VulkanRenderDescriptorHeap.h"
 #include "VulkanMaterial.h"
+#include "VulkanRenderResourceStore.h"
+#include "Renderer/RenderResourceManager.h"
 
 VulkanRootSignature::VulkanRootSignature(const RootSignatureDescriptor& descriptor_in) : parameters() , RootSignature(descriptor_in)
 {
@@ -27,7 +29,6 @@ VulkanRootSignature::VulkanRootSignature(const RootSignatureDescriptor& descript
 	int global_descriptors = 1;
 
 	for (auto& desc : descriptor.parameters) {
-		auto type = VulkanUnitConverter::RootParameterTypeToDescritorType(desc.type);
 		switch (desc.type)
 		{
 		case RootParameterType::CONSTANT_BUFFER:
@@ -35,11 +36,14 @@ VulkanRootSignature::VulkanRootSignature(const RootSignatureDescriptor& descript
 		case RootParameterType::TEXTURE_2D_ARRAY:
 		case RootParameterType::TEXTURE_2D_CUBEMAP:
 		case RootParameterType::STORAGE_BUFFER:
+		{
+			auto type = VulkanUnitConverter::RootParameterTypeToDescritorType(desc.type);
 			desc.binding_id = binding_id++;
 			binding.descriptorType = type;
 			binding.binding = desc.binding_id;
 			bindings.push_back(binding);
 			break;
+		}
 		default:
 			break;
 		}
@@ -61,6 +65,12 @@ VulkanRootSignature::VulkanRootSignature(const RootSignatureDescriptor& descript
 			desc.set_id = set_id++;
 			desc.material_template = MaterialManager::Get()->GetMaterialTemplate(desc.name);
 			layouts.push_back(std::static_pointer_cast<VulkanMaterialTemplate>(desc.material_template)->GetAllocator().GetLayout());
+		}
+		if(desc.type == RootParameterType::RESOURCE_STORE) {
+			desc.set_id = set_id++;
+			auto layout = RenderResourceManager::Get()->GetResourceStoreLayout(desc.store_type);
+			auto vk_layout = std::static_pointer_cast<VulkanRenderResourceStoreLayout>(layout);
+			layouts.push_back(vk_layout->GetDescriptorSetLayout());
 		}
 	}
 

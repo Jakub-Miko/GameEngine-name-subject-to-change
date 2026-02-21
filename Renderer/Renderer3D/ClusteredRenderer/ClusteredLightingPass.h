@@ -12,7 +12,8 @@ class ClusteredLightingPass : public RenderPass {
 public:
 	struct internal_data;
 	ClusteredLightingPass(const std::string& input_gbuffer, const std::string& input_gbuffer_material, const std::string& input_clustered_lights, const std::string& input_directional_shadowed_lights,
-		const std::string& input_point_shadowed_lights, const std::string& output_buffer, const std::string& shadow_map_dependency_tag, const std::string& input_directional_shadowed_cascades);
+		const std::string& input_point_shadowed_lights, const std::string& output_buffer, const std::string& shadow_map_dependency_tag, const std::string& input_directional_shadowed_cascades,
+		const std::string& input_point_shadow_maps, const std::string& input_directional_shadow_maps);
 	virtual void Setup(RenderPassResourceDefinnition& setup_builder) override;
 	virtual void Render(RenderPipelineResourceManager& resource_manager) override;
 
@@ -56,6 +57,8 @@ private:
 	std::string input_point_shadowed_lights;
 	std::string output_buffer;
 	std::string shadow_map_dependency_tag;
+	std::string input_point_shadow_maps;
+	std::string input_directional_shadow_maps;
 	OutputModes active_output_mode = OutputModes::NORMAL;
 	internal_data* data;
 };

@@ -50,7 +50,8 @@ public:
 
 	virtual int GetCubemapFaceIndex(RenderCubemapFace face) = 0;
 
-	virtual std::shared_ptr<RenderResourceStore> CreateResourceStore(const RenderResourceStoreDescriptor& store_descriptor) = 0;
+	virtual std::shared_ptr<RenderResourceStoreLayout> GetResourceStoreLayout(RootDescriptorType store_type) = 0;
+	virtual std::shared_ptr<RenderResourceStore> CreateResourceStore(const RenderResourceStoreDescriptor& desc) = 0;
 
 	virtual ~RenderResourceManager() {};
 

@@ -10,6 +10,14 @@ struct RenderResourceStoreDescriptor {
     uint32_t max_resource_count = 1024;
 };
 
+class RenderResourceStoreLayout {
+public:
+    virtual ~RenderResourceStoreLayout() = default;
+protected:
+    RenderResourceStoreLayout(RootDescriptorType resource_descriptor_type) : resource_descriptor_type(resource_descriptor_type) {}
+    RootDescriptorType resource_descriptor_type;
+};
+
 class RenderResourceStore {
 public:
     virtual uint32_t AttachResource(std::shared_ptr<RenderResource> resource) = 0;
@@ -18,8 +26,10 @@ public:
     virtual ~RenderResourceStore() = default;
 
     const RenderResourceStoreDescriptor& GetDescriptor() const { return descriptor; }
+    const std::shared_ptr<RenderResourceStoreLayout> GetStoreLayout() const { return store_layout; }
 protected:
-    RenderResourceStore(const RenderResourceStoreDescriptor& desc) : descriptor(desc) {}
+    RenderResourceStore(std::shared_ptr<RenderResourceStoreLayout> store_layout, const RenderResourceStoreDescriptor& desc) : store_layout(store_layout), descriptor(desc) {}
 
     RenderResourceStoreDescriptor descriptor;
+    std::shared_ptr<RenderResourceStoreLayout> store_layout;
 };

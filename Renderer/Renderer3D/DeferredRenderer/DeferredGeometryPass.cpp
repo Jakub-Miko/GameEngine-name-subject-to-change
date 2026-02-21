@@ -95,6 +95,7 @@ void DeferredGeometryPass::Setup(RenderPassResourceDefinnition& setup_builder)
 
 void DeferredGeometryPass::Render(RenderPipelineResourceManager& resource_manager)
 {
+	PROFILE("DeferredGeometryPass");
 	auto& geometry = resource_manager.GetResource<RenderResourceCollection<Entity>>(input_geometry);
 	auto& out_buffer = resource_manager.GetResource<std::shared_ptr<RenderFrameBufferResource>>(input_buffer);
 	auto queue = Renderer::Get()->GetCommandQueue(); 

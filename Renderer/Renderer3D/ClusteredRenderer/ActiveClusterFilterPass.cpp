@@ -47,6 +47,7 @@ void ActiveClusterFilterPass::Setup(RenderPassResourceDefinnition& setup_builder
 }
 
 void ActiveClusterFilterPass::Render(RenderPipelineResourceManager& resource_manager) {
+    PROFILE("ActiveClusterFilterPass");
     auto gbuffer_material = resource_manager.GetResource<std::shared_ptr<Material>>(input_gbuffer_material);
     auto list = Renderer::Get()->GetRenderCommandList();
 

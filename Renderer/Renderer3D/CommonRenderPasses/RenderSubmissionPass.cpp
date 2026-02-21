@@ -31,6 +31,7 @@ void RenderSubmissionPass::Setup(RenderPassResourceDefinnition& setup_builder)
 
 void RenderSubmissionPass::Render(RenderPipelineResourceManager& resource_manager)
 {
+	PROFILE("RenderSubmissionPass");
 	RenderResourceCollection<Entity> collection_meshes;
 	RenderResourceCollection<Entity> collection_skeletal_meshes;
 	RenderResourceCollection<Entity> collection_lights;

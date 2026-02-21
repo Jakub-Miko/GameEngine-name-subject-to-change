@@ -16,4 +16,5 @@ public:
      * @return false The resource cannot be deleted
      */
     virtual bool Destroy() = 0;
+    virtual ~VulkanDeferredDestruction() = default;
 };

@@ -22,6 +22,16 @@
 			"name" : "GBufferMaterial",
 			"type" : "material",
 			"material_path": "api:GBufferMaterialLayout.json"
+		},
+		{
+			"name" : "point_light_shadow_maps",
+			"type" : "resource_store",
+			"store_type" : "texture_2D_cubemap"
+		},
+		{
+			"name" : "directional_light_shadow_maps",
+			"type" : "resource_store",
+			"store_type" : "texture_2D_array"
 		}
 	]
 
@@ -55,6 +65,8 @@ void main() {
 // #Fragment //------------------------------------------------
 #version 430
 
+#extension GL_EXT_nonuniform_qualifier : require
+
 layout(location = 0) out vec4 color_out;
 
 layout(set = 1, binding = 0) uniform sampler2D Color;
@@ -62,11 +74,17 @@ layout(set = 1, binding = 1) uniform sampler2D Normal;
 layout(set = 1, binding = 2) uniform sampler2D Roughness;
 layout(set = 1, binding = 3) uniform sampler2D DepthBuffer;
 
+layout(set = 2, binding = 0) uniform samplerCubeShadow PointShadowMaps[];
+layout(set = 3, binding = 0) uniform sampler2DArrayShadow DirectionalShadowMaps[];
+
 struct Light {
+	mat4 light_matrix;
 	vec4 position_or_direction_and_radius;
 	vec4 Light_Color;
 	vec4 attenuation_constants;
 	int light_type;
+	uint shadow_index;
+	float light_far_plane;
 };
 
 layout(set = 0, binding = 0) uniform conf {
@@ -107,7 +125,6 @@ vec3 GetFragmentPosition(vec3 coordinates) {
 	float depth = texture(DepthBuffer, coordinates.xy).x;
 
 	float linearized_depth = depth_constant_b / (depth - depth_constant_a);
-
 	return dir * linearized_depth;
 }
 
@@ -154,6 +171,23 @@ vec3 random(uint x)
 	color.b = float(x >> 16 & 255) / 255.0;
 	return color;
 }
+
+float calculate_shadows_point(vec3 view_space_pos, vec3 coords, uint index) {
+	vec4 light_space_pos = lights[index].light_matrix * vec4(view_space_pos, 1.0);
+
+	vec3 normal = texture(Normal, coords.xy).xyz;
+	vec3 bias = normal * 0.02;
+
+	light_space_pos += vec4(bias,0);
+	vec3 light_space_coords = normalize(light_space_pos.xyz);
+	float current_depth = length(light_space_pos) / lights[index].light_far_plane;
+	vec4 shadow_coords = vec4(light_space_coords.xyz * vec3(1,-1,1), current_depth - 0.0002);
+	float shadow_map_depth = texture(PointShadowMaps[lights[index].shadow_index], shadow_coords);
+
+	return shadow_map_depth;
+}
+
+
 
 void main() {
 	vec3 coords = vec3((gl_FragCoord.x * pixel_size.x), (gl_FragCoord.y * pixel_size.y), 0.0);
@@ -204,7 +238,11 @@ void main() {
 		float contribution = diffuse_contribution + specular_contribution;
 
 		vec4 Light_Color = lights[light_index].Light_Color;
-		color_accum += vec3(color.xyz * Light_Color.xyz * attenuation_factor * Light_Color.w * contribution);
+		float shadow_contrib = 1.0f;
+		if(lights[light_index].shadow_index != ~uint(0)) {
+			shadow_contrib = calculate_shadows_point(view_space_pos, coords, light_index);
+		}
+		color_accum += vec3(color.xyz * Light_Color.xyz * attenuation_factor * Light_Color.w * contribution * shadow_contrib);
 	}
 	color_out = vec4(color_accum, 1.0);
 

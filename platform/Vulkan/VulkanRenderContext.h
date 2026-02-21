@@ -31,6 +31,12 @@ public:
 	virtual void Present() override;
 
 
+	struct BindlessLimits {
+		uint32_t max_bindless_textures = 0;
+		uint32_t max_bindless_uniform_buffers = 0;
+		uint32_t max_bindless_storage_buffers = 0;
+	};
+
 	uint64_t GetCurrentGpuTimelineValue();
 	uint64_t GetCurrentCpuTimelineValue();
 	VmaAllocator& GetVmaAllocator() { return allocator;  }
@@ -41,6 +47,8 @@ public:
 	void RequestExtension(const std::string& extension);
 	void RequestExtensions(const char** extensions, int count);
 	std::vector<const char*> GetExtensions();
+	const VkPhysicalDeviceDescriptorIndexingProperties& GetIndexingProperties() const { return indexing_properties; }
+	const BindlessLimits& GetBindlessLimits() const { return bindless_limits; }
 
 protected:
 
@@ -56,4 +64,6 @@ private:
 	VkDevice vk_device;
 	vkb::Device vkb_device;
 	VmaAllocator allocator;
+	VkPhysicalDeviceDescriptorIndexingProperties indexing_properties;
+	BindlessLimits bindless_limits;
 };

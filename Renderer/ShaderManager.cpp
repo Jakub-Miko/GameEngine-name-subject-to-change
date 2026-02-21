@@ -12,6 +12,15 @@
 #include <platform/Vulkan/VulkanShaderManager.h>
 #endif
 
+NLOHMANN_JSON_SERIALIZE_ENUM(RootDescriptorType,
+	{
+	{RootDescriptorType::CONSTANT_BUFFER, "constant_buffer"},
+	{RootDescriptorType::STORAGE_BUFFER, "storage_buffer"},
+	{RootDescriptorType::TEXTURE_2D, "texture_2D"},
+	{RootDescriptorType::TEXTURE_2D_ARRAY, "texture_2D_array"},
+	{RootDescriptorType::TEXTURE_2D_CUBEMAP, "texture_2D_cubemap"}
+	});
+
 ShaderManager* ShaderManager::instance = nullptr;
 
 void ShaderManager::Initialize()
@@ -156,7 +165,12 @@ RootSignature* ShaderManager::ParseRootSignature(const std::string& signature_st
 				desc.parameters.push_back(RootSignatureDescriptorElement(name, RootParameterType::TEXTURE_2D_CUBEMAP));
 				mapping_table.insert(std::make_pair(name, RootMappingEntry(sig_entry_num)));
 			} else if (type == "resource_store") {
-				desc.parameters.push_back(RootSignatureDescriptorElement(name, RootParameterType::RESOURCE_STORE));
+				if(!json_sig_element.contains("store_type"))
+					throw std::runtime_error("Resource store parameter must contain store_type");
+				RootDescriptorType store_type = json_sig_element["store_type"].get<RootDescriptorType>();
+				RootSignatureDescriptorElement element(name, RootParameterType::RESOURCE_STORE);
+				element.store_type = store_type;
+				desc.parameters.push_back(element);
 				mapping_table.insert(std::make_pair(name, RootMappingEntry(sig_entry_num)));
 			}
 			else {

@@ -262,10 +262,11 @@ void ClusteredLightingPass::InitPassData() {
 
 
 ClusteredLightingPass::ClusteredLightingPass(const std::string& input_gbuffer, const std::string& input_gbuffer_material, const std::string& input_clustered_lights, const std::string& input_directional_shadowed_lights,
-	const std::string& input_point_shadowed_lights, const std::string& output_buffer, const std::string& shadow_map_dependency_tag, const std::string&  input_directional_shadowed_cascades)
+	const std::string& input_point_shadowed_lights, const std::string& output_buffer, const std::string& shadow_map_dependency_tag, const std::string&  input_directional_shadowed_cascades,
+	const std::string& input_point_shadow_maps, const std::string& input_directional_shadow_maps)
 	: input_gbuffer(input_gbuffer), output_buffer(output_buffer), input_clustered_lights(input_clustered_lights), input_directional_shadowed_lights(input_directional_shadowed_lights),
 	input_point_shadowed_lights(input_point_shadowed_lights), shadow_map_dependency_tag(shadow_map_dependency_tag), input_directional_shadowed_cascades(input_directional_shadowed_cascades),
-	input_gbuffer_material(input_gbuffer_material)
+	input_gbuffer_material(input_gbuffer_material), input_directional_shadow_maps(input_directional_shadow_maps), input_point_shadow_maps(input_point_shadow_maps)
 {
 	data = new internal_data;
 	InitPassData();
@@ -286,6 +287,7 @@ void ClusteredLightingPass::Setup(RenderPassResourceDefinnition& setup_builder)
 
 void ClusteredLightingPass::Render(RenderPipelineResourceManager& resource_manager)
 {
+	PROFILE("ClusteredLightingPass");
 	render_props props;
 	auto& gbuffer = resource_manager.GetResource<std::shared_ptr<RenderFrameBufferResource>>(input_gbuffer);
 	auto& world = Application::GetWorld();
@@ -315,7 +317,6 @@ void ClusteredLightingPass::Render(RenderPipelineResourceManager& resource_manag
 	RenderResourceManager::Get()->CopyFrameBufferDepthAttachment(list, gbuffer, data->output_buffer_resource);
 	RenderLights(resource_manager, list, camera, props);
 	RenderShadowedLightsDirectional(resource_manager, list, camera, props);
-	RenderShadowedLightsPoint(resource_manager, list, camera, props);
 	RenderSkylights(resource_manager, list, camera, props);
 
 	queue->ExecuteRenderCommandList(list);
@@ -337,6 +338,8 @@ ClusteredLightingPass::~ClusteredLightingPass()
 void ClusteredLightingPass::RenderLights(RenderPipelineResourceManager& resource_manager,std::shared_ptr<RenderCommandList>  list, const CameraComponent& camera,const render_props& props)
 {
 	auto& clustered_lights = resource_manager.GetResource<ClusteredLightLists>(input_clustered_lights);
+	auto& point_shadow_maps = resource_manager.GetPersistentResource<std::shared_ptr<RenderResourceStore>>(input_point_shadow_maps);
+	auto& directional_shadow_maps = resource_manager.GetPersistentResource<std::shared_ptr<RenderResourceStore>>(input_directional_shadow_maps);
 
 	if(clustered_lights.num_of_lights == 0) return;
 
@@ -365,6 +368,8 @@ void ClusteredLightingPass::RenderLights(RenderPipelineResourceManager& resource
 	list->SetStorageBuffer("cluster_buffer", clustered_lights.cluster_buffer);
 	list->SetVertexBuffer(data->card_mesh->GetVertexBuffer());
 	list->SetIndexBuffer(data->card_mesh->GetIndexBuffer());
+	list->SetResourceStore("point_light_shadow_maps", point_shadow_maps);
+	list->SetResourceStore("directional_light_shadow_maps", point_shadow_maps);
 	list->Draw(data->card_mesh->GetIndexCount());
 }
 

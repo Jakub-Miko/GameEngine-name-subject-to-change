@@ -1,4 +1,4 @@
-#include "VulkanRenderCommandQueue.h"
+ #include "VulkanRenderCommandQueue.h"
 #include "VulkanRenderCommandList.h"
 #include "VulkanRenderContext.h"
 #include "VulkanRenderFence.h"
@@ -110,14 +110,14 @@ void VulkanRenderCommandQueue::ExecuteRenderCommandList(std::shared_ptr<RenderCo
 	vk_command_list->OutsideRenderPass(); // Make sure to end the render pass before submission;
 	vkEndCommandBuffer(*vk_command_list->GetVkCommandBuffer());
 
-	vkQueueSubmit(vk_queue, 1, &info, NULL);
-	vk_command_list->ResetState(); // Reset all handles held by the abstraction since the abstraction no longer manages them after submit, but retain the actual command buffer.
-	vk_command_list->timeline_submitted = value; // Make sure to update the timeline value after state reset otherwise it will be reset to 0 and the the Render API will think it is not pending(Which can apparently cause AMD drivers to crash)
-
 	for(auto& callback : vk_command_list->submission_callbacks) {
 		callback();
 	}
 	vk_command_list->submission_callbacks.clear();
+	vkQueueSubmit(vk_queue, 1, &info, NULL);
+	vk_command_list->ResetState(); // Reset all handles held by the abstraction since the abstraction no longer manages them after submit, but retain the actual command buffer.
+	vk_command_list->timeline_submitted = value; // Make sure to update the timeline value after state reset otherwise it will be reset to 0 and the the Render API will think it is not pending(Which can apparently cause AMD drivers to crash)
+
 
 	submit_mutex.unlock();
 }

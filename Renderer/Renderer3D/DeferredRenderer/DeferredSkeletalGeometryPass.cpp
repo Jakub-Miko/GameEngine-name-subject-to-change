@@ -73,6 +73,7 @@ void DeferredSkeletalGeometryPass::Setup(RenderPassResourceDefinnition& setup_bu
 
 void DeferredSkeletalGeometryPass::Render(RenderPipelineResourceManager& resource_manager)
 {
+	PROFILE("DeferredSkeletalGeometryPass");
 	auto& geometry = resource_manager.GetResource<RenderResourceCollection<Entity>>(input_geometry);
 	auto& out_buffer = resource_manager.GetResource<std::shared_ptr<RenderFrameBufferResource>>(input_buffer);
 	auto queue = Renderer::Get()->GetCommandQueue(); 

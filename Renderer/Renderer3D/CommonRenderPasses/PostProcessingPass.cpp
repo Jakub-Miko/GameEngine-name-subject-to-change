@@ -90,6 +90,7 @@ void PostProcessingPass::Setup(RenderPassResourceDefinnition& setup_builder)
 
 void PostProcessingPass::Render(RenderPipelineResourceManager& resource_manager)
 {
+	PROFILE("PostProcessingPass");
 	auto frame_buffer = resource_manager.GetResource<std::shared_ptr<RenderFrameBufferResource>>(input_buffer_name);
 
 	auto queue = Renderer::Get()->GetCommandQueue();

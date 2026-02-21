@@ -449,6 +449,12 @@ void VulkanRenderCommandList::SetResourceStore(const std::string& name,
 		throw std::runtime_error("The parameter " + name + " is not a resource store.\n");
 	}
 	dependency_handler.AddStoreUsage(this,resource_store, param_id);
+
+	auto desc_set = std::static_pointer_cast<VulkanRenderResourceStore>(resource_store)->GetDescriptorSet();
+
+	auto pipeline_bind_point = std::static_pointer_cast<VulkanPipeline>(current_pipeline->GetPipelineNativeExtension())->GetBindPoint();
+
+	vkCmdBindDescriptorSets(command_buffer, pipeline_bind_point, sig->GetPipelineLayout(), param.set_id, 1, &desc_set, 0, NULL);
 }
 
 void VulkanRenderCommandList::AttachResourceToStoreAfterSubmission(std::shared_ptr<RenderResourceStore> store,

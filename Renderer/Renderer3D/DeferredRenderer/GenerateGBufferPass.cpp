@@ -123,6 +123,7 @@ void GenerateGBufferPass::Setup(RenderPassResourceDefinnition& setup_builder)
 
 void GenerateGBufferPass::Render(RenderPipelineResourceManager& resource_manager)
 {
+	PROFILE("GBufferSetupPass");
 	auto queue = Renderer::Get()->GetCommandQueue();
 	auto list = Renderer::Get()->GetRenderCommandList();
 	list->SetRenderTarget(data->output_buffer_resource);

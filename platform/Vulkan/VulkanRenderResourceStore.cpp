@@ -1,14 +1,70 @@
 #include "VulkanRenderResourceStore.h"
 
 #include "VulkanRenderContext.h"
+#include "VulkanRenderResourceManager.h"
 #include "VulkanUnitConverter.h"
+
+VulkanRenderResourceStoreLayout::VulkanRenderResourceStoreLayout(const RootDescriptorType resource_descriptor_type) : RenderResourceStoreLayout(resource_descriptor_type) {
+    DEFINE_VK_INSTANCE(context);
+
+    auto& limits = context->GetBindlessLimits();
+
+    uint64_t bindless_limit;
+
+    switch(resource_descriptor_type) {
+    case RootDescriptorType::CONSTANT_BUFFER:
+        bindless_limit = limits.max_bindless_uniform_buffers;
+        break;
+    case RootDescriptorType::TEXTURE_2D:
+    case RootDescriptorType::TEXTURE_2D_ARRAY:
+    case RootDescriptorType::TEXTURE_2D_CUBEMAP:
+        bindless_limit = limits.max_bindless_textures;
+        break;
+    case RootDescriptorType::STORAGE_BUFFER:
+        bindless_limit = limits.max_bindless_storage_buffers;
+        break;
+    default:
+        bindless_limit = 1024;
+    }
+
+    bindless_limit /= MAX_BINDLESS_DESCRIPTOR_SET_IN_USE;
+    bindless_limit -= 30;
+
+	VkDescriptorSetLayoutBinding layout_binding = {};
+	layout_binding.binding = 0;
+	layout_binding.descriptorType = VulkanUnitConverter::DescriptorTypeToVkDescriptorType(resource_descriptor_type);
+	layout_binding.descriptorCount = bindless_limit;
+	layout_binding.stageFlags = VK_SHADER_STAGE_ALL;
+
+	VkDescriptorBindingFlags binding_flags = VkDescriptorBindingFlagBits::VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT
+		| VkDescriptorBindingFlagBits::VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT
+		| VkDescriptorBindingFlagBits::VK_DESCRIPTOR_BINDING_UPDATE_UNUSED_WHILE_PENDING_BIT_EXT
+        | VkDescriptorBindingFlagBits::VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT;
+
+	VkDescriptorSetLayoutBindingFlagsCreateInfo layout_binding_flags = {};
+	layout_binding_flags.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
+	layout_binding_flags.bindingCount = 1;
+	layout_binding_flags.pBindingFlags = &binding_flags;
+
+	VkDescriptorSetLayoutCreateInfo layout_info = {};
+	layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	layout_info.bindingCount = 1;
+	layout_info.pBindings = &layout_binding;
+	layout_info.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT;
+	layout_info.pNext = &layout_binding_flags;
+
+	vkCreateDescriptorSetLayout(context->GetVkDevice(), &layout_info, nullptr, &descriptor_set_layout);
+}
+
+VulkanRenderResourceStoreLayout::~VulkanRenderResourceStoreLayout() {
+    DEFINE_VK_INSTANCE(context);
+    vkDestroyDescriptorSetLayout(context->GetVkDevice(), descriptor_set_layout, NULL);
+}
 
 bool VulkanRenderResourceStore::Destroy() {
     DEFINE_VK_INSTANCE(context)
     vkDestroyDescriptorPool(context->GetVkDevice(), descriptor_pool, NULL);
-    vkDestroyDescriptorSetLayout(context->GetVkDevice(), descriptor_set_layout, NULL);
     descriptor_pool = VK_NULL_HANDLE;
-    descriptor_set_layout = VK_NULL_HANDLE;
     descriptor_set = VK_NULL_HANDLE;
     return true;
 }
@@ -16,6 +72,7 @@ bool VulkanRenderResourceStore::Destroy() {
 uint32_t VulkanRenderResourceStore::AttachResource(std::shared_ptr<RenderResource> resource) {
     DEFINE_VK_INSTANCE(context);
     auto vk_res =  static_cast<VulkanRenderResource*>(resource->GetExtensionData());
+    auto& descriptor = GetDescriptor();
     if(resource->GetResourceStore()) {
         auto existing_binding = std::static_pointer_cast<VulkanRenderResourceStore>(resource->GetResourceStore());
         if(existing_binding.get() == this) {
@@ -115,6 +172,7 @@ bool VulkanRenderResourceStore::DeattachResource(std::shared_ptr<RenderResource>
 }
 
 bool VulkanRenderResourceStore::IsReadOnly() {
+    auto& descriptor = GetDescriptor();
     switch(descriptor.resource_descriptor_type) {
     case RootDescriptorType::CONSTANT_BUFFER:
     case RootDescriptorType::STORAGE_BUFFER:

@@ -7,6 +7,7 @@
 #include "Renderer/Renderer3D/RenderResourceCollection.h"
 #include "World/Components/CameraComponent.h"
 #include "World/Components/LightComponent.h"
+#include "World/Components/ShadowCasterComponent.h"
 
 struct ClusteredLightCullingPass::internal_data {
     std::unordered_map<char, std::shared_ptr<Pipeline>> pipelines;
@@ -35,8 +36,10 @@ struct CullingData {
     int32_t success_flag = 1;
 };
 
-ClusteredLightCullingPass::ClusteredLightCullingPass(const std::string& input_global_light_list_name, const std::string& output_clustered_light_lists_name, const std::string& active_cluster_list)
-    : input_global_light_list_name(input_global_light_list_name), output_clustered_light_lists_name(output_clustered_light_lists_name), data(new internal_data), active_cluster_list(active_cluster_list)
+ClusteredLightCullingPass::ClusteredLightCullingPass(const std::string& input_global_light_list_name, const std::string& input_shadowed_light_list_name,
+    const std::string& output_clustered_light_lists_name, const std::string& active_cluster_list)
+    : input_global_light_list_name(input_global_light_list_name), output_clustered_light_lists_name(output_clustered_light_lists_name),
+    data(new internal_data), active_cluster_list(active_cluster_list), input_shadowed_light_list_name(input_shadowed_light_list_name)
 {
     InitPass();
 }
@@ -91,6 +94,7 @@ std::shared_ptr<Pipeline> ClusteredLightCullingPass::GetPipeline() {
 
 void ClusteredLightCullingPass::Setup(RenderPassResourceDefinnition& setup_builder) {
     setup_builder.AddResource<RenderResourceCollection<Entity>>(input_global_light_list_name, RenderPassResourceDescriptor_Access::READ);
+    setup_builder.AddResource<RenderResourceCollection<Entity>>(input_shadowed_light_list_name, RenderPassResourceDescriptor_Access::READ);
     setup_builder.AddResource<ClusteredLightLists>(output_clustered_light_lists_name, RenderPassResourceDescriptor_Access::WRITE);
     setup_builder.AddResource<std::shared_ptr<RenderBufferResource>>(active_cluster_list, RenderPassResourceDescriptor_Access::READ);
     setup_builder.GetProperties()->SetProperty("Cull lights with frustum planes", true);
@@ -99,9 +103,13 @@ void ClusteredLightCullingPass::Setup(RenderPassResourceDefinnition& setup_build
 }
 
 void ClusteredLightCullingPass::Render(RenderPipelineResourceManager& resource_manager) {
-    auto global_light_list = resource_manager.GetResource<RenderResourceCollection<Entity>>(input_global_light_list_name);
+    PROFILE("ClusteredLightCullingPass");
+    RenderResourceCollection<Entity> global_light_list[] =  {
+        resource_manager.GetResource<RenderResourceCollection<Entity>>(input_global_light_list_name),
+        resource_manager.GetResource<RenderResourceCollection<Entity>>(input_shadowed_light_list_name)
+    };
     auto active_clusters = resource_manager.GetResource<std::shared_ptr<RenderBufferResource>>(active_cluster_list);
-    if(global_light_list.resources.empty()) {
+    if(global_light_list[0].resources.empty() && global_light_list[1].resources.empty()) {
         ClusteredLightLists empty_lists = {};
         resource_manager.SetResource<ClusteredLightLists>(output_clustered_light_lists_name, empty_lists);
         return;
@@ -119,25 +127,41 @@ void ClusteredLightCullingPass::Render(RenderPipelineResourceManager& resource_m
     auto& camera_props = world.GetComponent<CameraComponent>(camera);
     auto list = Renderer::Get()->GetRenderCommandList();
     std::vector<ClusteredLightData> light_positions_and_radii;
-    light_positions_and_radii.reserve(global_light_list.resources.size());
+    light_positions_and_radii.reserve(global_light_list[0].resources.size() + global_light_list[1].resources.size());
 
-    for(auto entity : global_light_list.resources ) {
-        auto transform = glm::inverse(camera_trans.TransformMatrix) * world.GetComponent<TransformComponent>(entity).TransformMatrix;
-        auto& light = world.GetComponent<LightComponent>(entity);
-        ClusteredLightData light_data = {};
-        light_data.attenuation_constants = glm::vec4(light.GetAttenuation(),1.0);
-        light_data.Light_Color = light.GetLightColor();
-        light_data.light_type = (int)light.type;
+    auto inverse_view = Application::GetWorld().GetComponent<TransformComponent>(Application::GetWorld().GetPrimaryEntity()).TransformMatrix;
 
-        switch(light.type) {
-        case LightType::DIRECTIONAL:
+    for(auto& list : global_light_list) {
+        for(auto entity : list.resources) {
+            auto transform = glm::inverse(camera_trans.TransformMatrix) * world.GetComponent<TransformComponent>(entity).TransformMatrix;
+            auto& light = world.GetComponent<LightComponent>(entity);
+            ClusteredLightData light_data = {};
+            light_data.attenuation_constants = glm::vec4(light.GetAttenuation(),1.0);
+            light_data.Light_Color = light.GetLightColor();
+            light_data.light_type = (int)light.type;
+            if(world.HasComponent<ShadowCasterComponent>(entity)) {
+                auto& shadow = world.GetComponent<ShadowCasterComponent>(entity);
+                light_data.light_matrix = shadow.light_view_matrix * inverse_view;
+                if(shadow.shadow_map) {
+                    light_data.shadow_index = shadow.shadow_map->GetBufferDescriptor().depth_stencil_attachment.resource->GetResourceStoreIndex();
+                    light_data.light_far_plane = shadow.far_plane;
+                } else {
+                    light_data.shadow_index = UINT32_MAX;
+                }
+            } else {
+                light_data.shadow_index = UINT32_MAX;
+            }
+
+            switch(light.type) {
+            case LightType::DIRECTIONAL:
                 light_data.position_or_direction_and_radius = glm::vec4(glm::mat3(transform) * glm::vec3(0.0f, 0.0f, -1.0f), 0.0f);
                 break;
             case LightType::POINT:
                 light_data.position_or_direction_and_radius = glm::vec4(glm::vec3(transform[3]), light.CalcRadiusFromAttenuation());
             default: break;
+            }
+            light_positions_and_radii.push_back(light_data);
         }
-        light_positions_and_radii.push_back(light_data);
     }
 
     CullingData culling_data = {};

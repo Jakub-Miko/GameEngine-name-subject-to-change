@@ -8,6 +8,8 @@
 #include "Renderer/MaterialManager.h"
 #include <string>
 
+#include "RenderResourceStore.h"
+
 
 //struct RootDescriptorTableRange {
 //	RootDescriptorTableRange() : type(RootDescriptorType::CONSTANT_BUFFER), size(0), name("Unknown"), individual_names() {}
@@ -32,12 +34,13 @@ struct RootSignatureDescriptorElement {
 	RootSignatureDescriptorElement(const RootSignatureDescriptorElement& other) = default;
 
 	RootParameterType type = RootParameterType::CONSTANT_BUFFER;
-	std::shared_ptr<MaterialTemplate> material_template = nullptr;
 	std::string name = "";
 	union {
 		uint32_t binding_id = 0;
 		uint32_t set_id;
 	};
+	std::shared_ptr<MaterialTemplate> material_template = nullptr;
+	RootDescriptorType store_type = RootDescriptorType::TEXTURE_2D;
 };
 
 struct RootSignatureDescriptor {

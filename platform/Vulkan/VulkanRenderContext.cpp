@@ -9,6 +9,7 @@
 #include "Window.h"
 #include "VulkanUnitConverter.h"
 #include "VulkanRenderSurface.h"
+#include "dependencies/bullet/examples/ExampleBrowser/GwenGUISupport/GwenProfileWindow.h"
 
 PFN_vkCmdPushDescriptorSetKHR vkCmdPushDescriptorSet_KHR = nullptr;
 
@@ -101,6 +102,7 @@ void VulkanRenderContext::PreInit()
 	features_12.descriptorBindingUniformBufferUpdateAfterBind = true;
 	features_12.descriptorBindingPartiallyBound = true;
 	features_12.descriptorBindingUpdateUnusedWhilePending = true;
+	features_12.runtimeDescriptorArray = true;
 
 	VkPhysicalDeviceVulkan13Features features_13 = {};
 	features_13.dynamicRendering = true;
@@ -145,7 +147,23 @@ void VulkanRenderContext::PreInit()
 	SetRenderQueue(queue, RenderQueueTypes::CopyQueue);
 	SetRenderQueue(queue, RenderQueueTypes::ComputeQueue);
 
+	VkPhysicalDeviceProperties2 properties = {};
+	properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+	properties.pNext = &indexing_properties;
 
+	indexing_properties = {};
+	indexing_properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_PROPERTIES;
+
+	vkGetPhysicalDeviceProperties2(device.value().physical_device, &properties);
+
+	bindless_limits.max_bindless_storage_buffers = std::min(indexing_properties.maxDescriptorSetUpdateAfterBindStorageBuffers,
+		indexing_properties.maxPerStageDescriptorUpdateAfterBindStorageBuffers);
+
+	bindless_limits.max_bindless_uniform_buffers = std::min(indexing_properties.maxDescriptorSetUpdateAfterBindUniformBuffers,
+		indexing_properties.maxPerStageDescriptorUpdateAfterBindUniformBuffers);
+
+	bindless_limits.max_bindless_textures = std::min(indexing_properties.maxDescriptorSetUpdateAfterBindSampledImages,
+		indexing_properties.maxPerStageDescriptorUpdateAfterBindSampledImages);
 
 	VmaAllocatorCreateInfo allocator_info = {};
 	allocator_info.device = vk_device;

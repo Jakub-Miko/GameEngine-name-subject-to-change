@@ -5,6 +5,19 @@
 #include "VulkanDeferredDestruction.h"
 #include "VulkanRenderResource.h"
 
+class VulkanRenderResourceStoreLayout : public RenderResourceStoreLayout {
+public:
+    VulkanRenderResourceStoreLayout(RootDescriptorType resource_descriptor_type);
+    ~VulkanRenderResourceStoreLayout() override;
+
+    VkDescriptorSetLayout GetDescriptorSetLayout() const {
+        return descriptor_set_layout;
+    }
+
+private:
+    VkDescriptorSetLayout descriptor_set_layout = VK_NULL_HANDLE;
+};
+
 class VulkanRenderResourceStore : public RenderResourceStore, public VulkanDeferredDestruction, public std::enable_shared_from_this<VulkanRenderResourceStore> {
 public:
     bool Destroy() override;
@@ -21,13 +34,16 @@ public:
 
     ~VulkanRenderResourceStore() override = default;
 
+    VkDescriptorSet GetDescriptorSet() const {
+        return descriptor_set;
+    }
+
 private:
-    friend class VulkanRenderResourceManager;
-    explicit VulkanRenderResourceStore(const RenderResourceStoreDescriptor& desc) : RenderResourceStore(desc) {}
+    friend VulkanRenderResourceManager;
+    explicit VulkanRenderResourceStore(std::shared_ptr<RenderResourceStoreLayout> store_layout, const RenderResourceStoreDescriptor& descriptor) : RenderResourceStore(store_layout, descriptor) {}
 
     VkDescriptorSet descriptor_set = VK_NULL_HANDLE;
     VkDescriptorPool descriptor_pool = VK_NULL_HANDLE;
-    VkDescriptorSetLayout descriptor_set_layout = VK_NULL_HANDLE;
     uint32_t last_allocated_binding = 0;
     std::unordered_map<uint32_t,std::shared_ptr<RenderResource>> resource_bindings;
     std::vector<uint32_t> free_indices;

@@ -13,6 +13,10 @@
 #include <mutex>
 #include <variant>
 
+#include "VulkanRenderResourceStore.h"
+
+#define MAX_BINDLESS_DESCRIPTOR_SET_IN_USE 4
+
 class VulkanRenderResourceManager : public RenderResourceManager {
 public:
 
@@ -43,7 +47,9 @@ public:
 		size_t offset_x, size_t offset_y, int level = 0) override;
 
 	virtual std::shared_ptr<RenderFrameBufferResource> CreateFrameBuffer(const RenderFrameBufferDescriptor& buffer_desc) override;
-	virtual std::shared_ptr<RenderResourceStore> CreateResourceStore(const RenderResourceStoreDescriptor& store_descriptor) override;
+
+	virtual std::shared_ptr<RenderResourceStoreLayout> GetResourceStoreLayout(RootDescriptorType store_type) override;
+	virtual std::shared_ptr<RenderResourceStore> CreateResourceStore(const RenderResourceStoreDescriptor& desc) override;
 
 	void CreateConstantBufferDescriptor(const VulkanRenderDescriptorTable& table, int index, std::shared_ptr<RenderBufferResource> resource);
 	void CreateTexture2DDescriptor(const VulkanRenderDescriptorTable& table, int index, std::shared_ptr<RenderTexture2DResource> resource);
@@ -103,4 +109,5 @@ private:
 	std::queue<deletion_item> deletion_queue;
 	std::mutex staging_buffer_map_mutex;
 	std::multimap<size_t, RenderBufferResource*> staging_buffer_map;
+	std::unordered_map<RootDescriptorType, std::shared_ptr<VulkanRenderResourceStoreLayout>> store_layouts;
 };

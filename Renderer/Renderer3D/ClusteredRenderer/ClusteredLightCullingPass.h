@@ -16,16 +16,19 @@ struct ClusteredLightLists {
 };
 
 struct ClusteredLightData {
+    glm::mat4 light_matrix;
     glm::vec4 position_or_direction_and_radius;
     glm::vec4 Light_Color;
     glm::vec4 attenuation_constants;
     int light_type;
-    uint8_t padding[12];
+    uint32_t shadow_index;
+    float light_far_plane;
+    uint8_t padding[4];
 };
 
 class ClusteredLightCullingPass : public RenderPass {
 public:
-    explicit ClusteredLightCullingPass(const std::string& input_global_light_list_name, const std::string& output_clustered_light_lists_name, const std::string& active_cluster_list);
+    explicit ClusteredLightCullingPass(const std::string& input_global_light_list_name, const std::string& input_shadowed_light_list_name,  const std::string& output_clustered_light_lists_name, const std::string& active_cluster_list);
 
     ~ClusteredLightCullingPass() override = default;
 
@@ -40,6 +43,7 @@ private:
 
     std::string active_cluster_list;
     std::string input_global_light_list_name;
+    std::string input_shadowed_light_list_name;
     std::string output_clustered_light_lists_name;
     std::unique_ptr<internal_data> data;
 };
