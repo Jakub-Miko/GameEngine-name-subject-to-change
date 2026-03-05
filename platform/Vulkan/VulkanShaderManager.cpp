@@ -92,6 +92,7 @@ VkShaderModule VulkanShaderManager::CompileShaderStage(VulkanShaderStages type, 
 	shaderc_compile_options_set_vulkan_rules_relaxed(options, true);
 	shaderc_compile_options_set_auto_bind_uniforms(options, true);
 	shaderc_compile_options_set_auto_map_locations(options, true);
+
 	for(auto& def: compiler_definitions) {
 		auto equal_sign = def.find('=');
 		if(equal_sign != std::string::npos) {
@@ -105,6 +106,8 @@ VkShaderModule VulkanShaderManager::CompileShaderStage(VulkanShaderStages type, 
 	shaderc_compile_options_set_source_language(options, shaderc_source_language_glsl);
 #ifndef NDEBUG
 	shaderc_compile_options_set_generate_debug_info(options);
+	shaderc_compile_options_set_optimization_level(options, shaderc_optimization_level_zero);
+
 
 #endif
 	shaderc_compiler_t compiler = shaderc_compiler_initialize();

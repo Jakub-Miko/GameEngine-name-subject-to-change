@@ -1,9 +1,9 @@
 #pragma once
 #include "Renderer/Renderer3D/RenderPass.h"
 
-#define CLUSTER_GRID_X 16
-#define CLUSTER_GRID_Y 16
-#define CLUSTER_GRID_Z 16
+#define CLUSTER_GRID_X 64
+#define CLUSTER_GRID_Y 40
+#define CLUSTER_GRID_Z 128
 
 class Pipeline;
 

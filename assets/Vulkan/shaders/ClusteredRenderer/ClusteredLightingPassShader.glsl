@@ -132,7 +132,7 @@ vec3 GetFragmentPosition(vec3 coordinates) {
 uint get_depth_slice_index(float depth) {
 	float scale = cluster_grid_size.z / (log2(far_plane/near_plane));
 	float bias = -scale*log2(near_plane);
-	return int(max(log2(depth)*scale + bias, 0.0f));
+	return int(min(max(log2(depth)*scale + bias, 0.0f), cluster_grid_size.z - 1));
 }
 
 uint pixel_depth_slice(vec3 coords) {
@@ -186,8 +186,6 @@ float calculate_shadows_point(vec3 view_space_pos, vec3 coords, uint index) {
 
 	return shadow_map_depth;
 }
-
-
 
 void main() {
 	vec3 coords = vec3((gl_FragCoord.x * pixel_size.x), (gl_FragCoord.y * pixel_size.y), 0.0);

@@ -45,7 +45,7 @@ private:
     VkDescriptorSet descriptor_set = VK_NULL_HANDLE;
     VkDescriptorPool descriptor_pool = VK_NULL_HANDLE;
     uint32_t last_allocated_binding = 0;
-    std::unordered_map<uint32_t,std::shared_ptr<RenderResource>> resource_bindings;
+    std::unordered_map<uint32_t,std::weak_ptr<RenderResource>> resource_bindings;
     std::vector<uint32_t> free_indices;
     uint64_t timeline = 0;
 };

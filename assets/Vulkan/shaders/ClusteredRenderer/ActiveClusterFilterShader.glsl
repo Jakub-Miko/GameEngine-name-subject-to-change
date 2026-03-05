@@ -22,7 +22,7 @@
 */
 // #Compute //--------------------------------------------------
 #version 430
-
+#extension GL_EXT_debug_printf : enable
 layout(set = 0, binding = 0) uniform config_buffer
 {
 	uvec3 cluster_dimensions;
@@ -46,7 +46,7 @@ layout(set = 1, binding = 3) uniform sampler2D DepthBuffer;
 
 layout(local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
 
-#define BITMASK_SIZE 64
+#define BITMASK_SIZE 128
 struct TileMask {
 	uint mask_element[BITMASK_SIZE >> 5];
 };
@@ -56,7 +56,7 @@ shared TileMask tile_mask;
 uint get_depth_slice_index(float depth) {
 	float scale = cluster_dimensions.z / (log2(far_plane/near_plane));
 	float bias = -scale*log2(near_plane);
-	return int(max(log2(depth)*scale + bias, 0.0f));
+	return int(min(max(log2(depth)*scale + bias, 0.0f), cluster_dimensions.z - 1));
 }
 
 void main() {
@@ -70,7 +70,7 @@ void main() {
 	uvec2 tile_index = uvec2(gl_WorkGroupID.xy);
 	uvec2 tile_size = uvec2(ceil(vec2(window_size) / vec2(cluster_dimensions)));
 	uint pixel_count = tile_size.x * tile_size.y;
-
+	debugPrintfEXT("count: %d\n", pixel_count);
 	for(uint i = gl_LocalInvocationIndex; i < pixel_count ; i += gl_WorkGroupSize.x) {
 		uvec2 coords = (tile_size * tile_index) + uvec2(i % tile_size.x, i / tile_size.x);
 
@@ -98,7 +98,7 @@ void main() {
 		uint y_offset = uint(ceil(log2(cluster_dimensions.x)));
 		uint z_offset = y_offset + uint(ceil(log2(cluster_dimensions.y)));
 		for(int i = 0; i < BITMASK_SIZE;i++) {
-			if((tile_mask.mask_element[i >> 5] & 1u << (i & 31u)) != 0) {
+			if((tile_mask.mask_element[i >> 5] & (1u << (i & 31u))) != 0) {
 				uint cluster_key = tile_index.x | (tile_index.y << y_offset) | (i << z_offset);
 				active_clusters[index + element] = cluster_key;
 				element++;

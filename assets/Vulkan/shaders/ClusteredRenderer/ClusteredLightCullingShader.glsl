@@ -32,7 +32,6 @@
 */
 // #Compute //--------------------------------------------------
 #version 430
-
 layout(set = 0, binding = 0) uniform config_buffer
 {
     mat4 projection_matrix;

@@ -45,7 +45,7 @@ ClusteredLightCullingPass::ClusteredLightCullingPass(const std::string& input_gl
 }
 
 void ClusteredLightCullingPass::InitPass() {
-    RenderBufferDescriptor buffer_desc(5000 * 2 * sizeof(uint32_t), RenderBufferType::DEFAULT, RenderBufferUsage::STORAGE_BUFFER);
+    RenderBufferDescriptor buffer_desc(CLUSTER_GRID_X * CLUSTER_GRID_Y * CLUSTER_GRID_Z * 2 * sizeof(uint32_t), RenderBufferType::DEFAULT, RenderBufferUsage::STORAGE_BUFFER);
     data->output_lists.cluster_buffer = RenderResourceManager::Get()->CreateBuffer(buffer_desc);
 
     buffer_desc.buffer_size = 200000 * sizeof(uint32_t);
