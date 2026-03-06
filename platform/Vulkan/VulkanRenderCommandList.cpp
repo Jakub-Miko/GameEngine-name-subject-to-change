@@ -88,12 +88,13 @@ void VulkanRenderCommandList::SetConstantBuffer(const std::string& semantic_name
 	auto sig = static_cast<const VulkanRootSignature*>(&current_pipeline->GetSignature());
 	auto param_id = sig->GetRootParameterId(semantic_name).parameter_id;
 	auto param = sig->GetDescriptor().parameters[param_id];
-	if (param.type != RootParameterType::CONSTANT_BUFFER) {
+	if (param.GetType() != RootParameterType::CONSTANT_BUFFER) {
 		throw std::runtime_error("The parameter " + semantic_name + " is not a constant buffer.\n");
 	}
 
-	auto bind_point = param.binding_id;
+	auto& info = param.GetResourceInfo();
 
+	auto bind_point = info.binding_id;
 
 	dependency_handler.AddDrawDependency(this, buffer, VulkanCommandListDependencyType::READ, RenderState::COMMON, param_id);
 
@@ -126,12 +127,13 @@ void VulkanRenderCommandList::SetStorageBuffer(const std::string& semantic_name,
 	auto sig = static_cast<const VulkanRootSignature*>(&current_pipeline->GetSignature());
 	auto param_id = sig->GetRootParameterId(semantic_name).parameter_id;
 	auto param = sig->GetDescriptor().parameters[param_id];
-	if (param.type != RootParameterType::STORAGE_BUFFER) {
+	if (param.GetType() != RootParameterType::STORAGE_BUFFER) {
 		throw std::runtime_error("The parameter " + semantic_name + " is not a storage buffer.\n");
 	}
 
-	auto bind_point = param.binding_id;
+	auto& info = param.GetResourceInfo();
 
+	auto bind_point = info.binding_id;
 
 	dependency_handler.AddDrawDependency(this, buffer, VulkanCommandListDependencyType::WRITE | VulkanCommandListDependencyType::READ, RenderState::COMMON, param_id);
 
@@ -165,11 +167,13 @@ void VulkanRenderCommandList::SetTexture2D(const std::string& semantic_name, std
 	auto sig = static_cast<const VulkanRootSignature*>(&current_pipeline->GetSignature());
 	auto param_id = sig->GetRootParameterId(semantic_name).parameter_id;
 	auto param = sig->GetDescriptor().parameters[param_id];
-	if (param.type != RootParameterType::TEXTURE_2D) {
+	if (param.GetType() != RootParameterType::TEXTURE_2D) {
 		throw std::runtime_error("The parameter " + semantic_name + " is not a texture.\n");
 	}
 
-	auto bind_point = param.binding_id;
+	auto& info = param.GetResourceInfo();
+
+	auto bind_point = info.binding_id;
 
 	dependency_handler.AddDrawDependency(this, texture, VulkanCommandListDependencyType::READ, RenderState::TEXTURE_SAMPLE, param_id);
 
@@ -203,11 +207,13 @@ void VulkanRenderCommandList::SetTexture2DArray(const std::string& semantic_name
 	auto sig = static_cast<const VulkanRootSignature*>(&current_pipeline->GetSignature());
 	auto param_id = sig->GetRootParameterId(semantic_name).parameter_id;
 	auto param = sig->GetDescriptor().parameters[param_id];
-	if (param.type != RootParameterType::TEXTURE_2D_ARRAY) {
+	if (param.GetType() != RootParameterType::TEXTURE_2D_ARRAY) {
 		throw std::runtime_error("The parameter " + semantic_name + " is not a texture array.\n");
 	}
 
-	auto bind_point = param.binding_id;
+	auto& info = param.GetResourceInfo();
+
+	auto bind_point = info.binding_id;
 
 	dependency_handler.AddDrawDependency(this, texture, VulkanCommandListDependencyType::READ, RenderState::TEXTURE_SAMPLE, param_id);
 
@@ -241,11 +247,13 @@ void VulkanRenderCommandList::SetTexture2DCubemap(const std::string& semantic_na
 	auto sig = static_cast<const VulkanRootSignature*>(&current_pipeline->GetSignature());
 	auto param_id = sig->GetRootParameterId(semantic_name).parameter_id;
 	auto param = sig->GetDescriptor().parameters[param_id];
-	if (param.type != RootParameterType::TEXTURE_2D_CUBEMAP) {
+	if (param.GetType() != RootParameterType::TEXTURE_2D_CUBEMAP) {
 		throw std::runtime_error("The parameter " + semantic_name + " is not a texture cubemap.\n");
 	}
 
-	auto bind_point = param.binding_id;
+	auto& info = param.GetResourceInfo();
+
+	auto bind_point = info.binding_id;
 
 	dependency_handler.AddDrawDependency(this, texture, VulkanCommandListDependencyType::READ, RenderState::TEXTURE_SAMPLE, param_id);
 
@@ -268,6 +276,15 @@ void VulkanRenderCommandList::SetTexture2DCubemap(const std::string& semantic_na
 	auto pipeline_bind_point = std::static_pointer_cast<VulkanPipeline>(current_pipeline->GetPipelineNativeExtension())->GetBindPoint();
 
 	vkCmdPushDescriptorSet_KHR(command_buffer, pipeline_bind_point, sig->GetPipelineLayout(), 0, 1, &update_data);
+}
+
+void VulkanRenderCommandList::SetPushConstantRange(void* data, size_t size) {
+	auto sig = static_cast<const VulkanRootSignature*>(&current_pipeline->GetSignature());
+	if(sig->GetDescriptor().push_constant_range_size == 0) {
+		throw std::runtime_error("Push constants are not supported by this pipeline.\n");
+	}
+
+	vkCmdPushConstants(command_buffer, sig->GetPipelineLayout(), VK_SHADER_STAGE_ALL, 0, size, data);
 }
 
 void VulkanRenderCommandList::SetResourceDefaultState(std::shared_ptr<RenderResource> resource, RenderState state)
@@ -416,13 +433,15 @@ void VulkanRenderCommandList::SetMaterial(const std::string& name, std::shared_p
 	auto vk_mat = std::static_pointer_cast<VulkanMaterial>(material);
 	auto param_id = sig->GetRootParameterId(name).parameter_id;
 	auto param = sig->GetDescriptor().parameters[param_id];
-	if (param.type != RootParameterType::MATERIAL) {
+	if (param.GetType() != RootParameterType::MATERIAL) {
 		throw std::runtime_error("The parameter " + name + " is not a material.\n");
 	}
 
 	material->UpdateValues(SharedFromThis());
 
-	auto bind_point = param.set_id;
+	auto& info = param.GetMaterialInfo();
+
+	auto bind_point = info.set_id;
 
 	auto desc_table = vk_mat->GetDescriptorTable();
 
@@ -445,16 +464,19 @@ void VulkanRenderCommandList::SetResourceStore(const std::string& name,
 	auto sig = static_cast<const VulkanRootSignature*>(&current_pipeline->GetSignature());
 	auto param_id = sig->GetRootParameterId(name).parameter_id;
 	auto param = sig->GetDescriptor().parameters[param_id];
-	if (param.type != RootParameterType::RESOURCE_STORE) {
+	if (param.GetType() != RootParameterType::RESOURCE_STORE) {
 		throw std::runtime_error("The parameter " + name + " is not a resource store.\n");
 	}
+
+	auto& info = param.GetResourceStoreInfo();
+
 	dependency_handler.AddStoreUsage(this,resource_store, param_id);
 
 	auto desc_set = std::static_pointer_cast<VulkanRenderResourceStore>(resource_store)->GetDescriptorSet();
 
 	auto pipeline_bind_point = std::static_pointer_cast<VulkanPipeline>(current_pipeline->GetPipelineNativeExtension())->GetBindPoint();
 
-	vkCmdBindDescriptorSets(command_buffer, pipeline_bind_point, sig->GetPipelineLayout(), param.set_id, 1, &desc_set, 0, NULL);
+	vkCmdBindDescriptorSets(command_buffer, pipeline_bind_point, sig->GetPipelineLayout(), info.set_id, 1, &desc_set, 0, NULL);
 }
 
 void VulkanRenderCommandList::AttachResourceToStoreAfterSubmission(std::shared_ptr<RenderResourceStore> store,
@@ -960,9 +982,8 @@ void VulkanBarrier::AddGlobalMemoryBarrier(const VulkanDependencyState& source_d
 
 void VulkanDrawState::SetMaterialResources(VulkanRenderCommandList* list, std::shared_ptr<Material> material, uint32_t bind_id)
 {
-
-	auto& params = list->GetCurrentPipeline()->GetSignature().GetDescriptor().parameters; 
-	if(params[bind_id].material_template != material->GetMaterialTemplate()) {
+	auto param = list->GetCurrentPipeline()->GetSignature().GetDescriptor().parameters[bind_id];
+	if(param.GetMaterialInfo().material_template != material->GetMaterialTemplate()) {
 		throw std::runtime_error("Invalid material bound to id " + std::to_string(bind_id) + ".\n");
 	}
 

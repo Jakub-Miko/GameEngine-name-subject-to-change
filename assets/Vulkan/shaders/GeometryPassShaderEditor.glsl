@@ -2,6 +2,10 @@
 {
 	"RootSignature": [
 		{
+			"type" : "push_constants",
+			"size" : 68
+		},
+		{
 			"name" : "mvp",
 			"type" : "constant_buffer"
 		},
@@ -27,10 +31,13 @@ out vec3 pos_fragment;
 out vec3 normal_fragment;
 out mat3 TBN;
 
-layout( set = 0, binding = 0 ) uniform mvp{
-	mat4 mvp_matrix;
-	mat4 view_model_matrix;
+layout(push_constant) uniform model_view {
+    mat4 mv_matrix;
 	uint entity_id;
+};
+
+layout( set = 0, binding = 0 ) uniform mvp{
+	mat4 projection_matrix;
 };
 
 layout(set = 1, binding = 0) uniform material{
@@ -40,17 +47,17 @@ layout(set = 1, binding = 0) uniform material{
 };
 
 void main() {
-	vec3 normal_transformed = normalize(mat3(transpose(inverse(view_model_matrix))) * normal.xyz).xyz;
-	vec3 tangent_transformed = normalize(mat3(transpose(inverse(view_model_matrix))) * tangent.xyz).xyz;
+	vec3 normal_transformed = normalize(mat3(transpose(inverse(mv_matrix))) * normal.xyz).xyz;
+	vec3 tangent_transformed = normalize(mat3(transpose(inverse(mv_matrix))) * tangent.xyz).xyz;
 	vec3 bitangent_transformed = cross(normal_transformed, tangent_transformed);
 
 	TBN = mat3(tangent_transformed, bitangent_transformed, normal_transformed);
 	
-	pos_fragment = (view_model_matrix * vec4(position, 1.0)).xyz;
-	gl_Position = mvp_matrix * vec4(position, 1.0);
+	pos_fragment = (mv_matrix * vec4(position, 1.0)).xyz;
+	gl_Position = projection_matrix * mv_matrix * vec4(position, 1.0);
 	uv_fragment = uv;
 	uv_fragment.y = 1 - uv_fragment.y;
-	normal_fragment = normalize(mat3(transpose(inverse(view_model_matrix))) * normal.xyz).xyz;
+	normal_fragment = normalize(mat3(transpose(inverse(mv_matrix))) * normal.xyz).xyz;
 }
 
 
@@ -78,9 +85,8 @@ layout(set = 1, binding = 0) uniform material{
 	float roughness_gain;
 };
 
-layout(set = 0, binding = 0) uniform mvp{
-	mat4 mvp_matrix;
-	mat4 view_model_matrix;
+layout(push_constant) uniform model_view {
+	mat4 mv_matrix;
 	uint entity_id;
 };
 

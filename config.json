@@ -2,7 +2,7 @@
     "Vsync": 1,
     "Latency_Frames": 2,
     "EnableMouseMoveEvent": 1,
-    "default_scene": "asset:AnimationBlendingTest.scene",
+    "default_scene": "asset:ClusterTest.scene",
     "root_path": "../",
     "local_asset_path": "assets/",
     "render_api_path": "assets/Vulkan/",

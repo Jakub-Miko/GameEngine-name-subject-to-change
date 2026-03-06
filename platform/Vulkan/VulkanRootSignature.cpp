@@ -17,7 +17,7 @@ VulkanRootSignature::VulkanRootSignature(const RootSignatureDescriptor& descript
 	set_layout.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
 	set_layout.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT_EXT;
 	std::vector<VkDescriptorSetLayoutBinding> bindings;
-	
+
 	VkDescriptorSetLayoutBinding binding = {};
 	binding.descriptorCount = 1;
 	binding.stageFlags = VkShaderStageFlagBits::VK_SHADER_STAGE_ALL;
@@ -29,7 +29,7 @@ VulkanRootSignature::VulkanRootSignature(const RootSignatureDescriptor& descript
 	int global_descriptors = 1;
 
 	for (auto& desc : descriptor.parameters) {
-		switch (desc.type)
+		switch (desc.GetType())
 		{
 		case RootParameterType::CONSTANT_BUFFER:
 		case RootParameterType::TEXTURE_2D:
@@ -37,10 +37,11 @@ VulkanRootSignature::VulkanRootSignature(const RootSignatureDescriptor& descript
 		case RootParameterType::TEXTURE_2D_CUBEMAP:
 		case RootParameterType::STORAGE_BUFFER:
 		{
-			auto type = VulkanUnitConverter::RootParameterTypeToDescritorType(desc.type);
-			desc.binding_id = binding_id++;
+			auto& desc_info = desc.GetResourceInfo();
+			auto type = VulkanUnitConverter::RootParameterTypeToDescritorType(desc.GetType());
+			desc_info.binding_id = binding_id++;
 			binding.descriptorType = type;
-			binding.binding = desc.binding_id;
+			binding.binding = desc_info.binding_id;
 			bindings.push_back(binding);
 			break;
 		}
@@ -61,19 +62,37 @@ VulkanRootSignature::VulkanRootSignature(const RootSignatureDescriptor& descript
 	}
 
 	for (auto& desc : descriptor.parameters) {
-		if (desc.type == RootParameterType::MATERIAL) {
-			desc.set_id = set_id++;
-			desc.material_template = MaterialManager::Get()->GetMaterialTemplate(desc.name);
-			layouts.push_back(std::static_pointer_cast<VulkanMaterialTemplate>(desc.material_template)->GetAllocator().GetLayout());
+		switch(desc.GetType()) {
+		case RootParameterType::MATERIAL:
+		{
+			auto& mat_info = desc.GetMaterialInfo();
+			mat_info.set_id = set_id++;
+			mat_info.material_template = MaterialManager::Get()->GetMaterialTemplate(desc.GetName());
+			layouts.push_back(std::static_pointer_cast<VulkanMaterialTemplate>(mat_info.material_template)->GetAllocator().GetLayout());
+			break;
 		}
-		if(desc.type == RootParameterType::RESOURCE_STORE) {
-			desc.set_id = set_id++;
-			auto layout = RenderResourceManager::Get()->GetResourceStoreLayout(desc.store_type);
+		case RootParameterType::RESOURCE_STORE:
+		{
+			auto& resource_store_info = desc.GetResourceStoreInfo();
+			resource_store_info.set_id = set_id++;
+			auto layout = RenderResourceManager::Get()->GetResourceStoreLayout(resource_store_info.store_type);
 			auto vk_layout = std::static_pointer_cast<VulkanRenderResourceStoreLayout>(layout);
 			layouts.push_back(vk_layout->GetDescriptorSetLayout());
+			break;
+		}
+		default:
+			break;
 		}
 	}
 
+	VkPushConstantRange push_constant_range = {};
+	if(descriptor.push_constant_range_size > 0) {
+		push_constant_range.offset = 0;
+		push_constant_range.size = descriptor.push_constant_range_size;
+		push_constant_range.stageFlags = VkShaderStageFlagBits::VK_SHADER_STAGE_ALL;
+		info.pushConstantRangeCount = 1;
+		info.pPushConstantRanges = &push_constant_range;
+	}
 
 	info.setLayoutCount = layouts.size();
 	info.pSetLayouts = layouts.data();

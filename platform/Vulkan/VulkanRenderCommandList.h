@@ -230,6 +230,7 @@ public:
     virtual void SetTexture2D(const std::string& semantic_name, std::shared_ptr<RenderTexture2DResource> texture) override;
     virtual void SetTexture2DArray(const std::string& semantic_name, std::shared_ptr<RenderTexture2DArrayResource> texture) override;
     virtual void SetTexture2DCubemap(const std::string& semantic_name, std::shared_ptr<RenderTexture2DCubemapResource> texture) override;
+    virtual void SetPushConstantRange(void* data, size_t size) override;
     virtual void SetResourceDefaultState(std::shared_ptr<RenderResource> resource, RenderState state) override;
     virtual void SetRenderTarget(std::shared_ptr<RenderFrameBufferResource> framebuffer) override;
     virtual void SetDefaultRenderTarget() override;

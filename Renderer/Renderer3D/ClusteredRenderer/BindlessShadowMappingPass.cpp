@@ -198,14 +198,14 @@ void BindlessShadowMappingPass::RenderDirectionalShadowCaster(Entity caster, std
 
 	std::vector<Entity> skeletal_meshes;
 	skeletal_meshes.reserve(30);
+	for (int i = 0; i < HARD_CODE_CASCADES; i++) {
+		RenderResourceManager::Get()->UploadDataToBuffer(list, data->const_buffer_directional, glm::value_ptr(shadow_matricies[i]), sizeof(glm::mat4), sizeof(glm::mat4) * i);
+	}
 	for (auto& entity : entities) {
 		if (world.HasComponent<MeshComponent>(entity) && world.GetComponent<MeshComponent>(entity).GetVisibility()) {
 			auto& mesh = world.GetComponent<MeshComponent>(entity);
 			auto& trans = world.GetComponent<TransformComponent>(entity);
-			RenderResourceManager::Get()->UploadDataToBuffer(list, data->const_buffer_directional, glm::value_ptr(trans.TransformMatrix), sizeof(glm::mat4), 0);
-			for (int i = 0; i < HARD_CODE_CASCADES; i++) {
-				RenderResourceManager::Get()->UploadDataToBuffer(list, data->const_buffer_directional, glm::value_ptr(shadow_matricies[i]), sizeof(glm::mat4), sizeof(glm::mat4) * (1+i));
-			}
+			list->SetPushConstantRange(glm::value_ptr(trans.TransformMatrix), sizeof(glm::mat4));
 			list->SetVertexBuffer(mesh.GetMesh()->GetVertexBuffer());
 			list->SetIndexBuffer(mesh.GetMesh()->GetIndexBuffer());
 			list->Draw(mesh.GetMesh()->GetIndexCount());
@@ -228,10 +228,7 @@ void BindlessShadowMappingPass::RenderDirectionalShadowCaster(Entity caster, std
 
 		auto& trans_skeletal = world.GetComponent<TransformComponent>(entity);
 		glm::mat4 trans = trans_skeletal.TransformMatrix;
-		RenderResourceManager::Get()->UploadDataToBuffer(list, data->const_buffer_directional, glm::value_ptr(trans), sizeof(glm::mat4), 0);
-		for (int i = 0; i < HARD_CODE_CASCADES; i++) {
-			RenderResourceManager::Get()->UploadDataToBuffer(list, data->const_buffer_directional, glm::value_ptr(shadow_matricies[i]), sizeof(glm::mat4), sizeof(glm::mat4) * (1 + i));
-		}
+		list->SetPushConstantRange(glm::value_ptr(trans), sizeof(glm::mat4));
 
 		list->SetVertexBuffer(mesh.GetMesh()->GetVertexBuffer());
 		list->SetIndexBuffer(mesh.GetMesh()->GetIndexBuffer());
@@ -371,7 +368,7 @@ void BindlessShadowMappingPass::InitShadowMappingPassData()
 	sample_desc.AddressMode_W = TextureAddressMode::BORDER;
 	data->depth_sampler_directional = TextureSampler::CreateSampler(sample_desc);
 		
-	RenderBufferDescriptor desc(sizeof(glm::mat4) * (HARD_CODE_CASCADES +1), RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
+	RenderBufferDescriptor desc(sizeof(glm::mat4) * (HARD_CODE_CASCADES), RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
 	data->const_buffer_directional = RenderResourceManager::Get()->CreateBuffer(desc);
 
 	data->shadow_cascades.resources.reserve(20);

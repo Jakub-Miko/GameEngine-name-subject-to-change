@@ -28,24 +28,120 @@
 //using ConstantBufferLayout = std::vector<ConstantBufferLayoutElement>;
 //using RootDescriptorTable = std::vector<RootDescriptorTableRange>;
 
-struct RootSignatureDescriptorElement {
+
+struct RootSignatureDescriptorResource {
+	uint32_t binding_id = 0;
+};
+
+struct RootSignatureDescriptorMaterial {
+	std::shared_ptr<MaterialTemplate> material_template = nullptr;
+	uint32_t set_id;
+};
+
+struct RootSignatureDescriptorResourceStore {
+	RootDescriptorType store_type = RootDescriptorType::TEXTURE_2D;
+	uint32_t set_id;
+};
+
+
+class RootSignatureDescriptorElement {
+public:
 	RootSignatureDescriptorElement() = default;
-	RootSignatureDescriptorElement(const std::string& name, RootParameterType type, uint32_t set_id = 0) : type(type), name(name) {}
 	RootSignatureDescriptorElement(const RootSignatureDescriptorElement& other) = default;
 
-	RootParameterType type = RootParameterType::CONSTANT_BUFFER;
+	static RootSignatureDescriptorElement CreateResourceElement(const std::string& name, RootParameterType type) {
+		RootSignatureDescriptorElement element;
+		element.name = name;
+		element.type = type;
+		element.element_info = RootSignatureDescriptorResource { 0 };
+		return element;
+	}
+
+	static RootSignatureDescriptorElement CreateConstantBufferElement(const std::string& name) {
+		RootSignatureDescriptorElement element;
+		element.name = name;
+		element.type = RootParameterType::CONSTANT_BUFFER;
+		element.element_info = RootSignatureDescriptorResource{ 0 };
+		return element;
+	}
+
+	static RootSignatureDescriptorElement CreateStorageBufferElement(const std::string& name) {
+		RootSignatureDescriptorElement element;
+		element.name = name;
+		element.type = RootParameterType::STORAGE_BUFFER;
+		element.element_info = RootSignatureDescriptorResource{ 0 };
+		return element;
+	}
+
+	static RootSignatureDescriptorElement CreateTexture2DElement(const std::string& name) {
+		RootSignatureDescriptorElement element;
+		element.name = name;
+		element.type = RootParameterType::TEXTURE_2D;
+		element.element_info = RootSignatureDescriptorResource{ 0 };
+		return element;
+	}
+
+	static RootSignatureDescriptorElement CreateTexture2DArrayElement(const std::string& name) {
+		RootSignatureDescriptorElement element;
+		element.name = name;
+		element.type = RootParameterType::TEXTURE_2D_ARRAY;
+		element.element_info = RootSignatureDescriptorResource{ 0 };
+		return element;
+	}
+
+	static RootSignatureDescriptorElement CreateTexture2DCubemapElement(const std::string& name) {
+		RootSignatureDescriptorElement element;
+		element.name = name;
+		element.type = RootParameterType::TEXTURE_2D_CUBEMAP;
+		element.element_info = RootSignatureDescriptorResource{ 0 };
+		return element;
+	}
+
+	static RootSignatureDescriptorElement CreateMaterialElement(const std::string& name) {
+		RootSignatureDescriptorElement element;
+		element.name = name;
+		element.type = RootParameterType::MATERIAL;
+		element.element_info = RootSignatureDescriptorMaterial{ nullptr,0 };
+		return element;
+	}
+
+	static RootSignatureDescriptorElement CreateResourceStoreElement(const std::string& name, RootDescriptorType store_type) {
+		RootSignatureDescriptorElement element;
+		element.name = name;
+		element.type = RootParameterType::RESOURCE_STORE;
+		element.element_info = RootSignatureDescriptorResourceStore{ store_type };
+		return element;
+	}
+
+	RootSignatureDescriptorResource& GetResourceInfo() {
+		return std::get<RootSignatureDescriptorResource>(element_info);
+	}
+
+	RootSignatureDescriptorMaterial& GetMaterialInfo() {
+		return std::get<RootSignatureDescriptorMaterial>(element_info);
+	}
+
+	RootSignatureDescriptorResourceStore& GetResourceStoreInfo() {
+		return std::get<RootSignatureDescriptorResourceStore>(element_info);
+	}
+
+	RootParameterType GetType() const {
+		return type;
+	}
+
+	const std::string& GetName() const {
+		return name;
+	}
+
+private:
 	std::string name = "";
-	union {
-		uint32_t binding_id = 0;
-		uint32_t set_id;
-	};
-	std::shared_ptr<MaterialTemplate> material_template = nullptr;
-	RootDescriptorType store_type = RootDescriptorType::TEXTURE_2D;
+	RootParameterType type = RootParameterType::UNDEFINED;
+	std::variant<RootSignatureDescriptorResource, RootSignatureDescriptorMaterial, RootSignatureDescriptorResourceStore> element_info;
 };
 
 struct RootSignatureDescriptor {
 	RootSignatureDescriptor() = default;
-	RootSignatureDescriptor(const RootSignatureDescriptor& other) : parameters(other.parameters) {}
+	RootSignatureDescriptor(const RootSignatureDescriptor& other) : parameters(other.parameters), push_constant_range_size(other.push_constant_range_size) {}
 	RootSignatureDescriptor& operator=(const RootSignatureDescriptor& other) {
 		parameters = other.parameters;
 		return *this;
@@ -53,6 +149,7 @@ struct RootSignatureDescriptor {
 	RootSignatureDescriptor(const std::vector<RootSignatureDescriptorElement>& parameters) : parameters(parameters) {}
 	RootSignatureDescriptor(std::vector<RootSignatureDescriptorElement>&& parameters) : parameters(std::move(parameters)) {}
 	std::vector<RootSignatureDescriptorElement> parameters;
+	uint32_t push_constant_range_size = 0;
 };
 
 struct RootMappingEntry {
@@ -169,7 +266,7 @@ struct RootSignatureFactory<BoxPreset> {
 		if (!signature) {
 			RootSignature* sig = RootSignature::CreateSignature(RootSignatureDescriptor(
 				{
-					RootSignatureDescriptorElement("conf",RootParameterType::CONSTANT_BUFFER)
+					RootSignatureDescriptorElement::CreateConstantBufferElement("conf")
 				}
 			));
 			signature = sig;

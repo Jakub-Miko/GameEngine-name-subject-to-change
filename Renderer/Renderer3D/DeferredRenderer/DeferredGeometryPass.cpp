@@ -43,6 +43,13 @@ struct DeferredGeometryPass::internal_data {
 	bool initialized = false;
 };
 
+struct PushConstantGeometryPassData {
+	glm::mat4 mv;
+#ifdef EDITOR
+	uint32_t entity_id;
+#endif
+};
+
 void DeferredGeometryPass::InitPostProcessingPassData() {
 	GraphicsPipelineDescriptor pipeline_desc;
 	pipeline_desc.viewport = RenderViewport();
@@ -69,7 +76,7 @@ void DeferredGeometryPass::InitPostProcessingPassData() {
 
 #ifdef EDITOR
 	//we need to pass an extra entity id 
-	RenderBufferDescriptor const_desc(sizeof(glm::mat4)*2 + sizeof(uint32_t), RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
+	RenderBufferDescriptor const_desc(sizeof(glm::mat4), RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
 #else 
 	RenderBufferDescriptor const_desc(sizeof(glm::mat4) * 2, RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
 #endif
@@ -105,12 +112,13 @@ void DeferredGeometryPass::Render(RenderPipelineResourceManager& resource_manage
 	auto& camera_transform = world.GetComponent<CameraComponent>(world.GetPrimaryEntity());
 	camera.UpdateProjectionMatrix();
 	auto& camera_trans = world.GetComponent<TransformComponent>(world.GetPrimaryEntity());
-	auto ViewProjection = camera.GetProjectionMatrix() * glm::inverse(camera_trans.TransformMatrix);
+	auto Projection = camera.GetProjectionMatrix();
 	auto view_matrix = glm::inverse(camera_trans.TransformMatrix);
 	list->SetPipeline(data->pipeline);
 	list->SetRenderTarget(out_buffer);
 	list->SetConstantBuffer("mvp", data->constant_scene_buf);
 	auto default_mat = MaterialManager::Get()->GetMaterialTemplate("DeferredGPassMaterial")->GetDefaultMaterial();
+	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, glm::value_ptr(Projection), sizeof(glm::mat4), 0);
 	for(auto& entity : geometry.resources) {
 		auto& mesh = world.GetComponent<MeshComponent>(entity);
 		world.UpdateMesh(entity);
@@ -124,14 +132,13 @@ void DeferredGeometryPass::Render(RenderPipelineResourceManager& resource_manage
 		}
 		list->SetVertexBuffer(mesh.GetMesh()->GetVertexBuffer());
 		list->SetIndexBuffer(mesh.GetMesh()->GetIndexBuffer());
-		glm::mat4 mvp = ViewProjection * transform.TransformMatrix;
 		glm::mat4 mv_matrix = view_matrix * transform.TransformMatrix;
-		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, glm::value_ptr(mvp), sizeof(glm::mat4), 0);
-		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, glm::value_ptr(mv_matrix), sizeof(glm::mat4), sizeof(glm::mat4));
+		PushConstantGeometryPassData push_data = {};
+		push_data.mv = mv_matrix;
 #ifdef EDITOR
-		//Pass the extra entity id
-		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, (void*)&entity.id, sizeof(uint32_t), sizeof(glm::mat4)*2);
+		push_data.entity_id = entity.id;
 #endif
+		list->SetPushConstantRange(&push_data, sizeof(PushConstantGeometryPassData));
 		list->Draw(mesh.GetMesh()->GetIndexCount());
 
 

@@ -2,6 +2,10 @@
 {
 	"RootSignature": [
 		{
+			"type" : "push_constants",
+			"size" : 64
+		},
+		{
 			"name" : "mvp",
 			"type" : "constant_buffer"
 		},
@@ -24,8 +28,11 @@ layout(location = 4) in vec3 tangent;
 layout(location = 5) in vec2 uv;
 
 
-layout(set = 0, binding = 0) uniform mvp{
+layout(push_constant) uniform push_constants {
 	mat4 model_matrix;
+};
+
+layout(set = 0, binding = 0) uniform mvp{
 	mat4 vp_matrix[5];
 };
 
@@ -57,8 +64,11 @@ void main() {
 layout(triangles, invocations = 5) in;
 layout(triangle_strip, max_vertices = 3) out;
 
-uniform mvp{
+layout(push_constant) uniform push_constants {
 	mat4 model_matrix;
+};
+
+layout(set = 0, binding = 0) uniform mvp{
 	mat4 vp_matrix[5];
 };
 

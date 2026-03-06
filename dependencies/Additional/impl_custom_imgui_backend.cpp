@@ -25,8 +25,8 @@ struct RootSignatureFactory<ImGUI_Shader> {
         if (!signature) {
             RootSignature* sig = RootSignature::CreateSignature(RootSignatureDescriptor(
                 {
-                    RootSignatureDescriptorElement("conf",RootParameterType::CONSTANT_BUFFER),
-                    RootSignatureDescriptorElement("Texture",RootParameterType::TEXTURE_2D)
+                    RootSignatureDescriptorElement::CreateConstantBufferElement("conf"),
+                    RootSignatureDescriptorElement::CreateTexture2DElement("Texture")
                 }
             ));
 
