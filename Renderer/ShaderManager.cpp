@@ -65,7 +65,8 @@ ShaderManager::~ShaderManager()
 
 std::shared_ptr<Shader> ShaderManager::GetShader(const std::string& path_in, const std::vector<std::string>& compiler_definitions)
 {
-	std::string path = FileManager::Get()->ResolvePath(FileManager::Get()->GetRenderApiAssetFilePath(path_in));
+	std::string file_name = FileManager::Get()->GetRenderApiAssetFilePath(path_in);
+	std::string path = FileManager::Get()->ResolvePath(file_name);
 	std::lock_guard<std::mutex> lock(shader_map_mutex);
 
 	std::string key_path = path;
@@ -89,7 +90,7 @@ std::shared_ptr<Shader> ShaderManager::GetShader(const std::string& path_in, con
 	std::stringstream s_stream;
 	s_stream << file_stream.rdbuf();
 	std::string shader_str = s_stream.str();
-	Shader* shader = CreateShaderFromString_impl(shader_str, compiler_definitions);
+	Shader* shader = CreateShaderFromString_impl(shader_str, compiler_definitions, file_name);
 
 	std::string root_sig_str;
 	auto fnd_root = shader_str.find("#RootSignature");

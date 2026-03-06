@@ -6,7 +6,6 @@
 #include <FileManager.h>
 #include <stdexcept>
 #include "VulkanRenderContext.h"
-#include "shaderc/shaderc.hpp"
 #include <sstream>
 #include <cstring>
 
@@ -16,20 +15,21 @@ VulkanShaderManager::VulkanShaderManager() {
 
 VulkanParsedShader VulkanShaderManager::CompileShader(const std::string& name)
 {
-	std::ifstream file_in(FileManager::Get()->GetRenderApiAssetFilePath("/shaders/" + name));
+	auto file_name = FileManager::Get()->GetRenderApiAssetFilePath("/shaders/" + name);
+	std::ifstream file_in(FileManager::Get()->GetRenderApiAssetFilePath(file_name));
 	std::string source;
 	if (file_in.is_open()) {
 		std::stringstream stream;
 		stream << file_in.rdbuf();
 		source = stream.str();
-		return std::move(LinkShader(ParseShader(source)));
+		return std::move(LinkShader(ParseShader(source,file_name)));
 	}
 	else {
 		throw std::runtime_error("Couldn't find the shader");
 	}
 }
 
-VulkanParsedShader VulkanShaderManager::ParseShader(const std::string& source_code)
+VulkanParsedShader VulkanShaderManager::ParseShader(const std::string& source_code, const std::string& file_name)
 {
 	auto fnd_vertex = source_code.find("#Vertex");
 	auto fnd_fragment = source_code.find("#Fragment");
@@ -45,11 +45,13 @@ VulkanParsedShader VulkanShaderManager::ParseShader(const std::string& source_co
 		VulkanShaderSource vertex;
 		vertex.type = VulkanShaderStages::VERTEX;
 		vertex.source = source_code.substr(fnd_vertex, end_vertex - fnd_vertex);
+		vertex.name = file_name;
 		parsed.push_back(vertex);
 
 		VulkanShaderSource fragment;
 		fragment.type = VulkanShaderStages::FRAGMENT;
 		fragment.source = source_code.substr(fnd_fragment, end_fragment - fnd_fragment);
+		fragment.name = file_name;
 		parsed.push_back(fragment);
 
 		if (fnd_geometry != source_code.npos) {
@@ -58,6 +60,7 @@ VulkanParsedShader VulkanShaderManager::ParseShader(const std::string& source_co
 			VulkanShaderSource geometry;
 			geometry.type = VulkanShaderStages::GEOMETRY;
 			geometry.source = source_code.substr(fnd_geometry, end_geometry - fnd_geometry);
+			geometry.name = file_name;
 			parsed.push_back(geometry);
 		}
 
@@ -72,6 +75,7 @@ VulkanParsedShader VulkanShaderManager::ParseShader(const std::string& source_co
 		VulkanShaderSource compute;
 		compute.type = VulkanShaderStages::COMPUTE;
 		compute.source = source_code.substr(fnd_compute, end_compute - fnd_compute);
+		compute.name = file_name;
 		parsed.push_back(compute);
 
 		return parsed;
@@ -80,54 +84,51 @@ VulkanParsedShader VulkanShaderManager::ParseShader(const std::string& source_co
 	}
 }
 
-VkShaderModule VulkanShaderManager::CompileShaderStage(VulkanShaderStages type, const std::string& source, const std::vector<std::string>& compiler_definitions)
+VkShaderModule VulkanShaderManager::CompileShaderStage(VulkanShaderStages type, const std::string& source, const std::string& file_name , const std::vector<std::string>& compiler_definitions)
 {
 	DEFINE_VK_INSTANCE(context);
 	
 	VkShaderModule module;
-	
-	shaderc_compile_options_t options = shaderc_compile_options_initialize();
-	shaderc_compile_options_set_target_spirv(options, shaderc_spirv_version_1_6);
-	shaderc_compile_options_set_target_env(options, shaderc_target_env::shaderc_target_env_vulkan, shaderc_env_version::shaderc_env_version_vulkan_1_3);
-	shaderc_compile_options_set_vulkan_rules_relaxed(options, true);
-	shaderc_compile_options_set_auto_bind_uniforms(options, true);
-	shaderc_compile_options_set_auto_map_locations(options, true);
+
+	shaderc::CompileOptions options;
+
+	options.SetTargetSpirv(shaderc_spirv_version_1_6);
+	options.SetTargetEnvironment(shaderc_target_env::shaderc_target_env_vulkan, shaderc_env_version::shaderc_env_version_vulkan_1_3);
+	options.SetVulkanRulesRelaxed(true);
+	options.SetAutoBindUniforms(true);
+	options.SetAutoMapLocations(true);
+	options.SetSourceLanguage(shaderc_source_language_glsl);
+	options.SetIncluder(std::make_unique<VulkanShaderIncluder>());
 
 	for(auto& def: compiler_definitions) {
 		auto equal_sign = def.find('=');
 		if(equal_sign != std::string::npos) {
 			std::string key = def.substr(0, equal_sign);
 			std::string value = def.substr(equal_sign + 1);
-			shaderc_compile_options_add_macro_definition(options, key.c_str(), key.size(), value.c_str(), value.size());
+			options.AddMacroDefinition(key.c_str(), key.size(), value.c_str(), value.size());
 		} else {
-			shaderc_compile_options_add_macro_definition(options, def.c_str(), def.size(), nullptr, 0);
+			options.AddMacroDefinition(def.c_str(), def.size(), nullptr, 0);
 		}
 	}
-	shaderc_compile_options_set_source_language(options, shaderc_source_language_glsl);
 #ifndef NDEBUG
-	shaderc_compile_options_set_generate_debug_info(options);
-	shaderc_compile_options_set_optimization_level(options, shaderc_optimization_level_zero);
-
+	options.SetGenerateDebugInfo();
+	options.SetOptimizationLevel(shaderc_optimization_level_zero);
 
 #endif
-	shaderc_compiler_t compiler = shaderc_compiler_initialize();
-	shaderc_compilation_result_t result = shaderc_compile_into_spv(compiler, source.c_str(), source.size(), VulkanUnitConverter::ShaderStageToShadercShaderKind(type), "shader", "main", options);
+	shaderc::Compiler compiler = shaderc::Compiler();
+	auto result = compiler.CompileGlslToSpv(source, VulkanUnitConverter::ShaderStageToShadercShaderKind(type), file_name.c_str(), "main", options);
 
-	if (shaderc_result_get_num_errors(result) > 0) {
-		auto message = shaderc_result_get_error_message(result);
+	if (result.GetCompilationStatus() != shaderc_compilation_status_success) {
+		auto message = result.GetErrorMessage();
 		throw std::runtime_error(message);
 	}
 
 	VkShaderModuleCreateInfo info = {};
 	info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-	info.pCode = (uint32_t*)shaderc_result_get_bytes(result);
-	info.codeSize = shaderc_result_get_length(result);
+	info.pCode = result.begin();
+	info.codeSize = (result.end() - result.begin()) * sizeof(uint32_t);
 	
 	vkCreateShaderModule(context->GetVkDevice(), &info, NULL, &module);
-
-	shaderc_result_release(result);
-	shaderc_compiler_release(compiler);
-	shaderc_compile_options_release(options);
 
 	return module;
 }
@@ -136,11 +137,61 @@ VulkanParsedShader VulkanShaderManager::LinkShader(VulkanParsedShader shader, co
 {
 
 	for (auto& shader_stage : shader) {
-		VkShaderModule shader_stage_compiled = CompileShaderStage(shader_stage.type, shader_stage.source, compiler_definitions);
+		VkShaderModule shader_stage_compiled = CompileShaderStage(shader_stage.type, shader_stage.source, shader_stage.name, compiler_definitions);
 		shader_stage.module = shader_stage_compiled;
 	}
 
 	return std::move(shader);
+}
+
+shaderc_include_result* VulkanShaderIncluder::GetInclude(const char* requested_source, shaderc_include_type type,
+	const char* requesting_source, size_t include_depth) {
+	auto* result = new shaderc_include_result;
+
+	std::string file_path;
+	if(type == shaderc_include_type_relative && strlen(requesting_source) > 0) {
+		auto fnd = std::string(requesting_source).find_last_of('/');
+		if(fnd != std::string::npos) {
+			auto parent_path = std::string(requesting_source).substr(0, fnd);
+			file_path = FileManager::Get()->GetPath(std::string(parent_path) + "/" + std::string(requested_source));
+		} else {
+			file_path = FileManager::Get()->GetRenderApiAssetFilePath(std::string(requested_source));
+		}
+	} else {
+		file_path = FileManager::Get()->GetRenderApiAssetFilePath(std::string(requested_source));
+	}
+
+	std::ifstream file_in(file_path);
+	if (!file_in.is_open()) {
+		auto* data = new ResultUserData;
+		data->source_name = "";
+		data->content = "Couldn't find the include file: " + std::string(requested_source);
+		result->content = data->content.c_str();
+		result->content_length = data->content.size();
+		result->source_name = "";
+		result->source_name_length = 0;
+		result->user_data = data;
+		return result;
+	}
+
+	std::stringstream stream;
+	stream << file_in.rdbuf();
+	auto* data = new ResultUserData;
+	data->source_name = file_path;
+	data->content = std::move(stream.str());
+	result->content = data->content.c_str();
+	result->content_length = data->content.size();
+	result->source_name = data->source_name.c_str();
+	result->source_name_length = data->source_name.size();
+	result->user_data = data;
+	return result;
+}
+
+void VulkanShaderIncluder::ReleaseInclude(shaderc_include_result* data) {
+	if(data->user_data) {
+		delete static_cast<ResultUserData*>(data->user_data);
+	}
+	delete data;
 }
 
 VulkanShaderManager::~VulkanShaderManager() {
@@ -174,10 +225,10 @@ Shader* VulkanShaderManager::CreateShader_impl(const std::string& path)
 	return static_cast<Shader*>(new_shader);
 }
 
-Shader* VulkanShaderManager::CreateShaderFromString_impl(const std::string& source, const std::vector<std::string>& compiler_definitions)
+Shader* VulkanShaderManager::CreateShaderFromString_impl(const std::string& source, const std::vector<std::string>& compiler_definitions, const std::string& file_name )
 {
 	VulkanShader* new_shader = new VulkanShader;
-	VulkanParsedShader shader_stages = LinkShader(ParseShader(source), compiler_definitions);
+	VulkanParsedShader shader_stages = LinkShader(ParseShader(source, file_name), compiler_definitions);
 	for (auto& shader_stage : shader_stages) {
 		new_shader->SetStage(shader_stage.module, shader_stage.type);
 	}

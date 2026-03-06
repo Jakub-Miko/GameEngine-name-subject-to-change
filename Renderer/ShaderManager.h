@@ -47,7 +47,7 @@ private:
 
 	RootSignature* ParseRootSignature(const std::string& signature_string);
 
-	virtual Shader* CreateShaderFromString_impl(const std::string& source, const std::vector<std::string>& compiler_definitions) = 0;
+	virtual Shader* CreateShaderFromString_impl(const std::string& source, const std::vector<std::string>& compiler_definitions, const std::string& file_name = "") = 0;
 	virtual Shader* CreateShader_impl(const std::string& path) = 0;
 	virtual Shader* GetShader_impl(const std::string& name) = 0;
 

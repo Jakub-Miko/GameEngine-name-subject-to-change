@@ -128,7 +128,6 @@ vec3 GetFragmentPosition(vec3 coordinates) {
 	return dir * linearized_depth;
 }
 
-
 uint get_depth_slice_index(float depth) {
 	float scale = cluster_grid_size.z / (log2(far_plane/near_plane));
 	float bias = -scale*log2(near_plane);
