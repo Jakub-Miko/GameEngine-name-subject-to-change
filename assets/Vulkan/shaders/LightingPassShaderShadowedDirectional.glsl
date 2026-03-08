@@ -78,13 +78,12 @@ layout(set = 1, binding = 0) uniform light_props{
 
 out vec3 light_volume_pos;
 out vec3 light_pos;
-out vec3 light_direction_in;
+
 
 void main() {
 	gl_Position = vec4(position, 1.0);
 	light_volume_pos = vec3(inverse_projection * vec4(position.xy,-1.0, 1.0));
 	light_pos = vec3(view_model_matrix[3]);
-	light_direction_in = normalize(mat3(view_model_matrix) * vec3(0.0, 0.0, -1.0));
 	 
 }
 
@@ -125,8 +124,6 @@ layout(set = 1, binding = 0) uniform light_props{
 
 in vec3 light_volume_pos;
 in vec3 light_pos;
-in vec3 light_direction_in;
-
 
 float calculate_shadows(vec3 view_space_pos, vec3 coords) {
 	float depth = abs(view_space_pos.z);
@@ -164,21 +161,21 @@ vec3 GetFragmentPosition(vec3 coordinates) {
 	return dir * linearized_depth;
 }
 
+#include <shaders/utils/NormalPacking.glsl>
+
 void main() {
 	vec3 coords = vec3((gl_FragCoord.x * pixel_size.x), (gl_FragCoord.y * pixel_size.y), 0.0);
 	vec3 view_space_pos = GetFragmentPosition(coords);
-	vec3 light_direction;
-	light_direction = light_direction_in;
-	
+	vec3 light_direction = normalize(mat3(view_model_matrix) * vec3(0.0, 0.0, -1.0));;
 
 	vec4 color = vec4(texture(Color, coords.xy).xyz, 1.0);
-	vec3 normal = texture(Normal, coords.xy).xyz;
+	vec3 normal = UnpackNormals(texture(Normal, coords.xy).xy);
 	float roughness = texture(Roughness, coords.xy).x;
-	float attenuation_factor = 1;
+	float attenuation_factor = smoothstep(-0.02, 0.02,dot(-light_direction, normal));
 
 
-	float diffuse_contribution = 0.5f * (0.1 + max(0, dot(normal, -light_direction)));
-	float specular_contribution = 0.5f * pow(clamp(dot(normal, (-light_direction + vec3(0, 0, 1)) / 2.0), 0, 1), 1 + ((1 - roughness) * 32));
+	float diffuse_contribution = 0.5f * (0.1 + max(0, dot(normal, - light_direction)));
+	float specular_contribution = 0.5f * pow(clamp(dot(normal, normalize(- light_direction - normalize(view_space_pos))), 0, 1), 1 +((1 - roughness) * 64));
 
 	float contribution = diffuse_contribution + specular_contribution;
 

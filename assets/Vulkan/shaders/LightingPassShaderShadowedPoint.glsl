@@ -145,6 +145,8 @@ vec3 GetFragmentPosition(vec3 coordinates) {
 	return dir * linearized_depth;
 }
 
+#include <shaders/utils/NormalPacking.glsl>
+
 void main() {
 	vec3 coords = vec3((gl_FragCoord.x * pixel_size.x), (gl_FragCoord.y * pixel_size.y), 0.0);
 	vec3 view_space_pos = GetFragmentPosition(coords);
@@ -152,7 +154,7 @@ void main() {
 
 
 	vec4 color = vec4(texture(Color, coords.xy).xyz, 1.0);
-	vec3 normal = texture(Normal, coords.xy).xyz;
+	vec3 normal = UnpackNormals(texture(Normal, coords.xy).xy);
 	float roughness = texture(Roughness, coords.xy).x;
 	float attenuation_factor = 1;
 

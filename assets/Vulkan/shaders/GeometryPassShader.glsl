@@ -71,7 +71,7 @@ in vec3 normal_fragment;
 in mat3 TBN;
 
 layout(location = 0) out vec4 color_out;
-layout(location = 1) out vec4 normal_out;
+layout(location = 1) out vec2 normal_out;
 layout(location = 2) out float roughness_out;
 
 layout(set = 1, binding = 1) uniform sampler2D Color;
@@ -89,10 +89,12 @@ layout(push_constant) uniform model_view {
 	uint entity_id;
 };
 
+#include <shaders/utils/NormalPacking.glsl>
+
 void main() {
 	color_out = vec4(texture(Color,uv_fragment).xyz,1) * Base_Color;
 	roughness_out = texture(Roughness, uv_fragment).x * roughness_gain + roughness_bias;
-	normal_out = normalize(vec4(TBN * (texture(Normal, uv_fragment).rgb * 2.0 - 1.0),0.0));
+	normal_out = PackNormals(normalize(vec3(TBN * (texture(Normal, uv_fragment).rgb * 2.0 - 1.0))));
 }
 
 #end

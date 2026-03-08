@@ -40,7 +40,7 @@ void GenerateGBufferPass::InitPostProcessingPassData() {
 	color_texture_desc.sampler = sampler;
 
 	RenderTexture2DDescriptor color_normal_desc;
-	color_normal_desc.format = TextureFormat::RGBA_32FLOAT;
+	color_normal_desc.format = TextureFormat::RG_16FLOAT;
 	color_normal_desc.usage = TextureUsage::COLOR_ATTACHMENT_READABLE;
 	color_normal_desc.height = Application::Get()->GetWindow()->GetProperties().resolution_y;
 	color_normal_desc.width = Application::Get()->GetWindow()->GetProperties().resolution_x;

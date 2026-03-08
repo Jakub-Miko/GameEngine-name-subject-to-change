@@ -199,6 +199,9 @@ public:
 		case TextureFormat::DEFAULT_DEPTH:					return instance->default_depth_format;
 		case TextureFormat::DEFAULT_DEPTH_STENCIL:			return instance->default_depth_stencil_format;
 		case TextureFormat::BGRA_SRGB:						return VK_FORMAT_B8G8R8A8_SRGB;
+		case TextureFormat::RG_32FLOAT:						return VK_FORMAT_R32G32_SFLOAT;
+		case TextureFormat::RG_16FLOAT:						return VK_FORMAT_R16G16_SFLOAT;
+		case TextureFormat::RG_CHAR_NORM:					return VK_FORMAT_R8G8_SNORM;
 		default:
 			throw std::runtime_error("Conversion failed");
 		}
@@ -219,6 +222,9 @@ public:
 		case TextureFormat::DEFAULT_DEPTH:					return true;
 		case TextureFormat::DEFAULT_DEPTH_STENCIL:			return true;
 		case TextureFormat::BGRA_SRGB:						return false;
+		case TextureFormat::RG_32FLOAT:						return false;
+		case TextureFormat::RG_16FLOAT:						return false;
+		case TextureFormat::RG_CHAR_NORM:					return false;
 		default:
 			throw std::runtime_error("Conversion failed");
 		}
@@ -238,6 +244,9 @@ public:
 		case TextureFormat::BGRA_SRGB:						return TextureUsage::SAMPLE_WRITABLE;
 		case TextureFormat::DEFAULT_DEPTH:					return TextureUsage::DEPTH_ATTACHMENT;
 		case TextureFormat::DEFAULT_DEPTH_STENCIL:			return TextureUsage::DEPTH_ATTACHMENT;
+		case TextureFormat::RG_32FLOAT:						return TextureUsage::SAMPLE_WRITABLE;
+		case TextureFormat::RG_16FLOAT:						return TextureUsage::SAMPLE_WRITABLE;
+		case TextureFormat::RG_CHAR_NORM:					return TextureUsage::SAMPLE_WRITABLE;
 		default:
 			throw std::runtime_error("Conversion failed");
 		}
@@ -339,6 +348,9 @@ public:
 		case TextureFormat::R_UNSIGNED_CHAR:                return sizeof(char);
 		case TextureFormat::R_UNSIGNED_CHAR_NORM:           return sizeof(char);
 		case TextureFormat::R_8FLOAT:						return sizeof(char);
+		case TextureFormat::RG_32FLOAT:						return 2*sizeof(float);
+		case TextureFormat::RG_16FLOAT:						return 2*sizeof(float)/2;
+		case TextureFormat::RG_CHAR_NORM:					return 2*sizeof(char);
 		default:
 			throw std::runtime_error("Conversion failed");
 		}

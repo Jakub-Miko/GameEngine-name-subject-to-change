@@ -186,11 +186,13 @@ float calculate_shadows_point(vec3 view_space_pos, vec3 coords, uint index) {
 	return shadow_map_depth;
 }
 
+#include <shaders/utils/NormalPacking.glsl>
+
 void main() {
 	vec3 coords = vec3((gl_FragCoord.x * pixel_size.x), (gl_FragCoord.y * pixel_size.y), 0.0);
 	vec3 view_space_pos = GetFragmentPosition(coords);
 	vec4 color = vec4(texture(Color, coords.xy).xyz, 1.0);
-	vec3 normal = texture(Normal, coords.xy).xyz;
+	vec3 normal = UnpackNormals(texture(Normal, coords.xy).xy);
 	float roughness = texture(Roughness, coords.xy).x;
 	vec3 color_accum = vec3(0.0);
 
@@ -211,10 +213,7 @@ void main() {
 		else {
 			light_direction = - normalize(vec3(lights[light_index].position_or_direction_and_radius) - view_space_pos);
 		}
-
-		float attenuation_factor = 1;
-
-
+		float attenuation_factor = smoothstep(-0.02, 0.02,dot(-light_direction, normal));
 
 		if (lights[light_index].light_type == 1) {
 			float distance = length(vec3(lights[light_index].position_or_direction_and_radius) - view_space_pos);
@@ -226,11 +225,11 @@ void main() {
 			#endif
 
 			vec3 attenuation_constants = lights[light_index].attenuation_constants.xyz;
-			attenuation_factor = 1.0 / (attenuation_constants.x + (attenuation_constants.y * distance) + attenuation_constants.z * (distance * distance));
+			attenuation_factor *= 1.0 / (attenuation_constants.x + (attenuation_constants.y * distance) + attenuation_constants.z * (distance * distance));
 		}
 
 		float diffuse_contribution = 0.5f * (0.1 + max(0, dot(normal, - light_direction)));
-		float specular_contribution = 0.5f * pow(clamp(dot(normal, (- light_direction + vec3(0, 0, - 1)) /2.0), 0, 1), 1 +((1 - roughness) * 32));
+		float specular_contribution = 0.5f * pow(clamp(dot(normal, normalize(- light_direction - normalize(view_space_pos))), 0, 1), 1 +((1 - roughness) * 64));
 
 		float contribution = diffuse_contribution + specular_contribution;
 
