@@ -31,7 +31,7 @@ void DeferredSkeletalGeometryPass::InitPostProcessingPassData() {
 	pipeline_desc.polygon_render_mode = PrimitivePolygonRenderMode::DEFAULT;
 	pipeline_desc.framebuffer_format.color_attachemt_formats = {
         { TextureFormat::RGBA_UNSIGNED_CHAR },
-		{ TextureFormat::RGBA_32FLOAT},
+		{ TextureFormat::RG_16FLOAT},
 		{ TextureFormat::R_8FLOAT}
     };
 #ifdef EDITOR

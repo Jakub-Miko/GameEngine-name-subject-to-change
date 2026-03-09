@@ -202,6 +202,7 @@ public:
 		case TextureFormat::RG_32FLOAT:						return VK_FORMAT_R32G32_SFLOAT;
 		case TextureFormat::RG_16FLOAT:						return VK_FORMAT_R16G16_SFLOAT;
 		case TextureFormat::RG_CHAR_NORM:					return VK_FORMAT_R8G8_SNORM;
+		case TextureFormat::RGBA_16FLOAT:					return VK_FORMAT_R16G16B16A16_SFLOAT;
 		default:
 			throw std::runtime_error("Conversion failed");
 		}
@@ -225,6 +226,7 @@ public:
 		case TextureFormat::RG_32FLOAT:						return false;
 		case TextureFormat::RG_16FLOAT:						return false;
 		case TextureFormat::RG_CHAR_NORM:					return false;
+		case TextureFormat::RGBA_16FLOAT:					return false;
 		default:
 			throw std::runtime_error("Conversion failed");
 		}
@@ -247,6 +249,7 @@ public:
 		case TextureFormat::RG_32FLOAT:						return TextureUsage::SAMPLE_WRITABLE;
 		case TextureFormat::RG_16FLOAT:						return TextureUsage::SAMPLE_WRITABLE;
 		case TextureFormat::RG_CHAR_NORM:					return TextureUsage::SAMPLE_WRITABLE;
+		case TextureFormat::RGBA_16FLOAT:					return TextureUsage::SAMPLE_WRITABLE;
 		default:
 			throw std::runtime_error("Conversion failed");
 		}
@@ -351,6 +354,7 @@ public:
 		case TextureFormat::RG_32FLOAT:						return 2*sizeof(float);
 		case TextureFormat::RG_16FLOAT:						return 2*sizeof(float)/2;
 		case TextureFormat::RG_CHAR_NORM:					return 2*sizeof(char);
+		case TextureFormat::RGBA_16FLOAT:					return 4*sizeof(float)/2;
 		default:
 			throw std::runtime_error("Conversion failed");
 		}

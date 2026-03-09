@@ -20,16 +20,6 @@
 						}
 					},
 					{
-						"name" : "attenuation",
-						"type" : "VEC4",
-						"value" : {
-							"x" : 1.0,
-							"y" : 0.1,
-							"z" : 0.01,
-							"w" : 0.0
-						}
-					},
-					{
 						"name" : "pixel_size",
 						"type" : "VEC2"
 					},
@@ -37,6 +27,10 @@
 						"name": "light_far_plane",
 						"type" : "SCALAR",
 						"value" : 1.0
+					},
+					{
+						"name" : "range",
+						"type" : "SCALAR"
 					},
 					{
 						"name" : "ShadowCubeMap",
@@ -71,8 +65,8 @@ layout(set = 0, binding = 0) uniform conf{
 
 layout(set = 1, binding = 0) uniform light_props{
 	vec4 Light_Color;
-	vec4 attenuation_constants;
 	vec2 pixel_size;
+	float range;
 	float light_far_plane;
 };
 
@@ -110,8 +104,8 @@ layout(set = 0, binding = 0) uniform conf {
 
 layout(set = 1, binding = 0) uniform light_props{
 	vec4 Light_Color;
-	vec4 attenuation_constants;
 	vec2 pixel_size;
+	float range;
 	float light_far_plane;
 };
 
@@ -146,6 +140,7 @@ vec3 GetFragmentPosition(vec3 coordinates) {
 }
 
 #include <shaders/utils/NormalPacking.glsl>
+#include <shaders/utils/PointAttenuationFalloff.glsl>
 
 void main() {
 	vec3 coords = vec3((gl_FragCoord.x * pixel_size.x), (gl_FragCoord.y * pixel_size.y), 0.0);
@@ -159,7 +154,7 @@ void main() {
 	float attenuation_factor = 1;
 
 	float distance = length(light_pos - view_space_pos);
-	attenuation_factor = 1.0 / (attenuation_constants.x + (attenuation_constants.y * distance) + attenuation_constants.z * (distance * distance));
+	attenuation_factor *= PointAttenuationFalloff(distance, range);
 
 	float diffuse_contribution = 0.5f * (0.1 + max(0, dot(normal, -light_direction)));
 	float specular_contribution = 0.5f * pow(clamp(dot(normal, (-light_direction + vec3(0, 0, 1)) / 2.0), 0, 1), 1 + ((1 - roughness) * 32));

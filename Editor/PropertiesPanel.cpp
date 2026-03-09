@@ -199,12 +199,10 @@ void PropertiesPanel::RenderProperties(Entity entity, const PropertiesPanel_pers
 			LightComponent::ChangeType((LightType)type, selected);
 		}
 		if (original == (int)LightType::POINT) {
-			glm::vec3 atten = world.GetComponent<LightComponent>(selected).GetAttenuation();
-			ImGui::DragFloat("Attenuation Constant", &atten.r);
-			ImGui::DragFloat("Attenuation Linear", &atten.g);
-			ImGui::DragFloat("Attenuation Quadratic", &atten.b);
-			if (atten != world.GetComponent<LightComponent>(selected).GetAttenuation()) {
-				LightComponent::SetAttenuation(atten, selected);
+			float range = world.GetComponent<LightComponent>(selected).GetLightRange();
+			ImGui::DragFloat("Range", &range);
+			if (range != world.GetComponent<LightComponent>(selected).GetLightRange()) {
+				LightComponent::SetRange(range, selected);
 			}
 		}
 
@@ -306,6 +304,7 @@ void PropertiesPanel::RenderProperties(Entity entity, const PropertiesPanel_pers
 			ImGui::SliderFloat("Field of View", &camera.fov, 0.0f, 180.0f);
 			ImGui::DragFloat("ZFar", &camera.zFar);
 			ImGui::DragFloat("ZNear", &camera.zNear);
+			ImGui::DragFloat("Exposure", &camera.exposure);
 			bool is_primary = Application::GetWorld().GetPrimaryEntity() == selected;
 			bool primary_back = is_primary;
 			ImGui::Checkbox("Primary", &is_primary);

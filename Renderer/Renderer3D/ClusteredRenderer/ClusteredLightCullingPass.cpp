@@ -136,7 +136,7 @@ void ClusteredLightCullingPass::Render(RenderPipelineResourceManager& resource_m
             auto transform = glm::inverse(camera_trans.TransformMatrix) * world.GetComponent<TransformComponent>(entity).TransformMatrix;
             auto& light = world.GetComponent<LightComponent>(entity);
             ClusteredLightData light_data = {};
-            light_data.attenuation_constants = glm::vec4(light.GetAttenuation(),1.0);
+            light_data.range = light.GetLightRange();
             light_data.Light_Color = light.GetLightColor();
             light_data.light_type = (int)light.type;
             if(world.HasComponent<ShadowCasterComponent>(entity)) {
@@ -157,7 +157,7 @@ void ClusteredLightCullingPass::Render(RenderPipelineResourceManager& resource_m
                 light_data.position_or_direction_and_radius = glm::vec4(glm::mat3(transform) * glm::vec3(0.0f, 0.0f, -1.0f), 0.0f);
                 break;
             case LightType::POINT:
-                light_data.position_or_direction_and_radius = glm::vec4(glm::vec3(transform[3]), light.CalcRadiusFromAttenuation());
+                light_data.position_or_direction_and_radius = glm::vec4(glm::vec3(transform[3]), light.GetLightRange());
             default: break;
             }
             light_positions_and_radii.push_back(light_data);

@@ -7,6 +7,9 @@
 #include <Renderer/RenderResource.h>
 #include <Renderer/RenderResourceManager.h>
 
+#include "Application.h"
+#include "World/Components/CameraComponent.h"
+
 struct PostProcessingPreset;
 
 template<>
@@ -92,6 +95,9 @@ void PostProcessingPass::Render(RenderPipelineResourceManager& resource_manager)
 {
 	PROFILE("PostProcessingPass");
 	auto frame_buffer = resource_manager.GetResource<std::shared_ptr<RenderFrameBufferResource>>(input_buffer_name);
+	auto camera_ent = Application::GetWorld().GetPrimaryEntity();
+	auto& camera_component = Application::GetWorld().GetComponent<CameraComponent>(camera_ent);
+	float exposure = camera_component.exposure;
 
 	auto queue = Renderer::Get()->GetCommandQueue();
 	auto list = Renderer::Get()->GetRenderCommandList();
@@ -102,6 +108,7 @@ void PostProcessingPass::Render(RenderPipelineResourceManager& resource_manager)
 	list->SetIndexBuffer(data->index_buffer);
 	list->SetTexture2D("Color", frame_buffer->GetBufferDescriptor().GetColorAttachmentAsTexture(0));
 	list->SetTexture2D("Depth", frame_buffer->GetBufferDescriptor().GetDepthAttachmentAsTexture());
+	list->SetPushConstantRange(&exposure, sizeof(float));
 	list->Draw(6);
 
 	queue->ExecuteRenderCommandList(list);

@@ -15,7 +15,7 @@ void ComponentInitProxy<LightComponent>::OnCreate(World& world, Entity entity) {
 	auto& light_comp = world.GetComponent<LightComponent>(entity);
 	switch (light_comp.type) {
 	case LightType::POINT:
-		world.SetComponent<BoundingVolumeComponent>(entity, BoundingPointLightSphere(light_comp.CalcRadiusFromAttenuation()));
+		world.SetComponent<BoundingVolumeComponent>(entity, BoundingPointLightSphere(light_comp.GetLightRange()));
 		break;
 	case LightType::DIRECTIONAL:
 		world.SetComponent<BoundingVolumeComponent>(entity, BoundingInfinity());
@@ -46,7 +46,7 @@ void LightComponent::ChangeType(LightType type, Entity ent)
 				light_comp.type = LightType::DIRECTIONAL;
 				break;
 			case LightType::POINT:
-				Application::GetWorld().SetComponent<BoundingVolumeComponent>(ent, BoundingPointLightSphere(light_comp.CalcRadiusFromAttenuation()));
+				Application::GetWorld().SetComponent<BoundingVolumeComponent>(ent, BoundingPointLightSphere(light_comp.range));
 				light_comp.type = LightType::POINT;
 				break;
 			}
@@ -64,15 +64,15 @@ void LightComponent::ChangeType(LightType type, Entity ent)
 	}
 }
 
-void LightComponent::SetAttenuation(glm::vec3 attenuation_in, Entity ent)
+void LightComponent::SetRange(float new_range, Entity ent)
 {
 	if (Application::GetWorld().HasComponentSynced<LightComponent>(ent)) {
 		LightComponent& light_comp = Application::GetWorld().GetComponentSync<LightComponent>(ent);
 		if (light_comp.type != LightType::POINT) {
 			throw std::runtime_error("Can't change attenuation on a non-point light");
 		} 
-		light_comp.attenuation = attenuation_in;
-		Application::GetWorld().SetComponent<BoundingVolumeComponent>(ent, BoundingPointLightSphere(light_comp.CalcRadiusFromAttenuation()));
+		light_comp.range = new_range;
+		Application::GetWorld().SetComponent<BoundingVolumeComponent>(ent, BoundingPointLightSphere(new_range));
 		Application::GetWorld().MarkEntityDirty(ent);
 	}
 	else {
@@ -84,27 +84,9 @@ void LightComponent::SetLightColor(glm::vec4 color_in, Entity ent)
 {
 	if (Application::GetWorld().HasComponentSynced<LightComponent>(ent)) {
 		LightComponent& light_comp = Application::GetWorld().GetComponentSync<LightComponent>(ent);
-		if (light_comp.type == LightType::POINT) {
-			
-			if (light_comp.color.w != color_in.w) {
-				light_comp.color = color_in;
-				Application::GetWorld().SetComponent<BoundingVolumeComponent>(ent, BoundingPointLightSphere(light_comp.CalcRadiusFromAttenuation()));
-				Application::GetWorld().MarkEntityDirty(ent);
-			}
-			else {
-				light_comp.color = color_in;
-			}
-		}
-		else {
-			light_comp.color = color_in;
-		}
+		light_comp.color = color_in;
 	}
 	else {
 		throw std::runtime_error("Can't change light type of an entity without a light component");
 	}
-}
-
-float LightComponent::CalcRadiusFromAttenuation()
-{
-	return std::sqrt(1.0 / (attenuation.b * (0.005 / color.w)));;
 }

@@ -17,7 +17,6 @@
 #include <Application.h>
 #include <Window.h>
 #include "ClusteredLightCullingPass.h"
-#include "dependencies/OpenAL/fmt-11.1.4/include/fmt/base.h"
 
 struct LightingPassPreset;
 
@@ -45,9 +44,9 @@ struct VertexLayoutFactory<LightingPassPreset> {
 struct LightData {
 	glm::mat4 view_model_matrix;
 	glm::vec4 light_color;
-	glm::vec4 attenuation_constants;
+	float range;
 	int light_type;
-	uint8_t padding[12]; // pad to match 16 byte alignment requirements of vec4 and mat4
+	uint8_t padding[8]; // pad to match 16 byte alignment requirements of vec4 and mat4
 };
 
 struct ConfigData {
@@ -114,7 +113,7 @@ std::shared_ptr<Pipeline> ClusteredLightingPass::GetPipelineForMode(OutputModes 
 	pipeline_desc.polygon_render_mode = PrimitivePolygonRenderMode::DEFAULT;
 	pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/ClusteredRenderer/ClusteredLightingPassShader.glsl", compiler_definitions->second);
 	pipeline_desc.framebuffer_format.color_attachemt_formats = {
-		{ TextureFormat::BGRA_SRGB }
+		{ TextureFormat::RGBA_16FLOAT }
 	};
 
 	auto new_pipeline = PipelineManager::Get()->CreatePipeline(pipeline_desc);
@@ -142,7 +141,7 @@ void ClusteredLightingPass::InitPassData() {
 	pipeline_desc.polygon_render_mode = PrimitivePolygonRenderMode::DEFAULT;
 	pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/ClusteredRenderer/ClusteredLightingPassShader.glsl");
 	pipeline_desc.framebuffer_format.color_attachemt_formats = {
-		{ TextureFormat::BGRA_SRGB }
+		{ TextureFormat::RGBA_16FLOAT }
 	};
 
 	data->output_mode_compiler_definitions[OutputModes::NORMAL] = {};
@@ -180,7 +179,7 @@ void ClusteredLightingPass::InitPassData() {
 	auto sampler = TextureSampler::CreateSampler(sampler_desc);
 
 	RenderTexture2DDescriptor color_texture_desc;
-	color_texture_desc.format = TextureFormat::BGRA_SRGB;
+	color_texture_desc.format = TextureFormat::RGBA_16FLOAT;
 	color_texture_desc.usage = TextureUsage::COLOR_ATTACHMENT_READABLE;
 	color_texture_desc.height = Application::Get()->GetWindow()->GetProperties().resolution_y;
 	color_texture_desc.width = Application::Get()->GetWindow()->GetProperties().resolution_x;
@@ -403,7 +402,7 @@ void ClusteredLightingPass::RenderShadowedLightsPoint(RenderPipelineResourceMana
 		glm::mat4 mvp;
 		glm::mat4 mv_matrix;
 
-		glm::mat4 model_sphere = glm::translate(glm::mat4(1.0f), (glm::vec3)transform_component.TransformMatrix[3]) * glm::scale(glm::mat4(1.0), glm::vec3(light.CalcRadiusFromAttenuation()));
+		glm::mat4 model_sphere = glm::translate(glm::mat4(1.0f), (glm::vec3)transform_component.TransformMatrix[3]) * glm::scale(glm::mat4(1.0), glm::vec3(light.GetLightRange()));
 		mv_matrix = view_matrix * model_sphere;
 		mvp = ViewProjection * model_sphere;
 		list->SetVertexBuffer(data->sphere_mesh->GetVertexBuffer());
@@ -421,7 +420,7 @@ void ClusteredLightingPass::RenderShadowedLightsPoint(RenderPipelineResourceMana
 		data->mat_shadowed_point->SetParameter("pixel_size", pixel_size);
 		data->mat_shadowed_point->SetParameter("Light_Color", light.GetLightColor());
 		gbuffer_material->SetMaterial(list);
-		data->mat_shadowed_point->SetParameter("attenuation", glm::vec4(light.GetAttenuation(), 0.0f));
+		data->mat_shadowed_point->SetParameter("range", light.GetLightRange());
 		data->mat_shadowed_point->SetMaterial(list);
 		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed_point, glm::value_ptr(mvp), sizeof(glm::mat4), 0);
 		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed_point, glm::value_ptr(mv_matrix), sizeof(glm::mat4), sizeof(glm::mat4));
@@ -484,7 +483,7 @@ void ClusteredLightingPass::RenderShadowedLightsDirectional(RenderPipelineResour
 		data->mat_shadowed_directional->SetParameter("pixel_size", pixel_size);
 		data->mat_shadowed_directional->SetParameter("Light_Color", light.GetLightColor());
 		gbuffer_material->SetMaterial(list);
-		data->mat_shadowed_directional->SetParameter("attenuation", glm::vec4(light.GetAttenuation(), 0.0f));
+		data->mat_shadowed_point->SetParameter("range", light.GetLightRange());
 		data->mat_shadowed_directional->SetMaterial(list);
 		glm::vec2 shadow_pixel_size = { 1.0f / shadow.res_x, 1.0f / shadow.res_x };
 		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed_directional, &shadow.cascades, sizeof(uint32_t), sizeof(glm::mat4) * 18 + sizeof(float) * 5 + sizeof(glm::vec2));

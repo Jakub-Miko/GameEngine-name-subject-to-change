@@ -49,7 +49,7 @@ struct Light {
     mat4 light_matrix;
     vec4 position_or_direction_and_radius;
     vec4 Light_Color;
-    vec4 attenuation_constants;
+    float range;
     int light_type;
     uint shadow_index;
     float light_far_plane;

@@ -81,7 +81,7 @@ struct Light {
 	mat4 light_matrix;
 	vec4 position_or_direction_and_radius;
 	vec4 Light_Color;
-	vec4 attenuation_constants;
+	float range;
 	int light_type;
 	uint shadow_index;
 	float light_far_plane;
@@ -187,6 +187,7 @@ float calculate_shadows_point(vec3 view_space_pos, vec3 coords, uint index) {
 }
 
 #include <shaders/utils/NormalPacking.glsl>
+#include <shaders/utils/PointAttenuationFalloff.glsl>
 
 void main() {
 	vec3 coords = vec3((gl_FragCoord.x * pixel_size.x), (gl_FragCoord.y * pixel_size.y), 0.0);
@@ -224,8 +225,7 @@ void main() {
 				}
 			#endif
 
-			vec3 attenuation_constants = lights[light_index].attenuation_constants.xyz;
-			attenuation_factor *= 1.0 / (attenuation_constants.x + (attenuation_constants.y * distance) + attenuation_constants.z * (distance * distance));
+			attenuation_factor *= PointAttenuationFalloff(distance, lights[light_index].range);
 		}
 
 		float diffuse_contribution = 0.5f * (0.1 + max(0, dot(normal, - light_direction)));

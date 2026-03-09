@@ -19,11 +19,10 @@ struct ClusteredLightData {
     glm::mat4 light_matrix;
     glm::vec4 position_or_direction_and_radius;
     glm::vec4 Light_Color;
-    glm::vec4 attenuation_constants;
+    float range;
     int light_type;
     uint32_t shadow_index;
     float light_far_plane;
-    uint8_t padding[4];
 };
 
 class ClusteredLightCullingPass : public RenderPass {

@@ -20,18 +20,12 @@
 						}
 					},
 					{
-						"name" : "attenuation",
-						"type" : "VEC4",
-						"value" : {
-							"x" : 1.0,
-							"y" : 0.1,
-							"z" : 0.01,
-							"w" : 0.0
-						}
-					},
-					{
 						"name" : "pixel_size",
 						"type" : "VEC2"
+					},
+					{
+						"name" : "range",
+						"type" : "SCALAR"
 					},
 					{
 						"name" : "ShadowMapArray",
@@ -72,8 +66,8 @@ layout(set = 0, binding = 0) uniform conf{
 
 layout(set = 1, binding = 0) uniform light_props{
 	vec4 Light_Color;
-	vec4 attenuation_constants;
 	vec2 pixel_size;
+	float range;
 };
 
 out vec3 light_volume_pos;
@@ -118,8 +112,8 @@ layout(set = 0, binding = 0) uniform conf {
 
 layout(set = 1, binding = 0) uniform light_props{
 	vec4 Light_Color;
-	vec4 attenuation_constants;
 	vec2 pixel_size;
+	float range;
 };
 
 in vec3 light_volume_pos;

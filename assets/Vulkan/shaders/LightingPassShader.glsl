@@ -20,18 +20,12 @@
 						}
 					},
 					{
-						"name" : "attenuation",
-						"type" : "VEC4",
-						"value" : {
-							"x" : 1.0,
-							"y" : 0.1,
-							"z" : 0.01,
-							"w" : 0.0
-						}
-					},
-					{
 						"name" : "pixel_size",
 						"type" : "VEC2"
+					},
+					{
+						"name" : "range",
+						"type" : "SCALAR"
 					},
 					{
 						"name" : "light_type",
@@ -68,8 +62,8 @@ layout(set = 0, binding = 0) uniform conf {
 
 layout(set = 1, binding = 0) uniform light_props{
 	vec4 Light_Color;
-	vec4 attenuation_constants;
 	vec2 pixel_size;
+	float range;
 	int light_type;
 };
 
@@ -115,8 +109,8 @@ layout(set = 0, binding = 0) uniform conf {
 
 layout(set = 1, binding = 0) uniform light_props{
 	vec4 Light_Color;
-	vec4 attenuation_constants;
 	vec2 pixel_size;
+	float range;
 	int light_type;
 };
 
@@ -134,6 +128,7 @@ vec3 GetFragmentPosition(vec3 coordinates) {
 }
 
 #include <shaders/utils/NormalPacking.glsl>
+#include <shaders/utils/PointAttenuationFalloff.glsl>
 
 void main() {
 	vec3 coords = vec3((gl_FragCoord.x * pixel_size.x), (gl_FragCoord.y * pixel_size.y), 0.0);
@@ -154,7 +149,7 @@ void main() {
 
 	if (light_type == 1) {
 		float distance = length(light_pos - view_space_pos);
-		attenuation_factor = 1.0 / (attenuation_constants.x + (attenuation_constants.y * distance) + attenuation_constants.z * (distance * distance));
+		attenuation_factor *= PointAttenuationFalloff(distance, range);
 	}
 
 	float diffuse_contribution = 0.5f * (0.1 + max(0, dot(normal, -light_direction)));

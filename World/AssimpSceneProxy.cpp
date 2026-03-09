@@ -192,6 +192,7 @@ void AssimpSceneProxy::LoadLights(LoadState &state)
         auto light_imported_ent = fnd->second;
         auto light_ent = light_imported_ent.entity;
         glm::vec4 color = glm::vec4(light->mColorDiffuse.r, light->mColorDiffuse.g, light->mColorDiffuse.b, 1.0f);
+        double range = 1.0f;
 
         if(state.gltf_light_meta && light_imported_ent.entity_node->mMetaData) {
             auto index = GetNestedMetadata({"extensions", "KHR_lights_punctual", "light"}, light_imported_ent.entity_node->mMetaData);
@@ -222,6 +223,13 @@ void AssimpSceneProxy::LoadLights(LoadState &state)
                     color.a = GetDouble(intensity_entry);
                 }
 
+                auto range_entry = GetMetadata("range", metadata);
+                if(range_entry) {
+                    range = GetDouble(range_entry);
+                } else {
+                    range = sqrt(color.a / 0.005);
+                }
+
             }
         }
 
@@ -229,8 +237,7 @@ void AssimpSceneProxy::LoadLights(LoadState &state)
         {
         case aiLightSourceType::aiLightSource_POINT:
             {
-                glm::vec3 attenuation(light->mAttenuationConstant, light->mAttenuationLinear, light->mAttenuationQuadratic);
-                world.SetComponent<LightComponent>(light_ent, LightComponent(attenuation, color));
+                world.SetComponent<LightComponent>(light_ent, LightComponent(range, color));
                 if(state.serialize) {
                     world.SetComponent<SerializableComponent>(light_ent, SerializableComponent{});
                 }
