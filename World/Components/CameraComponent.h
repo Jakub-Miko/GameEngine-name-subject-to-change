@@ -35,7 +35,7 @@ public:
                                                                                       zNear, zFar)) {}
 
     CameraComponent(const CameraComponent& other) : fov(other.fov), zNear(other.zNear), zFar(other.zFar),
-                                                    aspect_ratio(other.aspect_ratio), view_frustum(),
+                                                    aspect_ratio(other.aspect_ratio), view_frustum(), exposure(other.exposure),
                                                     projection_matrix(
                                                         glm::perspective(
                                                             glm::radians(fov), aspect_ratio, zNear, zFar)) {}

@@ -8,6 +8,11 @@
 #include "DynamicPropertyStore.h"
 #include "TypeList.h"
 
+/**
+ * @brief Allows for projecting a set of polymorphic properties onto a set of polymorphic template classes which take them as a constructor parameter
+ * @tparam BaseClass The base class of the polymorphic template classes to which the set of properties gets projected, it must be derived from PropertyModuleBase
+ * @tparam Types The underlying types of dynamic properties which will get projected on to the BaseClass, properties not of these types will be ignored
+ */
 template<typename BaseClass, typename ... Types>
 class DynamicPropertyProjector {
 public:

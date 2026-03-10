@@ -6,11 +6,13 @@
 #include "TypeId.h"
 #include "TypeList.h"
 
-
+/**
+ * @brief This class represents the common capabilities of all dynamic properties.
+ */
 class DynamicPropertyBase {
 public:
 
-    using Types = TypeList<std::string, MultiChoice, bool>;
+    using Types = TypeList<std::string, MultiChoice, bool, float>;
 
     virtual std::string GetName() = 0;
     virtual std::string GetTypeName() = 0;
@@ -20,6 +22,14 @@ public:
     virtual ~DynamicPropertyBase() {};
 };
 
+
+/**
+ * @brief A dynamic property wrapped for a particular type T
+ *
+ * Allows for storing, accessing and projecting a set of different types dynamically.
+ *
+ * @tparam T The type contained in the property
+ */
 template<typename T>
 class DynamicProperty : public DynamicPropertyBase, public std::enable_shared_from_this<DynamicProperty<T>> {
 public:

@@ -78,3 +78,16 @@ public:
 private:
     std::shared_ptr<DynamicProperty<bool>> value;
 };
+
+template<>
+class UIModuleAdapter<float> : public UIModuleAdapterBase {
+public:
+    UIModuleAdapter() {}
+    UIModuleAdapter(std::shared_ptr<DynamicProperty<float>> value) : value(value) {}
+
+    void RenderUI() override;
+
+    ~UIModuleAdapter() override {}
+private:
+    std::shared_ptr<DynamicProperty<float>> value;
+};

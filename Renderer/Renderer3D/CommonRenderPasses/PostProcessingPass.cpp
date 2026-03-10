@@ -33,6 +33,7 @@ struct VertexLayoutFactory<PostProcessingPreset> {
 
 struct PostProcessingPass::internal_data {
 	std::shared_ptr<Pipeline> pipeline;
+	std::shared_ptr<Pipeline> pipeline_with_overlay;
 	std::shared_ptr<RenderBufferResource> vertex_buffer;
 	std::shared_ptr<RenderBufferResource> index_buffer;
 	bool initialized = false;
@@ -53,6 +54,10 @@ void PostProcessingPass::InitPostProcessingPassData() {
 		{ TextureFormat::BGRA_SRGB }
 	};
 	data->pipeline = PipelineManager::Get()->CreatePipeline(pipeline_desc);
+
+	pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/PostProcessingShaderWithOverlay.glsl");
+
+	data->pipeline_with_overlay = PipelineManager::Get()->CreatePipeline(pipeline_desc);
 
 	struct Vertex {
 		glm::vec2 pos;
@@ -80,7 +85,7 @@ void PostProcessingPass::InitPostProcessingPassData() {
 	data->initialized = true;
 }
 
-PostProcessingPass::PostProcessingPass(const std::string& input_buffer_name) : input_buffer_name(input_buffer_name) 
+PostProcessingPass::PostProcessingPass(const std::string& input_buffer_name, const std::string& input_overlay) : input_buffer_name(input_buffer_name), input_overlay(input_overlay)
 {
 	data = new internal_data;
 	InitPostProcessingPassData();
@@ -89,6 +94,10 @@ PostProcessingPass::PostProcessingPass(const std::string& input_buffer_name) : i
 void PostProcessingPass::Setup(RenderPassResourceDefinnition& setup_builder)
 {
 	setup_builder.AddResource<std::shared_ptr<RenderFrameBufferResource>>(input_buffer_name, RenderPassResourceDescriptor_Access::READ);
+	if(!input_overlay.empty()) {
+		setup_builder.AddResource<std::shared_ptr<RenderTexture2DResource>>(input_overlay, RenderPassResourceDescriptor_Access::READ);
+		enable_overlay_prop = setup_builder.GetProperties()->SetProperty("Enable post process overlay", false).second;
+	}
 }
 
 void PostProcessingPass::Render(RenderPipelineResourceManager& resource_manager)
@@ -101,13 +110,20 @@ void PostProcessingPass::Render(RenderPipelineResourceManager& resource_manager)
 
 	auto queue = Renderer::Get()->GetCommandQueue();
 	auto list = Renderer::Get()->GetRenderCommandList();
+	bool has_overlay = enable_overlay_prop ? enable_overlay_prop->GetValueTyped() : false;
 
-	list->SetPipeline(data->pipeline);
+	list->SetPipeline(has_overlay ? data->pipeline_with_overlay : data->pipeline);
 	list->SetDefaultRenderTarget();
 	list->SetVertexBuffer(data->vertex_buffer);
 	list->SetIndexBuffer(data->index_buffer);
 	list->SetTexture2D("Color", frame_buffer->GetBufferDescriptor().GetColorAttachmentAsTexture(0));
 	list->SetTexture2D("Depth", frame_buffer->GetBufferDescriptor().GetDepthAttachmentAsTexture());
+
+	if (has_overlay) {
+		auto overlay_buffer = resource_manager.GetResource<std::shared_ptr<RenderTexture2DResource>>(input_overlay);
+		list->SetTexture2D("Overlay", overlay_buffer);
+	}
+
 	list->SetPushConstantRange(&exposure, sizeof(float));
 	list->Draw(6);
 

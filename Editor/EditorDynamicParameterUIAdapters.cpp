@@ -27,3 +27,10 @@ void UIModuleAdapter<bool>::RenderUI() {
         value->SetValue(val);
     }
 }
+
+void UIModuleAdapter<float>::RenderUI() {
+    float val = value->GetValueTyped();
+    if(ImGui::DragFloat(value->GetName().c_str(), &val)) {
+        value->SetValue(val);
+    }
+}

@@ -4,6 +4,7 @@
 #include "ClusteredRenderer/BindlessShadowMappingPass.h"
 #include "ClusteredRenderer/ClusteredLightCullingPass.h"
 #include "ClusteredRenderer/ClusteredLightingPass.h"
+#include "ClusteredRenderer/DebugOverlayPass.h"
 #include "CommonRenderPasses/PostProcessingPass.h"
 #include "CommonRenderPasses/RenderSubmissionPass.h"
 #include "DeferredRenderer/DeferredGeometryPass.h"
@@ -12,7 +13,14 @@
 
 std::shared_ptr<RenderPipeline> ClusteredRendererPipeline::CreatePipeline() {
     RenderPassBuilder builder;
+#ifndef NDEBUG
+    builder.AddPass(new DebugOverlayPass("RenderOutput", "GBufferMaterial",
+        "ClusteredLightLists", "ColorBuffer", "DebugOverlay"));
+    builder.AddPass(new PostProcessingPass("ColorBuffer", "DebugOverlay"));
+#else
     builder.AddPass(new PostProcessingPass("ColorBuffer"));
+#endif
+
     builder.AddPass(new GenerateGBufferPass("InitialGBuffer", "GBufferMaterial"));
     builder.AddPass(new ClusteredLightCullingPass("RenderLights", "RenderShadowedPointLights" , "ClusteredLightLists", "ActiveClusters"));
     builder.AddPass(new ActiveClusterFilterPass("GBufferMaterial","RenderOutput" ,"ActiveClusters"));

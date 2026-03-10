@@ -29,21 +29,23 @@ public:
     }
 
     template<typename T>
-    bool SetProperty(const std::string& name, const T& value) {
+    std::pair<bool, std::shared_ptr<DynamicProperty<T>>> SetProperty(const std::string& name, const T& value) {
         auto fnd = properties.find(name);
         if (fnd != properties.end()) {
-            fnd->second->SetValue(value);
+            if(!fnd->second->SetValue(value)) {
+                throw std::runtime_error("Could not set property " + name + " to value, ensure the type matches.");
+            }
             auto update_event = std::make_unique<DynamicPropertyStoreUpdateEvent>();
             update_event->updated_property = fnd->second;
             update_event_subject.Notify(update_event.get());
-            return true;
+            return std::make_pair(true, std::dynamic_pointer_cast<DynamicProperty<T>>(fnd->second));
         } else {
             auto new_prop = std::make_shared<DynamicProperty<T>>(name, value);
             properties.insert(std::make_pair(name, new_prop));
             auto update_event = std::make_unique<DynamicPropertyStoreUpdateEvent>();
             update_event->updated_property = new_prop;
             update_event_subject.Notify(update_event.get());
-            return false;
+            return std::make_pair(false, new_prop);
         }
     }
 

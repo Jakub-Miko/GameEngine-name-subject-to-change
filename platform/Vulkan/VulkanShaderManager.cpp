@@ -99,6 +99,7 @@ VkShaderModule VulkanShaderManager::CompileShaderStage(VulkanShaderStages type, 
 	options.SetAutoMapLocations(true);
 	options.SetSourceLanguage(shaderc_source_language_glsl);
 	options.SetIncluder(std::make_unique<VulkanShaderIncluder>());
+	options.SetOptimizationLevel(shaderc_optimization_level_performance);
 
 	for(auto& def: compiler_definitions) {
 		auto equal_sign = def.find('=');

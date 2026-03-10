@@ -207,7 +207,7 @@ void Editor::Run()
 		ImVec2 center = ImGui::GetMainViewport()->GetCenter();
 		ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
-		if (ImGui::BeginPopupModal("Viewport Settings", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+		if (ImGui::BeginPopupContextWindow("Viewport Settings", ImGuiPopupFlags_None)) {
 			ImGui::Checkbox("Spatial Index Visualization", &spatial_index_visualization);
 			ImGui::Checkbox("Lighting Bounds Visualization", &light_bounds_visualization);
 

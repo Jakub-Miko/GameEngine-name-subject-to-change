@@ -16,6 +16,5 @@ vec3 UnpackNormals(vec2 packed) {
     if(normal.z < 0) {
         normal.xy = (1.0 - abs(normal.yx)) * ExtractSign(normal.xy);
     }
-
     return normalize(normal);
 }

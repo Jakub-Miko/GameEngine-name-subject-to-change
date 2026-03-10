@@ -54,11 +54,12 @@ layout(set = 0, binding = 0) uniform conf {
 	int light_count;
 };
 
-out vec3 light_volume_pos;
+out vec2 light_volume_pos;
 
 void main() {
 	gl_Position = vec4(position, 1.0);
-	light_volume_pos = vec3(inverse(projection_matrix) * vec4(position.xy, -1.0, 1.0));
+	vec3 light_pos = vec3(inverse(projection_matrix) * vec4(position.xy, -1.0, 1.0));
+	light_volume_pos = light_pos.xy / abs(light_pos.z);
 }
 
 // #end
@@ -118,14 +119,19 @@ layout(std430, set=0, binding = 3) readonly buffer cluster_buffer
 };
 
 
-in vec3 light_volume_pos;
+in vec2 light_volume_pos;
 
-vec3 GetFragmentPosition(vec3 coordinates) {
-	vec3 dir = vec3(light_volume_pos.xy / abs(light_volume_pos.z), -1.0);
-	float depth = texture(DepthBuffer, coordinates.xy).x;
+struct GBufferData {
+	vec4 color_and_roughness;
+	vec3 normals;
+	vec3 view_space_pos;
+	ClusterLightAssignment cluster_assignment;
+};
 
-	float linearized_depth = depth_constant_b / (depth - depth_constant_a);
-	return dir * linearized_depth;
+
+
+vec3 GetFragmentPosition(vec2 coordinates, float depth) {
+	return vec3(light_volume_pos, -1.0) * depth;
 }
 
 uint get_depth_slice_index(float depth) {
@@ -134,15 +140,8 @@ uint get_depth_slice_index(float depth) {
 	return int(min(max(log2(depth)*scale + bias, 0.0f), cluster_grid_size.z - 1));
 }
 
-uint pixel_depth_slice(vec3 coords) {
-	float depth = texture(DepthBuffer, coords.xy).x;
-	float linearized_depth = depth_constant_b / (depth - depth_constant_a);
-	uint slice = get_depth_slice_index(linearized_depth);
-	return slice;
-}
-
-uint get_cluster_index(vec3 coords) {
-	uint slice = pixel_depth_slice(coords);
+uint get_cluster_index(vec2 coords, float depth) {
+	uint slice = get_depth_slice_index(depth);
 
 	coords.y = 1.0f - coords.y;
 	uvec3 cluster_coords = uvec3(min(uvec2(coords.xy * vec2(cluster_grid_size.xy)), cluster_grid_size.xy - 1u),
@@ -155,117 +154,65 @@ uint get_cluster_index(vec3 coords) {
 	return index;
 }
 
-vec3 random(uint x)
-{
-	//From https://nullprogram.com/blog/2018/07/31/
-	x ^= x >> 16;
-	x *= 0x7feb352dU;
-	x ^= x >> 15;
-	x *= 0x846ca68bU;
-	x ^= x >> 16;
-
-	vec3 color;
-	color.r = float(x & 255) / 255.0;
-	color.g = float(x >> 8 & 255) / 255.0;
-	color.b = float(x >> 16 & 255) / 255.0;
-	return color;
-}
-
-float calculate_shadows_point(vec3 view_space_pos, vec3 coords, uint index) {
-	vec4 light_space_pos = lights[index].light_matrix * vec4(view_space_pos, 1.0);
-
-	vec3 normal = texture(Normal, coords.xy).xyz;
-	vec3 bias = normal * 0.02;
-
-	light_space_pos += vec4(bias,0);
-	vec3 light_space_coords = normalize(light_space_pos.xyz);
+float calculate_shadows_point(vec3 view_space_pos, uint index, vec3 normal) {
+	vec3 light_space_pos = (lights[index].light_matrix * vec4(view_space_pos, 1.0)).xyz + normal * 0.02;
 	float current_depth = length(light_space_pos) / lights[index].light_far_plane;
-	vec4 shadow_coords = vec4(light_space_coords.xyz * vec3(1,-1,1), current_depth - 0.0002);
-	float shadow_map_depth = texture(PointShadowMaps[lights[index].shadow_index], shadow_coords);
-
-	return shadow_map_depth;
+	vec4 shadow_coords = vec4(normalize(light_space_pos.xyz) * vec3(1,-1,1), current_depth - 0.0002);
+	return texture(PointShadowMaps[lights[index].shadow_index], shadow_coords);
 }
 
 #include <shaders/utils/NormalPacking.glsl>
 #include <shaders/utils/PointAttenuationFalloff.glsl>
 
+vec3 ComputePointLight(uint light_index, vec3 normals, vec3 view_space_pos, vec4 color_and_roughness) {
+	float shadow_contrib = 1.0f;
+	if(lights[light_index].shadow_index != ~uint(0)) {
+		shadow_contrib *= calculate_shadows_point(view_space_pos, light_index, normals);
+	}
+
+	float distance = length(vec3(lights[light_index].position_or_direction_and_radius) - view_space_pos);
+	shadow_contrib *= PointAttenuationFalloff(distance, lights[light_index].range);
+
+	vec3 light_direction = normalize(vec3(lights[light_index].position_or_direction_and_radius) - view_space_pos);
+	shadow_contrib *= smoothstep(-0.02, 0.02,dot(light_direction, normals));
+	float light_contrib = 0.5f * (0.1 + max(0, dot(normals,  light_direction))); // diffuse part
+	light_contrib += 0.5f * pow(clamp(dot(normals, normalize( light_direction - normalize(view_space_pos))), 0, 1), 1 +((1 - color_and_roughness.w) * 64)); //specular part
+
+	return vec3(light_contrib * shadow_contrib * lights[light_index].Light_Color.xyz * lights[light_index].Light_Color.w * color_and_roughness.xyz);
+}
+
+vec3 ComputeDirectionalLight(uint light_index, vec3 normals, vec3 view_space_pos, vec4 color_and_roughness) {
+	vec3 light_direction = normalize(vec3(lights[light_index].position_or_direction_and_radius));
+	float light_contrib = 0.5f * (0.1 + max(0, dot(normals, - light_direction))); // diffuse part
+	light_contrib += 0.5f * pow(clamp(dot(normals, normalize(- light_direction - normalize(view_space_pos))), 0, 1), 1 +((1 - color_and_roughness.w) * 64)); //specular part
+	light_contrib *= smoothstep(-0.02, 0.02,dot(-light_direction, normals));
+	vec4 Light_Color = lights[light_index].Light_Color;
+	return vec3(color_and_roughness.xyz * Light_Color.xyz * Light_Color.w * light_contrib);
+}
+
+GBufferData GetGBufferData(vec2 coords) {
+	GBufferData data;
+	float linearized_depth = depth_constant_b / (texture(DepthBuffer, coords.xy).x - depth_constant_a);
+	data.cluster_assignment = cluster_assignments[get_cluster_index(coords, linearized_depth)];
+	data.view_space_pos = GetFragmentPosition(coords, linearized_depth);
+	data.normals = UnpackNormals(texture(Normal, coords.xy).xy);
+	data.color_and_roughness = vec4(texture(Color, coords.xy).xyz, texture(Roughness, coords.xy).x);
+	return data;
+}
+
 void main() {
-	vec3 coords = vec3((gl_FragCoord.x * pixel_size.x), (gl_FragCoord.y * pixel_size.y), 0.0);
-	vec3 view_space_pos = GetFragmentPosition(coords);
-	vec4 color = vec4(texture(Color, coords.xy).xyz, 1.0);
-	vec3 normal = UnpackNormals(texture(Normal, coords.xy).xy);
-	float roughness = texture(Roughness, coords.xy).x;
-	vec3 color_accum = vec3(0.0);
+	GBufferData gbuffer_data = GetGBufferData(vec2((gl_FragCoord.x * pixel_size.x), (gl_FragCoord.y * pixel_size.y)));
 
-	uint index = get_cluster_index(coords);
-
-	ClusterLightAssignment list = cluster_assignments[index];
-
-	#ifdef DEBUG_RADIUS
-		int inside = 0;
-	#endif
-
-	for(int i = 0; i < list.count; i++) {
-		vec3 light_direction;
-		uint light_index = light_assignment_indicies[list.start_index + i];
+	color_out = vec4(0.0,0.0,0.0,1.0);
+	for(int i = 0; i < gbuffer_data.cluster_assignment.count; i++) {
+		uint light_index = light_assignment_indicies[gbuffer_data.cluster_assignment.start_index + i];
 		if (lights[light_index].light_type == 0) {
-			light_direction = normalize(vec3(lights[light_index].position_or_direction_and_radius));
+			color_out += vec4(ComputeDirectionalLight(light_index, gbuffer_data.normals, gbuffer_data.view_space_pos, gbuffer_data.color_and_roughness),0.0);
 		}
 		else {
-			light_direction = - normalize(vec3(lights[light_index].position_or_direction_and_radius) - view_space_pos);
+			color_out += vec4(ComputePointLight(light_index, gbuffer_data.normals, gbuffer_data.view_space_pos, gbuffer_data.color_and_roughness),0.0);
 		}
-		float attenuation_factor = smoothstep(-0.02, 0.02,dot(-light_direction, normal));
-
-		if (lights[light_index].light_type == 1) {
-			float distance = length(vec3(lights[light_index].position_or_direction_and_radius) - view_space_pos);
-
-			#ifdef DEBUG_RADIUS
-				if(distance < lights[light_index].position_or_direction_and_radius.w) {
-					inside = 1;
-				}
-			#endif
-
-			attenuation_factor *= PointAttenuationFalloff(distance, lights[light_index].range);
-		}
-
-		float diffuse_contribution = 0.5f * (0.1 + max(0, dot(normal, - light_direction)));
-		float specular_contribution = 0.5f * pow(clamp(dot(normal, normalize(- light_direction - normalize(view_space_pos))), 0, 1), 1 +((1 - roughness) * 64));
-
-		float contribution = diffuse_contribution + specular_contribution;
-
-		vec4 Light_Color = lights[light_index].Light_Color;
-		float shadow_contrib = 1.0f;
-		if(lights[light_index].shadow_index != ~uint(0)) {
-			shadow_contrib = calculate_shadows_point(view_space_pos, coords, light_index);
-		}
-		color_accum += vec3(color.xyz * Light_Color.xyz * attenuation_factor * Light_Color.w * contribution * shadow_contrib);
 	}
-	color_out = vec4(color_accum, 1.0);
-
-	#ifdef DEBUG_LIGHT_COUNT
-	color_out += vec4(0,list.count / 20.0f,0,0);
-	#endif
-
-	#ifdef DEBUG_CLUSTERS
-	color_out = vec4(random(index),1.0f);
-	#endif
-
-	#ifdef DEBUG_DEPTH_SLICES
-	color_out = vec4(random(pixel_depth_slice(coords)),1.0f);
-	#endif
-
-	#ifdef DEBUG_TILES
-	uvec2 cluster_coords = uvec2(min(uvec2(coords.xy * vec2(cluster_grid_size.xy)), cluster_grid_size.xy - 1u));
-	color_out = vec4(random(cluster_coords.x + cluster_coords.y * cluster_grid_size.x),1.0f);
-	#endif
-
-	#ifdef DEBUG_RADIUS
-	if(inside == 1) {
-		color_out = vec4(random(index),1.0f);
-	} else {
-		color = vec4(vec3(0), 1);
-	}
-	#endif
 }
 
 // #end

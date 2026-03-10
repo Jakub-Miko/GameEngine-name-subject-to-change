@@ -7,12 +7,14 @@
 class PostProcessingPass : public RenderPass {
 public:
 	struct internal_data;
-	PostProcessingPass(const std::string& input_buffer_name);
+	PostProcessingPass(const std::string& input_buffer_name, const std::string& input_overlay = "");
 	virtual void Setup(RenderPassResourceDefinnition& setup_builder) override;
 	virtual void Render(RenderPipelineResourceManager& resource_manager) override;
 	~PostProcessingPass();
 private:
 	void InitPostProcessingPassData();
 	std::string input_buffer_name;
+	std::string input_overlay;
+	std::shared_ptr<DynamicProperty<bool>> enable_overlay_prop = nullptr;
 	internal_data* data;
 };
