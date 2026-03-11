@@ -5,7 +5,10 @@
 			"name" : "mvp",
 			"type" : "constant_buffer"
 		},
-
+		{
+			"type" : "push_constants",
+			"size" : 64
+		},
 		{
 			"name" : "bones",
 			"type" : "constant_buffer"
@@ -35,9 +38,12 @@ out vec3 pos_fragment;
 out vec3 normal_fragment;
 out mat3 TBN;
 
-layout(set = 0, binding = 0) uniform mvp{
-	mat4 mvp_matrix;
-	mat4 view_model_matrix;
+layout(push_constant) uniform model_view {
+	mat4 mv_matrix;
+};
+
+layout( set = 0, binding = 0 ) uniform mvp{
+	mat4 projection_matrix;
 };
 
 layout(set = 0, binding = 1) uniform bones {

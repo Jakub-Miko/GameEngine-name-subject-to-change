@@ -33,7 +33,6 @@ out mat3 TBN;
 
 layout(push_constant) uniform model_view {
 	mat4 mv_matrix;
-	uint entity_id;
 };
 
 layout( set = 0, binding = 0 ) uniform mvp{
@@ -82,11 +81,6 @@ layout(set = 1, binding = 0) uniform material{
 	vec4 Base_Color;
 	float roughness_bias;
 	float roughness_gain;
-};
-
-layout(push_constant) uniform model_view {
-	mat4 mv_matrix;
-	uint entity_id;
 };
 
 #include <shaders/utils/NormalPacking.glsl>

@@ -27,12 +27,8 @@ struct VertexLayoutFactory<LightingPassPreset> {
 		static std::unique_ptr<VertexLayout> layout = nullptr;
 		if (!layout) {
 			VertexLayout* layout_new = new VertexLayout({
-				VertexLayoutElement(RenderPrimitiveType::FLOAT,3, "position"),
-				VertexLayoutElement(RenderPrimitiveType::FLOAT,3, "normal"),
-				VertexLayoutElement(RenderPrimitiveType::FLOAT,3, "tangent"),
-				VertexLayoutElement(RenderPrimitiveType::FLOAT,2, "uv")
+				VertexLayoutElement(RenderPrimitiveType::FLOAT,2, "position"),
 				});
-
 
 			layout = std::unique_ptr<VertexLayout>(layout_new);
 		}
@@ -61,67 +57,21 @@ struct ConfigData {
 };
 
 struct ClusteredLightingPass::internal_data {
-	std::unordered_map<OutputModes, std::shared_ptr<Pipeline>> output_mode_pipelines;
-	std::unordered_map<OutputModes, std::vector<std::string>> output_mode_compiler_definitions;
-
-
+	std::shared_ptr<Pipeline> pipeline_clustered;
 	std::shared_ptr<Pipeline> pipeline_skylight;
-	std::shared_ptr<Pipeline> pipeline_shadowed_point;
 	std::shared_ptr<Pipeline> pipeline_shadowed_directional;
 	std::shared_ptr<Pipeline> pipeline_bg;
 	std::shared_ptr<RenderFrameBufferResource> output_buffer_resource;
-	std::shared_ptr<Mesh> sphere_mesh;
 	std::shared_ptr<Mesh> card_mesh;
 	std::shared_ptr<Material> mat_skylight;
-	std::shared_ptr<Material> mat_shadowed_point;
 	std::shared_ptr<Material> mat_shadowed_directional;
 	std::shared_ptr<RenderBufferResource> light_list;
 	std::shared_ptr<RenderBufferResource> constant_scene_buf;
 	std::shared_ptr<RenderBufferResource> constant_scene_buf_skylight;
-	std::shared_ptr<RenderBufferResource> constant_scene_buf_shadowed_point;
 	std::shared_ptr<RenderBufferResource> constant_scene_buf_shadowed_directional;
 	std::shared_ptr<RenderBufferResource> constant_scene_buf_bg;
 	bool initialized = false;
 };
-
-std::shared_ptr<Pipeline> ClusteredLightingPass::GetPipelineForMode(OutputModes mode) {
-	auto fnd = data->output_mode_pipelines.find(mode);
-	if(fnd != data->output_mode_pipelines.end()) {
-		return fnd->second;
-	}
-
-	auto compiler_definitions = data->output_mode_compiler_definitions.find((OutputModes)((unsigned char)mode & (unsigned char)7));
-
-	if(compiler_definitions == data->output_mode_compiler_definitions.end()) {
-		throw std::runtime_error("No pipeline for output mode." + std::to_string(static_cast<int>(mode)));
-	}
-
-	GraphicsPipelineDescriptor pipeline_desc;
-	pipeline_desc.viewport = RenderViewport();
-	pipeline_desc.scissor_rect = RenderScissorRect();
-	PipelineBlendFunctions blend_function;
-	blend_function.dstAlpha = BlendFunction::ONE;
-	blend_function.srcAlpha = BlendFunction::ONE;
-	blend_function.srcRGB = BlendFunction::ONE;
-	blend_function.dstRGB = BlendFunction::ONE;
-	pipeline_desc.blend_functions = blend_function;
-	pipeline_desc.enable_depth_clip = false;
-	pipeline_desc.flags = PipelineFlags::ENABLE_BLEND;
-	pipeline_desc.cull_mode = CullMode::FRONT;
-	pipeline_desc.blend_equation = BlendEquation::ADD;
-	pipeline_desc.layout = VertexLayoutFactory<LightingPassPreset>::GetLayout();
-	pipeline_desc.polygon_render_mode = PrimitivePolygonRenderMode::DEFAULT;
-	pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/ClusteredRenderer/ClusteredLightingPassShader.glsl", compiler_definitions->second);
-	pipeline_desc.framebuffer_format.color_attachemt_formats = {
-		{ TextureFormat::RGBA_16FLOAT }
-	};
-
-	auto new_pipeline = PipelineManager::Get()->CreatePipeline(pipeline_desc);
-
-	data->output_mode_pipelines[mode] = new_pipeline;
-
-	return new_pipeline;
-}
 
 void ClusteredLightingPass::InitPassData() {
 	GraphicsPipelineDescriptor pipeline_desc;
@@ -144,18 +94,11 @@ void ClusteredLightingPass::InitPassData() {
 		{ TextureFormat::RGBA_16FLOAT }
 	};
 
-	data->output_mode_compiler_definitions[OutputModes::NORMAL] = {};
-	data->output_mode_compiler_definitions[OutputModes::LIGHT_COUNT] = {"DEBUG_LIGHT_COUNT"};
-	data->output_mode_compiler_definitions[OutputModes::CLUSTERS] = {"DEBUG_CLUSTERS"};
-	data->output_mode_compiler_definitions[OutputModes::DEPTH_SLICES] = {"DEBUG_DEPTH_SLICES"};
-	data->output_mode_compiler_definitions[OutputModes::RADIUS] = {"DEBUG_RADIUS"};
-	data->output_mode_compiler_definitions[OutputModes::TILES] = {"DEBUG_TILES"};
+	data->pipeline_clustered = PipelineManager::Get()->CreatePipeline(pipeline_desc);
 
 	pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/LightingPassShaderSkylight.glsl");
 	data->pipeline_skylight = PipelineManager::Get()->CreatePipeline(pipeline_desc);
 
-	pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/LightingPassShaderShadowedPoint.glsl");
-	data->pipeline_shadowed_point = PipelineManager::Get()->CreatePipeline(pipeline_desc);
 	pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/LightingPassShaderShadowedDirectional.glsl");
 	data->pipeline_shadowed_directional = PipelineManager::Get()->CreatePipeline(pipeline_desc);
 
@@ -204,9 +147,6 @@ void ClusteredLightingPass::InitPassData() {
 	RenderBufferDescriptor const_desc(sizeof(glm::mat4) * 3 + sizeof(float) * 2, RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
 	data->constant_scene_buf = RenderResourceManager::Get()->CreateBuffer(const_desc);
 
-	RenderBufferDescriptor const_desc_shadowed_point(sizeof(glm::mat4) * 3 + sizeof(float) * 2, RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
-	data->constant_scene_buf_shadowed_point = RenderResourceManager::Get()->CreateBuffer(const_desc_shadowed_point);
-
 	RenderBufferDescriptor const_desc_shadowed_directional(sizeof(glm::mat4) * 18 + sizeof(float) * 5 + sizeof(glm::vec2) + sizeof(uint32_t), RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
 	data->constant_scene_buf_shadowed_directional = RenderResourceManager::Get()->CreateBuffer(const_desc_shadowed_directional);
 
@@ -216,8 +156,6 @@ void ClusteredLightingPass::InitPassData() {
 	RenderBufferDescriptor const_desc_bg(sizeof(glm::mat4) + sizeof(glm::vec4), RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
 	data->constant_scene_buf_bg = RenderResourceManager::Get()->CreateBuffer(const_desc_bg);
 
-	data->sphere_mesh = MeshManager::Get()->LoadMeshFromFileAsync("asset:Sphere.mesh"_path);
-	data->mat_shadowed_point = MaterialManager::Get()->CreateMaterial("LightingPassPointLightMaterial");
 	data->mat_shadowed_directional = MaterialManager::Get()->CreateMaterial("LightingPassDirectionalLightMaterial");
 	data->mat_skylight = MaterialManager::Get()->CreateMaterial("LightingPassSkylightLightProps");
 
@@ -225,19 +163,16 @@ void ClusteredLightingPass::InitPassData() {
 	data->light_list = RenderResourceManager::Get()->CreateBuffer(light_list_desc);
 
 	struct Vertex {
-		Vertex(glm::vec3 pos, glm::vec3 normal = glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3 tangent = glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3 uv = glm::vec3(0.0f))
-			: pos(pos), normal(normal), tangent(tangent), uv(uv) {}
-		glm::vec3 pos;
-		glm::vec3 normal = glm::vec3(0.0f,0.0f,1.0f);
-		glm::vec3 tangent = glm::vec3(1.0f, 0.0f, 0.0f);
-		glm::vec2 uv = glm::vec3(0.0f);
+		Vertex(glm::vec2 pos)
+			: pos(pos) {}
+		glm::vec2 pos;
 	};
 
 	Vertex card_vertecies[4] = {
-		Vertex({-1,-1,0}),
-		Vertex({-1,1,0}),
-		Vertex({1,-1,0}),
-		Vertex({1,1,0})
+		Vertex({-1,-1}),
+		Vertex({-1,1}),
+		Vertex({1,-1}),
+		Vertex({1,1})
 	};
 	
 	unsigned int indicies[6] = { 0,1,2,1,3,2 };
@@ -281,7 +216,6 @@ void ClusteredLightingPass::Setup(RenderPassResourceDefinnition& setup_builder)
 	setup_builder.AddResource<std::shared_ptr<Material>>(input_gbuffer_material, RenderPassResourceDescriptor_Access::READ);
 	setup_builder.AddResource<DependencyTag>(shadow_map_dependency_tag, RenderPassResourceDescriptor_Access::READ);
 	setup_builder.AddResource<RenderResourceCollection<glm::mat4>>(input_directional_shadowed_cascades, RenderPassResourceDescriptor_Access::READ);
-	setup_builder.GetProperties()->SetProperty("OutputMode", MultiChoice({"Normal", "Light count", "Clusters", "Depth slices", "Radius", "Tiles"}, "Normal"));
 }
 
 void ClusteredLightingPass::Render(RenderPipelineResourceManager& resource_manager)
@@ -305,13 +239,7 @@ void ClusteredLightingPass::Render(RenderPipelineResourceManager& resource_manag
 	list->Clear();
 
 	auto dynamic_props = resource_manager.GetProperties();
-	auto output_mode = dynamic_props->GetProperty<MultiChoice>("OutputMode")->GetValueTyped().GetValue();
-	if(output_mode == "Normal") active_output_mode = OutputModes::NORMAL;
-	else if(output_mode == "Light count") active_output_mode = OutputModes::LIGHT_COUNT;
-	else if(output_mode == "Clusters") active_output_mode = OutputModes::CLUSTERS;
-	else if(output_mode == "Depth slices") active_output_mode = OutputModes::DEPTH_SLICES;
-	else if(output_mode == "Radius") active_output_mode = OutputModes::RADIUS;
-	else if(output_mode == "Tiles") active_output_mode = OutputModes::TILES;
+
 
 	RenderResourceManager::Get()->CopyFrameBufferDepthAttachment(list, gbuffer, data->output_buffer_resource);
 	RenderLights(resource_manager, list, camera, props);
@@ -343,7 +271,7 @@ void ClusteredLightingPass::RenderLights(RenderPipelineResourceManager& resource
 	if(clustered_lights.num_of_lights == 0) return;
 
 	auto& gbuffer_material = resource_manager.GetResource<std::shared_ptr<Material>>(input_gbuffer_material);
-	list->SetPipeline(GetPipelineForMode(active_output_mode));
+	list->SetPipeline(data->pipeline_clustered);
 	list->SetRenderTarget(data->output_buffer_resource);
 	gbuffer_material->SetMaterial(list);
 	glm::vec2 pixel_size = { 1.0f / Application::Get()->GetWindow()->GetProperties().resolution_x,
@@ -371,66 +299,6 @@ void ClusteredLightingPass::RenderLights(RenderPipelineResourceManager& resource
 	list->SetResourceStore("directional_light_shadow_maps", point_shadow_maps);
 	list->Draw(data->card_mesh->GetIndexCount());
 }
-
-void ClusteredLightingPass::RenderShadowedLightsPoint(RenderPipelineResourceManager& resource_manager, std::shared_ptr<RenderCommandList>  list, const CameraComponent& camera, const render_props& props)
-{
-	const RenderResourceCollection<Entity>* geometry;
-	
-	geometry = &resource_manager.GetResource<RenderResourceCollection<Entity>>(input_point_shadowed_lights);
-	data->mat_shadowed_point->SetParameter("ShadowCubeMap", TextureManager::Get()->GetDefaultTextureCubemap());
-
-	auto& gbuffer = resource_manager.GetResource<std::shared_ptr<RenderFrameBufferResource>>(input_gbuffer);
-	auto& gbuffer_material = resource_manager.GetResource<std::shared_ptr<Material>>(input_gbuffer_material);
-	auto& world = Application::GetWorld();
-	auto ViewProjection = props.projection * props.view;
-	auto view_matrix = props.view;
-	list->SetPipeline(data->pipeline_shadowed_point);
-	list->SetRenderTarget(data->output_buffer_resource);
-	list->SetConstantBuffer("conf", data->constant_scene_buf_shadowed_point);
-	float depth_constant_a = props.depth_constant_a;
-	float depth_constant_b = props.depth_constant_b;
-	glm::mat4 inverse_projection = glm::inverse(props.projection);
-	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed_point, &depth_constant_a, sizeof(float), sizeof(glm::mat4) * 3);
-	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed_point, &depth_constant_b, sizeof(float), sizeof(glm::mat4) * 3 + sizeof(float));
-	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed_point, &inverse_projection, sizeof(glm::mat4), sizeof(glm::mat4) * 2);
-	for (auto& entity : geometry->resources) {
-		auto& transform_component = world.GetComponent<TransformComponent>(entity);
-		auto transform = transform_component.TransformMatrix;
-		auto& light = world.GetComponent<LightComponent>(entity);
-		auto& shadow = world.GetComponent<ShadowCasterComponent>(entity);
-		size_t index_count = 0;
-		glm::mat4 mvp;
-		glm::mat4 mv_matrix;
-
-		glm::mat4 model_sphere = glm::translate(glm::mat4(1.0f), (glm::vec3)transform_component.TransformMatrix[3]) * glm::scale(glm::mat4(1.0), glm::vec3(light.GetLightRange()));
-		mv_matrix = view_matrix * model_sphere;
-		mvp = ViewProjection * model_sphere;
-		list->SetVertexBuffer(data->sphere_mesh->GetVertexBuffer());
-		list->SetIndexBuffer(data->sphere_mesh->GetIndexBuffer());
-		data->mat_shadowed_point->SetParameter("light_far_plane", shadow.far_plane);
-		data->mat_shadowed_point->SetParameter("ShadowCubeMap", shadow.shadow_map->GetBufferDescriptor().GetDepthAttachmentAsTextureCubemap());
-		index_count = data->sphere_mesh->GetIndexCount();
-
-		auto inverse_view = Application::GetWorld().GetComponent<TransformComponent>(Application::GetWorld().GetPrimaryEntity()).TransformMatrix;
-
-		glm::mat4 light_matrix = shadow.light_view_matrix * inverse_view;
-		glm::vec2 pixel_size = { 1.0f / Application::Get()->GetWindow()->GetProperties().resolution_x,
-			1.0f / Application::Get()->GetWindow()->GetProperties().resolution_y };
-
-		data->mat_shadowed_point->SetParameter("pixel_size", pixel_size);
-		data->mat_shadowed_point->SetParameter("Light_Color", light.GetLightColor());
-		gbuffer_material->SetMaterial(list);
-		data->mat_shadowed_point->SetParameter("range", light.GetLightRange());
-		data->mat_shadowed_point->SetMaterial(list);
-		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed_point, glm::value_ptr(mvp), sizeof(glm::mat4), 0);
-		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed_point, glm::value_ptr(mv_matrix), sizeof(glm::mat4), sizeof(glm::mat4));
-		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed_point, glm::value_ptr(light_matrix), sizeof(glm::mat4), sizeof(glm::mat4) * 2);
-		list->Draw(index_count);
-
-
-	}
-}
-
 void ClusteredLightingPass::RenderShadowedLightsDirectional(RenderPipelineResourceManager& resource_manager, std::shared_ptr<RenderCommandList>  list, const CameraComponent& camera, const render_props& props)
 {
 	const RenderResourceCollection<Entity>* geometry;
@@ -483,7 +351,6 @@ void ClusteredLightingPass::RenderShadowedLightsDirectional(RenderPipelineResour
 		data->mat_shadowed_directional->SetParameter("pixel_size", pixel_size);
 		data->mat_shadowed_directional->SetParameter("Light_Color", light.GetLightColor());
 		gbuffer_material->SetMaterial(list);
-		data->mat_shadowed_point->SetParameter("range", light.GetLightRange());
 		data->mat_shadowed_directional->SetMaterial(list);
 		glm::vec2 shadow_pixel_size = { 1.0f / shadow.res_x, 1.0f / shadow.res_x };
 		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed_directional, &shadow.cascades, sizeof(uint32_t), sizeof(glm::mat4) * 18 + sizeof(float) * 5 + sizeof(glm::vec2));

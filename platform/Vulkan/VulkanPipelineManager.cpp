@@ -106,7 +106,7 @@ std::shared_ptr<Pipeline> VulkanPipelineManager::CreatePipeline(const GraphicsPi
 	VkPipelineDepthStencilStateCreateInfo depth_stencil = {};
 	depth_stencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 	depth_stencil.depthTestEnable = (bool)(desc.flags & PipelineFlags::ENABLE_DEPTH_TEST);
-	depth_stencil.depthWriteEnable = true;
+	depth_stencil.depthWriteEnable = !(bool)(desc.flags & PipelineFlags::DISABLE_DEPTH_WRITE);
 	depth_stencil.depthCompareOp = VulkanUnitConverter::DepthFunctionToVulkanCompareFunc(desc.depth_function);
 	depth_stencil.back = stencil_ops;
 	depth_stencil.front = stencil_ops;

@@ -17,18 +17,6 @@ public:
 	virtual void Setup(RenderPassResourceDefinnition& setup_builder) override;
 	virtual void Render(RenderPipelineResourceManager& resource_manager) override;
 
-	enum class OutputModes : unsigned char {
-		NORMAL = 0,
-		LIGHT_COUNT = 1,
-		CLUSTERS = 2,
-		DEPTH_SLICES = 3,
-		RADIUS = 4,
-		TILES = 5,
-	};
-
-	[[nodiscard]] OutputModes GetActiveOutputMode() const { return active_output_mode; }
-	void SetActiveOutputMode(OutputModes mode) { active_output_mode = mode; }
-
 	virtual ~ClusteredLightingPass();
 private:
 
@@ -39,12 +27,8 @@ private:
 		float depth_constant_b;
 	};
 
-	std::shared_ptr<Pipeline> GetPipelineForMode(OutputModes mode);
-
 	void RenderLights(RenderPipelineResourceManager& resource_manager, std::shared_ptr<RenderCommandList>  list, const CameraComponent& camera, const render_props& props);
-	
 
-	void RenderShadowedLightsPoint(RenderPipelineResourceManager& resource_manager, std::shared_ptr<RenderCommandList>  list, const CameraComponent& camera, const render_props& props);
 	void RenderShadowedLightsDirectional(RenderPipelineResourceManager& resource_manager, std::shared_ptr<RenderCommandList>  list, const CameraComponent& camera, const render_props& props);
 	void RenderSkylights(RenderPipelineResourceManager& resource_manager, std::shared_ptr<RenderCommandList>  list, const CameraComponent& camera, const render_props& props);
 
@@ -59,6 +43,5 @@ private:
 	std::string shadow_map_dependency_tag;
 	std::string input_point_shadow_maps;
 	std::string input_directional_shadow_maps;
-	OutputModes active_output_mode = OutputModes::NORMAL;
 	internal_data* data;
 };

@@ -7,6 +7,11 @@
 		},
 
 		{
+			"type" : "push_constants",
+			"size" : 68
+		},
+
+		{
 			"name" : "bones",
 			"type" : "constant_buffer"
 		},
@@ -35,10 +40,13 @@ out vec3 pos_fragment;
 out vec3 normal_fragment;
 out mat3 TBN;
 
-layout(set = 0, binding = 0) uniform mvp{
-	mat4 mvp_matrix;
-	mat4 view_model_matrix;
+layout(push_constant) uniform model_view {
+	mat4 mv_matrix;
 	uint entity_id;
+};
+
+layout( set = 0, binding = 0 ) uniform mvp{
+	mat4 projection_matrix;
 };
 
 layout(set = 0, binding = 1) uniform bones {
@@ -72,17 +80,17 @@ void main() {
 	}
 	new_normal = normalize(new_normal);
 	new_tangent = normalize(new_tangent);
-	vec3 normal_transformed = normalize(mat3(transpose(inverse(view_model_matrix))) * new_normal.xyz).xyz;
-	vec3 tangent_transformed = normalize(mat3(transpose(inverse(view_model_matrix))) * new_tangent.xyz).xyz;
+	vec3 normal_transformed = normalize(mat3(transpose(inverse(mv_matrix))) * new_normal.xyz).xyz;
+	vec3 tangent_transformed = normalize(mat3(transpose(inverse(mv_matrix))) * new_tangent.xyz).xyz;
 	vec3 bitangent_transformed = cross(normal_transformed, tangent_transformed);
 
 	TBN = mat3(tangent_transformed, bitangent_transformed, normal_transformed);
 	
-	pos_fragment = (view_model_matrix * vec4(new_pos.xyz,1.0f)).xyz;
-	gl_Position = mvp_matrix * vec4(new_pos.xyz, 1.0f);
+	pos_fragment = (mv_matrix * vec4(new_pos.xyz,1.0f)).xyz;
+	gl_Position = projection_matrix * mv_matrix * vec4(new_pos.xyz, 1.0f);
 	uv_fragment = uv;
 	uv_fragment.y = 1 - uv_fragment.y;
-	normal_fragment = normalize(mat3(transpose(inverse(view_model_matrix))) * normal.xyz).xyz;
+	normal_fragment = normalize(mat3(transpose(inverse(mv_matrix))) * normal.xyz).xyz;
 }
 
 
@@ -110,9 +118,8 @@ layout(set = 1, binding = 0) uniform material{
 	float roughness_gain;
 };
 
-layout(set = 0, binding = 0) uniform mvp{
-	mat4 mvp_matrix;
-	mat4 view_model_matrix;
+layout(push_constant) uniform model_view {
+	mat4 mv_matrix;
 	uint entity_id;
 };
 

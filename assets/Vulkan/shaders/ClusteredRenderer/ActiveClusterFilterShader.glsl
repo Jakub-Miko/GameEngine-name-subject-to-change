@@ -22,7 +22,7 @@
 */
 // #Compute //--------------------------------------------------
 #version 430
-#extension GL_EXT_debug_printf : enable
+
 layout(set = 0, binding = 0) uniform config_buffer
 {
 	uvec3 cluster_dimensions;
@@ -70,7 +70,6 @@ void main() {
 	uvec2 tile_index = uvec2(gl_WorkGroupID.xy);
 	uvec2 tile_size = uvec2(ceil(vec2(window_size) / vec2(cluster_dimensions)));
 	uint pixel_count = tile_size.x * tile_size.y;
-	debugPrintfEXT("count: %d\n", pixel_count);
 	for(uint i = gl_LocalInvocationIndex; i < pixel_count ; i += gl_WorkGroupSize.x) {
 		uvec2 coords = (tile_size * tile_index) + uvec2(i % tile_size.x, i / tile_size.x);
 

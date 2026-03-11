@@ -61,6 +61,7 @@ enum class PipelineFlags : uint32_t {
 	ENABLE_SCISSOR_TEST = (1 << 2),
 	ENABLE_BLEND = (1 << 3),
 	IS_MULTI_WINDOW = (1 << 4),
+	DISABLE_DEPTH_WRITE = (1 << 5),
 	DEFAULT = 0
 };
 
