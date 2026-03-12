@@ -40,7 +40,7 @@ void VulkanRenderCommandQueue::ExecuteRenderCommandList(std::shared_ptr<RenderCo
 	auto sync = vk_command_list->dependency_handler.FinalizeDependencies(vk_command_list.get(), value);
 
 	if (sync.timeline_wait > context->GetCurrentGpuTimelineValue()) { // we need to wait until the timeline requirement is met before executing this command list
-		VkPipelineStageFlags wait_flags = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+		VkPipelineStageFlags wait_flags = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 		info.waitSemaphoreCount = 1;
 		info.pWaitDstStageMask = &wait_flags;
 		info.pWaitSemaphores = static_cast<VulkanRenderFence*>(command_buffer_fence.get())->GetSemaphore();

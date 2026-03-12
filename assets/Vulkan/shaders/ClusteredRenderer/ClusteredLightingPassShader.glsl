@@ -177,7 +177,6 @@ vec3 ComputePointLight(uint light_index, vec3 normals, vec3 view_space_pos, vec4
 	light_contrib += 0.5f * pow(clamp(dot(normals, normalize( light_direction_and_distance.xyz - normalize(view_space_pos))), 0, 1), 1 +((1 - color_and_roughness.w) * 64)); //specular part
 
 	return vec3(light_contrib * shadow_contrib * lights[light_index].Light_Color.xyz * lights[light_index].Light_Color.w * color_and_roughness.xyz);
-	return vec3(1.0f);
 }
 
 vec3 ComputeDirectionalLight(uint light_index, vec3 normals, vec3 view_space_pos, vec4 color_and_roughness) {
