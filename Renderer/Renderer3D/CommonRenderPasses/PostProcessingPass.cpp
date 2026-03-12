@@ -45,7 +45,7 @@ void PostProcessingPass::InitPostProcessingPassData() {
 	pipeline_desc.viewport = RenderViewport();
 	pipeline_desc.scissor_rect = RenderScissorRect();
 	pipeline_desc.blend_functions = PipelineBlendFunctions();
-	pipeline_desc.flags = PipelineFlags::ENABLE_DEPTH_TEST;
+	pipeline_desc.flags = PipelineFlags::DISABLE_DEPTH_WRITE;
 	pipeline_desc.depth_function = DepthFunction::ALWAYS;
 	pipeline_desc.layout = VertexLayoutFactory<PostProcessingPreset>::GetLayout();
 	pipeline_desc.polygon_render_mode = PrimitivePolygonRenderMode::DEFAULT;
@@ -85,7 +85,7 @@ void PostProcessingPass::InitPostProcessingPassData() {
 	data->initialized = true;
 }
 
-PostProcessingPass::PostProcessingPass(const std::string& input_buffer_name, const std::string& input_overlay) : input_buffer_name(input_buffer_name), input_overlay(input_overlay)
+PostProcessingPass::PostProcessingPass(const std::string& input_texture_name, const std::string& input_overlay) : input_texture_name(input_texture_name), input_overlay(input_overlay)
 {
 	data = new internal_data;
 	InitPostProcessingPassData();
@@ -93,7 +93,7 @@ PostProcessingPass::PostProcessingPass(const std::string& input_buffer_name, con
 
 void PostProcessingPass::Setup(RenderPassResourceDefinnition& setup_builder)
 {
-	setup_builder.AddResource<std::shared_ptr<RenderFrameBufferResource>>(input_buffer_name, RenderPassResourceDescriptor_Access::READ);
+	setup_builder.AddResource<std::shared_ptr<RenderTexture2DResource>>(input_texture_name, RenderPassResourceDescriptor_Access::READ);
 	if(!input_overlay.empty()) {
 		setup_builder.AddResource<std::shared_ptr<RenderTexture2DResource>>(input_overlay, RenderPassResourceDescriptor_Access::READ);
 		enable_overlay_prop = setup_builder.GetProperties()->SetProperty("Enable post process overlay", false).second;
@@ -103,7 +103,7 @@ void PostProcessingPass::Setup(RenderPassResourceDefinnition& setup_builder)
 void PostProcessingPass::Render(RenderPipelineResourceManager& resource_manager)
 {
 	PROFILE("PostProcessingPass");
-	auto frame_buffer = resource_manager.GetResource<std::shared_ptr<RenderFrameBufferResource>>(input_buffer_name);
+	auto frame_buffer_texure = resource_manager.GetResource<std::shared_ptr<RenderTexture2DResource>>(input_texture_name);
 	auto camera_ent = Application::GetWorld().GetPrimaryEntity();
 	auto& camera_component = Application::GetWorld().GetComponent<CameraComponent>(camera_ent);
 	float exposure = camera_component.exposure;
@@ -116,8 +116,7 @@ void PostProcessingPass::Render(RenderPipelineResourceManager& resource_manager)
 	list->SetDefaultRenderTarget();
 	list->SetVertexBuffer(data->vertex_buffer);
 	list->SetIndexBuffer(data->index_buffer);
-	list->SetTexture2D("Color", frame_buffer->GetBufferDescriptor().GetColorAttachmentAsTexture(0));
-	list->SetTexture2D("Depth", frame_buffer->GetBufferDescriptor().GetDepthAttachmentAsTexture());
+	list->SetTexture2D("Color", frame_buffer_texure);
 
 	if (has_overlay) {
 		auto overlay_buffer = resource_manager.GetResource<std::shared_ptr<RenderTexture2DResource>>(input_overlay);

@@ -113,6 +113,14 @@ public:
 		return element;
 	}
 
+	static RootSignatureDescriptorElement CreateStorageTextureElement(const std::string& name) {
+		RootSignatureDescriptorElement element;
+		element.name = name;
+		element.type = RootParameterType::STORAGE_TEXTURE;
+		element.element_info = RootSignatureDescriptorResource { 0 };
+		return element;
+	}
+
 	RootSignatureDescriptorResource& GetResourceInfo() {
 		return std::get<RootSignatureDescriptorResource>(element_info);
 	}

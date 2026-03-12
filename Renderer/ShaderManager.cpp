@@ -31,7 +31,8 @@ NLOHMANN_JSON_SERIALIZE_ENUM(RootParameterType,
 	{RootParameterType::TEXTURE_2D_CUBEMAP, "texture_2D_cubemap"},
 	{RootParameterType::MATERIAL, "material"},
 	{RootParameterType::RESOURCE_STORE, "resource_store"},
-	{RootParameterType::PUSH_CONSTANT_RANGE, "push_constants"}
+	{RootParameterType::PUSH_CONSTANT_RANGE, "push_constants"},
+	{RootParameterType::STORAGE_TEXTURE, "storage_texture"}
 	});
 
 ShaderManager* ShaderManager::instance = nullptr;
@@ -149,6 +150,7 @@ RootSignature* ShaderManager::ParseRootSignature(const std::string& signature_st
 			case RootParameterType::TEXTURE_2D:
 			case RootParameterType::TEXTURE_2D_ARRAY:
 			case RootParameterType::TEXTURE_2D_CUBEMAP:
+			case RootParameterType::STORAGE_TEXTURE:
 			case RootParameterType::STORAGE_BUFFER:
 			{
 				std::string name = json_sig_element["name"].get<std::string>();

@@ -78,6 +78,8 @@ public:
 			return VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		case RootParameterType::STORAGE_BUFFER:
 			return VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		case RootParameterType::STORAGE_TEXTURE:
+			return VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 		default:
 			throw std::runtime_error("Conversion failed");
 		}

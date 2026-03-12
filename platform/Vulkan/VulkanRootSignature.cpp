@@ -35,6 +35,7 @@ VulkanRootSignature::VulkanRootSignature(const RootSignatureDescriptor& descript
 		case RootParameterType::TEXTURE_2D:
 		case RootParameterType::TEXTURE_2D_ARRAY:
 		case RootParameterType::TEXTURE_2D_CUBEMAP:
+		case RootParameterType::STORAGE_TEXTURE:
 		case RootParameterType::STORAGE_BUFFER:
 		{
 			auto& desc_info = desc.GetResourceInfo();

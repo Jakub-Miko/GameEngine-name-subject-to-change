@@ -216,7 +216,7 @@ void main() {
     }
 
     if(mode == LIGHT_COUNT) {
-        color_out += vec4(0, gbuffer_data.cluster_assignment.count / 20.0f, 0, 0);
+        color_out += vec4(0, gbuffer_data.cluster_assignment.count / 255.0f, 0, 0);
     }
 
     if(mode == CLUSTER_GRID) {

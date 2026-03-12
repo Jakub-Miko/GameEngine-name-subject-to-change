@@ -198,6 +198,45 @@ void VulkanRenderCommandList::SetTexture2D(const std::string& semantic_name, std
 	vkCmdPushDescriptorSet_KHR(command_buffer, pipeline_bind_point, sig->GetPipelineLayout(), 0, 1, &update_data);
 }
 
+void VulkanRenderCommandList::SetStorageTexture(const std::string& semantic_name,
+	std::shared_ptr<RenderTexture2DResource> texture) {
+	if (!current_pipeline) {
+		throw std::runtime_error("Cannot set a storage texture before a pipeline was bound.\n");
+	}
+
+	auto sig = static_cast<const VulkanRootSignature*>(&current_pipeline->GetSignature());
+	auto param_id = sig->GetRootParameterId(semantic_name).parameter_id;
+	auto param = sig->GetDescriptor().parameters[param_id];
+	if (param.GetType() != RootParameterType::STORAGE_TEXTURE) {
+		throw std::runtime_error("The parameter " + semantic_name + " is not a storage texture.\n");
+	}
+
+	auto& info = param.GetResourceInfo();
+
+	auto bind_point = info.binding_id;
+
+	dependency_handler.AddDrawDependency(this, texture, VulkanCommandListDependencyType::READ | VulkanCommandListDependencyType::WRITE, RenderState::TEXTURE_GENERAL, param_id);
+
+	auto vk_image_view = std::static_pointer_cast<VulkanRenderTexture2DResource>(texture)->GetImageView();
+
+	VkDescriptorImageInfo image_info = {};
+	image_info.imageView = vk_image_view;
+	image_info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+	VkWriteDescriptorSet update_data = {};
+	update_data.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	update_data.descriptorCount = 1;
+	update_data.dstSet = NULL;
+	update_data.descriptorType = VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+	update_data.dstBinding = bind_point;
+	update_data.pImageInfo = &image_info;
+	update_data.dstArrayElement = 0;
+
+	auto pipeline_bind_point = std::static_pointer_cast<VulkanPipeline>(current_pipeline->GetPipelineNativeExtension())->GetBindPoint();
+
+	vkCmdPushDescriptorSet_KHR(command_buffer, pipeline_bind_point, sig->GetPipelineLayout(), 0, 1, &update_data);
+}
+
 void VulkanRenderCommandList::SetTexture2DArray(const std::string& semantic_name, std::shared_ptr<RenderTexture2DArrayResource> texture)
 {
 		if (!current_pipeline) {

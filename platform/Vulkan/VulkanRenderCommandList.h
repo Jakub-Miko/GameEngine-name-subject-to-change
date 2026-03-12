@@ -228,6 +228,7 @@ public:
     virtual void SetConstantBuffer(const std::string& semantic_name, std::shared_ptr<RenderBufferResource> buffer) override;
     virtual void SetStorageBuffer(const std::string& semantic_name, std::shared_ptr<RenderBufferResource> buffer) override;
     virtual void SetTexture2D(const std::string& semantic_name, std::shared_ptr<RenderTexture2DResource> texture) override;
+    virtual void SetStorageTexture(const std::string& semantic_name, std::shared_ptr<RenderTexture2DResource> texture) override;
     virtual void SetTexture2DArray(const std::string& semantic_name, std::shared_ptr<RenderTexture2DArrayResource> texture) override;
     virtual void SetTexture2DCubemap(const std::string& semantic_name, std::shared_ptr<RenderTexture2DCubemapResource> texture) override;
     virtual void SetPushConstantRange(void* data, size_t size) override;

@@ -1,0 +1,211 @@
+/*
+#RootSignature
+{
+	"RootSignature": [
+		{
+			"name" : "conf",
+			"type" : "constant_buffer"
+		},
+		{
+			"name" : "light_buffer",
+			"type" : "storage_buffer"
+		},
+		{
+			"name" : "light_assignment_buffer",
+			"type" : "storage_buffer"
+		},
+		{
+			"name" : "cluster_buffer",
+			"type" : "storage_buffer"
+		},
+		{
+			"name" : "GBufferMaterial",
+			"type" : "material",
+			"material_path": "api:GBufferMaterialLayout.json"
+		},
+		{
+			"name" : "point_light_shadow_maps",
+			"type" : "resource_store",
+			"store_type" : "texture_2D_cubemap"
+		},
+		{
+			"name" : "directional_light_shadow_maps",
+			"type" : "resource_store",
+			"store_type" : "texture_2D_array"
+		},
+		{
+			"name" : "color_out",
+			"type" : "storage_texture"
+		}
+	]
+
+}
+#end
+*/
+
+// #Compute //------------------------------------------------
+#version 430
+
+#extension GL_EXT_nonuniform_qualifier : require
+
+layout(set = 1, binding = 0) uniform sampler2D Color;
+layout(set = 1, binding = 1) uniform sampler2D Normal;
+layout(set = 1, binding = 2) uniform sampler2D Roughness;
+layout(set = 1, binding = 3) uniform sampler2D DepthBuffer;
+
+layout(set = 2, binding = 0) uniform samplerCubeShadow PointShadowMaps[];
+layout(set = 3, binding = 0) uniform sampler2DArrayShadow DirectionalShadowMaps[];
+
+#ifndef COMPUTE_TILE_SIZE
+#define COMPUTE_TILE_SIZE 16
+#endif
+
+layout(set = 0, binding = 4, rgba16f) uniform image2D color_out;
+
+struct Light {
+	mat4 light_matrix;
+	vec4 position_or_direction_and_radius;
+	vec4 Light_Color;
+	float range;
+	int light_type;
+	uint shadow_index;
+	float light_far_plane;
+};
+
+layout(set = 0, binding = 0) uniform conf {
+	mat4 inverse_projection_matrix;
+	vec2 pixel_size;
+	float depth_constant_a;
+	float depth_constant_b;
+	uvec3 cluster_grid_size;
+	int light_count;
+	float near_plane;
+	float far_plane;
+};
+
+layout(set = 0, binding = 1) readonly buffer light_buffer {
+	Light lights[];
+};
+
+layout(std430, set=0, binding = 2) readonly buffer light_assignment_buffer
+{
+	uint light_assignment_indicies[];
+};
+
+struct ClusterLightAssignment {
+	uint start_index;
+	uint count;
+};
+
+layout(std430, set=0, binding = 3) readonly buffer cluster_buffer
+{
+	ClusterLightAssignment cluster_assignments[];
+};
+
+
+
+struct GBufferData {
+ 	mediump vec4 color_and_roughness;
+	mediump vec4 view_space_pos_and_depth;
+	mediump vec3 normals;
+};
+
+vec3 GetFragmentPosition(vec2 coords, float depth) {
+	vec3 light_pos = vec3(inverse_projection_matrix * vec4(2.0 * coords.x - 1.0, 1.0 - 2.0*coords.y, -1.0, 1.0));
+	light_pos.xy = light_pos.xy / abs(light_pos.z);
+	return vec3(light_pos.xy, -1.0) * depth;
+}
+
+uint get_depth_slice_index(float depth) {
+	float scale = cluster_grid_size.z / (log2(far_plane/near_plane));
+	float bias = -scale*log2(near_plane);
+	return int(min(max(log2(depth)*scale + bias, 0.0f), cluster_grid_size.z - 1));
+}
+
+uint get_cluster_index(vec2 coords, float depth) {
+	uint slice = get_depth_slice_index(depth);
+
+	coords.y = 1.0f - coords.y;
+	uvec3 cluster_coords = uvec3(min(uvec2(coords.xy * vec2(cluster_grid_size.xy)), cluster_grid_size.xy - 1u),
+		slice);
+
+	uint index = cluster_coords.x
+		+ cluster_coords.y * cluster_grid_size.x
+		+ cluster_coords.z * cluster_grid_size.x * cluster_grid_size.y;
+
+	return index;
+}
+
+float calculate_shadows_point(vec3 view_space_pos, uint index, vec3 normal) {
+	vec3 light_space_pos = (lights[index].light_matrix * vec4(view_space_pos, 1.0)).xyz + normal * 0.02;
+	float current_depth = length(light_space_pos) / lights[index].light_far_plane;
+	vec4 shadow_coords = vec4(normalize(light_space_pos.xyz) * vec3(1,-1,1), current_depth - 0.0002);
+	return texture(PointShadowMaps[lights[index].shadow_index], shadow_coords);
+}
+
+#include <shaders/utils/NormalPacking.glsl>
+#include <shaders/utils/PointAttenuationFalloff.glsl>
+
+vec3 ComputePointLight(uint light_index, vec3 normals, vec3 view_space_pos, vec4 color_and_roughness) {
+	float shadow_contrib = 1.0f;
+	if(lights[light_index].shadow_index != ~uint(0)) {
+		shadow_contrib *= calculate_shadows_point(view_space_pos, light_index, normals);
+	}
+
+	vec4 light_direction_and_distance = vec4(vec3(lights[light_index].position_or_direction_and_radius) - view_space_pos,0.0f);
+	light_direction_and_distance.w = length(light_direction_and_distance.xyz);
+	light_direction_and_distance.xyz = light_direction_and_distance.xyz / light_direction_and_distance.w;
+	shadow_contrib *= PointAttenuationFalloff(light_direction_and_distance.w, lights[light_index].range);
+
+	light_direction_and_distance.w = max(0,dot(light_direction_and_distance.xyz, normals));
+	shadow_contrib *= smoothstep(0.0, 0.02, light_direction_and_distance.w);
+	float light_contrib = 0.5f * (0.1 + light_direction_and_distance.w); // diffuse part
+	light_contrib += 0.5f * pow(clamp(dot(normals, normalize( light_direction_and_distance.xyz - normalize(view_space_pos))), 0, 1), 1 +((1 - color_and_roughness.w) * 64)); //specular part
+
+	return vec3(light_contrib * shadow_contrib * lights[light_index].Light_Color.xyz * lights[light_index].Light_Color.w * color_and_roughness.xyz);
+}
+
+vec3 ComputeDirectionalLight(uint light_index, vec3 normals, vec3 view_space_pos, vec4 color_and_roughness) {
+	vec3 light_direction = normalize(vec3(lights[light_index].position_or_direction_and_radius));
+	float light_contrib = 0.5f * (0.1 + max(0, dot(normals, - light_direction))); // diffuse part
+	light_contrib += 0.5f * pow(clamp(dot(normals, normalize(- light_direction - normalize(view_space_pos))), 0, 1), 1 +((1 - color_and_roughness.w) * 64)); //specular part
+	light_contrib *= smoothstep(-0.02, 0.02,dot(-light_direction, normals));
+	vec4 Light_Color = lights[light_index].Light_Color;
+	return vec3(color_and_roughness.xyz * Light_Color.xyz * Light_Color.w * light_contrib);
+}
+
+GBufferData GetGBufferData(vec2 coords) {
+	GBufferData data;
+	data.view_space_pos_and_depth.w = depth_constant_b / (texelFetch(DepthBuffer, ivec2(gl_GlobalInvocationID.xy),0).x - depth_constant_a);
+	data.normals = UnpackNormals(texelFetch(Normal, ivec2(gl_GlobalInvocationID.xy),0).xy);
+	data.color_and_roughness = vec4(texelFetch(Color, ivec2(gl_GlobalInvocationID.xy),0).xyz, texelFetch(Roughness, ivec2(gl_GlobalInvocationID.xy),0).x);
+	data.view_space_pos_and_depth.xyz = GetFragmentPosition(coords, data.view_space_pos_and_depth.w);
+	return data;
+}
+
+layout(local_size_x = COMPUTE_TILE_SIZE, local_size_y = COMPUTE_TILE_SIZE, local_size_z = 1) in;
+
+void main() {
+	ivec2 img_size = imageSize(color_out);
+	if(gl_GlobalInvocationID.x >= img_size.x || gl_GlobalInvocationID.y >= img_size.y) {
+		return;
+	}
+	vec2 coords = vec2(((gl_GlobalInvocationID.x + 0.5) * pixel_size.x), ((gl_GlobalInvocationID.y + 0.5) * pixel_size.y));
+	GBufferData gbuffer_data = GetGBufferData(coords);
+	ClusterLightAssignment assignment = cluster_assignments[get_cluster_index(coords, gbuffer_data.view_space_pos_and_depth.w)];
+
+	uint end = assignment.start_index + assignment.count;
+	vec3 color = vec3(0.0,0.0,0.0);
+	for(uint i = assignment.start_index; i < end; i++) {
+		uint light_index = light_assignment_indicies[i];
+		if (lights[light_index].light_type == 0) {
+			color += vec3(ComputeDirectionalLight(light_index, gbuffer_data.normals, gbuffer_data.view_space_pos_and_depth.xyz, gbuffer_data.color_and_roughness));
+		}
+		else {
+			color += vec3(ComputePointLight(light_index, gbuffer_data.normals, gbuffer_data.view_space_pos_and_depth.xyz, gbuffer_data.color_and_roughness));
+		}
+	}
+	imageStore(color_out, ivec2(gl_GlobalInvocationID.xy), vec4(color,1.0));
+}
+
+// #end

@@ -21,6 +21,7 @@ public:
     virtual void SetConstantBuffer(const std::string& semantic_name, std::shared_ptr<RenderBufferResource> buffer) = 0;
     virtual void SetStorageBuffer(const std::string& semantic_name, std::shared_ptr<RenderBufferResource> buffer) = 0;
     virtual void SetTexture2D(const std::string& semantic_name, std::shared_ptr<RenderTexture2DResource> texture) = 0;
+    virtual void SetStorageTexture(const std::string& semantic_name, std::shared_ptr<RenderTexture2DResource> texture) = 0;
     virtual void SetTexture2DArray(const std::string& semantic_name, std::shared_ptr<RenderTexture2DArrayResource> texture) = 0;
     virtual void SetTexture2DCubemap(const std::string& semantic_name, std::shared_ptr<RenderTexture2DCubemapResource> texture) = 0;
     virtual void SetPushConstantRange(void* data, size_t size) = 0;
