@@ -2,6 +2,7 @@
 
 
 #define MAX_INPUT_TEXT_SIZE 500
+#include <cstdint>
 #include <cstring>
 #include <memory>
 #include <string>
@@ -90,4 +91,30 @@ public:
     ~UIModuleAdapter() override {}
 private:
     std::shared_ptr<DynamicProperty<float>> value;
+};
+
+template<>
+class UIModuleAdapter<uint32_t> : public UIModuleAdapterBase {
+public:
+    UIModuleAdapter() {}
+    UIModuleAdapter(std::shared_ptr<DynamicProperty<uint32_t>> value) : value(value) {}
+
+    void RenderUI() override;
+
+    ~UIModuleAdapter() override {}
+private:
+    std::shared_ptr<DynamicProperty<uint32_t>> value;
+};
+
+template<>
+class UIModuleAdapter<DynamicPropertyAction> : public UIModuleAdapterBase {
+public:
+    UIModuleAdapter() {}
+    UIModuleAdapter(std::shared_ptr<DynamicProperty<DynamicPropertyAction>> value) : value(value) {}
+
+    void RenderUI() override;
+
+    ~UIModuleAdapter() override {}
+private:
+    std::shared_ptr<DynamicProperty<DynamicPropertyAction>> value;
 };

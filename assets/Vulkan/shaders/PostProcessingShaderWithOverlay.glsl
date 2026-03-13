@@ -6,10 +6,6 @@
 			"type" : "texture_2D"
 		},
 		{
-			"name" : "Depth",
-			"type" : "texture_2D"
-		},
-		{
 			"name" : "Overlay",
 			"type" : "texture_2D"
 		},
@@ -43,8 +39,7 @@ void main() {
 in vec2 uv_fragment;
 
 layout(set = 0, binding = 0) uniform sampler2D Color;
-layout(set = 0, binding = 1) uniform sampler2D Depth;
-layout(set = 0, binding = 2) uniform sampler2D Overlay;
+layout(set = 0, binding = 1) uniform sampler2D Overlay;
 
 layout(push_constant) uniform PushConstants {
 		float exposure;
@@ -60,7 +55,6 @@ void main() {
 	vec4 overlay = texture(Overlay, uv_fragment);
 	vec4 tonemap = vec4(ToneMap(texture(Color, uv_fragment).xyz * exposure),1);
 	color_out = vec4(mix(tonemap.rgb, overlay.rgb, overlay.a),1.0f);
-	gl_FragDepth = texture(Depth, uv_fragment).x;
 }
 
 #end

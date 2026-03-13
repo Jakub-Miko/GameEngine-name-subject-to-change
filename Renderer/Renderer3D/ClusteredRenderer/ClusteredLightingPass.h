@@ -27,6 +27,15 @@ private:
 		float depth_constant_b;
 	};
 
+	struct ClusteredPipelineConfig {
+		std::shared_ptr<DynamicProperty<bool>> use_compute_for_clustered_lights;
+		std::shared_ptr<DynamicProperty<bool>> scalarize_lights;
+		std::shared_ptr<DynamicProperty<uint32_t>> compute_tile_size;
+		std::shared_ptr<DynamicProperty<DynamicPropertyAction>> needs_update;
+	};
+
+	void UpdateClusteredPipeline(bool force_update = false);
+
 	void RenderLights(RenderPipelineResourceManager& resource_manager, std::shared_ptr<RenderCommandList>  list, const CameraComponent& camera, const render_props& props);
 	void RenderLightsWithCompute(RenderPipelineResourceManager& resource_manager, std::shared_ptr<RenderCommandList>  list, const CameraComponent& camera, const render_props& props);
 
@@ -44,6 +53,9 @@ private:
 	std::string shadow_map_dependency_tag;
 	std::string input_point_shadow_maps;
 	std::string input_directional_shadow_maps;
-	std::shared_ptr<DynamicProperty<bool>> use_compute_for_clustered_lights;
+	ClusteredPipelineConfig clustered_config;
+	bool use_compute_for_clustered_lights = false;
+	float compute_tile_size = 16;
+	std::unique_ptr<EventObserverBase> clustered_config_observer;
 	internal_data* data;
 };

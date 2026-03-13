@@ -60,7 +60,6 @@ struct ConfigData {
 
 struct ClusteredLightingPass::internal_data {
 	std::shared_ptr<Pipeline> pipeline_clustered;
-	std::shared_ptr<Pipeline> pipeline_clustered_compute;
 	std::shared_ptr<Pipeline> pipeline_skylight;
 	std::shared_ptr<Pipeline> pipeline_shadowed_directional;
 	std::shared_ptr<Pipeline> pipeline_bg;
@@ -78,9 +77,7 @@ struct ClusteredLightingPass::internal_data {
 };
 
 void ClusteredLightingPass::InitPassData() {
-	ComputePipelineDescriptor compute_pipeline_desc = {};
-	compute_pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/ClusteredRenderer/ClusteredLightingPassShaderCompute.glsl", {"COMPUTE_TILE_SIZE=" + std::to_string(COMPUTE_TILE_SIZE)});
-	data->pipeline_clustered_compute = PipelineManager::Get()->CreatePipeline(compute_pipeline_desc);
+	UpdateClusteredPipeline(true);
 
 	GraphicsPipelineDescriptor pipeline_desc;
 	pipeline_desc.viewport = RenderViewport();
@@ -97,14 +94,11 @@ void ClusteredLightingPass::InitPassData() {
 	pipeline_desc.blend_equation = BlendEquation::ADD;
 	pipeline_desc.layout = VertexLayoutFactory<LightingPassPreset>::GetLayout();
 	pipeline_desc.polygon_render_mode = PrimitivePolygonRenderMode::DEFAULT;
-	pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/ClusteredRenderer/ClusteredLightingPassShader.glsl");
+	pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/LightingPassShaderSkylight.glsl");
 	pipeline_desc.framebuffer_format.color_attachemt_formats = {
 		{ TextureFormat::RGBA_16FLOAT }
 	};
 
-	data->pipeline_clustered = PipelineManager::Get()->CreatePipeline(pipeline_desc);
-
-	pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/LightingPassShaderSkylight.glsl");
 	data->pipeline_skylight = PipelineManager::Get()->CreatePipeline(pipeline_desc);
 
 	pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/LightingPassShaderShadowedDirectional.glsl");
@@ -216,10 +210,9 @@ ClusteredLightingPass::ClusteredLightingPass(const std::string& input_gbuffer, c
 	const std::string& input_point_shadow_maps, const std::string& input_directional_shadow_maps)
 	: input_gbuffer(input_gbuffer), output_texture(output_texture), input_clustered_lights(input_clustered_lights), input_directional_shadowed_lights(input_directional_shadowed_lights),
 	input_point_shadowed_lights(input_point_shadowed_lights), shadow_map_dependency_tag(shadow_map_dependency_tag), input_directional_shadowed_cascades(input_directional_shadowed_cascades),
-	input_gbuffer_material(input_gbuffer_material), input_directional_shadow_maps(input_directional_shadow_maps), input_point_shadow_maps(input_point_shadow_maps)
+	input_gbuffer_material(input_gbuffer_material), input_directional_shadow_maps(input_directional_shadow_maps), input_point_shadow_maps(input_point_shadow_maps), clustered_config_observer()
 {
 	data = new internal_data;
-	InitPassData();
 }
 
 void ClusteredLightingPass::Setup(RenderPassResourceDefinnition& setup_builder)
@@ -233,13 +226,19 @@ void ClusteredLightingPass::Setup(RenderPassResourceDefinnition& setup_builder)
 	setup_builder.AddResource<DependencyTag>(shadow_map_dependency_tag, RenderPassResourceDescriptor_Access::READ);
 	setup_builder.AddResource<RenderResourceCollection<glm::mat4>>(input_directional_shadowed_cascades, RenderPassResourceDescriptor_Access::READ);
 
-	use_compute_for_clustered_lights = setup_builder.GetProperties()->SetProperty("Use compute shader for clustered lights", false).second;
+	clustered_config.use_compute_for_clustered_lights = setup_builder.GetProperties()->SetProperty("Use compute shader for clustered lights", true).second;
+	clustered_config.scalarize_lights = setup_builder.GetProperties()->SetProperty("Scalarize lights", true).second;
+	clustered_config.compute_tile_size = setup_builder.GetProperties()->SetProperty<uint32_t>("Compute tile size", 16).second;
+	clustered_config.needs_update = setup_builder.GetProperties()->SetProperty("Update clustered shading settings", DynamicPropertyAction()).second;
+
+	InitPassData();
 }
 
 void ClusteredLightingPass::Render(RenderPipelineResourceManager& resource_manager)
 {
 	PROFILE("ClusteredLightingPass");
 	render_props props;
+	UpdateClusteredPipeline();
 	auto& gbuffer = resource_manager.GetResource<std::shared_ptr<RenderFrameBufferResource>>(input_gbuffer);
 	auto& world = Application::GetWorld();
 	auto queue = Renderer::Get()->GetCommandQueue();
@@ -261,7 +260,7 @@ void ClusteredLightingPass::Render(RenderPipelineResourceManager& resource_manag
 
 	RenderResourceManager::Get()->CopyFrameBufferDepthAttachment(list, gbuffer, data->output_buffer_resource);
 
-	if(use_compute_for_clustered_lights->GetValueTyped()) {
+	if(use_compute_for_clustered_lights) {
 		RenderLightsWithCompute(resource_manager, list, camera, props);
 	} else {
 		RenderLights(resource_manager, list, camera, props);
@@ -273,7 +272,7 @@ void ClusteredLightingPass::Render(RenderPipelineResourceManager& resource_manag
 	queue->ExecuteRenderCommandList(list);
 
 
-	if(use_compute_for_clustered_lights->GetValueTyped()) {
+	if(use_compute_for_clustered_lights) {
 		resource_manager.SetResource<std::shared_ptr<RenderTexture2DResource>>(output_texture, data->color_storage_texture);
 	} else {
 		resource_manager.SetResource<std::shared_ptr<RenderTexture2DResource>>(output_texture, data->output_buffer_resource->GetBufferDescriptor().GetColorAttachmentAsTexture(0));
@@ -284,6 +283,49 @@ ClusteredLightingPass::~ClusteredLightingPass()
 {
 	if (data) {
 		delete data;
+	}
+}
+
+void ClusteredLightingPass::UpdateClusteredPipeline(bool force_update) {
+	auto& needs_update = clustered_config.needs_update->GetValueTyped();
+	if(!needs_update.ShouldActivate() && !force_update) {
+		return;
+	}
+	needs_update.Reset();
+
+	if(clustered_config.use_compute_for_clustered_lights->GetValueTyped()) {
+		std::vector<std::string> shader_defines;
+		shader_defines.push_back("COMPUTE_TILE_SIZE=" + std::to_string(clustered_config.compute_tile_size->GetValueTyped()));
+		compute_tile_size = clustered_config.compute_tile_size->GetValueTyped();
+		if(clustered_config.scalarize_lights->GetValueTyped()) shader_defines.push_back("SCALARIZE");
+
+		ComputePipelineDescriptor compute_pipeline_desc = {};
+		compute_pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/ClusteredRenderer/ClusteredLightingPassShaderCompute.glsl", shader_defines);
+		data->pipeline_clustered = PipelineManager::Get()->CreatePipeline(compute_pipeline_desc);
+		use_compute_for_clustered_lights = true;
+	} else {
+		GraphicsPipelineDescriptor pipeline_desc;
+		pipeline_desc.viewport = RenderViewport();
+		pipeline_desc.scissor_rect = RenderScissorRect();
+		PipelineBlendFunctions blend_function;
+		blend_function.dstAlpha = BlendFunction::ONE;
+		blend_function.srcAlpha = BlendFunction::ONE;
+		blend_function.srcRGB = BlendFunction::ONE;
+		blend_function.dstRGB = BlendFunction::ONE;
+		pipeline_desc.blend_functions = blend_function;
+		pipeline_desc.enable_depth_clip = false;
+		pipeline_desc.flags = PipelineFlags::ENABLE_BLEND;
+		pipeline_desc.cull_mode = CullMode::FRONT;
+		pipeline_desc.blend_equation = BlendEquation::ADD;
+		pipeline_desc.layout = VertexLayoutFactory<LightingPassPreset>::GetLayout();
+		pipeline_desc.polygon_render_mode = PrimitivePolygonRenderMode::DEFAULT;
+		pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/ClusteredRenderer/ClusteredLightingPassShader.glsl");
+		pipeline_desc.framebuffer_format.color_attachemt_formats = {
+			{ TextureFormat::RGBA_16FLOAT }
+		};
+
+		data->pipeline_clustered = PipelineManager::Get()->CreatePipeline(pipeline_desc);
+		use_compute_for_clustered_lights = false;
 	}
 }
 
@@ -335,7 +377,7 @@ void ClusteredLightingPass::RenderLightsWithCompute(RenderPipelineResourceManage
 	if(clustered_lights.num_of_lights == 0) return;
 
 	auto& gbuffer_material = resource_manager.GetResource<std::shared_ptr<Material>>(input_gbuffer_material);
-	list->SetPipeline(data->pipeline_clustered_compute);
+	list->SetPipeline(data->pipeline_clustered);
 	list->SetStorageTexture("color_out", data->color_storage_texture);
 	gbuffer_material->SetMaterial(list);
 	glm::vec2 pixel_size = { 1.0f / Application::Get()->GetWindow()->GetProperties().resolution_x,
@@ -360,8 +402,8 @@ void ClusteredLightingPass::RenderLightsWithCompute(RenderPipelineResourceManage
 	list->SetResourceStore("point_light_shadow_maps", point_shadow_maps);
 	list->SetResourceStore("directional_light_shadow_maps", point_shadow_maps);
 
-	list->Dispatch(glm::ceil(data->color_storage_texture->GetBufferDescriptor().width / COMPUTE_TILE_SIZE),
-		glm::ceil(data->color_storage_texture->GetBufferDescriptor().height / COMPUTE_TILE_SIZE), 1);
+	list->Dispatch(glm::ceil(data->color_storage_texture->GetBufferDescriptor().width / compute_tile_size),
+		glm::ceil(data->color_storage_texture->GetBufferDescriptor().height / compute_tile_size), 1);
 }
 
 void ClusteredLightingPass::RenderShadowedLightsDirectional(RenderPipelineResourceManager& resource_manager, std::shared_ptr<RenderCommandList>  list, const CameraComponent& camera, const render_props& props)

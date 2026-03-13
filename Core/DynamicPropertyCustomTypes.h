@@ -42,3 +42,20 @@ private:
     std::vector<std::string> choices;
     int choice;
 };
+
+/**
+ * Used for triggering an action by setting this property.
+ */
+class DynamicPropertyAction {
+public:
+    DynamicPropertyAction() {
+
+    }
+
+    void Activate() { should_activate = true; }
+    bool ShouldActivate() const { return should_activate; }
+    void Reset() { should_activate = false; }
+
+private:
+    bool should_activate = false;
+};

@@ -34,3 +34,23 @@ void UIModuleAdapter<float>::RenderUI() {
         value->SetValue(val);
     }
 }
+
+void UIModuleAdapter<uint32_t>::RenderUI() {
+    int val = value->GetValueTyped();
+    if(ImGui::DragInt(value->GetName().c_str(), &val)) {
+        value->SetValue(static_cast<uint32_t>(std::max(0,val)));
+    }
+}
+
+void UIModuleAdapter<DynamicPropertyAction>::RenderUI() {
+    bool deactivate = value->GetValueTyped().ShouldActivate();
+    if(deactivate) {
+        ImGui::BeginDisabled();
+    }
+    if(ImGui::Button(value->GetName().c_str())) {
+        value->GetValueTyped().Activate();
+    }
+    if(deactivate) {
+        ImGui::EndDisabled();
+    }
+}

@@ -12,7 +12,7 @@
 class DynamicPropertyBase {
 public:
 
-    using Types = TypeList<std::string, MultiChoice, bool, float>;
+    using Types = TypeList<std::string, MultiChoice, bool, float, uint32_t, DynamicPropertyAction>;
 
     virtual std::string GetName() = 0;
     virtual std::string GetTypeName() = 0;

@@ -193,11 +193,44 @@ void main() {
 	vec2 coords = vec2(((gl_GlobalInvocationID.x + 0.5) * pixel_size.x), ((gl_GlobalInvocationID.y + 0.5) * pixel_size.y));
 	GBufferData gbuffer_data = GetGBufferData(coords);
 	ClusterLightAssignment assignment = cluster_assignments[get_cluster_index(coords, gbuffer_data.view_space_pos_and_depth.w)];
-
-	uint end = assignment.start_index + assignment.count;
 	vec3 color = vec3(0.0,0.0,0.0);
+
+	#ifdef SCALARIZE
+	#extension GL_KHR_shader_subgroup_vote : require
+	#extension GL_KHR_shader_subgroup_ballot : require
+	uint first = subgroupBroadcastFirst(assignment.start_index);
+	bool scalarize = subgroupAll(first == assignment.start_index);
+	if(scalarize) {
+		uint end = subgroupBroadcastFirst(assignment.start_index + assignment.count);
+		for(uint i = first; i < end; i++) {
+			uint light_index = light_assignment_indicies[i];
+
+			if (lights[light_index].light_type == 0) {
+				color += vec3(ComputeDirectionalLight(light_index, gbuffer_data.normals, gbuffer_data.view_space_pos_and_depth.xyz, gbuffer_data.color_and_roughness));
+			}
+			else {
+				color += vec3(ComputePointLight(light_index, gbuffer_data.normals, gbuffer_data.view_space_pos_and_depth.xyz, gbuffer_data.color_and_roughness));
+			}
+		}
+	} else {
+		uint end = assignment.start_index + assignment.count;
+		for(uint i = assignment.start_index; i < end; i++) {
+			uint light_index = light_assignment_indicies[i];
+
+			if (lights[light_index].light_type == 0) {
+				color += vec3(ComputeDirectionalLight(light_index, gbuffer_data.normals, gbuffer_data.view_space_pos_and_depth.xyz, gbuffer_data.color_and_roughness));
+			}
+			else {
+				color += vec3(ComputePointLight(light_index, gbuffer_data.normals, gbuffer_data.view_space_pos_and_depth.xyz, gbuffer_data.color_and_roughness));
+			}
+		}
+	}
+
+	#else
+	uint end = assignment.start_index + assignment.count;
 	for(uint i = assignment.start_index; i < end; i++) {
 		uint light_index = light_assignment_indicies[i];
+
 		if (lights[light_index].light_type == 0) {
 			color += vec3(ComputeDirectionalLight(light_index, gbuffer_data.normals, gbuffer_data.view_space_pos_and_depth.xyz, gbuffer_data.color_and_roughness));
 		}
@@ -205,6 +238,7 @@ void main() {
 			color += vec3(ComputePointLight(light_index, gbuffer_data.normals, gbuffer_data.view_space_pos_and_depth.xyz, gbuffer_data.color_and_roughness));
 		}
 	}
+#endif
 	imageStore(color_out, ivec2(gl_GlobalInvocationID.xy), vec4(color,1.0));
 }
 
