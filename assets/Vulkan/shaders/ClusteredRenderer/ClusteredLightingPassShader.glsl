@@ -69,7 +69,7 @@ layout(location = 0) out vec4 color_out;
 
 layout(set = 1, binding = 0) uniform sampler2D Color;
 layout(set = 1, binding = 1) uniform sampler2D Normal;
-layout(set = 1, binding = 2) uniform sampler2D Roughness;
+layout(set = 1, binding = 2) uniform sampler2D Material;
 layout(set = 1, binding = 3) uniform sampler2D DepthBuffer;
 
 layout(set = 2, binding = 0) uniform samplerCubeShadow PointShadowMaps[];
@@ -119,9 +119,11 @@ layout(std430, set=0, binding = 3) readonly buffer cluster_buffer
 in vec2 light_volume_pos;
 
 struct GBufferData {
- 	mediump vec4 color_and_roughness;
-	mediump vec4 view_space_pos_and_depth;
-	mediump vec3 normals;
+ 	vec3 color;
+	vec3 normals;
+	float roughness;
+	float metallic;
+	vec4 view_space_pos_and_depth;
 };
 
 
@@ -159,40 +161,42 @@ float calculate_shadows_point(vec3 view_space_pos, uint index, vec3 normal) {
 
 #include <shaders/utils/NormalPacking.glsl>
 #include <shaders/utils/PointAttenuationFalloff.glsl>
+#include <shaders/utils/PBR.glsl>
 
-vec3 ComputePointLight(uint light_index, vec3 normals, vec3 view_space_pos, vec4 color_and_roughness) {
+vec3 ComputePointLight(uint light_index, vec3 normals, vec3 view_space_pos, vec3 color, float roughness, float metallic) {
 	float shadow_contrib = 1.0f;
 	if(lights[light_index].shadow_index != ~uint(0)) {
 		shadow_contrib *= calculate_shadows_point(view_space_pos, light_index, normals);
 	}
 
-	vec4 light_direction_and_distance = vec4(vec3(lights[light_index].position_or_direction_and_radius) - view_space_pos,0.0f);
-	light_direction_and_distance.w = length(light_direction_and_distance.xyz);
-	light_direction_and_distance.xyz = light_direction_and_distance.xyz / light_direction_and_distance.w;
-	shadow_contrib *= PointAttenuationFalloff(light_direction_and_distance.w, lights[light_index].range);
+	vec3 light_direction = vec3(lights[light_index].position_or_direction_and_radius) - view_space_pos;
+	float ligth_distance = length(light_direction);
+	light_direction /= ligth_distance;
+	vec3 light_radiance = lights[light_index].Light_Color.xyz * lights[light_index].Light_Color.w;
+	light_radiance *= PointAttenuationFalloff(ligth_distance, lights[light_index].range);
+	light_radiance *= shadow_contrib;
 
-	light_direction_and_distance.w = max(0,dot(light_direction_and_distance.xyz, normals));
-	shadow_contrib *= smoothstep(0.0, 0.02, light_direction_and_distance.w);
-	float light_contrib = 0.5f * (0.1 + light_direction_and_distance.w); // diffuse part
-	light_contrib += 0.5f * pow(clamp(dot(normals, normalize( light_direction_and_distance.xyz - normalize(view_space_pos))), 0, 1), 1 +((1 - color_and_roughness.w) * 64)); //specular part
-
-	return vec3(light_contrib * shadow_contrib * lights[light_index].Light_Color.xyz * lights[light_index].Light_Color.w * color_and_roughness.xyz);
+	return CookTorranceModel(light_direction, -normalize(view_space_pos), normals,
+							 color, roughness, metallic) * light_radiance;
 }
 
-vec3 ComputeDirectionalLight(uint light_index, vec3 normals, vec3 view_space_pos, vec4 color_and_roughness) {
+vec3 ComputeDirectionalLight(uint light_index, vec3 normals, vec3 view_space_pos, vec3 color, float roughness, float metallic) {
 	vec3 light_direction = normalize(vec3(lights[light_index].position_or_direction_and_radius));
-	float light_contrib = 0.5f * (0.1 + max(0, dot(normals, - light_direction))); // diffuse part
-	light_contrib += 0.5f * pow(clamp(dot(normals, normalize(- light_direction - normalize(view_space_pos))), 0, 1), 1 +((1 - color_and_roughness.w) * 64)); //specular part
-	light_contrib *= smoothstep(-0.02, 0.02,dot(-light_direction, normals));
+	vec3 light_radiance = lights[light_index].Light_Color.xyz * lights[light_index].Light_Color.w;
 	vec4 Light_Color = lights[light_index].Light_Color;
-	return vec3(color_and_roughness.xyz * Light_Color.xyz * Light_Color.w * light_contrib);
+
+	return CookTorranceModel(-light_direction, -normalize(view_space_pos), normals,
+							 color, roughness, metallic) * light_radiance;
 }
 
 GBufferData GetGBufferData(vec2 coords) {
 	GBufferData data;
 	data.view_space_pos_and_depth.w = depth_constant_b / (texture(DepthBuffer, coords.xy).x - depth_constant_a);
 	data.normals = UnpackNormals(texture(Normal, coords.xy).xy);
-	data.color_and_roughness = vec4(texture(Color, coords.xy).xyz, texture(Roughness, coords.xy).x);
+	data.color = texture(Color, coords.xy).xyz;
+	vec3 material = texture(Material, coords.xy).xyz;
+	data.roughness = material.y;
+	data.metallic = material.z;
 	data.view_space_pos_and_depth.xyz = GetFragmentPosition(data.view_space_pos_and_depth.w);
 	return data;
 }
@@ -207,10 +211,12 @@ void main() {
 	for(uint i = assignment.start_index; i < end; i++) {
 		uint light_index = light_assignment_indicies[i];
 		if (lights[light_index].light_type == 0) {
-			color += vec3(ComputeDirectionalLight(light_index, gbuffer_data.normals, gbuffer_data.view_space_pos_and_depth.xyz, gbuffer_data.color_and_roughness));
+			color += vec3(ComputeDirectionalLight(light_index, gbuffer_data.normals, gbuffer_data.view_space_pos_and_depth.xyz,
+											gbuffer_data.color, gbuffer_data.roughness, gbuffer_data.metallic));
 		}
 		else {
-			color += vec3(ComputePointLight(light_index, gbuffer_data.normals, gbuffer_data.view_space_pos_and_depth.xyz, gbuffer_data.color_and_roughness));
+			color += vec3(ComputePointLight(light_index, gbuffer_data.normals, gbuffer_data.view_space_pos_and_depth.xyz,
+											gbuffer_data.color, gbuffer_data.roughness, gbuffer_data.metallic));
 		}
 	}
 	color_out = vec4(color,1.0);

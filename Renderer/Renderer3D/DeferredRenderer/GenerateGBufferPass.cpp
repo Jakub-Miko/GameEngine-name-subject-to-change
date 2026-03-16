@@ -46,12 +46,12 @@ void GenerateGBufferPass::InitPostProcessingPassData() {
 	color_normal_desc.width = Application::Get()->GetWindow()->GetProperties().resolution_x;
 	color_normal_desc.sampler = sampler;
 
-	RenderTexture2DDescriptor roughness_texture_desc;
-	roughness_texture_desc.format = TextureFormat::R_8FLOAT;
-	roughness_texture_desc.usage = TextureUsage::COLOR_ATTACHMENT_READABLE;
-	roughness_texture_desc.height = Application::Get()->GetWindow()->GetProperties().resolution_y;
-	roughness_texture_desc.width = Application::Get()->GetWindow()->GetProperties().resolution_x;
-	roughness_texture_desc.sampler = sampler;
+	RenderTexture2DDescriptor material_texture_desc;
+	material_texture_desc.format = TextureFormat::RGBA_16FLOAT;
+	material_texture_desc.usage = TextureUsage::COLOR_ATTACHMENT_READABLE;
+	material_texture_desc.height = Application::Get()->GetWindow()->GetProperties().resolution_y;
+	material_texture_desc.width = Application::Get()->GetWindow()->GetProperties().resolution_x;
+	material_texture_desc.sampler = sampler;
 
 	RenderTexture2DDescriptor depth_desc;
 	depth_desc.format = TextureFormat::DEFAULT_DEPTH;
@@ -63,12 +63,12 @@ void GenerateGBufferPass::InitPostProcessingPassData() {
 	auto texture_color_albedo = RenderResourceManager::Get()->CreateTexture(color_texture_desc);
 	auto texture_color_normal = RenderResourceManager::Get()->CreateTexture(color_normal_desc);
 	auto texture_depth_stencil = RenderResourceManager::Get()->CreateTexture(depth_desc);
-	auto roughness_texture = RenderResourceManager::Get()->CreateTexture(roughness_texture_desc);
+	auto material_texture = RenderResourceManager::Get()->CreateTexture(material_texture_desc);
 
 
 
 	RenderFrameBufferDescriptor framebuffer_desc;
-	framebuffer_desc.color_attachments = { {0,texture_color_albedo},{0,texture_color_normal},{0,roughness_texture} };
+	framebuffer_desc.color_attachments = { {0,texture_color_albedo},{0,texture_color_normal},{0,material_texture} };
 	framebuffer_desc.depth_stencil_attachment = { 0,texture_depth_stencil };
 
 #pragma region Render_IDs
@@ -89,7 +89,7 @@ void GenerateGBufferPass::InitPostProcessingPassData() {
 	data->output_material_resource = MaterialManager::Get()->CreateMaterial("GBufferMaterial");
 	data->output_material_resource->SetParameter("Color", texture_color_albedo);
 	data->output_material_resource->SetParameter("Normal", texture_color_normal);
-	data->output_material_resource->SetParameter("Roughness", roughness_texture);
+	data->output_material_resource->SetParameter("Material", material_texture);
 	data->output_material_resource->SetParameter("DepthBuffer", texture_depth_stencil);
 
 	auto list = Renderer::Get()->GetRenderCommandList();

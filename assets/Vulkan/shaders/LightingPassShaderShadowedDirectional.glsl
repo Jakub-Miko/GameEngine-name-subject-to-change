@@ -87,7 +87,7 @@ layout(location = 0) out vec4 color_out;
 
 layout(set = 2, binding = 0) uniform sampler2D Color;
 layout(set = 2, binding = 1) uniform sampler2D Normal;
-layout(set = 2, binding = 2) uniform sampler2D Roughness;
+layout(set = 2, binding = 2) uniform sampler2D Material;
 layout(set = 2, binding = 3) uniform sampler2D DepthBuffer;
 layout(set = 1, binding = 1) uniform sampler2DArrayShadow ShadowMapArray;
 
@@ -153,6 +153,7 @@ vec3 GetFragmentPosition(vec3 coordinates) {
 }
 
 #include <shaders/utils/NormalPacking.glsl>
+#include <shaders/utils/PBR.glsl>
 
 void main() {
 	vec3 coords = vec3((gl_FragCoord.x * pixel_size.x), (gl_FragCoord.y * pixel_size.y), 0.0);
@@ -161,17 +162,15 @@ void main() {
 
 	vec4 color = vec4(texture(Color, coords.xy).xyz, 1.0);
 	vec3 normal = UnpackNormals(texture(Normal, coords.xy).xy);
-	float roughness = texture(Roughness, coords.xy).x;
-	float attenuation_factor = smoothstep(-0.02, 0.02,dot(-light_direction, normal));
+	vec4 material = texture(Material, coords.xy);
+	float roughness = material.y;
+	float metallic = material.z;
 
+	vec3 light_radiance = Light_Color.xyz * Light_Color.w;
+	light_radiance *= calculate_shadows(view_space_pos, coords);
 
-	float diffuse_contribution = 0.5f * (0.1 + max(0, dot(normal, - light_direction)));
-	float specular_contribution = 0.5f * pow(clamp(dot(normal, normalize(- light_direction - normalize(view_space_pos))), 0, 1), 1 +((1 - roughness) * 64));
-
-	float contribution = diffuse_contribution + specular_contribution;
-
-	float shadows = calculate_shadows(view_space_pos, coords);
-	color_out = vec4(shadows * color.xyz * Light_Color.xyz * attenuation_factor * Light_Color.w * contribution,1.0);
+	color_out = vec4(CookTorranceModel(-light_direction, -normalize(view_space_pos), normal,
+	color.xyz, roughness, metallic) * light_radiance, 1.0);
 }
 
 #end

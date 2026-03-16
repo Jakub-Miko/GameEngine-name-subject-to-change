@@ -24,7 +24,7 @@ layout(location = 0) in uvec4 bone_ids;
 layout(location = 1) in vec4 bone_weights;
 layout(location = 2) in vec3 position;
 layout(location = 3) in vec3 normal;
-layout(location = 4) in vec3 tangent;
+layout(location = 4) in vec4 tangent;
 layout(location = 5) in vec2 uv;
 
 

@@ -30,7 +30,7 @@ layout(location = 0) in uvec4 bone_ids;
 layout(location = 1) in vec4 bone_weights;
 layout(location = 2) in vec3 position;
 layout(location = 3) in vec3 normal;
-layout(location = 4) in vec3 tangent;
+layout(location = 4) in vec4 tangent;
 layout(location = 5) in vec2 uv;
 
 out vec2 uv_fragment;
@@ -55,6 +55,8 @@ layout(set = 1, binding = 0) uniform material{
 	vec4 Base_Color;
 	float roughness_bias;
 	float roughness_gain;
+	float metallic_bias;
+	float metallic_gain;
 };
 
 void main() {
@@ -66,20 +68,20 @@ void main() {
 			if (bone_ids[i] != -1) {
 				new_pos += bone_weights[i] * (bone_matricies[bone_ids[i]] * vec4(position, 1.0f));
 				new_normal += bone_weights[i] * (bone_matricies[bone_ids[i]] * vec4(normal, 0.0f));
-				new_tangent += bone_weights[i] * (bone_matricies[bone_ids[i]] * vec4(tangent, 0.0f));
+				new_tangent += bone_weights[i] * (bone_matricies[bone_ids[i]] * vec4(tangent));
 			}
 		}
 	}
 	else {
 		new_pos = vec4(position, 1.0f);
 		new_normal = vec4(normal, 1.0f);
-		new_tangent = vec4(tangent, 1.0f);
+		new_tangent = vec4(tangent);
 	}
 	new_normal = normalize(new_normal);
 	new_tangent = normalize(new_tangent);
 	vec3 normal_transformed = normalize(mat3(transpose(inverse(view_model_matrix))) * new_normal.xyz).xyz;
 	vec3 tangent_transformed = normalize(mat3(transpose(inverse(view_model_matrix))) * new_tangent.xyz).xyz;
-	vec3 bitangent_transformed = cross(normal_transformed, tangent_transformed);
+	vec3 bitangent_transformed = cross(normal_transformed, tangent_transformed) * tangent.w;
 
 	TBN = mat3(tangent_transformed, bitangent_transformed, normal_transformed);
 	
@@ -102,7 +104,7 @@ in mat3 TBN;
 
 layout(location = 0) out vec4 color_out;
 layout(location = 1) out vec2 normal_out;
-layout(location = 2) out float roughness_out;
+layout(location = 2) out vec4 roughness_out;
 
 layout(set = 1, binding = 1) uniform sampler2D Color;
 layout(set = 1, binding = 2) uniform sampler2D Normal;
@@ -112,13 +114,18 @@ layout(set = 1, binding = 0) uniform material{
 	vec4 Base_Color;
 	float roughness_bias;
 	float roughness_gain;
+	float metallic_bias;
+	float metallic_gain;
 };
 
 #include <shaders/utils/NormalPacking.glsl>
 
 void main() {
 	color_out = vec4(texture(Color,uv_fragment).xyz,1) * Base_Color;
-	roughness_out = texture(Roughness, uv_fragment).x * roughness_gain + roughness_bias;
+	vec4 pbr = vec4(texture(Roughness, uv_fragment).xyz, 1.0);
+pbr.y = clamp(pbr.y * roughness_gain + roughness_bias, 0.0, 1.0);
+pbr.z = clamp(pbr.z * metallic_gain + metallic_bias, 0.0, 1.0);
+	roughness_out = pbr;
 	normal_out = PackNormals(normalize(vec3(TBN * (texture(Normal, uv_fragment).rgb * 2.0 - 1.0))));
 }
 

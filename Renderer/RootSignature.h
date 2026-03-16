@@ -298,7 +298,7 @@ struct VertexLayoutFactory<SkeletalGeometryPassPreset> {
 				VertexLayoutElement(RenderPrimitiveType::FLOAT,4,"bone_weights"),
 				VertexLayoutElement(RenderPrimitiveType::FLOAT,3, "position"),
 				VertexLayoutElement(RenderPrimitiveType::FLOAT,3, "normal"),
-				VertexLayoutElement(RenderPrimitiveType::FLOAT,3, "tangent"),
+				VertexLayoutElement(RenderPrimitiveType::FLOAT,4, "tangent"),
 				VertexLayoutElement(RenderPrimitiveType::FLOAT,2, "uv0")
 				});
 
@@ -339,7 +339,7 @@ struct VertexLayoutFactory<MeshPreset> {
 			VertexLayout* layout_new = new VertexLayout({
 				VertexLayoutElement(RenderPrimitiveType::FLOAT,3,"position"),
 				VertexLayoutElement(RenderPrimitiveType::FLOAT,3,"normal"),
-				VertexLayoutElement(RenderPrimitiveType::FLOAT,3,"tangent"),
+				VertexLayoutElement(RenderPrimitiveType::FLOAT,4,"tangent"),
 				VertexLayoutElement(RenderPrimitiveType::FLOAT,2,"uv0")
 				});
 
@@ -363,7 +363,7 @@ struct VertexLayoutFactory<SkeletalMeshPreset> {
 				VertexLayoutElement(RenderPrimitiveType::FLOAT,4,"bone_weights"),
 				VertexLayoutElement(RenderPrimitiveType::FLOAT,3, "position"),
 				VertexLayoutElement(RenderPrimitiveType::FLOAT,3, "normal"),
-				VertexLayoutElement(RenderPrimitiveType::FLOAT,3, "tangent"),
+				VertexLayoutElement(RenderPrimitiveType::FLOAT,4, "tangent"),
 				VertexLayoutElement(RenderPrimitiveType::FLOAT,2, "uv0")
 				});
 

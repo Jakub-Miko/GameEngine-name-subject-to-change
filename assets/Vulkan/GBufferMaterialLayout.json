@@ -9,7 +9,7 @@
             "type": "texture_2D"
         },
         {
-            "name": "Roughness",
+            "name": "Material",
             "type": "texture_2D"
         },
         {

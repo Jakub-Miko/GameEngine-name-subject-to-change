@@ -187,6 +187,7 @@ private:
 		glm::vec3* position = nullptr;
 		glm::vec3* normal = nullptr;
 		glm::vec3* tangent = nullptr;
+		glm::vec3* bitangent = nullptr;
 		glm::vec3** uvs = nullptr;
 		glm::uvec4* bone_Indicies = nullptr;
 		glm::vec4* bone_weigths = nullptr;

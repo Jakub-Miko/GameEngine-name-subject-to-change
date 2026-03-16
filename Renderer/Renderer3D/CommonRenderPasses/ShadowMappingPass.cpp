@@ -340,7 +340,7 @@ void ShadowMappingPass::InitShadowMappingPassData()
 
 	
 	pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/ShadowMappingShaderDirectionalSkeletal.glsl");
-	pipeline_desc.layout = VertexLayoutFactory<SkeletalGeometryPassPreset>::GetLayout();
+	pipeline_desc.layout = VertexLayoutFactory<SkeletalMeshPreset>::GetLayout();
 
 	data->pipeline_directional_skeletal = PipelineManager::Get()->CreatePipeline(pipeline_desc);
 

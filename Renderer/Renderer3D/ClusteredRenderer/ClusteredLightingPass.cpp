@@ -226,7 +226,7 @@ void ClusteredLightingPass::Setup(RenderPassResourceDefinnition& setup_builder)
 	setup_builder.AddResource<DependencyTag>(shadow_map_dependency_tag, RenderPassResourceDescriptor_Access::READ);
 	setup_builder.AddResource<RenderResourceCollection<glm::mat4>>(input_directional_shadowed_cascades, RenderPassResourceDescriptor_Access::READ);
 
-	clustered_config.use_compute_for_clustered_lights = setup_builder.GetProperties()->SetProperty("Use compute shader for clustered lights", true).second;
+	clustered_config.use_compute_for_clustered_lights = setup_builder.GetProperties()->SetProperty("Use compute shader for clustered lights", false).second;
 	clustered_config.scalarize_lights = setup_builder.GetProperties()->SetProperty("Scalarize lights", true).second;
 	clustered_config.compute_tile_size = setup_builder.GetProperties()->SetProperty<uint32_t>("Compute tile size", 16).second;
 	clustered_config.needs_update = setup_builder.GetProperties()->SetProperty("Update clustered shading settings", DynamicPropertyAction()).second;

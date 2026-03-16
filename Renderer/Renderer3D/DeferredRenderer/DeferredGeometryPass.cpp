@@ -25,7 +25,7 @@ struct VertexLayoutFactory<GeometryPassPreset> {
 			VertexLayout* layout_new = new VertexLayout({
 				VertexLayoutElement(RenderPrimitiveType::FLOAT,3, "position"),
 				VertexLayoutElement(RenderPrimitiveType::FLOAT,3, "normal"),
-				VertexLayoutElement(RenderPrimitiveType::FLOAT,3, "tangent"),
+				VertexLayoutElement(RenderPrimitiveType::FLOAT,4, "tangent"),
 				VertexLayoutElement(RenderPrimitiveType::FLOAT,2, "uv")
 				});
 
@@ -66,12 +66,12 @@ void DeferredGeometryPass::InitPostProcessingPassData() {
 	pipeline_desc.blend_functions = PipelineBlendFunctions();
 	pipeline_desc.flags = PipelineFlags::ENABLE_DEPTH_TEST;
 	pipeline_desc.depth_function = DepthFunction::LESS_EQUAL;
-	pipeline_desc.layout = VertexLayoutFactory<GeometryPassPreset>::GetLayout();
+	pipeline_desc.layout = VertexLayoutFactory<MeshPreset>::GetLayout();
 	pipeline_desc.polygon_render_mode = PrimitivePolygonRenderMode::DEFAULT;
 	pipeline_desc.framebuffer_format.color_attachemt_formats = {
         { TextureFormat::RGBA_UNSIGNED_CHAR },
 		{ TextureFormat::RG_16FLOAT},
-		{ TextureFormat::R_8FLOAT}
+		{ TextureFormat::RGBA_16FLOAT}
     };
 #ifdef EDITOR
 	

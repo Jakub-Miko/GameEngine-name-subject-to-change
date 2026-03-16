@@ -380,6 +380,7 @@ MeshSourceData AssimpMeshProxy::LoadMesh()
     glm::vec3* position = nullptr;
     glm::vec3* normal = nullptr;
     glm::vec3* tangent = nullptr;
+    glm::vec3* bitangent = nullptr;
     glm::vec3** uvs = nullptr;
 
     if (has_position) {
@@ -404,6 +405,7 @@ MeshSourceData AssimpMeshProxy::LoadMesh()
     if (has_tangent && imported_mesh->HasTangentsAndBitangents()) {
         if (imported_mesh->HasNormals()) {
             tangent = reinterpret_cast<glm::vec3*>(imported_mesh->mTangents);
+            bitangent = reinterpret_cast<glm::vec3*>(imported_mesh->mBitangents);
         }
         else {
             throw std::runtime_error("Normals could not be generated.");
@@ -505,7 +507,8 @@ MeshSourceData AssimpMeshProxy::LoadMesh()
             break;
         case 4:
             for (int i = 0; i < num_of_verticies; i++) {
-                glm::vec4 tangent_data = glm::vec4(normal[i], 1.0f);
+                float sign = (glm::dot(glm::cross(normal[i], tangent[i]), bitangent[i]) < 0.0f) ? -1.0f : 1.0f;
+                glm::vec4 tangent_data = glm::vec4(tangent[i], sign);
                 void* data = (void*)(vertex_buffer + ((layout->stride * i) + tangent_element.offset));
                 std::memcpy(data, &tangent_data, sizeof(glm::vec4));
             }

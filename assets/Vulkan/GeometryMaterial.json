@@ -21,6 +21,16 @@
             "default_value": 1.0
         },
         {
+            "name": "metallic_bias",
+            "type": "FLOAT",
+            "default_value": 0.0
+        },
+        {
+            "name": "metallic_gain",
+            "type": "FLOAT",
+            "default_value": 1.0
+        },
+        {
             "name": "Color",
             "type": "texture_2D"
         },

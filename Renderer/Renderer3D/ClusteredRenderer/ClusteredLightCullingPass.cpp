@@ -48,10 +48,10 @@ void ClusteredLightCullingPass::InitPass() {
     RenderBufferDescriptor buffer_desc(CLUSTER_GRID_X * CLUSTER_GRID_Y * CLUSTER_GRID_Z * 2 * sizeof(uint32_t), RenderBufferType::DEFAULT, RenderBufferUsage::STORAGE_BUFFER);
     data->output_lists.cluster_buffer = RenderResourceManager::Get()->CreateBuffer(buffer_desc);
 
-    buffer_desc.buffer_size = 2000000 * sizeof(uint32_t);
+    buffer_desc.buffer_size = 5000000 * sizeof(uint32_t);
     data->output_lists.light_assignment_buffer = RenderResourceManager::Get()->CreateBuffer(buffer_desc);
 
-    buffer_desc.buffer_size = 5000 * sizeof(glm::vec4);
+    buffer_desc.buffer_size = 5000 * sizeof(ClusteredLightData);
     data->output_lists.light_buffer = RenderResourceManager::Get()->CreateBuffer(buffer_desc);
 
     RenderBufferDescriptor config_buffer_desc(sizeof(ConfigBufferStruct), RenderBufferType::DEFAULT, RenderBufferUsage::CONSTANT_BUFFER);

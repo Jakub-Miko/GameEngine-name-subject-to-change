@@ -112,7 +112,7 @@ void main() {
 
 
 	vec4 color = vec4(texture(Color, coords.xy).xyz, 1.0);
-	float roughness = texture(Roughness, coords.xy).x;
+	float roughness = texture(Roughness, coords.xy).y;
 	vec3 normal = mat3(inverse_view) * reflect(normalize(vec3(light_volume_pos.xy / abs(light_volume_pos.z), -1.0)) , UnpackNormals(texture(Normal, coords.xy).xy));
 	normal.y = -normal.y;
 

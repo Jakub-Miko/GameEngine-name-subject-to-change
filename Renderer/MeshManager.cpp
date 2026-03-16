@@ -85,7 +85,8 @@ void MeshManager::MakeMeshFromObjectFile(const std::string& in_file_path, const 
             break;
         case 4:
             for (int i = 0; i < input_data.num_of_verticies; i++) {
-                glm::vec4 tangent_data = glm::vec4(input_data.normal[i], 1.0f);
+                float sign = (glm::dot(glm::cross(input_data.normal[i], input_data.tangent[i]), input_data.bitangent[i]) < 0.0f) ? -1.0f : 1.0f;
+                glm::vec4 tangent_data = glm::vec4(input_data.normal[i], sign);
                 void* data = (void*)(vertex_buffer + ((layout.stride * i) + tangent_element.offset));
                 std::memcpy(data, &tangent_data, sizeof(glm::vec4));
             }
@@ -259,7 +260,7 @@ MeshManager::mesh_assimp_input_data MeshManager::Fetch_Assimp_Data(const mesh_ve
 
     Mesh mesh;
     unsigned int flags = 0;
-    flags |= aiProcess_GenBoundingBoxes | (props.has_normal ? aiProcess_GenNormals : 0);
+    flags |= aiProcess_GenBoundingBoxes | (props.has_normal ? aiProcess_GenSmoothNormals | aiProcess_JoinIdenticalVertices: 0);
     flags |= aiProcess_GenBoundingBoxes | (props.has_tangent ? aiProcess_CalcTangentSpace : 0);
     const aiScene* scene = importer->ReadFile(in_file_path, flags |aiProcess_Triangulate); //TODO: Handle bounding boxes somehow
     aiMesh* imported_mesh = scene->mMeshes[mesh_index];
@@ -281,7 +282,7 @@ MeshManager::mesh_assimp_input_data MeshManager::Fetch_Assimp_Data(const mesh_ve
         }
     }
 
-    if (props.has_normal && imported_mesh->HasNormals()) {
+    if (props.has_normal) {
         if (imported_mesh->HasNormals()) {
             data.normal = reinterpret_cast<glm::vec3*>(imported_mesh->mNormals);
         }
@@ -290,9 +291,10 @@ MeshManager::mesh_assimp_input_data MeshManager::Fetch_Assimp_Data(const mesh_ve
         }
     }
 
-    if (props.has_tangent && imported_mesh->HasTangentsAndBitangents()) {
-        if (imported_mesh->HasNormals()) {
+    if (props.has_tangent) {
+        if (imported_mesh->HasTangentsAndBitangents()) {
             data.tangent = reinterpret_cast<glm::vec3*>(imported_mesh->mTangents);
+            data.bitangent = reinterpret_cast<glm::vec3*>(imported_mesh->mBitangents);
         }
         else {
             throw std::runtime_error("Normals could not be generated.");

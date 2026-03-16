@@ -23,7 +23,7 @@ struct VertexLayoutFactory<GeometryPassPreset> {
 			VertexLayout* layout_new = new VertexLayout({
 				VertexLayoutElement(RenderPrimitiveType::FLOAT,3, "position"),
 				VertexLayoutElement(RenderPrimitiveType::FLOAT,3, "normal"),
-				VertexLayoutElement(RenderPrimitiveType::FLOAT,3, "tangent"),
+				VertexLayoutElement(RenderPrimitiveType::FLOAT,4, "tangent"),
 				VertexLayoutElement(RenderPrimitiveType::FLOAT,2, "uv")
 				});
 
