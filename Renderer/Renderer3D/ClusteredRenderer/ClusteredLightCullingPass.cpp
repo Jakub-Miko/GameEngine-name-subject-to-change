@@ -10,10 +10,11 @@
 #include "World/Components/ShadowCasterComponent.h"
 
 struct ClusteredLightCullingPass::internal_data {
-    std::unordered_map<char, std::shared_ptr<Pipeline>> pipelines;
+    std::shared_ptr<Pipeline> pipeline;
     std::shared_ptr<RenderBufferResource> config_buffer;
     std::shared_ptr<RenderBufferResource> allocator_buffer;
     ClusteredLightLists output_lists;
+    bool per_warp_optimization = false;
     bool cull_with_planes = true;
     bool cull_with_boxes = true;
     bool reduce_spheres = true;
@@ -41,10 +42,11 @@ ClusteredLightCullingPass::ClusteredLightCullingPass(const std::string& input_gl
     : input_global_light_list_name(input_global_light_list_name), output_clustered_light_lists_name(output_clustered_light_lists_name),
     data(new internal_data), active_cluster_list(active_cluster_list), input_shadowed_light_list_name(input_shadowed_light_list_name)
 {
-    InitPass();
+
 }
 
 void ClusteredLightCullingPass::InitPass() {
+    UpdatePipeline(true);
     RenderBufferDescriptor buffer_desc(CLUSTER_GRID_X * CLUSTER_GRID_Y * CLUSTER_GRID_Z * 2 * sizeof(uint32_t), RenderBufferType::DEFAULT, RenderBufferUsage::STORAGE_BUFFER);
     data->output_lists.cluster_buffer = RenderResourceManager::Get()->CreateBuffer(buffer_desc);
 
@@ -61,34 +63,37 @@ void ClusteredLightCullingPass::InitPass() {
     data->allocator_buffer = RenderResourceManager::Get()->CreateBuffer(allocator_buffer_desc);
 }
 
-std::shared_ptr<Pipeline> ClusteredLightCullingPass::GetPipeline() {
-    char key = (char)data->cull_with_boxes | (char)data->cull_with_planes << 1 | (char)data->reduce_spheres << 2;
-	auto fnd = data->pipelines.find(key);
-	if(fnd != data->pipelines.end()) {
-		return fnd->second;
-	}
+void ClusteredLightCullingPass::UpdatePipeline(bool force) {
+    if(!update_pipeline->GetValueTyped().ShouldActivate() && !force) {
+        return;
+    }
+    update_pipeline->GetValueTyped().Reset();
+    data->cull_with_boxes = box_culling->GetValueTyped();
+    data->cull_with_planes = frustum_culling->GetValueTyped();
+    data->reduce_spheres = frustum_culling_reduction->GetValueTyped();
+    data->per_warp_optimization = cluster_per_warp->GetValueTyped();
 
-	std::vector<std::string> compiler_definitions;
+    std::vector<std::string> compiler_definitions;
 
-	if(data->cull_with_planes) {
-		compiler_definitions.emplace_back("CULL_WITH_PLANES");
-	}
+    if(data->cull_with_planes) {
+        compiler_definitions.emplace_back("CULL_WITH_PLANES");
+    }
 
-	if(data->cull_with_boxes) {
-		compiler_definitions.emplace_back("CULL_WITH_BOXES");
-	}
+    if(data->cull_with_boxes) {
+        compiler_definitions.emplace_back("CULL_WITH_BOXES");
+    }
 
-	if(data->reduce_spheres) {
-		compiler_definitions.emplace_back("REDUCE_SPHERES_ON_INTERSECTING_PLANES");
-	}
+    if(data->reduce_spheres) {
+        compiler_definitions.emplace_back("REDUCE_SPHERES_ON_INTERSECTING_PLANES");
+    }
 
-	ComputePipelineDescriptor pipeline_desc = {};
-	pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/ClusteredRenderer/ClusteredLightCullingShader.glsl", compiler_definitions);
-	auto new_pipeline = PipelineManager::Get()->CreatePipeline(pipeline_desc);
+    if(data->per_warp_optimization) {
+        compiler_definitions.emplace_back("CLUSTER_PER_WARP");
+    }
 
-    data->pipelines[key] = new_pipeline;
-
-	return new_pipeline;
+    ComputePipelineDescriptor pipeline_desc = {};
+    pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/ClusteredRenderer/ClusteredLightCullingShader.glsl", compiler_definitions);
+    data->pipeline = PipelineManager::Get()->CreatePipeline(pipeline_desc);
 }
 
 
@@ -97,13 +102,17 @@ void ClusteredLightCullingPass::Setup(RenderPassResourceDefinnition& setup_build
     setup_builder.AddResource<RenderResourceCollection<Entity>>(input_shadowed_light_list_name, RenderPassResourceDescriptor_Access::READ);
     setup_builder.AddResource<ClusteredLightLists>(output_clustered_light_lists_name, RenderPassResourceDescriptor_Access::WRITE);
     setup_builder.AddResource<std::shared_ptr<RenderBufferResource>>(active_cluster_list, RenderPassResourceDescriptor_Access::READ);
-    setup_builder.GetProperties()->SetProperty("Cull lights with frustum planes", true);
-    setup_builder.GetProperties()->SetProperty("Cull lights with bounding boxes", true);
-    setup_builder.GetProperties()->SetProperty("Reduce culling spheres on intersecting planes", true);
+    frustum_culling = setup_builder.GetProperties()->SetProperty("Cull lights with frustum planes", true).second;
+    box_culling = setup_builder.GetProperties()->SetProperty("Cull lights with bounding boxes", true).second;
+    frustum_culling_reduction = setup_builder.GetProperties()->SetProperty("Reduce culling spheres on intersecting planes", true).second;
+    cluster_per_warp = setup_builder.GetProperties()->SetProperty("Clusters per Warp", true).second;
+    update_pipeline = setup_builder.GetProperties()->SetProperty("Update culling pipeline", DynamicPropertyAction()).second;
+    InitPass();
 }
 
 void ClusteredLightCullingPass::Render(RenderPipelineResourceManager& resource_manager) {
     PROFILE("ClusteredLightCullingPass");
+    UpdatePipeline();
     RenderResourceCollection<Entity> global_light_list[] =  {
         resource_manager.GetResource<RenderResourceCollection<Entity>>(input_global_light_list_name),
         resource_manager.GetResource<RenderResourceCollection<Entity>>(input_shadowed_light_list_name)
@@ -183,15 +192,16 @@ void ClusteredLightCullingPass::Render(RenderPipelineResourceManager& resource_m
 
     auto num_of_clusters = config_buffer_struct.cluster_grid_size.x * config_buffer_struct.cluster_grid_size.y * config_buffer_struct.cluster_grid_size.z;
     auto num_of_thread_groups = static_cast<int>(ceil(static_cast<double>(num_of_clusters) / 256.0));
+    auto num_of_threads_with_per_warp_optimization = num_of_thread_groups * 32;
 
-    list->SetPipeline(GetPipeline());
+    list->SetPipeline(data->pipeline);
     list->SetConstantBuffer("config_buffer", data->config_buffer);
     list->SetStorageBuffer("light_buffer", data->output_lists.light_buffer);
     list->SetStorageBuffer("light_assignment_buffer", data->output_lists.light_assignment_buffer);
     list->SetStorageBuffer("cluster_buffer", data->output_lists.cluster_buffer);
     list->SetStorageBuffer("allocator_buffer", data->allocator_buffer);
     list->SetStorageBuffer("active_cluster_buffer", active_clusters);
-    list->Dispatch(num_of_thread_groups, 1, 1);
+    list->Dispatch(data->per_warp_optimization ? num_of_threads_with_per_warp_optimization : num_of_thread_groups, 1, 1);
 
     Renderer::Get()->GetCommandQueue()->ExecuteRenderCommandList(list);
 

@@ -226,7 +226,74 @@ bool sphere_overlap_test(vec4 sphere_pos_and_radius, BoundingBox box, uvec3 clus
     return result;
 }
 
-void main() {
+#ifdef CLUSTER_PER_WARP
+
+void RunCullingWarpOptimized() {
+    #extension GL_KHR_shader_subgroup_basic : require
+    #extension GL_KHR_shader_subgroup_arithmetic : require
+    #extension GL_KHR_shader_subgroup_ballot : require
+    uint index = gl_SubgroupID + gl_NumSubgroups * gl_WorkGroupID.x;
+    uint lane_index = gl_SubgroupInvocationID;
+    if(index >= active_cluster_count) {
+        return;
+    }
+
+    uint num_of_clusters = cluster_grid_size.x * cluster_grid_size.y * cluster_grid_size.z;
+
+    uint cluster_key = active_cluster_indicies[index];
+    uvec3 cluster_coords; // we can optimize this quite heavily by using powers of two
+    uint xmask = uint(ceil(log2(cluster_grid_size.x)));
+    uint ymask = uint(ceil(log2(cluster_grid_size.y)));
+    cluster_coords.x = cluster_key & ~(~0u << xmask);
+    cluster_coords.y = (cluster_key >> xmask) & ~(~0u << ymask);
+    cluster_coords.z = cluster_key >> (xmask + ymask);
+
+    #ifdef CULL_WITH_BOXES
+    BoundingBox aabb = GetAABB(cluster_coords, cluster_grid_size);
+    #else
+    BoundingBox aabb;
+    #endif
+
+    uint count = 0;
+    for(uint i = lane_index; i < light_count; i += gl_SubgroupSize) {
+        if(sphere_overlap_test(lights[i].position_or_direction_and_radius,aabb,  cluster_coords) || lights[i].light_type == 0) {
+            count++;
+        }
+    }
+
+    uint prefix = subgroupExclusiveAdd(count);
+    uint size = subgroupBroadcast(prefix + count, gl_SubgroupSize - 1);
+
+    uint allocated_offset = 0;
+    if(lane_index == 0) {
+        allocated_offset = atomicAdd(allocator_index, size);
+    }
+    allocated_offset =  subgroupBroadcast(allocated_offset, 0);
+
+    if(allocated_offset + size >= light_assignment_size) {
+        atomicExchange(success, 0);
+        return;
+    }
+
+
+    uint cluster_index = cluster_coords.x + cluster_coords.y * cluster_grid_size.x + cluster_coords.z * cluster_grid_size.x * cluster_grid_size.y;
+    cluster_assignments[cluster_index].count = size;
+    cluster_assignments[cluster_index].start_index = allocated_offset;
+
+    allocated_offset += prefix;
+    uint write_index = 0;
+    for(uint i = lane_index; i < light_count && write_index < count; i += gl_SubgroupSize) {
+        if(sphere_overlap_test(lights[i].position_or_direction_and_radius,aabb,  cluster_coords) || lights[i].light_type == 0) {
+            light_assignment_indicies[allocated_offset + write_index] = i;
+            write_index++;
+        }
+    }
+}
+
+#else
+
+
+void RunCulling() {
     uint index = gl_LocalInvocationIndex + gl_WorkGroupID.x * 256;
     if(index >= active_cluster_count) {
         return;
@@ -271,6 +338,16 @@ void main() {
             write_index++;
         }
     }
+}
+
+#endif
+
+void main() {
+    #ifdef CLUSTER_PER_WARP
+        RunCullingWarpOptimized();
+    #else
+        RunCulling();
+    #endif
 }
 
 // #end

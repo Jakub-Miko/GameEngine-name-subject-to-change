@@ -38,11 +38,17 @@ private:
     struct internal_data;
 
     void InitPass();
-    std::shared_ptr<Pipeline> GetPipeline();
+
+    void UpdatePipeline(bool force = false);
 
     std::string active_cluster_list;
     std::string input_global_light_list_name;
     std::string input_shadowed_light_list_name;
     std::string output_clustered_light_lists_name;
+    std::shared_ptr<DynamicProperty<bool>> frustum_culling;
+    std::shared_ptr<DynamicProperty<bool>> frustum_culling_reduction;
+    std::shared_ptr<DynamicProperty<bool>> box_culling;
+    std::shared_ptr<DynamicProperty<bool>> cluster_per_warp;
+    std::shared_ptr<DynamicProperty<DynamicPropertyAction>> update_pipeline;
     std::unique_ptr<internal_data> data;
 };
