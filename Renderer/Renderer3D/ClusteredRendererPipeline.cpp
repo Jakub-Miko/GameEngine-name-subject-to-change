@@ -23,11 +23,12 @@ std::shared_ptr<RenderPipeline> ClusteredRendererPipeline::CreatePipeline() {
 
     builder.AddPass(new GenerateGBufferPass("InitialGBuffer", "GBufferMaterial"));
     builder.AddPass(new DepthPrepass("RenderObjects", "SkeletalRenderObjects", "InitialGBuffer", "GBufferAfterPrepass"));
-    builder.AddPass(new ClusteredLightCullingPass("RenderLights", "RenderShadowedPointLights" , "ClusteredLightLists", "ActiveClusters"));
+    builder.AddPass(new ClusteredLightCullingPass("RenderLights", "RenderShadowedPointLights",
+        "RenderShadowedDirectionalLights", "ShadowCascades",  "ClusteredLightLists", "ActiveClusters"));
     builder.AddPass(new ActiveClusterFilterPass("GBufferMaterial","RenderOutput" ,"ActiveClusters"));
     builder.AddPass(new RenderSubmissionPass("RenderObjects", "SkeletalRenderObjects", "RenderLights", "RenderShadowedDirectionalLights","RenderShadowedPointLights"));
     builder.AddPass(new DeferredGeometryPass("RenderObjects", "SkeletalRenderObjects", "GBufferAfterPrepass", "RenderOutput"));
-    builder.AddPass(new ClusteredLightingPass("RenderOutput", "GBufferMaterial" , "ClusteredLightLists", "RenderShadowedDirectionalLights", "RenderShadowedPointLights", "ColorBuffer", "ShadowsGeneratedTag", "ShadowCascades"
+    builder.AddPass(new ClusteredLightingPass("RenderOutput", "GBufferMaterial" , "ClusteredLightLists", "RenderShadowedDirectionalLights", "RenderShadowedPointLights", "ColorBuffer", "ShadowsGeneratedTag"
         ,"cubemap_shadow_map_store", "cascaded_shadow_map_store"));
     builder.AddPass(new BindlessShadowMappingPass("RenderShadowedDirectionalLights","RenderShadowedPointLights", "ShadowsGeneratedTag",
         "ShadowCascades", "cascaded_shadow_map_store", "cubemap_shadow_map_store"));

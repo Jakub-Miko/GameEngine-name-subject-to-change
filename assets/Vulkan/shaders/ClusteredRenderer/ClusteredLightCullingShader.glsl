@@ -37,7 +37,7 @@ layout(set = 0, binding = 0) uniform config_buffer
     mat4 projection_matrix;
     mat4 view_matrix;
     uvec3 cluster_grid_size;
-    uint light_count;
+    uint point_light_count;
     uint light_assignment_size;
     float near_plane;
     float far_plane;
@@ -50,7 +50,6 @@ struct Light {
     vec4 position_or_direction_and_radius;
     vec4 Light_Color;
     float range;
-    int light_type;
     uint shadow_index;
     float light_far_plane;
 };
@@ -255,8 +254,8 @@ void RunCullingWarpOptimized() {
     #endif
 
     uint count = 0;
-    for(uint i = lane_index; i < light_count; i += gl_SubgroupSize) {
-        if(sphere_overlap_test(lights[i].position_or_direction_and_radius,aabb,  cluster_coords) || lights[i].light_type == 0) {
+    for(uint i = lane_index; i < point_light_count; i += gl_SubgroupSize) {
+        if(sphere_overlap_test(lights[i].position_or_direction_and_radius,aabb,  cluster_coords)) {
             count++;
         }
     }
@@ -282,8 +281,8 @@ void RunCullingWarpOptimized() {
 
     allocated_offset += prefix;
     uint write_index = 0;
-    for(uint i = lane_index; i < light_count && write_index < count; i += gl_SubgroupSize) {
-        if(sphere_overlap_test(lights[i].position_or_direction_and_radius,aabb,  cluster_coords) || lights[i].light_type == 0) {
+    for(uint i = lane_index; i < point_light_count && write_index < count; i += gl_SubgroupSize) {
+        if(sphere_overlap_test(lights[i].position_or_direction_and_radius,aabb,  cluster_coords)) {
             light_assignment_indicies[allocated_offset + write_index] = i;
             write_index++;
         }
@@ -316,8 +315,8 @@ void RunCulling() {
     #endif
 
     uint count = 0;
-    for(int i = 0; i < light_count; i++) {
-        if(sphere_overlap_test(lights[i].position_or_direction_and_radius,aabb,  cluster_coords) || lights[i].light_type == 0) {
+    for(int i = 0; i < point_light_count; i++) {
+        if(sphere_overlap_test(lights[i].position_or_direction_and_radius,aabb,  cluster_coords)) {
             count++;
         }
     }
@@ -332,8 +331,8 @@ void RunCulling() {
     cluster_assignments[cluster_index].start_index = allocated_offset;
 
     uint write_index = 0;
-    for(int i = 0; i < light_count && write_index < count; i++) {
-        if(sphere_overlap_test(lights[i].position_or_direction_and_radius,aabb,  cluster_coords) || lights[i].light_type == 0) {
+    for(int i = 0; i < point_light_count && write_index < count; i++) {
+        if(sphere_overlap_test(lights[i].position_or_direction_and_radius,aabb,  cluster_coords)) {
             light_assignment_indicies[allocated_offset + write_index] = i;
             write_index++;
         }

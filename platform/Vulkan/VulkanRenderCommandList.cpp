@@ -372,16 +372,18 @@ void VulkanRenderCommandList::Clear()
 
 		}
 
-		auto vk_depth_res = static_cast<VulkanRenderTextureResource*>(desc.depth_stencil_attachment.resource->GetExtensionData());
-		dependency_handler.AddDependency(this, desc.depth_stencil_attachment.resource, {VulkanCommandListDependencyType::WRITE, RenderState::TEXTURE_TRANSFER_DST});
-		VkImageSubresourceRange range;
-		range.aspectMask = VkImageAspectFlagBits::VK_IMAGE_ASPECT_DEPTH_BIT;
-		range.baseArrayLayer = 0;
-		range.layerCount = VK_REMAINING_ARRAY_LAYERS;
-		range.baseMipLevel = desc.depth_stencil_attachment.level;
-		range.levelCount = 1;
+		if(desc.depth_stencil_attachment.resource != nullptr) {
+			auto vk_depth_res = static_cast<VulkanRenderTextureResource*>(desc.depth_stencil_attachment.resource->GetExtensionData());
+			dependency_handler.AddDependency(this, desc.depth_stencil_attachment.resource, {VulkanCommandListDependencyType::WRITE, RenderState::TEXTURE_TRANSFER_DST});
+			VkImageSubresourceRange range;
+			range.aspectMask = VkImageAspectFlagBits::VK_IMAGE_ASPECT_DEPTH_BIT;
+			range.baseArrayLayer = 0;
+			range.layerCount = VK_REMAINING_ARRAY_LAYERS;
+			range.baseMipLevel = desc.depth_stencil_attachment.level;
+			range.levelCount = 1;
 
-		vkCmdClearDepthStencilImage(command_buffer, vk_depth_res->GetImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clear_depth, 1, &range);
+			vkCmdClearDepthStencilImage(command_buffer, vk_depth_res->GetImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clear_depth, 1, &range);
+		}
 
 	}
 	else {
@@ -1209,8 +1211,6 @@ void VulkanDependencyHandler::EnsureInitialization(std::shared_ptr<RenderResourc
 		auto dependency = GetNewIndividualResourceRecord(resource);
 		auto& dependency_state = individual_resource_dependency_storage[dependency->second].state;
 		dependency_state.allow_uninitialized = false;
-	} else {
-		individual_resource_dependency_storage[fnd->second].state.allow_uninitialized = false;
 	}
 }
 

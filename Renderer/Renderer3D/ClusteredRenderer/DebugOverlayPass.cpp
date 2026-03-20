@@ -96,7 +96,7 @@ void DebugOverlayPass::Render(RenderPipelineResourceManager& resource_manager) {
     ConfigBufferData config_buffer_data = {};
     config_buffer_data.opacity = overlay_opacity_prop->GetValueTyped();
     config_buffer_data.cluster_grid_size = glm::uvec3(CLUSTER_GRID_X, CLUSTER_GRID_Y, CLUSTER_GRID_Z);
-    config_buffer_data.light_count = clustered_lights.num_of_lights;
+    config_buffer_data.light_count = clustered_lights.num_of_point_lights;
     config_buffer_data.depth_constant_a = camera.zFar / (camera.zFar - camera.zNear);;
     config_buffer_data.depth_constant_b = (-camera.zFar * camera.zNear) / (camera.zFar - camera.zNear);
     config_buffer_data.far_plane = camera.zFar;
@@ -111,7 +111,7 @@ void DebugOverlayPass::Render(RenderPipelineResourceManager& resource_manager) {
     list->SetPipeline(data->pipeline);
     list->SetRenderTarget(data->output_buffer);
     list->SetMaterial("GBufferMaterial", gbuffer_material);
-    list->SetStorageBuffer("light_buffer", clustered_lights.light_buffer);
+    list->SetStorageBuffer("light_buffer", clustered_lights.point_light_buffer);
     list->SetStorageBuffer("light_assignment_buffer", clustered_lights.light_assignment_buffer);
     list->SetStorageBuffer("cluster_buffer", clustered_lights.cluster_buffer);
     list->SetTexture2D("light_accum_buffer", input_light_accum);

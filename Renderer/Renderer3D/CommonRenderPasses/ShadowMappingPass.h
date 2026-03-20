@@ -6,6 +6,8 @@
 
 class RenderCommandList;
 
+#define HARD_CODE_CASCADES 5
+
 class ShadowMappingPass : public RenderPass {
 public:
 	struct internal_data;

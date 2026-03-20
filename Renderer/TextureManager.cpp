@@ -427,6 +427,7 @@ std::shared_ptr<ReflectionMap> TextureManager::GetReflectionMap(const std::strin
         list->SetTexture2D("in_tex", base_texture);
         list->SetVertexBuffer(cube_mesh->GetVertexBuffer());
         list->SetIndexBuffer(cube_mesh->GetIndexBuffer());
+        list->Clear();
         list->Draw(cube_mesh->GetIndexCount());
 
         RenderResourceManager::Get()->UploadDataToBuffer(list, data->const_buffer_specular,
@@ -447,10 +448,13 @@ std::shared_ptr<ReflectionMap> TextureManager::GetReflectionMap(const std::strin
             list->SetTexture2DCubemap("in_tex", converted_cubemap);
             list->SetVertexBuffer(cube_mesh->GetVertexBuffer());
             list->SetIndexBuffer(cube_mesh->GetIndexBuffer());
+            list->Clear();
             list->Draw(cube_mesh->GetIndexCount());
             i++;
         }
-
+        list->AttachResourceToStoreAfterSubmission(reflection_map_resource_store, converted_cubemap);
+        list->AttachResourceToStoreAfterSubmission(reflection_map_resource_store, converted_cubemap_diffuse);
+        list->AttachResourceToStoreAfterSubmission(reflection_map_resource_store, converted_cubemap_specular);
 
         queue->ExecuteRenderCommandList(list);
 
@@ -580,13 +584,18 @@ TextureManager::TextureManager() : texture_Map(), texture_Map_mutex(), sampler_c
     default_cubemap.res = REFLECTION_RES;
     default_cubemap.sampler = TextureSampler::CreateSampler(TextureSamplerDescritor());
 
-
     RenderFrameBufferDescriptor frame_desc;
     data->default_cubemap = RenderResourceManager::Get()->CreateTextureCubemap(default_cubemap);
     data->default_cubemap_diffuse = RenderResourceManager::Get()->CreateTextureCubemap(default_cubemap);
     frame_desc.color_attachments.push_back({0, data->default_cubemap});
     frame_desc.color_attachments.push_back({0, data->default_cubemap_diffuse});
     data->framebuffer = RenderResourceManager::Get()->CreateFrameBuffer(frame_desc);
+
+    RenderResourceStoreDescriptor resource_store_desc = {};
+    resource_store_desc.default_image_resource_state = RenderState::TEXTURE_SAMPLE;
+    resource_store_desc.max_resource_count = 100;
+    resource_store_desc.resource_descriptor_type = RootDescriptorType::TEXTURE_2D_CUBEMAP;
+    reflection_map_resource_store = RenderResourceManager::Get()->CreateResourceStore(resource_store_desc);
 }
 
 void TextureManager::ClearTextureCache() {

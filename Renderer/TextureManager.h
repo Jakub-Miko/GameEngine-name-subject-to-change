@@ -111,6 +111,10 @@ public:
 
 	std::shared_ptr<TextureSampler> GetSampler(const TextureSamplerDescritor& descriptor);
 
+	std::shared_ptr<RenderResourceStore> GetReflectionMapResourceStore() const {
+		return reflection_map_resource_store;
+	}
+
 	bool IsTextureAvailable(const std::string& file_path);
 
 	void ReleaseTexture(const std::string& file_path);
@@ -134,10 +138,12 @@ private:
 	std::shared_ptr<RenderTexture2DArrayResource> default_texture_array;
 	std::shared_ptr<RenderTexture2DCubemapResource> default_texture_cubemap;
 	std::shared_ptr<RenderTexture2DResource> default_normal_texture;
+
 	std::mutex texture_Map_mutex;
 	std::unordered_map<std::string, std::shared_ptr<RenderTexture2DResource>> texture_Map;
 	std::mutex reflection_maps_mutex;
 	std::unordered_map<std::string, std::shared_ptr<ReflectionMap>> reflection_maps;
+	std::shared_ptr<RenderResourceStore> reflection_map_resource_store;
 	std::mutex sampler_cache_mutex;
 	std::unordered_map<TextureSamplerDescritor, std::shared_ptr<TextureSampler>> sampler_cache;
 

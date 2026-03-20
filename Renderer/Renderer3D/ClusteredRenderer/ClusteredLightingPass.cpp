@@ -49,11 +49,14 @@ struct LightData {
 
 struct ConfigData {
 	glm::mat4 projection_matrix;
+	glm::mat4 inverse_view_matrix;
 	glm::vec2 pixel_size;
 	float depth_constant_a;
 	float depth_constant_b;
 	glm::uvec3 cluster_grid_size;
-	int light_count;
+	int point_light_count;
+	int directional_light_count;
+	int skylight_count;
 	float near_plane;
 	float far_plane;
 };
@@ -108,6 +111,7 @@ void ClusteredLightingPass::InitPassData() {
 	pipeline_desc.flags = PipelineFlags::ENABLE_DEPTH_TEST;
 	pipeline_desc.depth_function = DepthFunction::LESS_EQUAL;
 	pipeline_desc.enable_depth_clip = false;
+	pipeline_desc.layout = VertexLayoutFactory<LightingPassPreset>::GetLayout();
 	pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/CubeMapRender.glsl");
 	data->pipeline_bg = PipelineManager::Get()->CreatePipeline(pipeline_desc);
 
@@ -206,11 +210,11 @@ void ClusteredLightingPass::InitPassData() {
 
 
 ClusteredLightingPass::ClusteredLightingPass(const std::string& input_gbuffer, const std::string& input_gbuffer_material, const std::string& input_clustered_lights, const std::string& input_directional_shadowed_lights,
-	const std::string& input_point_shadowed_lights, const std::string& output_texture, const std::string& shadow_map_dependency_tag, const std::string&  input_directional_shadowed_cascades,
+	const std::string& input_point_shadowed_lights, const std::string& output_texture, const std::string& shadow_map_dependency_tag,
 	const std::string& input_point_shadow_maps, const std::string& input_directional_shadow_maps)
 	: input_gbuffer(input_gbuffer), output_texture(output_texture), input_clustered_lights(input_clustered_lights), input_directional_shadowed_lights(input_directional_shadowed_lights),
-	input_point_shadowed_lights(input_point_shadowed_lights), shadow_map_dependency_tag(shadow_map_dependency_tag), input_directional_shadowed_cascades(input_directional_shadowed_cascades),
-	input_gbuffer_material(input_gbuffer_material), input_directional_shadow_maps(input_directional_shadow_maps), input_point_shadow_maps(input_point_shadow_maps), clustered_config_observer()
+	input_point_shadowed_lights(input_point_shadowed_lights), shadow_map_dependency_tag(shadow_map_dependency_tag),
+	input_gbuffer_material(input_gbuffer_material), input_directional_shadow_maps(input_directional_shadow_maps), input_point_shadow_maps(input_point_shadow_maps)
 {
 	data = new internal_data;
 }
@@ -220,11 +224,10 @@ void ClusteredLightingPass::Setup(RenderPassResourceDefinnition& setup_builder)
 	setup_builder.AddResource<ClusteredLightLists>(input_clustered_lights, RenderPassResourceDescriptor_Access::READ);
 	setup_builder.AddResource<RenderResourceCollection<Entity>>(input_directional_shadowed_lights, RenderPassResourceDescriptor_Access::READ);
 	setup_builder.AddResource<RenderResourceCollection<Entity>>(input_point_shadowed_lights, RenderPassResourceDescriptor_Access::READ);
+	setup_builder.AddResource<std::shared_ptr<Material>>(input_gbuffer_material, RenderPassResourceDescriptor_Access::READ);
 	setup_builder.AddResource<std::shared_ptr<RenderTexture2DResource>>(output_texture, RenderPassResourceDescriptor_Access::WRITE);
 	setup_builder.AddResource<std::shared_ptr<RenderFrameBufferResource>>(input_gbuffer, RenderPassResourceDescriptor_Access::READ);
-	setup_builder.AddResource<std::shared_ptr<Material>>(input_gbuffer_material, RenderPassResourceDescriptor_Access::READ);
 	setup_builder.AddResource<DependencyTag>(shadow_map_dependency_tag, RenderPassResourceDescriptor_Access::READ);
-	setup_builder.AddResource<RenderResourceCollection<glm::mat4>>(input_directional_shadowed_cascades, RenderPassResourceDescriptor_Access::READ);
 
 	clustered_config.use_compute_for_clustered_lights = setup_builder.GetProperties()->SetProperty("Use compute shader for clustered lights", false).second;
 	clustered_config.scalarize_lights = setup_builder.GetProperties()->SetProperty("Scalarize lights", true).second;
@@ -266,8 +269,7 @@ void ClusteredLightingPass::Render(RenderPipelineResourceManager& resource_manag
 		RenderLights(resource_manager, list, camera, props);
 	}
 
-	RenderShadowedLightsDirectional(resource_manager, list, camera, props);
-	RenderSkylights(resource_manager, list, camera, props);
+	RenderSkybox(resource_manager, list, camera, props);
 
 	queue->ExecuteRenderCommandList(list);
 
@@ -319,7 +321,7 @@ void ClusteredLightingPass::UpdateClusteredPipeline(bool force_update) {
 		pipeline_desc.blend_equation = BlendEquation::ADD;
 		pipeline_desc.layout = VertexLayoutFactory<LightingPassPreset>::GetLayout();
 		pipeline_desc.polygon_render_mode = PrimitivePolygonRenderMode::DEFAULT;
-		pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/ClusteredRenderer/ClusteredLightingPassShader.glsl");
+		pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/ClusteredRenderer/ClusteredLightingPassShader.glsl", {{"HARD_CODE_CASCADES", HARD_CODE_CASCADES}});
 		pipeline_desc.framebuffer_format.color_attachemt_formats = {
 			{ TextureFormat::RGBA_16FLOAT }
 		};
@@ -335,7 +337,7 @@ void ClusteredLightingPass::RenderLights(RenderPipelineResourceManager& resource
 	auto& point_shadow_maps = resource_manager.GetPersistentResource<std::shared_ptr<RenderResourceStore>>(input_point_shadow_maps);
 	auto& directional_shadow_maps = resource_manager.GetPersistentResource<std::shared_ptr<RenderResourceStore>>(input_directional_shadow_maps);
 
-	if(clustered_lights.num_of_lights == 0) return;
+	if(clustered_lights.num_of_point_lights == 0 && clustered_lights.num_of_directional_lights == 0) return;
 
 	auto& gbuffer_material = resource_manager.GetResource<std::shared_ptr<Material>>(input_gbuffer_material);
 	list->SetPipeline(data->pipeline_clustered);
@@ -345,7 +347,9 @@ void ClusteredLightingPass::RenderLights(RenderPipelineResourceManager& resource
 		1.0f / Application::Get()->GetWindow()->GetProperties().resolution_y };
 
 	ConfigData config_data = {};
-	config_data.light_count = clustered_lights.num_of_lights;
+	config_data.point_light_count = clustered_lights.num_of_point_lights;
+	config_data.directional_light_count = clustered_lights.num_of_directional_lights;
+	config_data.skylight_count = clustered_lights.num_of_skylights;
 	config_data.cluster_grid_size = glm::uvec3(CLUSTER_GRID_X, CLUSTER_GRID_Y, CLUSTER_GRID_Z);
 	config_data.depth_constant_a = props.depth_constant_a;
 	config_data.depth_constant_b = props.depth_constant_b;
@@ -353,17 +357,21 @@ void ClusteredLightingPass::RenderLights(RenderPipelineResourceManager& resource
 	config_data.near_plane = camera.zNear;
 	config_data.pixel_size = pixel_size;
 	config_data.projection_matrix = props.projection;
+	config_data.inverse_view_matrix = glm::inverse(props.view);
 
 	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, &config_data, sizeof(ConfigData), 0);
 
 	list->SetConstantBuffer("conf", data->constant_scene_buf);
-	list->SetStorageBuffer("light_buffer", clustered_lights.light_buffer);
+	list->SetStorageBuffer("point_light_buffer", clustered_lights.point_light_buffer);
+	list->SetStorageBuffer("directional_light_buffer", clustered_lights.directional_light_buffer);
+	list->SetStorageBuffer("skylight_buffer", clustered_lights.skylight_buffer);
 	list->SetStorageBuffer("light_assignment_buffer", clustered_lights.light_assignment_buffer);
 	list->SetStorageBuffer("cluster_buffer", clustered_lights.cluster_buffer);
 	list->SetVertexBuffer(data->card_mesh->GetVertexBuffer());
 	list->SetIndexBuffer(data->card_mesh->GetIndexBuffer());
 	list->SetResourceStore("point_light_shadow_maps", point_shadow_maps);
-	list->SetResourceStore("directional_light_shadow_maps", point_shadow_maps);
+	list->SetResourceStore("directional_light_shadow_maps", directional_shadow_maps);
+	list->SetResourceStore("skylight_reflection_maps", TextureManager::Get()->GetReflectionMapResourceStore());
 	list->Draw(data->card_mesh->GetIndexCount());
 }
 
@@ -374,7 +382,7 @@ void ClusteredLightingPass::RenderLightsWithCompute(RenderPipelineResourceManage
 	auto& point_shadow_maps = resource_manager.GetPersistentResource<std::shared_ptr<RenderResourceStore>>(input_point_shadow_maps);
 	auto& directional_shadow_maps = resource_manager.GetPersistentResource<std::shared_ptr<RenderResourceStore>>(input_directional_shadow_maps);
 
-	if(clustered_lights.num_of_lights == 0) return;
+	if(clustered_lights.num_of_point_lights == 0 && clustered_lights.num_of_directional_lights == 0) return;
 
 	auto& gbuffer_material = resource_manager.GetResource<std::shared_ptr<Material>>(input_gbuffer_material);
 	list->SetPipeline(data->pipeline_clustered);
@@ -384,7 +392,8 @@ void ClusteredLightingPass::RenderLightsWithCompute(RenderPipelineResourceManage
 		1.0f / Application::Get()->GetWindow()->GetProperties().resolution_y };
 
 	ConfigData config_data = {};
-	config_data.light_count = clustered_lights.num_of_lights;
+	config_data.point_light_count = clustered_lights.num_of_point_lights;
+	config_data.directional_light_count = clustered_lights.num_of_directional_lights;
 	config_data.cluster_grid_size = glm::uvec3(CLUSTER_GRID_X, CLUSTER_GRID_Y, CLUSTER_GRID_Z);
 	config_data.depth_constant_a = props.depth_constant_a;
 	config_data.depth_constant_b = props.depth_constant_b;
@@ -396,7 +405,8 @@ void ClusteredLightingPass::RenderLightsWithCompute(RenderPipelineResourceManage
 	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, &config_data, sizeof(ConfigData), 0);
 
 	list->SetConstantBuffer("conf", data->constant_scene_buf);
-	list->SetStorageBuffer("light_buffer", clustered_lights.light_buffer);
+	list->SetStorageBuffer("point_light_buffer", clustered_lights.point_light_buffer);
+	list->SetStorageBuffer("directional_light_buffer", clustered_lights.directional_light_buffer);
 	list->SetStorageBuffer("light_assignment_buffer", clustered_lights.light_assignment_buffer);
 	list->SetStorageBuffer("cluster_buffer", clustered_lights.cluster_buffer);
 	list->SetResourceStore("point_light_shadow_maps", point_shadow_maps);
@@ -406,140 +416,28 @@ void ClusteredLightingPass::RenderLightsWithCompute(RenderPipelineResourceManage
 		glm::ceil(data->color_storage_texture->GetBufferDescriptor().height / compute_tile_size), 1);
 }
 
-void ClusteredLightingPass::RenderShadowedLightsDirectional(RenderPipelineResourceManager& resource_manager, std::shared_ptr<RenderCommandList>  list, const CameraComponent& camera, const render_props& props)
+void ClusteredLightingPass::RenderSkybox(RenderPipelineResourceManager& resource_manager, std::shared_ptr<RenderCommandList>  list, const CameraComponent& camera, const render_props& props)
 {
-	const RenderResourceCollection<Entity>* geometry;
-	geometry = &resource_manager.GetResource<RenderResourceCollection<Entity>>(input_directional_shadowed_lights);
-	data->mat_shadowed_directional->SetParameter("ShadowMapArray", TextureManager::Get()->GetDefaultTextureArray());
-	
-	auto& shadow_cascades = resource_manager.GetResource<RenderResourceCollection<glm::mat4>>(input_directional_shadowed_cascades);
-	int cascade_count = 0;
-
-	auto& gbuffer = resource_manager.GetResource<std::shared_ptr<RenderFrameBufferResource>>(input_gbuffer);
-	auto& gbuffer_material = resource_manager.GetResource<std::shared_ptr<Material>>(input_gbuffer_material);
-	auto& world = Application::GetWorld();
-	auto ViewProjection = props.projection * props.view;
-	auto view_matrix = props.view;
-	list->SetPipeline(data->pipeline_shadowed_directional);
-	list->SetRenderTarget(data->output_buffer_resource);
-	list->SetConstantBuffer("conf", data->constant_scene_buf_shadowed_directional);
-	float depth_constant_a = props.depth_constant_a;
-	float depth_constant_b = props.depth_constant_b;
-	float camera_near = camera.zNear;
-	float camera_far = camera.zFar;
-	glm::mat4 inverse_projection = glm::inverse(props.projection);
-	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed_directional, &depth_constant_a, sizeof(float), sizeof(glm::mat4) * 18 + sizeof(glm::vec2));
-	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed_directional, &depth_constant_b, sizeof(float), sizeof(glm::mat4) * 18 + sizeof(float) + sizeof(glm::vec2));
-	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed_directional, &camera_near, sizeof(float), sizeof(glm::mat4) * 18 + sizeof(float) * 2 + sizeof(glm::vec2));
-	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed_directional, &camera_far, sizeof(float), sizeof(glm::mat4) * 18 + sizeof(float) * 3 + sizeof(glm::vec2));
-	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed_directional, &inverse_projection, sizeof(glm::mat4), sizeof(glm::mat4) * 2);
-	for (auto& entity : geometry->resources) {
-		auto& transform_component = world.GetComponent<TransformComponent>(entity);
-		auto transform = transform_component.TransformMatrix;
-		auto& light = world.GetComponent<LightComponent>(entity);
-		auto& shadow = world.GetComponent<ShadowCasterComponent>(entity);
-		size_t index_count = 0;
-		glm::mat4 mvp;
-		glm::mat4 mv_matrix;
-
-		mvp = glm::mat4(1.0f);
-		mv_matrix = view_matrix * transform;
-		list->SetVertexBuffer(data->card_mesh->GetVertexBuffer());
-		list->SetIndexBuffer(data->card_mesh->GetIndexBuffer());
-		data->mat_shadowed_directional->SetParameter("ShadowMapArray", shadow.shadow_map->GetBufferDescriptor().GetDepthAttachmentAsTextureArray());
-		index_count = data->card_mesh->GetIndexCount();
-		
-
-		auto inverse_view = Application::GetWorld().GetComponent<TransformComponent>(Application::GetWorld().GetPrimaryEntity()).TransformMatrix;
-
-		glm::vec2 pixel_size = { 1.0f / Application::Get()->GetWindow()->GetProperties().resolution_x,
-			1.0f / Application::Get()->GetWindow()->GetProperties().resolution_y };
-
-		data->mat_shadowed_directional->SetParameter("pixel_size", pixel_size);
-		data->mat_shadowed_directional->SetParameter("Light_Color", light.GetLightColor());
-		gbuffer_material->SetMaterial(list);
-		data->mat_shadowed_directional->SetMaterial(list);
-		glm::vec2 shadow_pixel_size = { 1.0f / shadow.res_x, 1.0f / shadow.res_x };
-		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed_directional, &shadow.cascades, sizeof(uint32_t), sizeof(glm::mat4) * 18 + sizeof(float) * 5 + sizeof(glm::vec2));
-		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed_directional, &shadow.shadow_bias, sizeof(float), sizeof(glm::mat4) * 18 + sizeof(float) * 4 + sizeof(glm::vec2));
-		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed_directional, glm::value_ptr(shadow_pixel_size), sizeof(glm::vec2), sizeof(glm::mat4) * 18);
-		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed_directional, glm::value_ptr(mvp), sizeof(glm::mat4), 0);
-		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed_directional, glm::value_ptr(mv_matrix), sizeof(glm::mat4), sizeof(glm::mat4));
-		
-		for (int i = 0; i < std::min(shadow.cascades,15); i++) {
-			glm::mat4 cascade_matrix = shadow_cascades.resources[cascade_count] * inverse_view;
-			RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed_directional, glm::value_ptr(cascade_matrix), sizeof(glm::mat4), sizeof(glm::mat4) * (3 + i));
-			cascade_count++;
-		}
-		
-		
-		list->Draw(index_count);
-
-
-	}
-}
-
-void ClusteredLightingPass::RenderSkylights(RenderPipelineResourceManager& resource_manager, std::shared_ptr<RenderCommandList>  list, const CameraComponent& camera, const render_props& props)
-{
-	const RenderResourceCollection<Entity>* geometry;
 	auto skylight_view = Application::GetWorld().GetRegistry().view<SkylightComponent>();
-
-	auto& gbuffer = resource_manager.GetResource<std::shared_ptr<RenderFrameBufferResource>>(input_gbuffer);
-	auto& gbuffer_material = resource_manager.GetResource<std::shared_ptr<Material>>(input_gbuffer_material);
 	auto& world = Application::GetWorld();
-	auto ViewProjection = props.projection * props.view;
 	auto view_matrix = props.view;
-	auto inverse_view = glm::inverse(view_matrix);
 	list->SetPipeline(data->pipeline_skylight);
 	list->SetRenderTarget(data->output_buffer_resource);
 	list->SetConstantBuffer("conf", data->constant_scene_buf_skylight);
-	float depth_constant_a = props.depth_constant_a;
-	float depth_constant_b = props.depth_constant_b;
-	glm::mat4 inverse_projection = glm::inverse(props.projection);
-	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_skylight, &depth_constant_a, sizeof(float), sizeof(glm::mat4) * 2);
-	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_skylight, &depth_constant_b, sizeof(float), sizeof(glm::mat4) * 2 + sizeof(float));
-	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_skylight, &inverse_projection, sizeof(glm::mat4), sizeof(glm::mat4));
-	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_skylight, &inverse_view, sizeof(glm::mat4), 0);
-	
+
 	SkylightComponent* bg_comp = nullptr;
 
 	for (auto& ent : skylight_view) {
 		Entity entity = Entity((uint32_t)ent);
-		auto& transform_component = world.GetComponent<TransformComponent>(entity);
-		auto transform = transform_component.TransformMatrix;
 		auto& light = world.GetComponent<SkylightComponent>(entity);
+
 		if (!light.GetReflectionMap() || light.GetReflectionMap()->GetStatus() != ReflectionMapStatus::LOADED) {
 			continue;
 		}
-		size_t index_count = 0;
-		glm::mat4 mvp;
-		glm::mat4 mv_matrix;
-
-		mvp = glm::mat4(1.0f);
-		mv_matrix = view_matrix * transform;
-		list->SetVertexBuffer(data->card_mesh->GetVertexBuffer());
-		list->SetIndexBuffer(data->card_mesh->GetIndexBuffer());
-		index_count = data->card_mesh->GetIndexCount();
-
-
-		auto inverse_view = Application::GetWorld().GetComponent<TransformComponent>(Application::GetWorld().GetPrimaryEntity()).TransformMatrix;
-
-		glm::vec2 pixel_size = { 1.0f / Application::Get()->GetWindow()->GetProperties().resolution_x,
-			1.0f / Application::Get()->GetWindow()->GetProperties().resolution_y };
-
-		list->SetTexture2DCubemap("Diffuse", light.GetReflectionMap()->GetDiffuseMap());
-		list->SetTexture2DCubemap("Specular", light.GetReflectionMap()->GetSpecularMap());
-
-		data->mat_skylight->SetParameter("pixel_size", pixel_size);
-		data->mat_skylight->SetParameter("Light_Color", light.GetLightColor());
-		gbuffer_material->SetMaterial(list);
-		data->mat_skylight->SetMaterial(list);
 
 		if (light.IsBackgroundVisible()) {
 			bg_comp = &light;
 		}
-
-		list->Draw(index_count);
 	}
 
 	if (bg_comp) {

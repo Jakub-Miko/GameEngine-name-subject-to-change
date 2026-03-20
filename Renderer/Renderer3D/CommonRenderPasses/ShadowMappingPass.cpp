@@ -13,8 +13,6 @@
 #include <Renderer/RenderResourceManager.h>
 #include <Renderer/PipelineManager.h>
 
-#define HARD_CODE_CASCADES 5
-
 struct ShadowMappingPass::internal_data {
 	std::shared_ptr<Pipeline> pipeline_directional;
 	std::shared_ptr<Pipeline> pipeline_point;
