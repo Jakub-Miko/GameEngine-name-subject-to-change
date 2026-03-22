@@ -387,7 +387,7 @@ void Viewport::EndViewportFrameBuffer()
 
 void Viewport::SelectEntityOnViewportPos(float x, float y)
 {
-    auto buffer = Renderer3D::Get()->GetPersistentResource<std::shared_ptr<RenderFrameBufferResource>>("G_Buffer");
+    auto buffer = Renderer3D::Get()->GetPersistentResource<std::shared_ptr<RenderFrameBufferResource>>("Output_Buffer");
     auto index = Renderer3D::Get()->GetPersistentResource<int>("ID");
     entity_pick_request = RenderResourceManager::Get()->GetPixelValue(buffer, index, x, y);
 }

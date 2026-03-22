@@ -2,8 +2,9 @@
 #include <Renderer/MaterialManager.h>
 #include <FrameManager.h>
 
-#include "ClusteredRendererPipeline.h"
+#include "DeferredClusteredRendererPipeline.h"
 #include "DeferredRenderingPipeline.h"
+#include "ForwardClusteredRendererPipeline.h"
 #include "Animations/AnimationManager.h"
 
 Renderer3D* Renderer3D::instance = nullptr;
@@ -14,7 +15,7 @@ void Renderer3D::Init()
 		instance = new Renderer3D;
 		MaterialManager::Init();
 		AnimationManager::Init();
-		instance->rendering_pipeline = ClusteredRendererPipeline::CreatePipeline();
+		instance->rendering_pipeline = ForwardClusteredRendererPipeline::CreatePipeline();
 	}
 }
 

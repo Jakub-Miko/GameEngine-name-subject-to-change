@@ -144,8 +144,9 @@ void DepthPrepass::UpdatePrepassFrameBuffer(std::shared_ptr<RenderFrameBufferRes
 
 
 DepthPrepass::DepthPrepass(const std::string& input_geometry,const std::string& input_skeletal_geometry, const std::string& input_buffer,
-                           const std::string& output_buffer_after_prepass) : input_geometry(input_geometry), output_buffer_after_prepass(output_buffer_after_prepass), input_buffer(input_buffer),
-                                                                    input_skeletal_geometry(input_skeletal_geometry)
+                           const std::string& output_buffer_after_prepass, const std::string& output_depth_buffer) : input_geometry(input_geometry),
+		output_buffer_after_prepass(output_buffer_after_prepass), input_buffer(input_buffer),input_skeletal_geometry(input_skeletal_geometry),
+		output_depth_buffer(output_depth_buffer)
 {
 	data = new internal_data;
 	InitPostProcessingPassData();
@@ -157,6 +158,7 @@ void DepthPrepass::Setup(RenderPassResourceDefinnition& setup_builder)
 	setup_builder.AddResource<RenderResourceCollection<Entity>>(input_geometry, RenderPassResourceDescriptor_Access::READ);
 	setup_builder.AddResource<RenderResourceCollection<Entity>>(input_skeletal_geometry, RenderPassResourceDescriptor_Access::READ);
 	setup_builder.AddResource<std::shared_ptr<RenderFrameBufferResource>>(output_buffer_after_prepass, RenderPassResourceDescriptor_Access::WRITE);
+	setup_builder.AddResource<std::shared_ptr<RenderTexture2DResource>>(output_depth_buffer, RenderPassResourceDescriptor_Access::WRITE);
 
 	enable_depth_prepass_prop = setup_builder.GetProperties()->SetProperty("Enable Depth Prepass", true).second;
 
@@ -166,7 +168,9 @@ void DepthPrepass::Render(RenderPipelineResourceManager& resource_manager)
 {
 	PROFILE("DepthPrepass");
 	if(!enable_depth_prepass_prop->GetValueTyped()) {
-		resource_manager.SetResource<std::shared_ptr<RenderFrameBufferResource>>(output_buffer_after_prepass, resource_manager.GetResource<std::shared_ptr<RenderFrameBufferResource>>(input_buffer));
+		auto buffer = resource_manager.GetResource<std::shared_ptr<RenderFrameBufferResource>>(input_buffer);
+		resource_manager.SetResource<std::shared_ptr<RenderFrameBufferResource>>(output_buffer_after_prepass, buffer);
+		resource_manager.SetResource<std::shared_ptr<RenderTexture2DResource>>(output_depth_buffer, buffer->GetBufferDescriptor().GetDepthAttachmentAsTexture());
 		return;
 	}
 	auto list = Renderer::Get()->GetRenderCommandList();
@@ -189,6 +193,7 @@ void DepthPrepass::Render(RenderPipelineResourceManager& resource_manager)
 
 	Renderer::Get()->GetCommandQueue()->ExecuteRenderCommandList(list);
 	resource_manager.SetResource<std::shared_ptr<RenderFrameBufferResource>>(output_buffer_after_prepass, props.gbuffer);
+	resource_manager.SetResource<std::shared_ptr<RenderTexture2DResource>>(output_depth_buffer, data->output_buffer->GetBufferDescriptor().GetDepthAttachmentAsTexture());
 }
 
 DepthPrepass::~DepthPrepass()

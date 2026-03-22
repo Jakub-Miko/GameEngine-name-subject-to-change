@@ -12,7 +12,8 @@
     "resolution_Y": 1440,
     "fullscreen": 1,
     "PreloadMaterialTemplates": [
-        "api:GBufferMaterialLayout.json"
+        "api:GBufferMaterialLayout.json",
+        "api:GeometryMaterial.json"
     ],
     "modules": [
         "TestLib"

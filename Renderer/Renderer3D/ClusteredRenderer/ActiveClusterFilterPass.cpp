@@ -22,8 +22,8 @@ struct ActiveClusterFilterPass::internal_data {
     std::shared_ptr<Pipeline> active_cluster_filter_pipeline;
 };
 
-ActiveClusterFilterPass::ActiveClusterFilterPass(const std::string& input_gbuffer_material,const std::string& input_gbuffer, const std::string& output_active_clusters)
-    : input_gbuffer_material(input_gbuffer_material), output_active_clusters(output_active_clusters), data(std::make_unique<internal_data>()), input_gbuffer(input_gbuffer)
+ActiveClusterFilterPass::ActiveClusterFilterPass(const std::string& input_depth_buffer, const std::string& output_active_clusters)
+    : output_active_clusters(output_active_clusters), data(std::make_unique<internal_data>()), input_depth_buffer(input_depth_buffer)
 {
     InitPass();
 }
@@ -41,14 +41,13 @@ void ActiveClusterFilterPass::InitPass() {
 }
 
 void ActiveClusterFilterPass::Setup(RenderPassResourceDefinnition& setup_builder) {
-    setup_builder.AddResource<std::shared_ptr<Material>>(input_gbuffer_material, RenderPassResourceDescriptor_Access::READ);
+    setup_builder.AddResource<std::shared_ptr<RenderTexture2DResource>>(input_depth_buffer, RenderPassResourceDescriptor_Access::READ);
     setup_builder.AddResource<std::shared_ptr<RenderBufferResource>>(output_active_clusters, RenderPassResourceDescriptor_Access::WRITE);
-    setup_builder.AddResource<std::shared_ptr<RenderFrameBufferResource>>(input_gbuffer, RenderPassResourceDescriptor_Access::READ);
 }
 
 void ActiveClusterFilterPass::Render(RenderPipelineResourceManager& resource_manager) {
     PROFILE("ActiveClusterFilterPass");
-    auto gbuffer_material = resource_manager.GetResource<std::shared_ptr<Material>>(input_gbuffer_material);
+    auto depth_buffer = resource_manager.GetResource<std::shared_ptr<RenderTexture2DResource>>(input_depth_buffer);
     auto list = Renderer::Get()->GetRenderCommandList();
 
     auto& world = Application::GetWorld();
@@ -71,7 +70,7 @@ void ActiveClusterFilterPass::Render(RenderPipelineResourceManager& resource_man
     list->SetPipeline(data->active_cluster_filter_pipeline);
     list->SetConstantBuffer("config_buffer", data->config_buffer);
     list->SetStorageBuffer("active_clusters", data->active_cluster_buffer);
-    gbuffer_material->SetMaterial(list);
+    list->SetTexture2D("DepthBuffer", depth_buffer);
     list->Dispatch(CLUSTER_GRID_X, CLUSTER_GRID_Y, 1);
 
     Renderer::Get()->GetCommandQueue()->ExecuteRenderCommandList(list);

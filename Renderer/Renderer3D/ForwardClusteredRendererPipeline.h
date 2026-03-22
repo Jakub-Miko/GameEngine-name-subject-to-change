@@ -3,7 +3,7 @@
 
 #include "RenderPipeline.h"
 
-class ClusteredRendererPipeline {
+class ForwardClusteredRendererPipeline {
 public:
     static std::shared_ptr<RenderPipeline> CreatePipeline();
 };

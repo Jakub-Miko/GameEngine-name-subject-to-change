@@ -114,7 +114,7 @@ void GenerateGBufferPass::Setup(RenderPassResourceDefinnition& setup_builder)
 {
 	setup_builder.AddResource<std::shared_ptr<RenderFrameBufferResource>>(output_buffer, RenderPassResourceDescriptor_Access::WRITE);
 	setup_builder.AddResource<std::shared_ptr<Material>>(output_buffer_material, RenderPassResourceDescriptor_Access::WRITE);
-	setup_builder.AddPersistentResource< std::shared_ptr<RenderFrameBufferResource>>("G_Buffer", data->output_buffer_resource);
+	setup_builder.AddPersistentResource< std::shared_ptr<RenderFrameBufferResource>>("Output_Buffer", data->output_buffer_resource);
 	setup_builder.AddPersistentResource< std::shared_ptr<Material>>("G_Buffer_Material", data->output_material_resource);
 #ifdef EDITOR
 	setup_builder.AddPersistentResource<int>("ID", data->id_texture);

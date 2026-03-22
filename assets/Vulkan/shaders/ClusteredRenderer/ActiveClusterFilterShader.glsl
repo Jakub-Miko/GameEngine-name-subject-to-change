@@ -11,9 +11,8 @@
 			"type" : "storage_buffer"
 		},
 		{
-			"name" : "GBufferMaterial",
-			"type" : "material",
-			"material_path": "api:GBufferMaterialLayout.json"
+			"name" : "DepthBuffer",
+			"type" : "texture_2D"
 		}
 	]
 
@@ -39,10 +38,7 @@ layout(set = 0, binding = 1) buffer active_clusters_buffer
 	uint active_clusters[];
 };
 
-layout(set = 1, binding = 0) uniform sampler2D Color;
-layout(set = 1, binding = 1) uniform sampler2D Normal;
-layout(set = 1, binding = 2) uniform sampler2D Roughness;
-layout(set = 1, binding = 3) uniform sampler2D DepthBuffer;
+layout(set = 0, binding = 2) uniform sampler2D DepthBuffer;
 
 layout(local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
 
