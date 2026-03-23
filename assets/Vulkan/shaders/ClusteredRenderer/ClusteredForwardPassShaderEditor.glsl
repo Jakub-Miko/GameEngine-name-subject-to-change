@@ -321,7 +321,7 @@ vec3 ComputeDirectionalLight(uint light_index, vec3 normals, vec3 view_space_pos
 void main() {
 	vec2 coords = vec2((gl_FragCoord.x * pixel_size.x), (gl_FragCoord.y * pixel_size.y));
 	vec4 view_space_pos = vec4(pos_fragment, depth_constant_b / (gl_FragCoord.z - depth_constant_a));
-	vec3 surface_color = texture(Color, uv_fragment).xyz * vec3(Base_Color);
+	vec3 surface_color = clamp(texture(Color, uv_fragment).xyz * vec3(Base_Color),0.0,1.0);
 	vec3 material = texture(Material, uv_fragment).xyz;
 	material.y = clamp(material.y * roughness_gain + roughness_bias, 0.0, 1.0);
 	material.z = clamp(material.z * metallic_gain + metallic_bias, 0.0, 1.0);

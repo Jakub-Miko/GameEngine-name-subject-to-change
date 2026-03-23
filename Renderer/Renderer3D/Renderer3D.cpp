@@ -15,7 +15,9 @@ void Renderer3D::Init()
 		instance = new Renderer3D;
 		MaterialManager::Init();
 		AnimationManager::Init();
-		instance->rendering_pipeline = ForwardClusteredRendererPipeline::CreatePipeline();
+		instance->RegisterPipeline("DeferredClustered", DeferredClusteredRendererPipeline::CreatePipeline());
+		instance->RegisterPipeline("ForwardClustered", ForwardClusteredRendererPipeline::CreatePipeline());
+		instance->SetActivePipeline("DeferredClustered");
 	}
 }
 
@@ -40,10 +42,31 @@ Renderer3D* Renderer3D::Get()
 void Renderer3D::Update(float delta_time)
 {
 	MaterialManager::Get()->UpdateMaterials();
-	rendering_pipeline->Render();
+	current_pipeline.second->Render();
 }
 
-Renderer3D::Renderer3D() : rendering_pipeline()
+void Renderer3D::RegisterPipeline(const std::string& name, std::shared_ptr<RenderPipeline> pipeline) {
+	rendering_pipelines.insert(std::make_pair(name, pipeline));
+}
+
+void Renderer3D::SetActivePipeline(const std::string& name) {
+	auto fnd = rendering_pipelines.find(name);
+	if (fnd != rendering_pipelines.end()) {
+		current_pipeline = std::make_pair(fnd->first, fnd->second);
+	}
+}
+
+void Renderer3D::RemovePipeline(const std::string& name) {
+	auto fnd = rendering_pipelines.find(name);
+	if (fnd != rendering_pipelines.end()) {
+		if(fnd->second == current_pipeline.second) {
+			throw std::runtime_error("Cannot remove active pipeline");
+		}
+		rendering_pipelines.erase(fnd);
+	}
+}
+
+Renderer3D::Renderer3D()
 {
 
 }

@@ -30,3 +30,22 @@ void RenderResourceManager::Shutdown()
 		delete instance;
 	}
 }
+
+void RenderResourceManager::RegisterGlobalResourceStore(const std::string& name,
+	std::shared_ptr<RenderResourceStore> store) {
+	global_resource_stores.insert(std::make_pair(name, store));
+}
+
+std::shared_ptr<RenderResourceStore> RenderResourceManager::GetGlobalResourceStore(const std::string& name) {
+	auto fnd = global_resource_stores.find(name);
+	if (fnd != global_resource_stores.end()) {
+		return fnd->second;
+	}
+	else {
+		return nullptr;
+	}
+}
+
+void RenderResourceManager::UnregisterGlobalResourceStore(const std::string& name) {
+	global_resource_stores.erase(name);
+}

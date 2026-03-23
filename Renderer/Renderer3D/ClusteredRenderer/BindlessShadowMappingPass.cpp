@@ -376,18 +376,26 @@ void BindlessShadowMappingPass::InitShadowMappingPassData()
 	RenderBufferDescriptor desc_point(sizeof(glm::mat4)*7 + sizeof(glm::vec4) + sizeof(float), RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
 	data->const_buffer_point = RenderResourceManager::Get()->CreateBuffer(desc_point);
 
+	data->cubemap_shadow_map_store = RenderResourceManager::Get()->GetGlobalResourceStore("DepthCubemaps");
+	data->cascaded_shadow_map_store = RenderResourceManager::Get()->GetGlobalResourceStore("DepthArrays");
+
 	RenderResourceStoreDescriptor store_desc = {};
 	store_desc.buffer_is_read_only = true;
 	store_desc.default_image_resource_state = RenderState::TEXTURE_SAMPLE;
 	store_desc.max_resource_count = 256;
 	store_desc.resource_descriptor_type = RootDescriptorType::TEXTURE_2D_ARRAY;
 
-	data->cascaded_shadow_map_store = RenderResourceManager::Get()->CreateResourceStore(store_desc);
+	if(!data->cascaded_shadow_map_store) {
+		data->cascaded_shadow_map_store = RenderResourceManager::Get()->CreateResourceStore(store_desc);
+		RenderResourceManager::Get()->RegisterGlobalResourceStore("DepthArrays", data->cascaded_shadow_map_store);
+	}
 
 	store_desc.resource_descriptor_type = RootDescriptorType::TEXTURE_2D_CUBEMAP;
 
-	data->cubemap_shadow_map_store = RenderResourceManager::Get()->CreateResourceStore(store_desc);
-
+	if(!data->cubemap_shadow_map_store) {
+		data->cubemap_shadow_map_store = RenderResourceManager::Get()->CreateResourceStore(store_desc);
+		RenderResourceManager::Get()->RegisterGlobalResourceStore("DepthCubemaps", data->cubemap_shadow_map_store);
+	}
 }
 
 template<LightType type>

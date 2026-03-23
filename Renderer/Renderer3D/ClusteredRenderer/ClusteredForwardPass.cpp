@@ -202,11 +202,11 @@ void ClusteredForwardPass::RenderSkeletalGeometry(std::shared_ptr<RenderCommandL
 ClusteredForwardPass::ClusteredForwardPass(const std::string& input_geometry, const std::string& input_color_buffer,
 	const std::string& input_skeletal_geometry, const std::string& input_clustered_lights,
 	const std::string& input_directional_shadowed_lights, const std::string& input_point_shadowed_lights,
-	const std::string& output_texture, const std::string& shadow_map_dependency_tag,
+	const std::string& output_buffer, const std::string& shadow_map_dependency_tag,
 	const std::string& input_point_shadow_maps, const std::string& input_directional_shadow_maps)
 		: input_geometry(input_geometry), input_skeletal_geometry(input_skeletal_geometry), input_clustered_lights(input_clustered_lights),
 		input_directional_shadowed_lights(input_directional_shadowed_lights), input_point_shadowed_lights(input_point_shadowed_lights),
-		output_texture(output_texture), shadow_map_dependency_tag(shadow_map_dependency_tag),
+		output_buffer(output_buffer), shadow_map_dependency_tag(shadow_map_dependency_tag),
 		input_point_shadow_maps(input_point_shadow_maps), input_directional_shadow_maps(input_directional_shadow_maps), input_color_buffer(input_color_buffer) {
 	data = new internal_data;
 	InitPostProcessingPassData();
@@ -219,7 +219,7 @@ void ClusteredForwardPass::Setup(RenderPassResourceDefinnition& setup_builder)
 	setup_builder.AddResource<ClusteredLightLists>(input_clustered_lights, RenderPassResourceDescriptor_Access::READ);
 	setup_builder.AddResource<RenderResourceCollection<Entity>>(input_directional_shadowed_lights, RenderPassResourceDescriptor_Access::READ);
 	setup_builder.AddResource<RenderResourceCollection<Entity>>(input_point_shadowed_lights, RenderPassResourceDescriptor_Access::READ);
-	setup_builder.AddResource<std::shared_ptr<RenderTexture2DResource>>(output_texture, RenderPassResourceDescriptor_Access::WRITE);
+	setup_builder.AddResource<std::shared_ptr<RenderFrameBufferResource>>(output_buffer, RenderPassResourceDescriptor_Access::WRITE);
 	setup_builder.AddResource<DependencyTag>(shadow_map_dependency_tag, RenderPassResourceDescriptor_Access::READ);
 	setup_builder.AddResource<std::shared_ptr<RenderFrameBufferResource>>(input_color_buffer, RenderPassResourceDescriptor_Access::READ);
 
@@ -268,7 +268,7 @@ void ClusteredForwardPass::Render(RenderPipelineResourceManager& resource_manage
 
 	Renderer::Get()->GetCommandQueue()->ExecuteRenderCommandList(list);
 
-	resource_manager.SetResource<std::shared_ptr<RenderTexture2DResource>>(output_texture, props.output_buffer->GetBufferDescriptor().GetColorAttachmentAsTexture(0));
+	resource_manager.SetResource<std::shared_ptr<RenderFrameBufferResource>>(output_buffer, props.output_buffer);
 }
 
 ClusteredForwardPass::~ClusteredForwardPass()

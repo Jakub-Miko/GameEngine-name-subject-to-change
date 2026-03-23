@@ -211,6 +211,25 @@ void Editor::Run()
 			ImGui::Checkbox("Spatial Index Visualization", &spatial_index_visualization);
 			ImGui::Checkbox("Lighting Bounds Visualization", &light_bounds_visualization);
 
+			const auto& pipelines = Renderer3D::Get()->GetPipelines();
+			auto current_pipeline = Renderer3D::Get()->GetPipeline();
+			std::vector<const char*> pipeline_names;
+			int current_index = 0;
+			int name_index = 0;
+			for (auto& pipeline : pipelines) {
+				if (pipeline.second == current_pipeline) {
+					current_index = name_index;
+				}
+				pipeline_names.push_back(pipeline.first.c_str());
+				name_index++;
+			}
+			int initial_index = current_index;
+			if(ImGui::Combo("Rendering pipeline", &current_index,  pipeline_names.data(), pipeline_names.size())) {
+				if(current_index != initial_index) {
+					Renderer3D::Get()->SetActivePipeline(pipeline_names[current_index]);
+				}
+			}
+
 			ImGui::Separator();
 			ImGui::Text("Rendering Pipeline");
 			auto render_pipeline_props = Renderer3D::Get()->GetPipeline()->GetProperties();

@@ -316,7 +316,7 @@ void main() {
 	vec2 coords = vec2((gl_FragCoord.x * pixel_size.x), (gl_FragCoord.y * pixel_size.y));
 	vec4 view_space_pos = vec4(vec3(1.0), depth_constant_b / (gl_FragCoord.z - depth_constant_a));
 	view_space_pos.xyz = GetFragmentPosition(coords, view_space_pos.w);
-	vec3 surface_color = texture(Color, uv_fragment).xyz * vec3(Base_Color);
+	vec3 surface_color = clamp(texture(Color, uv_fragment).xyz * vec3(Base_Color),0.0,1.0);
 	vec3 material = texture(Material, uv_fragment).xyz;
 	material.y = clamp(material.y * roughness_gain + roughness_bias, 0.0, 1.0);
 	material.z = clamp(material.z * metallic_gain + metallic_bias, 0.0, 1.0);

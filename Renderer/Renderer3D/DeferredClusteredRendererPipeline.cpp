@@ -8,6 +8,7 @@
 #include "CommonRenderPasses/DepthPrepass.h"
 #include "CommonRenderPasses/PostProcessingPass.h"
 #include "CommonRenderPasses/RenderSubmissionPass.h"
+#include "CommonRenderPasses/SkyboxPass.h"
 #include "DeferredRenderer/DeferredGeometryPass.h"
 #include "DeferredRenderer/GenerateGBufferPass.h"
 
@@ -15,14 +16,15 @@ std::shared_ptr<RenderPipeline> DeferredClusteredRendererPipeline::CreatePipelin
     RenderPassBuilder builder;
 #ifdef EDITOR
     builder.AddPass(new DebugOverlayPass("RenderOutput", "GBufferMaterial",
-        "ClusteredLightLists", "ColorBuffer", "DebugOverlay"));
-    builder.AddPass(new PostProcessingPass("ColorBuffer", "DebugOverlay"));
+        "ClusteredLightLists", "ColorBufferAfterSkybox", "DebugOverlay"));
+    builder.AddPass(new PostProcessingPass("ColorBufferAfterSkybox", "DebugOverlay"));
 #else
     builder.AddPass(new PostProcessingPass("ColorBuffer"));
 #endif
 
     builder.AddPass(new GenerateGBufferPass("InitialGBuffer", "GBufferMaterial"));
     builder.AddPass(new DepthPrepass("RenderObjects", "SkeletalRenderObjects", "InitialGBuffer", "GBufferAfterPrepass", "DepthBuffer"));
+    builder.AddPass(new SkyboxPass("ColorBuffer", "ClusteredLightLists", "ColorBufferAfterSkybox"));
     builder.AddPass(new ClusteredLightCullingPass("RenderLights", "RenderShadowedPointLights",
         "RenderShadowedDirectionalLights", "ShadowCascades",  "ClusteredLightLists", "ActiveClusters"));
     builder.AddPass(new ActiveClusterFilterPass("DepthBuffer", "ActiveClusters"));

@@ -60,17 +60,17 @@ struct VertexLayoutFactory<PostProcessPassPreset> {
 };
 
 DebugOverlayPass::DebugOverlayPass(const std::string& input_gbuffer, const std::string& input_gbuffer_material,
-                                   const std::string& input_clustered_lights, const std::string& input_light_accum_texture,
+                                   const std::string& input_clustered_lights, const std::string& input_light_accum_buffer,
                                    const std::string& output_overlay) :
     input_gbuffer(input_gbuffer), input_gbuffer_material(input_gbuffer_material),
-    input_clustered_lights(input_clustered_lights), input_light_accum_texture(input_light_accum_texture),
+    input_clustered_lights(input_clustered_lights), input_light_accum_buffer(input_light_accum_buffer),
     output_overlay(output_overlay) {
     InitPass();
 }
 
 void DebugOverlayPass::Setup(RenderPassResourceDefinnition& setup_builder) {
     setup_builder.AddResource<ClusteredLightLists>(input_clustered_lights, RenderPassResourceDescriptor_Access::READ);
-    setup_builder.AddResource<std::shared_ptr<RenderTexture2DResource>>(input_light_accum_texture, RenderPassResourceDescriptor_Access::READ);
+    setup_builder.AddResource<std::shared_ptr<RenderFrameBufferResource>>(input_light_accum_buffer, RenderPassResourceDescriptor_Access::READ);
     setup_builder.AddResource<std::shared_ptr<RenderFrameBufferResource>>(input_gbuffer, RenderPassResourceDescriptor_Access::READ);
     setup_builder.AddResource<std::shared_ptr<Material>>(input_gbuffer_material, RenderPassResourceDescriptor_Access::READ);
     setup_builder.AddResource<std::shared_ptr<RenderTexture2DResource>>(output_overlay, RenderPassResourceDescriptor_Access::WRITE);
@@ -88,7 +88,7 @@ void DebugOverlayPass::Render(RenderPipelineResourceManager& resource_manager) {
     auto& world = Application::GetWorld();
     auto gbuffer_material = resource_manager.GetResource<std::shared_ptr<Material>>(input_gbuffer_material);
     auto list = Renderer::Get()->GetRenderCommandList();
-    auto& input_light_accum = resource_manager.GetResource<std::shared_ptr<RenderTexture2DResource>>(input_light_accum_texture);
+    auto& input_light_accum = resource_manager.GetResource<std::shared_ptr<RenderFrameBufferResource>>(input_light_accum_buffer);
     auto& clustered_lights = resource_manager.GetResource<ClusteredLightLists>(input_clustered_lights);
 
     auto& camera = world.GetComponent<CameraComponent>(world.GetPrimaryEntity());
@@ -114,7 +114,7 @@ void DebugOverlayPass::Render(RenderPipelineResourceManager& resource_manager) {
     list->SetStorageBuffer("light_buffer", clustered_lights.point_light_buffer);
     list->SetStorageBuffer("light_assignment_buffer", clustered_lights.light_assignment_buffer);
     list->SetStorageBuffer("cluster_buffer", clustered_lights.cluster_buffer);
-    list->SetTexture2D("light_accum_buffer", input_light_accum);
+    list->SetTexture2D("light_accum_buffer", input_light_accum->GetBufferDescriptor().GetColorAttachmentAsTexture(0));
     list->SetConstantBuffer("conf", data->config_buffer);
     list->SetVertexBuffer(data->vertex_buffer);
     list->SetIndexBuffer(data->index_buffer);

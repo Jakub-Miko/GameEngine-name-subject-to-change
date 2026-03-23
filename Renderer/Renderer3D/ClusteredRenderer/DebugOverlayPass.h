@@ -4,7 +4,7 @@
 class DebugOverlayPass : public RenderPass {
 public:
     DebugOverlayPass(const std::string& input_gbuffer, const std::string& input_gbuffer_material,
-        const std::string& input_clustered_lights, const std::string& input_light_accum_texture, const std::string& output_overlay);
+        const std::string& input_clustered_lights, const std::string& input_light_accum_buffer, const std::string& output_overlay);
     void Setup(RenderPassResourceDefinnition& setup_builder) override;
     void Render(RenderPipelineResourceManager& resource_manager) override;
     ~DebugOverlayPass() override;
@@ -19,7 +19,7 @@ private:
     std::string input_gbuffer;
     std::string input_gbuffer_material;
     std::string input_clustered_lights;
-    std::string input_light_accum_texture;
+    std::string input_light_accum_buffer;
     std::string output_overlay;
     std::shared_ptr<DynamicProperty<float>> overlay_opacity_prop;
     std::shared_ptr<DynamicProperty<bool>> enable_debug_overlay_prop;

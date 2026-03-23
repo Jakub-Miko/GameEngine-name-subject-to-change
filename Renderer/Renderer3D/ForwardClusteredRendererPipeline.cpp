@@ -10,12 +10,14 @@
 #include "CommonRenderPasses/DepthPrepass.h"
 #include "CommonRenderPasses/PostProcessingPass.h"
 #include "CommonRenderPasses/RenderSubmissionPass.h"
+#include "CommonRenderPasses/SkyboxPass.h"
 #include "DeferredRenderer/DeferredGeometryPass.h"
 #include "DeferredRenderer/GenerateGBufferPass.h"
 
 std::shared_ptr<RenderPipeline> ForwardClusteredRendererPipeline::CreatePipeline() {
     RenderPassBuilder builder;
-    builder.AddPass(new PostProcessingPass("ColorBuffer"));
+    builder.AddPass(new PostProcessingPass("ColorBufferAfterSkybox"));
+    builder.AddPass(new SkyboxPass("ColorBuffer", "ClusteredLightLists", "ColorBufferAfterSkybox"));
     builder.AddPass(new GenerateColorBufferPass("InitialColorBuffer"));
     builder.AddPass(new DepthPrepass("RenderObjects", "SkeletalRenderObjects", "InitialColorBuffer", "ColorBufferAfterPrepass", "DepthBuffer"));
     builder.AddPass(new ClusteredLightCullingPass("RenderLights", "RenderShadowedPointLights",

@@ -683,12 +683,12 @@ void VulkanDependencyHandler::PrepareDependencyForEmission(VulkanRenderCommandLi
 
 	auto& dependency = individual_resource_dependency_storage[fnd->second];
 
-	bool force_emission = dependency.state.last_render_pass_used != list->GetRenderPassCounter();
-
+	bool force_emission = dependency.state.last_render_pass_used != list->GetRenderPassCounter() && dependency.IsInitialized();
+	bool is_texture = dependency.resource->GetExtensionData()->IsTexture();
 	VulkanDependencyState current_dep;
 	if(!dependency.IsInitialized()) { // if dependency was not yet recorded or empty, initialize it.
 		current_dep = {dependency.state.previous_access, dependency.resource->GetRenderState() };
-		force_emission |= current_dep.desired_state != dependency_target_state.desired_state; // we always need to emit a dependency on layout change
+		force_emission |= (current_dep.desired_state != dependency_target_state.desired_state) && is_texture; // we always need to emit a dependency on layout change
 		current_dep.access_type = VulkanCommandListDependencyType::NONE; // used to identify the first occurrence of a dependency which doesn't need to be synchronized
 
 		if(resource->GetResourceStore()) {
@@ -703,7 +703,7 @@ void VulkanDependencyHandler::PrepareDependencyForEmission(VulkanRenderCommandLi
 		}
 	} else {
 		current_dep = {dependency.state.previous_access, dependency.state.current_state };
-		force_emission |= current_dep.desired_state != dependency_target_state.desired_state; // we always need to emit a dependency on layout change
+		force_emission |= (current_dep.desired_state != dependency_target_state.desired_state) && is_texture; // we always need to emit a dependency on layout change
 	}
 
 	if(dependency.store_it.has_value()) {
@@ -749,10 +749,12 @@ void VulkanDependencyHandler::PrepareStoreDependencyForEmission(VulkanRenderComm
 		auto access_type = store->IsReadOnly() ? VulkanCommandListDependencyType::READ : VulkanCommandListDependencyType::WRITE | VulkanCommandListDependencyType::READ;
 		auto state = VulkanDependencyState {access_type, RenderState::COMMON, PipelineStage::ALL_STAGES};
 		barrier.AddGlobalMemoryBarrier(state, state);
+		forced_emission = true;
 	}
 
 	dep.first_resource_override = -1;
 	dep.store_version++;
+	dep.last_render_pass_used = list->GetRenderPassCounter();
 
 	barrier.force_emission |= forced_emission;
 }

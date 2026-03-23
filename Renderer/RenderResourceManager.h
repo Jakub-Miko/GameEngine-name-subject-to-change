@@ -53,6 +53,10 @@ public:
 	virtual std::shared_ptr<RenderResourceStoreLayout> GetResourceStoreLayout(RootDescriptorType store_type) = 0;
 	virtual std::shared_ptr<RenderResourceStore> CreateResourceStore(const RenderResourceStoreDescriptor& desc) = 0;
 
+	void RegisterGlobalResourceStore(const std::string& name, std::shared_ptr<RenderResourceStore> store);
+	std::shared_ptr<RenderResourceStore> GetGlobalResourceStore(const std::string& name);
+	void UnregisterGlobalResourceStore(const std::string& name);
+
 	virtual ~RenderResourceManager() {};
 
 protected:
@@ -62,4 +66,5 @@ protected:
 
 private:
 	static RenderResourceManager* instance;
+	std::unordered_map<std::string, std::shared_ptr<RenderResourceStore>> global_resource_stores;
 };

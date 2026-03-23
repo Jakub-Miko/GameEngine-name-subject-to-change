@@ -8,7 +8,7 @@ class ClusteredForwardPass : public RenderPass {
 public:
 	struct internal_data;
 	ClusteredForwardPass(const std::string& input_geometry, const std::string& input_color_buffer, const std::string& input_skeletal_geometry, const std::string& input_clustered_lights, const std::string& input_directional_shadowed_lights,
-		const std::string& input_point_shadowed_lights, const std::string& output_texture, const std::string& shadow_map_dependency_tag,
+		const std::string& input_point_shadowed_lights, const std::string& output_buffer, const std::string& shadow_map_dependency_tag,
 		const std::string& input_point_shadow_maps, const std::string& input_directional_shadow_maps);
 	virtual void Setup(RenderPassResourceDefinnition& setup_builder) override;
 	virtual void Render(RenderPipelineResourceManager& resource_manager) override;
@@ -33,7 +33,7 @@ private:
 	std::string input_clustered_lights;
 	std::string input_directional_shadowed_lights;
 	std::string input_point_shadowed_lights;
-	std::string output_texture;
+	std::string output_buffer;
 	std::string shadow_map_dependency_tag;
 	std::string input_point_shadow_maps;
 	std::string input_directional_shadow_maps;

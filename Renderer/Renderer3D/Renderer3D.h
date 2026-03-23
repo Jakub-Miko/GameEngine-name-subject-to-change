@@ -18,15 +18,26 @@ public:
 
     template<typename T>
     const T& GetPersistentResource(const std::string& name) const {
-        return rendering_pipeline->template GetPersistentResource<T>(name);
+        return current_pipeline.second->template GetPersistentResource<T>(name);
     }
 
-    std::shared_ptr<RenderPipeline> GetPipeline() { return rendering_pipeline; }
+    std::shared_ptr<RenderPipeline> GetPipeline() { return current_pipeline.second; }
+
+    void RegisterPipeline(const std::string& name, std::shared_ptr<RenderPipeline> pipeline);
+
+    void SetActivePipeline(const std::string& name);
+
+    void RemovePipeline(const std::string& name);
+
+    const std::unordered_map<std::string, std::shared_ptr<RenderPipeline>>& GetPipelines() { return rendering_pipelines; }
+
+    std::pair<std::string,std::shared_ptr<RenderPipeline>>& GetCurrentPipeline() { return current_pipeline; }
 
 private:
     Renderer3D();
     static Renderer3D* instance;
 
 private:
-    std::shared_ptr<RenderPipeline> rendering_pipeline;
+    std::unordered_map<std::string, std::shared_ptr<RenderPipeline>> rendering_pipelines;
+    std::pair<std::string,std::shared_ptr<RenderPipeline>> current_pipeline;
 };

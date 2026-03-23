@@ -65,7 +65,6 @@ struct ClusteredLightingPass::internal_data {
 	std::shared_ptr<Pipeline> pipeline_clustered;
 	std::shared_ptr<Pipeline> pipeline_skylight;
 	std::shared_ptr<Pipeline> pipeline_shadowed_directional;
-	std::shared_ptr<Pipeline> pipeline_bg;
 	std::shared_ptr<RenderFrameBufferResource> output_buffer_resource;
 	std::shared_ptr<Mesh> card_mesh;
 	std::shared_ptr<Material> mat_skylight;
@@ -74,14 +73,13 @@ struct ClusteredLightingPass::internal_data {
 	std::shared_ptr<RenderBufferResource> constant_scene_buf;
 	std::shared_ptr<RenderBufferResource> constant_scene_buf_skylight;
 	std::shared_ptr<RenderBufferResource> constant_scene_buf_shadowed_directional;
-	std::shared_ptr<RenderBufferResource> constant_scene_buf_bg;
 	std::shared_ptr<RenderTexture2DResource> color_storage_texture;
+	std::shared_ptr<RenderTexture2DResource> depth_storage_texture;
+	std::shared_ptr<TextureSampler> sampler;
 	bool initialized = false;
 };
 
 void ClusteredLightingPass::InitPassData() {
-	UpdateClusteredPipeline(true);
-
 	GraphicsPipelineDescriptor pipeline_desc;
 	pipeline_desc.viewport = RenderViewport();
 	pipeline_desc.scissor_rect = RenderScissorRect();
@@ -107,14 +105,6 @@ void ClusteredLightingPass::InitPassData() {
 	pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/LightingPassShaderShadowedDirectional.glsl");
 	data->pipeline_shadowed_directional = PipelineManager::Get()->CreatePipeline(pipeline_desc);
 
-	
-	pipeline_desc.flags = PipelineFlags::ENABLE_DEPTH_TEST;
-	pipeline_desc.depth_function = DepthFunction::LESS_EQUAL;
-	pipeline_desc.enable_depth_clip = false;
-	pipeline_desc.layout = VertexLayoutFactory<LightingPassPreset>::GetLayout();
-	pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/CubeMapRender.glsl");
-	data->pipeline_bg = PipelineManager::Get()->CreatePipeline(pipeline_desc);
-
 	TextureSamplerDescritor sampler_desc;
 	sampler_desc.AddressMode_U = TextureAddressMode::BORDER;
 	sampler_desc.AddressMode_V = TextureAddressMode::BORDER;
@@ -125,38 +115,18 @@ void ClusteredLightingPass::InitPassData() {
 	sampler_desc.min_LOD = 0;
 	sampler_desc.max_LOD = 10;
 
-	auto sampler = TextureSampler::CreateSampler(sampler_desc);
-
-	RenderTexture2DDescriptor color_texture_desc;
-	color_texture_desc.format = TextureFormat::RGBA_16FLOAT;
-	color_texture_desc.usage = TextureUsage::COLOR_ATTACHMENT_READABLE;
-	color_texture_desc.height = Application::Get()->GetWindow()->GetProperties().resolution_y;
-	color_texture_desc.width = Application::Get()->GetWindow()->GetProperties().resolution_x;
-	color_texture_desc.sampler = sampler;
+	data->sampler = TextureSampler::CreateSampler(sampler_desc);
 
 	RenderTexture2DDescriptor depth_desc;
 	depth_desc.format = TextureFormat::DEFAULT_DEPTH;
 	depth_desc.usage = TextureUsage::DEPTH_ATTACHMENT_READABLE;
 	depth_desc.height = Application::Get()->GetWindow()->GetProperties().resolution_y;
 	depth_desc.width = Application::Get()->GetWindow()->GetProperties().resolution_x;
-	depth_desc.sampler = sampler;
+	depth_desc.sampler = data->sampler;
 
-	auto texture_color = RenderResourceManager::Get()->CreateTexture(color_texture_desc);
-	auto texture_depth_stencil = RenderResourceManager::Get()->CreateTexture(depth_desc);
+	data->depth_storage_texture = RenderResourceManager::Get()->CreateTexture(depth_desc);
 
-	RenderFrameBufferDescriptor framebuffer_desc;
-	framebuffer_desc.color_attachments = { {0,texture_color} };
-	framebuffer_desc.depth_stencil_attachment = { 0,texture_depth_stencil };
-
-	data->output_buffer_resource = RenderResourceManager::Get()->CreateFrameBuffer(framebuffer_desc);
-
-	RenderTexture2DDescriptor color_storage_texture_desc = {};
-	color_storage_texture_desc.format = TextureFormat::RGBA_16FLOAT;
-	color_storage_texture_desc.height = Application::Get()->GetWindow()->GetProperties().resolution_y;
-	color_storage_texture_desc.width = Application::Get()->GetWindow()->GetProperties().resolution_x;
-	color_storage_texture_desc.usage = TextureUsage::STORAGE_READABLE;
-	color_storage_texture_desc.sampler = sampler;
-	data->color_storage_texture = RenderResourceManager::Get()->CreateTexture(color_storage_texture_desc);
+	UpdateClusteredPipeline(true);
 
 	RenderBufferDescriptor const_desc(sizeof(ConfigData), RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
 	data->constant_scene_buf = RenderResourceManager::Get()->CreateBuffer(const_desc);
@@ -166,9 +136,6 @@ void ClusteredLightingPass::InitPassData() {
 
 	RenderBufferDescriptor const_desc_skylight(sizeof(glm::mat4) * 2 + sizeof(float) * 2, RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
 	data->constant_scene_buf_skylight = RenderResourceManager::Get()->CreateBuffer(const_desc_skylight);
-
-	RenderBufferDescriptor const_desc_bg(sizeof(glm::mat4) + sizeof(glm::vec4), RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
-	data->constant_scene_buf_bg = RenderResourceManager::Get()->CreateBuffer(const_desc_bg);
 
 	data->mat_shadowed_directional = MaterialManager::Get()->CreateMaterial("LightingPassDirectionalLightMaterial");
 	data->mat_skylight = MaterialManager::Get()->CreateMaterial("LightingPassSkylightLightProps");
@@ -210,9 +177,9 @@ void ClusteredLightingPass::InitPassData() {
 
 
 ClusteredLightingPass::ClusteredLightingPass(const std::string& input_gbuffer, const std::string& input_gbuffer_material, const std::string& input_clustered_lights, const std::string& input_directional_shadowed_lights,
-	const std::string& input_point_shadowed_lights, const std::string& output_texture, const std::string& shadow_map_dependency_tag,
+	const std::string& input_point_shadowed_lights, const std::string& output_buffer, const std::string& shadow_map_dependency_tag,
 	const std::string& input_point_shadow_maps, const std::string& input_directional_shadow_maps)
-	: input_gbuffer(input_gbuffer), output_texture(output_texture), input_clustered_lights(input_clustered_lights), input_directional_shadowed_lights(input_directional_shadowed_lights),
+	: input_gbuffer(input_gbuffer), output_buffer(output_buffer), input_clustered_lights(input_clustered_lights), input_directional_shadowed_lights(input_directional_shadowed_lights),
 	input_point_shadowed_lights(input_point_shadowed_lights), shadow_map_dependency_tag(shadow_map_dependency_tag),
 	input_gbuffer_material(input_gbuffer_material), input_directional_shadow_maps(input_directional_shadow_maps), input_point_shadow_maps(input_point_shadow_maps)
 {
@@ -225,7 +192,7 @@ void ClusteredLightingPass::Setup(RenderPassResourceDefinnition& setup_builder)
 	setup_builder.AddResource<RenderResourceCollection<Entity>>(input_directional_shadowed_lights, RenderPassResourceDescriptor_Access::READ);
 	setup_builder.AddResource<RenderResourceCollection<Entity>>(input_point_shadowed_lights, RenderPassResourceDescriptor_Access::READ);
 	setup_builder.AddResource<std::shared_ptr<Material>>(input_gbuffer_material, RenderPassResourceDescriptor_Access::READ);
-	setup_builder.AddResource<std::shared_ptr<RenderTexture2DResource>>(output_texture, RenderPassResourceDescriptor_Access::WRITE);
+	setup_builder.AddResource<std::shared_ptr<RenderFrameBufferResource>>(output_buffer, RenderPassResourceDescriptor_Access::WRITE);
 	setup_builder.AddResource<std::shared_ptr<RenderFrameBufferResource>>(input_gbuffer, RenderPassResourceDescriptor_Access::READ);
 	setup_builder.AddResource<DependencyTag>(shadow_map_dependency_tag, RenderPassResourceDescriptor_Access::READ);
 
@@ -269,16 +236,12 @@ void ClusteredLightingPass::Render(RenderPipelineResourceManager& resource_manag
 		RenderLights(resource_manager, list, camera, props);
 	}
 
-	RenderSkybox(resource_manager, list, camera, props);
+	// RenderSkybox(resource_manager, list, camera, props);
 
 	queue->ExecuteRenderCommandList(list);
 
+	resource_manager.SetResource<std::shared_ptr<RenderFrameBufferResource>>(output_buffer, data->output_buffer_resource);
 
-	if(use_compute_for_clustered_lights) {
-		resource_manager.SetResource<std::shared_ptr<RenderTexture2DResource>>(output_texture, data->color_storage_texture);
-	} else {
-		resource_manager.SetResource<std::shared_ptr<RenderTexture2DResource>>(output_texture, data->output_buffer_resource->GetBufferDescriptor().GetColorAttachmentAsTexture(0));
-	}
 }
 
 ClusteredLightingPass::~ClusteredLightingPass()
@@ -295,6 +258,13 @@ void ClusteredLightingPass::UpdateClusteredPipeline(bool force_update) {
 	}
 	needs_update.Reset();
 
+	RenderTexture2DDescriptor color_texture_desc;
+	color_texture_desc.format = TextureFormat::RGBA_16FLOAT;
+	color_texture_desc.usage = TextureUsage::COLOR_ATTACHMENT_READABLE;
+	color_texture_desc.height = Application::Get()->GetWindow()->GetProperties().resolution_y;
+	color_texture_desc.width = Application::Get()->GetWindow()->GetProperties().resolution_x;
+	color_texture_desc.sampler = data->sampler;
+
 	if(clustered_config.use_compute_for_clustered_lights->GetValueTyped()) {
 		std::vector<std::string> shader_defines;
 		shader_defines.push_back("COMPUTE_TILE_SIZE=" + std::to_string(clustered_config.compute_tile_size->GetValueTyped()));
@@ -304,6 +274,16 @@ void ClusteredLightingPass::UpdateClusteredPipeline(bool force_update) {
 		ComputePipelineDescriptor compute_pipeline_desc = {};
 		compute_pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/ClusteredRenderer/ClusteredLightingPassShaderCompute.glsl", shader_defines);
 		data->pipeline_clustered = PipelineManager::Get()->CreatePipeline(compute_pipeline_desc);
+
+		color_texture_desc.usage = TextureUsage::STORAGE_READABLE;
+		auto texture_color = RenderResourceManager::Get()->CreateTexture(color_texture_desc);
+
+		RenderFrameBufferDescriptor framebuffer_desc;
+		framebuffer_desc.color_attachments = { {0,texture_color} };
+		framebuffer_desc.depth_stencil_attachment = { 0,data->depth_storage_texture };
+
+		data->output_buffer_resource = RenderResourceManager::Get()->CreateFrameBuffer(framebuffer_desc);
+
 		use_compute_for_clustered_lights = true;
 	} else {
 		GraphicsPipelineDescriptor pipeline_desc;
@@ -327,6 +307,16 @@ void ClusteredLightingPass::UpdateClusteredPipeline(bool force_update) {
 		};
 
 		data->pipeline_clustered = PipelineManager::Get()->CreatePipeline(pipeline_desc);
+
+		color_texture_desc.usage = TextureUsage::COLOR_ATTACHMENT_READABLE;
+		auto texture_color = RenderResourceManager::Get()->CreateTexture(color_texture_desc);
+
+		RenderFrameBufferDescriptor framebuffer_desc;
+		framebuffer_desc.color_attachments = { {0,texture_color} };
+		framebuffer_desc.depth_stencil_attachment = { 0,data->depth_storage_texture };
+
+		data->output_buffer_resource = RenderResourceManager::Get()->CreateFrameBuffer(framebuffer_desc);
+
 		use_compute_for_clustered_lights = false;
 	}
 }
@@ -414,45 +404,4 @@ void ClusteredLightingPass::RenderLightsWithCompute(RenderPipelineResourceManage
 
 	list->Dispatch(glm::ceil(data->color_storage_texture->GetBufferDescriptor().width / compute_tile_size),
 		glm::ceil(data->color_storage_texture->GetBufferDescriptor().height / compute_tile_size), 1);
-}
-
-void ClusteredLightingPass::RenderSkybox(RenderPipelineResourceManager& resource_manager, std::shared_ptr<RenderCommandList>  list, const CameraComponent& camera, const render_props& props)
-{
-	auto skylight_view = Application::GetWorld().GetRegistry().view<SkylightComponent>();
-	auto& world = Application::GetWorld();
-	auto view_matrix = props.view;
-	list->SetPipeline(data->pipeline_skylight);
-	list->SetRenderTarget(data->output_buffer_resource);
-	list->SetConstantBuffer("conf", data->constant_scene_buf_skylight);
-
-	SkylightComponent* bg_comp = nullptr;
-
-	for (auto& ent : skylight_view) {
-		Entity entity = Entity((uint32_t)ent);
-		auto& light = world.GetComponent<SkylightComponent>(entity);
-
-		if (!light.GetReflectionMap() || light.GetReflectionMap()->GetStatus() != ReflectionMapStatus::LOADED) {
-			continue;
-		}
-
-		if (light.IsBackgroundVisible()) {
-			bg_comp = &light;
-		}
-	}
-
-	if (bg_comp) {
-		view_matrix[3] = glm::vec4(0.0f);
-		view_matrix[3][3] = 1.0f;
-		auto color_in = bg_comp->GetLightColor();
-		glm::mat4 inverse_view_projection = glm::inverse(props.projection * view_matrix);
-		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_bg, &inverse_view_projection, sizeof(glm::mat4), 0);
-		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_bg, glm::value_ptr(color_in), sizeof(glm::vec4), sizeof(glm::mat4));
-		list->SetPipeline(data->pipeline_bg);
-		list->SetTexture2DCubemap("in_tex", bg_comp->GetReflectionMap()->GetSpecularMap());
-		list->SetVertexBuffer(data->card_mesh->GetVertexBuffer());
-		list->SetConstantBuffer("mvp", data->constant_scene_buf_bg);
-		list->SetIndexBuffer(data->card_mesh->GetIndexBuffer());
-		list->Draw(data->card_mesh->GetIndexCount());
-	}
-
 }
