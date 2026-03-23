@@ -57,7 +57,7 @@ public:
 	std::shared_ptr<RenderResourceStore> GetGlobalResourceStore(const std::string& name);
 	void UnregisterGlobalResourceStore(const std::string& name);
 
-	virtual ~RenderResourceManager() {};
+	virtual ~RenderResourceManager();
 
 protected:
 	RenderFrameBufferDescriptor& GetAdjustableFrameBufferDescriptor(std::shared_ptr<RenderFrameBufferResource> framebuffer) {
@@ -66,5 +66,6 @@ protected:
 
 private:
 	static RenderResourceManager* instance;
+protected:
 	std::unordered_map<std::string, std::shared_ptr<RenderResourceStore>> global_resource_stores;
 };

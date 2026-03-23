@@ -752,6 +752,7 @@ VulkanRenderResourceManager::VulkanRenderResourceManager() : deletion_queue(), d
 VulkanRenderResourceManager::~VulkanRenderResourceManager()
 {
 	DEFINE_VK_INSTANCE(context);
+	global_resource_stores.clear();
 	vkDeviceWaitIdle(context->GetVkbDevice());
 	FlushDeletions(true);
 	ClearStagingBuffers();

@@ -49,3 +49,7 @@ std::shared_ptr<RenderResourceStore> RenderResourceManager::GetGlobalResourceSto
 void RenderResourceManager::UnregisterGlobalResourceStore(const std::string& name) {
 	global_resource_stores.erase(name);
 }
+
+RenderResourceManager::~RenderResourceManager() {
+
+}
