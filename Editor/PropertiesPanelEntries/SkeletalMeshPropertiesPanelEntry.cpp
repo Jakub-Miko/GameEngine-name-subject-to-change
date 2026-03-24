@@ -106,7 +106,7 @@ void SkeletalMeshPropertiesPanelEntry::RenderPanel(Entity ent)
 		mesh.SetDefaultAnimationPath(FileManager::Get()->GetPathRelative(Editor::Get()->GetSelectedFilePath()),true);
 		memcpy(default_animation_path, mesh.GetDefaultAnimationPath().c_str(), mesh.GetDefaultAnimationPath().size() + 1);
 	}
-	if (mesh.GetAnimation().GetAnimationStatus() == Animation::animation_status::ERROR) {
+	if (mesh.GetAnimation().GetAnimationStatus() == SkeletalAnimation::animation_status::ERROR) {
 		Editor::Get()->EditorError("Invalid or corrupted Animation file");
 		mesh.SetDefaultAnimationPath("", true);
 		default_animation_path[0] = '\0';

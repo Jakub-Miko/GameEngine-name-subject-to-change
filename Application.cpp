@@ -22,6 +22,8 @@
 #include <stdexcept>
 #include <FrameManager.h>
 
+#include "Animation/AnimationManager.h"
+
 #ifdef EDITOR
 #include <Editor/Editor.h>
 #endif
@@ -60,7 +62,9 @@ Application::~Application()
 #ifdef EDITOR
     Editor::Get()->PreShutdown();
 #endif
-    
+
+    AnimationManager::Shutdown();
+
     AudioSystem::Shutdown();
     
     ShutdownSystems();
@@ -170,6 +174,8 @@ void Application::InitInstance()
     EntityManager::Initialize();
 
     AudioSystem::Init();
+
+    AnimationManager::Init();
 
     InitializeSystems();
 

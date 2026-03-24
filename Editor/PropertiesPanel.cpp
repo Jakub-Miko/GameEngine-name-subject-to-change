@@ -17,6 +17,7 @@
 #include <Editor/PropertiesPanelEntries/DynamicPropertiesPanelEntry.h>
 #include <Editor/PropertiesPanelEntries/UITextPropertiesPanelEntry.h>
 #include <Editor/PropertiesPanelEntries/SkyLightPropertiesPanelEntry.h>
+#include <Editor/PropertiesPanelEntries/AnimationPropertiesPanelEntry.h>
 #include <FileManager.h>
 
 PropertiesPanel::PropertiesPanel()
@@ -34,6 +35,7 @@ PropertiesPanel::PropertiesPanel()
 	RegisterPanelEntry(AudioPropertiesPanelEntry());
 	RegisterPanelEntry(UITextPropertiesPanelEntry());
 	RegisterPanelEntry(SkyLightPropertiesPanelEntry());
+	RegisterPanelEntry(AnimationPropertiesPanelEntry());
 }
 
 PropertiesPanel::~PropertiesPanel()

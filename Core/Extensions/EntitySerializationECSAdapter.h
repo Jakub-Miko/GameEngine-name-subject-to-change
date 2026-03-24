@@ -103,17 +103,20 @@ public:
         stream.close();
     }
 
-    void next_root() {
+    bool next_root() {
         root_idx++;
         if (root_idx >= root.size()) {
-            throw std::runtime_error("File out of range");
+            return false;
         }
         current = root[root_idx];
         current_idx = 0;
+        return true;
     }
 
     void operator()(std::underlying_type_t<entt::entity>& s) {
-        next_root();
+        if(!next_root()) {
+            return;
+        }
         int size = current[0].get<int>();
         current_idx++;
         s = (std::underlying_type_t<entt::entity>)size; 

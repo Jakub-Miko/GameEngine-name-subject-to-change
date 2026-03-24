@@ -44,7 +44,8 @@ SceneProxy::LoadInfo NativeSceneProxy::LoadScene(World &world)
 	}
 
 	ECS_Input_Archive archive(json["Entities"]);
-	entt::snapshot_loader(world.GetRegistry()).component<TransformComponent, PrefabComponent, DynamicPropertiesComponent, LabelComponent, MeshComponent, CameraComponent, LightComponent, ShadowCasterComponent, PhysicsComponent, SkeletalMeshComponent, AudioComponent, UITextComponent, SkylightComponent>(archive);
+	entt::snapshot_loader(world.GetRegistry()).component<TransformComponent, PrefabComponent, DynamicPropertiesComponent, LabelComponent, MeshComponent, CameraComponent,
+	LightComponent, ShadowCasterComponent, PhysicsComponent, SkeletalMeshComponent, AudioComponent, UITextComponent, SkylightComponent, AnimationComponent>(archive);
 
 	world.GetSceneGraph()->Deserialize(json);
 

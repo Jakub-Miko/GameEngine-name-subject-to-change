@@ -3,7 +3,7 @@
 #include "Layer.h"
 #include <Renderer/TextRenderer.h>
 #include <Core/Debug.h>
-#include <Renderer/Renderer3D/Animations/AnimationManager.h>
+#include <Renderer/Renderer3D/SkeletalAnimations/SkeletalAnimationManager.h>
 #include "Application.h"
 #include <Core/ModuleManager.h>
 #include <iostream>

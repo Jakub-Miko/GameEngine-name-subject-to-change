@@ -5,7 +5,7 @@
 #include <Core/Extensions/EntitySerializationECSAdapter.h>
 #include <Renderer/TextureManager.h>
 #include <Renderer/MeshManager.h>
-#include <Renderer/Renderer3D/Animations/AnimationManager.h>
+#include <Renderer/Renderer3D/SkeletalAnimations/SkeletalAnimationManager.h>
 #include <GameStateMachine.h>
 #include <World/EntityManager.h>
 #include <World/ComponentTypes.h>
@@ -18,6 +18,8 @@
 #include <Editor/Editor.h>
 #endif
 #include <fstream>
+
+#include "Animation/AnimationManager.h"
 
 void World::Init()
 {
@@ -458,9 +460,10 @@ void World::LoadSceneSystem()
 		TextureManager::Get()->ClearTextureCache();
 		MaterialManager::Get()->ClearMaterialCache();
 		MeshManager::Get()->ClearMeshCache();
-		AnimationManager::Get()->ClearAnimationCache(); 
+		SkeletalAnimationManager::Get()->ClearAnimationCache(); 
 		EntityManager::Get()->ClearPrefabCache();
 		ScriptSystemManager::Get()->ResetAllScriptSystemVMs();
+		AnimationManager::Get()->ClearAnimationCache();
 
 
 		ResetLuaEngine();
@@ -672,7 +675,7 @@ void World::SaveScene(const std::string& file_path)
 	auto view_serializable = m_ECS.view<SerializableComponent>();
 	auto view_serializable_non_prefabs = m_ECS.view<SerializableComponent>(entt::exclude<PrefabComponent>);
 	snapshot.component<TransformComponent, PrefabComponent, DynamicPropertiesComponent, LabelComponent,MeshComponent, CameraComponent, LightComponent, ShadowCasterComponent, PhysicsComponent,
-		SkeletalMeshComponent, AudioComponent, UITextComponent, SkylightComponent>(archive, view_serializable.begin(), view_serializable.end());
+		SkeletalMeshComponent, AudioComponent, UITextComponent, SkylightComponent, AnimationComponent>(archive, view_serializable.begin(), view_serializable.end());
 	//snapshot.component<MeshComponent, CameraComponent, LightComponent>(archive, view_serializable_non_prefabs.begin(), view_serializable_non_prefabs.end());
 
 

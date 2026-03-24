@@ -1,37 +1,37 @@
-#include "AnimationManager.h"
+#include "SkeletalAnimationManager.h"
 #include <assimp/scene.h>
 #include <fstream>
 #include <FileManager.h>
 #include <Application.h>
 
-AnimationManager* AnimationManager::instance = nullptr;
+SkeletalAnimationManager* SkeletalAnimationManager::instance = nullptr;
 
-void AnimationManager::Init()
+void SkeletalAnimationManager::Init()
 {
 	if (!instance) {
-		instance = new AnimationManager();
+		instance = new SkeletalAnimationManager();
 	}
 }
 
-AnimationManager* AnimationManager::Get()
+SkeletalAnimationManager* SkeletalAnimationManager::Get()
 {
 	return instance;
 }
 
-void AnimationManager::Shutdown()
+void SkeletalAnimationManager::Shutdown()
 {
 	if (instance) {
 		delete instance;
 	}
 }
 
-std::shared_ptr<Animation> AnimationManager::RegisterAnimation(std::shared_ptr<Animation> animation_to_register, const std::string& file_path)
+std::shared_ptr<SkeletalAnimation> SkeletalAnimationManager::RegisterAnimation(std::shared_ptr<SkeletalAnimation> animation_to_register, const std::string& file_path)
 {
 	auto animation_final = animation_map.insert(std::make_pair(file_path, animation_to_register));
 	return animation_final.first->second;
 }
 
-std::shared_ptr<Animation> AnimationManager::LoadAnimationAsync(const std::string& file_path)
+std::shared_ptr<SkeletalAnimation> SkeletalAnimationManager::LoadAnimationAsync(const std::string& file_path)
 {
 	using namespace std::filesystem;
 	std::string relative_path = FileManager::Get()->GetPath(file_path);
@@ -43,19 +43,19 @@ std::shared_ptr<Animation> AnimationManager::LoadAnimationAsync(const std::strin
 		return fnd->second;
 	}
 
-	Animation anim;
+	SkeletalAnimation anim;
 
 	anim.duration = 0.0f;
 	anim.bone_anim = std::vector<BoneAnimation>();
 	anim.ticks_per_second = 0;
-	anim.status = Animation::animation_status::LOADING;
+	anim.status = SkeletalAnimation::animation_status::LOADING;
 
-	auto anim_final = RegisterAnimation(std::make_unique<Animation>(anim), relative_path);
+	auto anim_final = RegisterAnimation(std::make_unique<SkeletalAnimation>(anim), relative_path);
 
 
 	auto async_queue = Application::GetAsyncDispather();
 
-	auto task = async_queue->CreateTask<Animation>([relative_path, this]() -> Animation {
+	auto task = async_queue->CreateTask<SkeletalAnimation>([relative_path, this]() -> SkeletalAnimation {
 		return LoadAnimationFromFile_impl(relative_path);
 		});
 
@@ -72,7 +72,7 @@ std::shared_ptr<Animation> AnimationManager::LoadAnimationAsync(const std::strin
 	return anim_final; 
 }
 
-void AnimationManager::UpdateLoadedAnimations()
+void SkeletalAnimationManager::UpdateLoadedAnimations()
 {
 	std::lock_guard<std::mutex> lock(load_queue_mutex);
 	for (auto& loaded_anim : load_queue) {
@@ -83,7 +83,7 @@ void AnimationManager::UpdateLoadedAnimations()
 			loaded_anim.processed = true;
 		}
 		catch (...) {
-			loaded_anim.animation_object->status = Animation::animation_status::ERROR;
+			loaded_anim.animation_object->status = SkeletalAnimation::animation_status::ERROR;
 			std::lock_guard<std::mutex> lock(animation_map_mutex);
 			animation_map.erase(loaded_anim.path);
 			loaded_anim.processed = true;
@@ -97,17 +97,17 @@ void AnimationManager::UpdateLoadedAnimations()
 
 }
 
-AnimationManager::AnimationManager() : default_animation(nullptr)
+SkeletalAnimationManager::SkeletalAnimationManager() : default_animation(nullptr)
 {
-	Animation* anim = new Animation();
+	SkeletalAnimation* anim = new SkeletalAnimation();
 	anim->duration = 0.0f;
 	anim->ticks_per_second = 0;
 	anim->bone_anim = std::vector<BoneAnimation>();
-	anim->status = Animation::animation_status::UNINITIALIZED;
+	anim->status = SkeletalAnimation::animation_status::UNINITIALIZED;
 	default_animation.reset(anim);
 }
 
-void AnimationManager::MakeAnimations(Skeleton& reference_skeleton, aiScene* scene, const std::string& output_directory)
+void SkeletalAnimationManager::MakeAnimations(Skeleton& reference_skeleton, aiScene* scene, const std::string& output_directory)
 {
 	if (!scene) throw std::runtime_error("Scene was not supplied to MakeAnimations");
 	for (int i = 0; i < scene->mNumAnimations; i++) {
@@ -173,17 +173,17 @@ void AnimationManager::MakeAnimations(Skeleton& reference_skeleton, aiScene* sce
 	}
 }
 
-void AnimationManager::ClearAnimationCache()
+void SkeletalAnimationManager::ClearAnimationCache()
 {
 	std::lock_guard<std::mutex> lock1(load_queue_mutex);
 	std::lock_guard<std::mutex> lock2(animation_map_mutex);
 	animation_map.clear();
 }
 
-Animation AnimationManager::LoadAnimationFromFile_impl(const std::string& path)
+SkeletalAnimation SkeletalAnimationManager::LoadAnimationFromFile_impl(const std::string& path)
 {
-	Animation anim;
-	anim.status = Animation::animation_status::READY;
+	SkeletalAnimation anim;
+	anim.status = SkeletalAnimation::animation_status::READY;
 	std::ifstream file(path, std::ios::binary | std::ios::in);
 	if (!file.is_open()) throw std::runtime_error("Animation File " + path + " could not be opened.");
 	std::string check;

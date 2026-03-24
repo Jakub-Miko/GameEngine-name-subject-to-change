@@ -1,5 +1,5 @@
 #include "MeshManager.h"
-#include <Renderer/Renderer3D/Animations/AnimationManager.h>
+#include <Renderer/Renderer3D/SkeletalAnimations/SkeletalAnimationManager.h>
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <Renderer/RenderResourceManager.h>
@@ -122,7 +122,7 @@ void MeshManager::MakeMeshFromObjectFile(const std::string& in_file_path, const 
         if (((const aiScene*)(input_data.imported_scene))->HasAnimations()) {
             auto animation_dir = std::filesystem::path(out_file_path).parent_path().generic_string() + "/" + std::filesystem::path(out_file_path).filename().generic_string() + "_animations/";
             std::filesystem::create_directory(animation_dir);
-            AnimationManager::Get()->MakeAnimations(*input_data.skeleton, (aiScene*)input_data.imported_scene, animation_dir);
+            SkeletalAnimationManager::Get()->MakeAnimations(*input_data.skeleton, (aiScene*)input_data.imported_scene, animation_dir);
         }
     }
     input_data.clear();

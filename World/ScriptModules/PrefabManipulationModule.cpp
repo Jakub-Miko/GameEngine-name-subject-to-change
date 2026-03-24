@@ -260,7 +260,7 @@ extern "C" {
 		Entity ent = GetEntityByName(name);
 		if(!Application::GetWorld().HasComponent<SkeletalMeshComponent>(ent)) throw std::runtime_error(std::string("Child with name: ") + name + " of entity: " + std::to_string(GetCurrentEntity_L().id) 
 			+ " does not have Skeletal Mesh Component.");
-		Application::GetWorld().GetComponent<SkeletalMeshComponent>(ent).SetAnimation(AnimationPlayback(AnimationManager::Get()->LoadAnimationAsync(FileManager::Get()->GetPath(path))));
+		Application::GetWorld().GetComponent<SkeletalMeshComponent>(ent).SetAnimation(SkeletalAnimationPlayback(SkeletalAnimationManager::Get()->LoadAnimationAsync(FileManager::Get()->GetPath(path))));
 	}
 
 	/**
@@ -275,8 +275,8 @@ extern "C" {
 		Entity ent = GetEntityByName(name);
 		if (!Application::GetWorld().HasComponent<SkeletalMeshComponent>(ent)) throw std::runtime_error(std::string("Child with name: ") + name + " of entity: " + std::to_string(GetCurrentEntity_L().id)
 			+ " does not have Skeletal Mesh Component.");
-		AnimationPlayback::AnimationPlaybackLayer layer;
-		layer.anim = AnimationManager::Get()->LoadAnimationAsync(FileManager::Get()->GetPath(path));
+		SkeletalAnimationPlayback::AnimationPlaybackLayer layer;
+		layer.anim = SkeletalAnimationManager::Get()->LoadAnimationAsync(FileManager::Get()->GetPath(path));
 		layer.playback_state = AnimationPlaybackState();
 		layer.time = 0.0f;
 		layer.weight = weight;

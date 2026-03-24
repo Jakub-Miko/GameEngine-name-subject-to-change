@@ -45,8 +45,8 @@ private:
 	class aiNode;
 	friend class MeshManager;
 	friend class Animation;
-	friend class AnimationManager;
-	friend class AnimationPlayback;
+	friend class SkeletalAnimationManager;
+	friend class SkeletalAnimationPlayback;
 	using bone_array_type = typename std::template vector<Bone>;
 	using bone_hasmap_type = typename std::template unordered_map<std::string, bone_hashmap_entry>;
 	

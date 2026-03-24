@@ -23,6 +23,7 @@
 #include <World/Components/SkeletalMeshComponent.h>
 #include <World/Components/AudioComponent.h>
 #include <Core/TypeList.h>
+#include <World/Components/AnimationComponent.h>
 
 /**
  * @brief All of the Engines Components types
@@ -31,4 +32,4 @@
 */
 using Component_Types = TypeList<BoundingVolumeComponent, CameraComponent, ConstructionComponent, DeferredUpdateComponent, DynamicPropertiesComponent, InitializationComponent,
 	KeyPressedScriptComponent, LabelComponent, LightComponent, LoadedComponent, MeshComponent, MousePressedScriptComponent, PrefabComponent, ScriptComponent, SerializableComponent, SquareComponent,
-	TransformComponent, ShadowCasterComponent, PhysicsComponent, SkeletalMeshComponent, AudioComponent, UITextComponent, SkylightComponent>;
+	TransformComponent, ShadowCasterComponent, PhysicsComponent, SkeletalMeshComponent, AudioComponent, UITextComponent, SkylightComponent, AnimationComponent>;

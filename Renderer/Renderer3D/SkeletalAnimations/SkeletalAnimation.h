@@ -61,7 +61,7 @@ struct BoneAnimation {
 
 };
 
-class Animation {
+class SkeletalAnimation {
 public:
 	enum class animation_status : char {
 		UNINITIALIZED = 0, LOADING = 1, READY = 2, ERROR = 3
@@ -87,22 +87,22 @@ public:
 
 
 private:
-	friend class AnimationManager;
-	friend class AnimationPlayback;
+	friend class SkeletalAnimationManager;
+	friend class SkeletalAnimationPlayback;
 	float duration;
 	int ticks_per_second;
 	animation_status status = animation_status::UNINITIALIZED;
 	std::vector<BoneAnimation> bone_anim;
 };
 
-class AnimationPlayback {
+class SkeletalAnimationPlayback {
 public:
-	AnimationPlayback();
-	AnimationPlayback(std::shared_ptr<Animation> animation);
+	SkeletalAnimationPlayback();
+	SkeletalAnimationPlayback(std::shared_ptr<SkeletalAnimation> animation);
 	//returns false if animation was not loaded yet
 
 	struct AnimationPlaybackLayer {
-		std::shared_ptr<Animation> anim;
+		std::shared_ptr<SkeletalAnimation> anim;
 		AnimationPlaybackState playback_state;
 		float weight = 1.0f;
 		float time = 0.0f;
@@ -113,9 +113,9 @@ public:
 
 	std::vector<glm::mat4> GetBoneTransforms(std::shared_ptr<Mesh> skeletal_mesh, int first_significant = 0);
 
-	Animation::animation_status GetAnimationStatus(int layer = 0) const {
+	SkeletalAnimation::animation_status GetAnimationStatus(int layer = 0) const {
 		if (layer >= playback_layers.size()) {
-			return Animation::animation_status::UNINITIALIZED;
+			return SkeletalAnimation::animation_status::UNINITIALIZED;
 		}
 		return playback_layers[layer].anim->GetAnimationStatus();
 	}

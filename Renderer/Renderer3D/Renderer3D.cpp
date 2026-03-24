@@ -5,7 +5,7 @@
 #include "DeferredClusteredRendererPipeline.h"
 #include "DeferredRenderingPipeline.h"
 #include "ForwardClusteredRendererPipeline.h"
-#include "Animations/AnimationManager.h"
+#include "SkeletalAnimations/SkeletalAnimationManager.h"
 
 Renderer3D* Renderer3D::instance = nullptr;
 
@@ -14,7 +14,7 @@ void Renderer3D::Init()
 	if (!instance) {
 		instance = new Renderer3D;
 		MaterialManager::Init();
-		AnimationManager::Init();
+		SkeletalAnimationManager::Init();
 		instance->RegisterPipeline("DeferredClustered", DeferredClusteredRendererPipeline::CreatePipeline());
 		instance->RegisterPipeline("ForwardClustered", ForwardClusteredRendererPipeline::CreatePipeline());
 		instance->SetActivePipeline("DeferredClustered");
@@ -31,7 +31,7 @@ void Renderer3D::Shutdown()
 void Renderer3D::PreShutdown()
 {
 	MaterialManager::Shutdown();
-	AnimationManager::Shutdown();
+	SkeletalAnimationManager::Shutdown();
 }
 
 Renderer3D* Renderer3D::Get()

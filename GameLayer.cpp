@@ -21,11 +21,12 @@
 #include <World/Systems/KeyPressedScriptSystem.h>
 #include <World/Systems/MousePressedScriptSystem.h>
 #include <Renderer/MeshManager.h>
-#include <Renderer/Renderer3D/Animations/AnimationManager.h>
+#include <Renderer/Renderer3D/SkeletalAnimations/SkeletalAnimationManager.h>
 #include <Renderer/TextureManager.h>
 #include <World/Systems/EntityConstructionSystem.h>
 #include <World/SceneGraph.h>
 
+#include "World/Systems/AnimationSystem.h"
 
 
 void GameLayer::OnEvent(Event* e) {
@@ -65,7 +66,8 @@ void GameLayer::OnUpdate(float delta_time) {
     world.SetPrimaryEntitySystem();
     MeshManager::Get()->UpdateLoadedMeshes(); // MultiThread
     AudioSystem::Get()->UpdateLoadedSounds();
-    AnimationManager::Get()->UpdateLoadedAnimations(); // MultiThread
+    SkeletalAnimationManager::Get()->UpdateLoadedAnimations(); // MultiThread
+    AnimationSystem(world, delta_time);
     TextureManager::Get()->UpdateLoadedReflectionMaps();
     world.UpdateTransformMatricies(); // we need to update transforms before and after physics update, so the physics engine knows current possitions of our objects.
     world.GetPhysicsEngine().UpdatePhysics(delta_time);

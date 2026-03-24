@@ -1,9 +1,9 @@
-#include "Animation.h"
+#include "SkeletalAnimation.h"
 #include <Renderer/RenderResourceManager.h>
-#include <Renderer/Renderer3D/Animations/AnimationManager.h>
+#include <Renderer/Renderer3D/SkeletalAnimations/SkeletalAnimationManager.h>
 #include <FrameManager.h>
 
-glm::mat4 AnimationPlayback::blend_matricies(const glm::mat4& mat1,const glm::mat4& mat2, float blend_factor)
+glm::mat4 SkeletalAnimationPlayback::blend_matricies(const glm::mat4& mat1,const glm::mat4& mat2, float blend_factor)
 {
 	glm::vec3 scale_1 = { glm::length(mat1[0]),glm::length(mat1[1]),glm::length(mat1[2]) };
 	glm::vec3 scale_2 = { glm::length(mat2[0]),glm::length(mat2[1]),glm::length(mat2[2]) };
@@ -20,11 +20,11 @@ glm::mat4 AnimationPlayback::blend_matricies(const glm::mat4& mat1,const glm::ma
 	return glm::translate(glm::mat4(1.0f), trans_3) * glm::toMat4(rot_3) * glm::scale(glm::mat4(1.0f), scale_3);
 }
 
-std::vector<glm::mat4> AnimationPlayback::GetBoneTransforms(std::shared_ptr<Mesh> skeletal_mesh, int first_significant) {
+std::vector<glm::mat4> SkeletalAnimationPlayback::GetBoneTransforms(std::shared_ptr<Mesh> skeletal_mesh, int first_significant) {
 	PROFILE("Global Bone Transform Calculation");
 	const Skeleton& skel = skeletal_mesh->GetSkeleton();
 	for (auto& layer : playback_layers) {
-		if (layer.anim->GetAnimationStatus() != Animation::animation_status::READY) continue;
+		if (layer.anim->GetAnimationStatus() != SkeletalAnimation::animation_status::READY) continue;
 		if (layer.playback_state.bone_playback_states.size() != layer.anim->bone_anim.size()) throw std::runtime_error("Invalid playback state: it doesn't match number or entries with the number of skeleton bones.");
 		if (skel.parent_bone_array.size() != layer.anim->bone_anim.size()) throw std::runtime_error("Number of bones of skeletal mesh doesn't match that of the animation.");
 	}
@@ -38,7 +38,7 @@ std::vector<glm::mat4> AnimationPlayback::GetBoneTransforms(std::shared_ptr<Mesh
 		if (layer_num != 0 && layer.weight <= 0.0f) continue;
 		PROFILE("Layer Bone Transform Calculation");
 		int i = 0;
-		if (layer.anim->GetAnimationStatus() != Animation::animation_status::READY) continue;
+		if (layer.anim->GetAnimationStatus() != SkeletalAnimation::animation_status::READY) continue;
 		for (auto& anim : layer.anim->bone_anim) {
 			bone_transforms[i] = blend_matricies(bone_transforms[i], anim.GetAnimationMatrix(layer.time, &layer.playback_state ? &layer.playback_state.bone_playback_states[i] : nullptr), layer_num == 0 ? 1.0f : layer.weight);
 			i++;
@@ -62,25 +62,25 @@ std::vector<glm::mat4> AnimationPlayback::GetBoneTransforms(std::shared_ptr<Mesh
 	return bone_transforms;
 }
 
-void AnimationPlayback::AddLayer(const AnimationPlaybackLayer& layer)
+void SkeletalAnimationPlayback::AddLayer(const AnimationPlaybackLayer& layer)
 {
 	playback_layers.push_back(layer);
 }
 
-void AnimationPlayback::RemoveLayer()
+void SkeletalAnimationPlayback::RemoveLayer()
 {
 	//Change this in the future
 	playback_layers.pop_back();
 	if (playback_layers.empty()) {
 		AnimationPlaybackLayer layer;
-		layer.anim = AnimationManager::Get()->GetDefaultAnimation();
+		layer.anim = SkeletalAnimationManager::Get()->GetDefaultAnimation();
 		layer.playback_state = AnimationPlaybackState();
 		layer.weight = 1.0f;
 		playback_layers.push_back(layer);
 	}
 }
 
-AnimationPlayback::AnimationPlaybackLayer& AnimationPlayback::GetLayer(int index)
+SkeletalAnimationPlayback::AnimationPlaybackLayer& SkeletalAnimationPlayback::GetLayer(int index)
 {
 	if (index >= playback_layers.size()) {
 		throw std::runtime_error("Animation Layer " + std::to_string(index) + " doesn't exist");
@@ -88,7 +88,7 @@ AnimationPlayback::AnimationPlaybackLayer& AnimationPlayback::GetLayer(int index
 	return playback_layers[index];
 }
 
-void AnimationPlayback::PromoteLayerToPrimary(int index)
+void SkeletalAnimationPlayback::PromoteLayerToPrimary(int index)
 {
 	if (index >= playback_layers.size()) {
 		throw std::runtime_error("Animation Layer " + std::to_string(index) + " doesn't exist");
@@ -166,16 +166,16 @@ glm::mat4 BoneAnimation::GetAnimationMatrix(float time, BoneAnimationPlaybackSta
 	return glm::translate(glm::mat4(1.0f), GetPosition(time, next_state_hint)) * glm::toMat4(GetRotation(time, next_state_hint)) * glm::scale(glm::mat4(1.0f), GetScale(time, next_state_hint));
 }
 
-AnimationPlayback::AnimationPlayback() : playback_layers()
+SkeletalAnimationPlayback::SkeletalAnimationPlayback() : playback_layers()
 {
 	AnimationPlaybackLayer layer;
-	layer.anim = AnimationManager::Get()->GetDefaultAnimation();
+	layer.anim = SkeletalAnimationManager::Get()->GetDefaultAnimation();
 	layer.playback_state = AnimationPlaybackState();
 	layer.weight = 1.0f;
 	playback_layers.push_back(layer);
 }
 
-AnimationPlayback::AnimationPlayback(std::shared_ptr<Animation> animation) : playback_layers()
+SkeletalAnimationPlayback::SkeletalAnimationPlayback(std::shared_ptr<SkeletalAnimation> animation) : playback_layers()
 {
 	AnimationPlaybackLayer layer;
 	layer.anim = animation;
@@ -189,7 +189,7 @@ AnimationPlayback::AnimationPlayback(std::shared_ptr<Animation> animation) : pla
 	}
 }
 
-bool AnimationPlayback::UpdateAnimation(float delta_time, std::shared_ptr<RenderCommandList>  list, std::shared_ptr<Mesh> skeletal_mesh)
+bool SkeletalAnimationPlayback::UpdateAnimation(float delta_time, std::shared_ptr<RenderCommandList>  list, std::shared_ptr<Mesh> skeletal_mesh)
 {
 	//TODO: Revise
 	PROFILE("Update Animations");
@@ -204,7 +204,7 @@ bool AnimationPlayback::UpdateAnimation(float delta_time, std::shared_ptr<Render
 	std::vector<glm::mat4> bone_transforms;
 	float target_duration = playback_layers[0].anim->GetDuration();
 	for (auto& layer : playback_layers) {
-		if (layer.anim->GetAnimationStatus() != Animation::animation_status::READY) continue;
+		if (layer.anim->GetAnimationStatus() != SkeletalAnimation::animation_status::READY) continue;
 		layer.weight = std::clamp(layer.weight, 0.0f, 1.0f);
 		if (layer.speed_match) {
 			target_duration = (1.0f - layer.weight) * target_duration + layer.anim->GetDuration() * layer.weight;
@@ -266,7 +266,7 @@ bool AnimationPlayback::UpdateAnimation(float delta_time, std::shared_ptr<Render
 	}
 	else {
 		for (auto& layer : playback_layers) {
-			if (layer.anim->GetAnimationStatus() != Animation::animation_status::READY) continue;
+			if (layer.anim->GetAnimationStatus() != SkeletalAnimation::animation_status::READY) continue;
 			if (layer.anim->GetAnimationBoneNumber() != layer.playback_state.bone_playback_states.size()) {
 				layer.playback_state.bone_playback_states.clear();
 				int num_of_bones = layer.anim->GetAnimationBoneNumber();

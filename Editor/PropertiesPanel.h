@@ -6,7 +6,7 @@ class PropertiesPanelEntry {
 public:
 	PropertiesPanelEntry(const std::string& name) : name(name) {}
 
-	PropertiesPanelEntry(const PropertiesPanelEntry& other) : name(name) {}
+	PropertiesPanelEntry(const PropertiesPanelEntry& other) : name(other.name) {}
 
 	virtual void RenderPanel(Entity ent) = 0;
 	virtual bool IsAvailable(Entity ent) = 0;

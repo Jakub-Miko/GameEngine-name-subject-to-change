@@ -15,6 +15,7 @@ public:
 	virtual void OnRemove(Entity ent) override;
 	virtual bool IsAssignable() override;
 	virtual ~MeshPropertiesPanelEntry();
+
 private:
 	char* mesh_path_buffer = nullptr;
 	char* material_path_buffer = nullptr;

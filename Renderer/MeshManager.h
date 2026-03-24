@@ -1,5 +1,5 @@
 #pragma once
-#include <Renderer/Renderer3D/Animations/Skeleton.h>
+#include <Renderer/Renderer3D/SkeletalAnimations/Skeleton.h>
 #include <string>
 #include <Events/SubjectObserver.h>
 #include <cstring>

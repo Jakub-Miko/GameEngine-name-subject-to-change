@@ -10,6 +10,7 @@
 #include <FileManager.h>
 #include <iostream>
 
+#include "Animation/AnimationManager.h"
 #include "Components/SerializableComponent.h"
 
 
@@ -281,6 +282,12 @@ void AssimpSceneProxy::LoadCameras(LoadState &state)
     }
 }
 
+void AssimpSceneProxy::LoadAnimations(LoadState& state) {
+    auto path = FileManager::Get()->GetPathAbsolute(state.scene_resource_directory + "/animations");
+    std::filesystem::create_directories(path);
+    AnimationManager::Get()->MakeAnimationChannelGroupsFromAssimpScene(state.open_scene->scene, path);
+}
+
 AssimpSceneProxy::LoadInfo AssimpSceneProxy::LoadScene(World &world)
 {
     LoadInfo info = {};
@@ -344,6 +351,8 @@ AssimpSceneProxy::LoadInfo AssimpSceneProxy::LoadScene(World &world)
 
     LoadLights(state);
     LoadCameras(state);
+
+    LoadAnimations(state);
 
     info.save_after_load = state.serialize;
 

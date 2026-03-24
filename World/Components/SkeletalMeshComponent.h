@@ -5,8 +5,8 @@
 #include <Core/UnitConverter.h>
 #include <Core/RuntimeTag.h>
 #include <FileManager.h>
-#include <Renderer/Renderer3D/Animations/Animation.h>
-#include <Renderer/Renderer3D/Animations/AnimationManager.h>
+#include <Renderer/Renderer3D/SkeletalAnimations/SkeletalAnimation.h>
+#include <Renderer/Renderer3D/SkeletalAnimations/SkeletalAnimationManager.h>
 #ifdef EDITOR
 #include <Editor/Editor.h>
 #endif
@@ -73,23 +73,23 @@ public:
 		return default_animation_path;
 	}
 
-	AnimationPlayback& GetAnimation() {
+	SkeletalAnimationPlayback& GetAnimation() {
 		return animation_plaback;
 	}
 
 	void SetDefaultAnimationPath(const std::string& default_anim_path, bool force = false) {
 		if (default_anim_path.empty()) {
 			default_animation_path = "";
-			SetAnimation(AnimationManager::Get()->GetDefaultAnimation());
+			SetAnimation(SkeletalAnimationManager::Get()->GetDefaultAnimation());
 			return;
 		}
 		default_animation_path = default_anim_path;
 		if (!animation_plaback.IsValidAnim() || force) {
-			SetAnimation(AnimationPlayback(AnimationManager::Get()->LoadAnimationAsync(FileManager::Get()->GetPath(default_anim_path))));
+			SetAnimation(SkeletalAnimationPlayback(SkeletalAnimationManager::Get()->LoadAnimationAsync(FileManager::Get()->GetPath(default_anim_path))));
 		}
 	}
 
-	void SetAnimation(const AnimationPlayback& animation) {
+	void SetAnimation(const SkeletalAnimationPlayback& animation) {
 		animation_plaback = animation;
 	}
 
@@ -147,7 +147,7 @@ private:
 	std::shared_ptr<Mesh> mesh;
 	//to check if the resource transitioned into a loaded state and act accordingly
 	Mesh_status compare_status;
-	AnimationPlayback animation_plaback;
+	SkeletalAnimationPlayback animation_plaback;
 	bool visible = true;
 };
 
