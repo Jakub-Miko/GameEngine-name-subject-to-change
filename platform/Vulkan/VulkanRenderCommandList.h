@@ -129,7 +129,7 @@ class VulkanDependencyHandler {
 public:
 
     struct VulkanDependencyHandlerFeedback {
-        uint64_t timeline_wait;
+        uint64_t timeline_wait = 0;
     };
 
     VulkanDependencyHandler() = default;

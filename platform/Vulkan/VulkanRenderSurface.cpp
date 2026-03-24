@@ -1,6 +1,7 @@
 #include "VulkanRenderSurface.h"
 #include "VulkanRenderResourceManager.h"
 #include "Application.h"
+#include "ConfigManager.h"
 #include "VulkanRenderCommandQueue.h"
 
 VulkanRenderSurface::VulkanRenderSurface(VkSurfaceKHR surface, bool register_for_present) 
@@ -165,11 +166,12 @@ void VulkanRenderSurface::CreateSwapchain() {
 	 DEFINE_VK_INSTANCE(context);
     auto vkb_device = context->GetVkbDevice();
     auto vk_device = context->GetVkDevice();
-
+	auto v_sync = ConfigManager::Get()->GetInt("Vsync") == 1;
 
 	vkb::SwapchainBuilder swapchain_builder(vkb_device,vk_surface);
 	swapchain_builder.add_image_usage_flags(VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 	swapchain_builder.set_desired_min_image_count(FrameManager::Get()->GetLatencyFrames());
+	swapchain_builder.set_desired_present_mode(v_sync ? VK_PRESENT_MODE_MAILBOX_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR);
 	auto swapchain_result = swapchain_builder.build();
 	if (!swapchain_result.has_value()) {
 		throw std::runtime_error(swapchain_result.error().message());

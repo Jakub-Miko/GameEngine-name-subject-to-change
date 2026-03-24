@@ -7,7 +7,15 @@
 			"type" : "constant_buffer"
 		},
 		{
-			"name" : "light_buffer",
+			"name" : "point_light_buffer",
+			"type" : "storage_buffer"
+		},
+		{
+			"name" : "directional_light_buffer",
+			"type" : "storage_buffer"
+		},
+		{
+			"name" : "skylight_buffer",
 			"type" : "storage_buffer"
 		},
 		{
@@ -34,6 +42,11 @@
 			"store_type" : "texture_2D_array"
 		},
 		{
+			"name" : "skylight_reflection_maps",
+			"type" : "resource_store",
+			"store_type" : "texture_2D_cubemap"
+		},
+		{
 			"name" : "color_out",
 			"type" : "storage_texture"
 		}
@@ -50,44 +63,75 @@
 
 layout(set = 1, binding = 0) uniform sampler2D Color;
 layout(set = 1, binding = 1) uniform sampler2D Normal;
-layout(set = 1, binding = 2) uniform sampler2D Roughness;
+layout(set = 1, binding = 2) uniform sampler2D Material;
 layout(set = 1, binding = 3) uniform sampler2D DepthBuffer;
 
 layout(set = 2, binding = 0) uniform samplerCubeShadow PointShadowMaps[];
 layout(set = 3, binding = 0) uniform sampler2DArrayShadow DirectionalShadowMaps[];
+layout(set = 4, binding = 0) uniform samplerCube SkylightReflectionMaps[];
 
 #ifndef COMPUTE_TILE_SIZE
 #define COMPUTE_TILE_SIZE 16
 #endif
 
-layout(set = 0, binding = 4, rgba16f) uniform image2D color_out;
+layout(set = 0, binding = 6, rgba16f) uniform image2D color_out;
 
-struct Light {
+#ifndef HARD_CODE_CASCADES
+#define HARD_CODE_CASCADES 5
+#endif
+
+struct PointLight {
 	mat4 light_matrix;
-	vec4 position_or_direction_and_radius;
+	vec4 position_and_radius;
 	vec4 Light_Color;
 	float range;
-	int light_type;
 	uint shadow_index;
 	float light_far_plane;
 };
 
+struct DirectionalLight {
+	mat4 light_matrix[HARD_CODE_CASCADES];
+	vec4 direction;
+	vec4 Light_Color;
+	vec2 shadowmap_pixel_size;
+	uint shadow_index;
+	float light_far_plane;
+	float shadow_bias;
+};
+
+struct Skylight {
+	vec4 Light_Color;
+	uint specular_map_index;
+	uint diffuse_map_index;
+};
+
 layout(set = 0, binding = 0) uniform conf {
 	mat4 inverse_projection_matrix;
+	mat4 inverse_view_matrix;
 	vec2 pixel_size;
 	float depth_constant_a;
 	float depth_constant_b;
 	uvec3 cluster_grid_size;
-	int light_count;
+	int point_light_count;
+	int directional_light_count;
+	int skylight_count;
 	float near_plane;
 	float far_plane;
 };
 
-layout(set = 0, binding = 1) readonly buffer light_buffer {
-	Light lights[];
+layout(set = 0, binding = 1) readonly buffer point_light_buffer {
+	PointLight point_lights[];
 };
 
-layout(std430, set=0, binding = 2) readonly buffer light_assignment_buffer
+layout(set = 0, binding = 2) readonly buffer directional_light_buffer {
+	DirectionalLight directional_lights[];
+};
+
+layout(set = 0, binding = 3) readonly buffer skylight_buffer {
+	Skylight skylights[];
+};
+
+layout(std430, set=0, binding = 4) readonly buffer light_assignment_buffer
 {
 	uint light_assignment_indicies[];
 };
@@ -97,7 +141,7 @@ struct ClusterLightAssignment {
 	uint count;
 };
 
-layout(std430, set=0, binding = 3) readonly buffer cluster_buffer
+layout(std430, set=0, binding = 5) readonly buffer cluster_buffer
 {
 	ClusterLightAssignment cluster_assignments[];
 };
@@ -105,9 +149,11 @@ layout(std430, set=0, binding = 3) readonly buffer cluster_buffer
 
 
 struct GBufferData {
- 	mediump vec4 color_and_roughness;
-	mediump vec4 view_space_pos_and_depth;
-	mediump vec3 normals;
+	vec3 color;
+	vec3 normals;
+	float roughness;
+	float metallic;
+	vec4 view_space_pos_and_depth;
 };
 
 vec3 GetFragmentPosition(vec2 coords, float depth) {
@@ -136,49 +182,96 @@ uint get_cluster_index(vec2 coords, float depth) {
 	return index;
 }
 
+float calculate_shadows_directional(vec3 view_space_pos, uint index, vec3 normal) {
+	float depth = abs(view_space_pos.z);
+	depth -= near_plane;
+	depth /= far_plane - near_plane;
+	depth = sqrt(depth);
+	depth *= float(HARD_CODE_CASCADES);
+	int cascade = int(floor(depth));
+
+	vec3 offset_view_space_pos = view_space_pos + normal * directional_lights[index].shadow_bias * (cascade+1);
+	vec4 light_space_pos = directional_lights[index].light_matrix[cascade] * vec4(offset_view_space_pos,1.0);
+	vec3 light_space_coords = light_space_pos.xyz / light_space_pos.w;
+	float current_depth = light_space_coords.z;
+	light_space_coords = light_space_coords * 0.5 + 0.5;
+	float accumulate = 0;
+
+	for (int x = -1; x <= 1; x++) {
+		for (int y = -1; y <= 1; y++) {
+			vec4 shadow_coords = vec4(light_space_coords.x + x * directional_lights[index].shadowmap_pixel_size.x,
+			(1 - light_space_coords.y) + y * directional_lights[index].shadowmap_pixel_size.y, cascade, current_depth);
+			accumulate += texture(DirectionalShadowMaps[directional_lights[index].shadow_index], shadow_coords);
+
+		}
+	}
+
+	return accumulate / 9;
+}
+
+
 float calculate_shadows_point(vec3 view_space_pos, uint index, vec3 normal) {
-	vec3 light_space_pos = (lights[index].light_matrix * vec4(view_space_pos, 1.0)).xyz + normal * 0.02;
-	float current_depth = length(light_space_pos) / lights[index].light_far_plane;
+	vec3 light_space_pos = (point_lights[index].light_matrix * vec4(view_space_pos, 1.0)).xyz + normal * 0.02;
+	float current_depth = length(light_space_pos) / point_lights[index].light_far_plane;
 	vec4 shadow_coords = vec4(normalize(light_space_pos.xyz) * vec3(1,-1,1), current_depth - 0.0002);
-	return texture(PointShadowMaps[lights[index].shadow_index], shadow_coords);
+	return texture(PointShadowMaps[point_lights[index].shadow_index], shadow_coords);
 }
 
 #include <shaders/utils/NormalPacking.glsl>
 #include <shaders/utils/PointAttenuationFalloff.glsl>
+#include <shaders/utils/PBR.glsl>
 
-vec3 ComputePointLight(uint light_index, vec3 normals, vec3 view_space_pos, vec4 color_and_roughness) {
+vec3 ComputeSkylight(uint index, vec3 normal, vec3 view_space_pos, vec3 color, float roughness) {
+	vec3 reglected_normal = mat3(inverse_view_matrix) * reflect(normalize(view_space_pos), normal);
+	reglected_normal.y = -reglected_normal.y;
+
+	vec3 diffuse_contribution = texture(SkylightReflectionMaps[skylights[index].diffuse_map_index], normalize(reglected_normal)).xyz;
+	vec3 specular_contribution = textureLod(SkylightReflectionMaps[skylights[index].specular_map_index], normalize(reglected_normal), roughness*4.0).xyz;
+
+	return vec3(color.xyz * skylights[index].Light_Color.xyz * skylights[index].Light_Color.w * (diffuse_contribution + specular_contribution));
+}
+
+vec3 ComputePointLight(uint light_index, vec3 normals, vec3 view_space_pos, vec3 color, float roughness, float metallic) {
 	float shadow_contrib = 1.0f;
-	if(lights[light_index].shadow_index != ~uint(0)) {
+	if(point_lights[light_index].shadow_index != ~uint(0)) {
 		shadow_contrib *= calculate_shadows_point(view_space_pos, light_index, normals);
 	}
 
-	vec4 light_direction_and_distance = vec4(vec3(lights[light_index].position_or_direction_and_radius) - view_space_pos,0.0f);
-	light_direction_and_distance.w = length(light_direction_and_distance.xyz);
-	light_direction_and_distance.xyz = light_direction_and_distance.xyz / light_direction_and_distance.w;
-	shadow_contrib *= PointAttenuationFalloff(light_direction_and_distance.w, lights[light_index].range);
+	vec3 light_direction = vec3(point_lights[light_index].position_and_radius) - view_space_pos;
+	float ligth_distance = length(light_direction);
+	light_direction /= ligth_distance;
+	vec3 light_radiance = point_lights[light_index].Light_Color.xyz * point_lights[light_index].Light_Color.w;
+	light_radiance *= PointAttenuationFalloff(ligth_distance, point_lights[light_index].range);
+	light_radiance *= shadow_contrib;
 
-	light_direction_and_distance.w = max(0,dot(light_direction_and_distance.xyz, normals));
-	shadow_contrib *= smoothstep(0.0, 0.02, light_direction_and_distance.w);
-	float light_contrib = 0.5f * (0.1 + light_direction_and_distance.w); // diffuse part
-	light_contrib += 0.5f * pow(clamp(dot(normals, normalize( light_direction_and_distance.xyz - normalize(view_space_pos))), 0, 1), 1 +((1 - color_and_roughness.w) * 64)); //specular part
-
-	return vec3(light_contrib * shadow_contrib * lights[light_index].Light_Color.xyz * lights[light_index].Light_Color.w * color_and_roughness.xyz);
+	return CookTorranceModel(light_direction, -normalize(view_space_pos), normals,
+							 color, roughness, metallic) * light_radiance;
 }
 
-vec3 ComputeDirectionalLight(uint light_index, vec3 normals, vec3 view_space_pos, vec4 color_and_roughness) {
-	vec3 light_direction = normalize(vec3(lights[light_index].position_or_direction_and_radius));
-	float light_contrib = 0.5f * (0.1 + max(0, dot(normals, - light_direction))); // diffuse part
-	light_contrib += 0.5f * pow(clamp(dot(normals, normalize(- light_direction - normalize(view_space_pos))), 0, 1), 1 +((1 - color_and_roughness.w) * 64)); //specular part
-	light_contrib *= smoothstep(-0.02, 0.02,dot(-light_direction, normals));
-	vec4 Light_Color = lights[light_index].Light_Color;
-	return vec3(color_and_roughness.xyz * Light_Color.xyz * Light_Color.w * light_contrib);
+vec3 ComputeDirectionalLight(uint light_index, vec3 normals, vec3 view_space_pos, vec3 color, float roughness, float metallic) {
+	float shadow_contrib = 1.0f;
+	if(directional_lights[light_index].shadow_index != ~uint(0)) {
+		shadow_contrib *= calculate_shadows_directional(view_space_pos, light_index, normals);
+	}
+
+	vec3 light_direction = normalize(vec3(directional_lights[light_index].direction));
+	vec3 light_radiance = directional_lights[light_index].Light_Color.xyz * directional_lights[light_index].Light_Color.w;
+	light_radiance *= shadow_contrib;
+	vec4 Light_Color = directional_lights[light_index].Light_Color;
+
+	return CookTorranceModel(-light_direction, -normalize(view_space_pos), normals,
+							 color, roughness, metallic) * light_radiance;
 }
+
 
 GBufferData GetGBufferData(vec2 coords) {
 	GBufferData data;
 	data.view_space_pos_and_depth.w = depth_constant_b / (texelFetch(DepthBuffer, ivec2(gl_GlobalInvocationID.xy),0).x - depth_constant_a);
 	data.normals = UnpackNormals(texelFetch(Normal, ivec2(gl_GlobalInvocationID.xy),0).xy);
-	data.color_and_roughness = vec4(texelFetch(Color, ivec2(gl_GlobalInvocationID.xy),0).xyz, texelFetch(Roughness, ivec2(gl_GlobalInvocationID.xy),0).x);
+	data.color = texelFetch(Color, ivec2(gl_GlobalInvocationID.xy),0).xyz;
+	vec3 material = texelFetch(Material, ivec2(gl_GlobalInvocationID.xy),0).xyz;
+	data.roughness = material.y;
+	data.metallic = material.z;
 	data.view_space_pos_and_depth.xyz = GetFragmentPosition(coords, data.view_space_pos_and_depth.w);
 	return data;
 }
@@ -195,6 +288,16 @@ void main() {
 	ClusterLightAssignment assignment = cluster_assignments[get_cluster_index(coords, gbuffer_data.view_space_pos_and_depth.w)];
 	vec3 color = vec3(0.0,0.0,0.0);
 
+	for(uint i = 0; i < directional_light_count; i++) {
+		color += vec3(ComputeDirectionalLight(i, gbuffer_data.normals, gbuffer_data.view_space_pos_and_depth.xyz,
+											  gbuffer_data.color, gbuffer_data.roughness, gbuffer_data.metallic));
+	}
+
+	for(uint i = 0; i < skylight_count; i++) {
+		color += vec3(ComputeSkylight(i, gbuffer_data.normals, gbuffer_data.view_space_pos_and_depth.xyz,
+									  gbuffer_data.color, gbuffer_data.roughness));
+	}
+
 	#ifdef SCALARIZE
 	#extension GL_KHR_shader_subgroup_vote : require
 	#extension GL_KHR_shader_subgroup_ballot : require
@@ -204,25 +307,15 @@ void main() {
 		uint end = subgroupBroadcastFirst(assignment.start_index + assignment.count);
 		for(uint i = first; i < end; i++) {
 			uint light_index = light_assignment_indicies[i];
-
-			if (lights[light_index].light_type == 0) {
-				color += vec3(ComputeDirectionalLight(light_index, gbuffer_data.normals, gbuffer_data.view_space_pos_and_depth.xyz, gbuffer_data.color_and_roughness));
-			}
-			else {
-				color += vec3(ComputePointLight(light_index, gbuffer_data.normals, gbuffer_data.view_space_pos_and_depth.xyz, gbuffer_data.color_and_roughness));
-			}
+			color += vec3(ComputePointLight(light_index, gbuffer_data.normals, gbuffer_data.view_space_pos_and_depth.xyz,
+											gbuffer_data.color, gbuffer_data.roughness, gbuffer_data.metallic));
 		}
 	} else {
 		uint end = assignment.start_index + assignment.count;
 		for(uint i = assignment.start_index; i < end; i++) {
 			uint light_index = light_assignment_indicies[i];
-
-			if (lights[light_index].light_type == 0) {
-				color += vec3(ComputeDirectionalLight(light_index, gbuffer_data.normals, gbuffer_data.view_space_pos_and_depth.xyz, gbuffer_data.color_and_roughness));
-			}
-			else {
-				color += vec3(ComputePointLight(light_index, gbuffer_data.normals, gbuffer_data.view_space_pos_and_depth.xyz, gbuffer_data.color_and_roughness));
-			}
+			color += vec3(ComputePointLight(light_index, gbuffer_data.normals, gbuffer_data.view_space_pos_and_depth.xyz,
+											gbuffer_data.color, gbuffer_data.roughness, gbuffer_data.metallic));
 		}
 	}
 
@@ -230,13 +323,8 @@ void main() {
 	uint end = assignment.start_index + assignment.count;
 	for(uint i = assignment.start_index; i < end; i++) {
 		uint light_index = light_assignment_indicies[i];
-
-		if (lights[light_index].light_type == 0) {
-			color += vec3(ComputeDirectionalLight(light_index, gbuffer_data.normals, gbuffer_data.view_space_pos_and_depth.xyz, gbuffer_data.color_and_roughness));
-		}
-		else {
-			color += vec3(ComputePointLight(light_index, gbuffer_data.normals, gbuffer_data.view_space_pos_and_depth.xyz, gbuffer_data.color_and_roughness));
-		}
+		color += vec3(ComputePointLight(light_index, gbuffer_data.normals, gbuffer_data.view_space_pos_and_depth.xyz,
+										gbuffer_data.color, gbuffer_data.roughness, gbuffer_data.metallic));
 	}
 #endif
 	imageStore(color_out, ivec2(gl_GlobalInvocationID.xy), vec4(color,1.0));

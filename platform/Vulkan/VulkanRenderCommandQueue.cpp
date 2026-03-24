@@ -25,7 +25,7 @@ void VulkanRenderCommandQueue::ExecuteRenderCommandList(std::shared_ptr<RenderCo
 	submit_sync.pSignalSemaphoreValues = &value;
 
 	
-	VkSubmitInfo info;
+	VkSubmitInfo info = {};
 	info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	info.pNext = &submit_sync;
 	info.commandBufferCount = 1;
@@ -35,7 +35,6 @@ void VulkanRenderCommandQueue::ExecuteRenderCommandList(std::shared_ptr<RenderCo
 	info.pWaitDstStageMask = NULL;
 	info.waitSemaphoreCount = 0;
 	info.pWaitSemaphores = NULL;
-
 
 	auto sync = vk_command_list->dependency_handler.FinalizeDependencies(vk_command_list.get(), value);
 

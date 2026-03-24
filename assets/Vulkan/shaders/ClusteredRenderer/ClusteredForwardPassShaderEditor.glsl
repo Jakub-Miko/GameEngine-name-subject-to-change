@@ -319,32 +319,31 @@ vec3 ComputeDirectionalLight(uint light_index, vec3 normals, vec3 view_space_pos
 }
 
 void main() {
+
 	vec2 coords = vec2((gl_FragCoord.x * pixel_size.x), (gl_FragCoord.y * pixel_size.y));
-	vec4 view_space_pos = vec4(pos_fragment, depth_constant_b / (gl_FragCoord.z - depth_constant_a));
+	ClusterLightAssignment assignment = cluster_assignments[get_cluster_index(coords, depth_constant_b / (gl_FragCoord.z - depth_constant_a))];
 	vec3 surface_color = clamp(texture(Color, uv_fragment).xyz * vec3(Base_Color),0.0,1.0);
-	vec3 material = texture(Material, uv_fragment).xyz;
-	material.y = clamp(material.y * roughness_gain + roughness_bias, 0.0, 1.0);
-	material.z = clamp(material.z * metallic_gain + metallic_bias, 0.0, 1.0);
+	vec2 material = texture(Material, uv_fragment).yz;
+	material.x = clamp(material.x * roughness_gain + roughness_bias, 0.0, 1.0);
+	material.y = clamp(material.y * metallic_gain + metallic_bias, 0.0, 1.0);
 	vec3 normal = normalize(vec3(TBN * (texture(Normal, uv_fragment).rgb * 2.0 - 1.0)));
-	ClusterLightAssignment assignment = cluster_assignments[get_cluster_index(coords, view_space_pos.w)];
 
 	vec3 color = vec3(0.0,0.0,0.0);
-
 	for(uint i = 0; i < directional_light_count; i++) {
-		color += vec3(ComputeDirectionalLight(i, normal, view_space_pos.xyz,
-											  surface_color, material.y, material.z));
+		color += vec3(ComputeDirectionalLight(i, normal, pos_fragment,
+											  surface_color, material.x, material.y));
 	}
 
 	for(uint i = 0; i < skylight_count; i++) {
-		color += vec3(ComputeSkylight(i, normal, view_space_pos.xyz,
+		color += vec3(ComputeSkylight(i, normal, pos_fragment,
 									  surface_color, material.y));
 	}
 
 	uint end = assignment.start_index + assignment.count;
 	for(uint i = assignment.start_index; i < end; i++) {
 		uint light_index = light_assignment_indicies[i];
-		color += vec3(ComputePointLight(light_index, normal, view_space_pos.xyz,
-										surface_color, material.y, material.z));
+		color += vec3(ComputePointLight(light_index, normal, pos_fragment,
+										surface_color, material.x, material.y));
 	}
 	color_out = vec4(color,1.0);
 	ids_out = id;

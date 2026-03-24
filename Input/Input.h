@@ -55,7 +55,7 @@ public:
 	}
 #endif
 
-
+	virtual ~Input() = default;
 
 private:
 	static Input* instance;

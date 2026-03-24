@@ -30,7 +30,7 @@ void VulkanRenderFence::Wait()
 int VulkanRenderFence::GetValue()
 {
 	DEFINE_VK_INSTANCE(context);
-	uint64_t value;
+	uint64_t value = 0;
 	vkGetSemaphoreCounterValue(context->GetVkDevice(), semaphore, &value);
 	return value;
 }

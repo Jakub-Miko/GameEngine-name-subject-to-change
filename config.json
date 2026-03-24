@@ -2,7 +2,7 @@
     "Vsync": 0,
     "Latency_Frames": 3,
     "EnableMouseMoveEvent": 1,
-    "default_scene": "assets/SponzaEdited/SponzaEdited.scene",
+    "default_scene": "assets/SponzaEdited/SponzaEditedWithPointLights.scene",
     "root_path": "../",
     "local_asset_path": "assets/",
     "render_api_path": "assets/Vulkan/",

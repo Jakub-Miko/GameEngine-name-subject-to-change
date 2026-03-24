@@ -6,7 +6,7 @@ private:
 	friend Input;
 	glm::vec2 last_pos[2];
 	char last_pos_index = 0;
-	~GlfwInput();
+	~GlfwInput() override;
 	GlfwInput();
 public:
 	bool IsKeyPressed_impl(KeyCode key_code) override;

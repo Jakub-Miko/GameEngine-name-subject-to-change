@@ -1304,7 +1304,7 @@ VulkanDependencyHandler::VulkanDependencyHandlerFeedback VulkanDependencyHandler
 		vk_desc_table->timeline = new_timeline_value;
 	}
 
-	VulkanDependencyHandlerFeedback feedback;
+	VulkanDependencyHandlerFeedback feedback = {};
 	feedback.timeline_wait = timeline_requirement;
 
 	return feedback;

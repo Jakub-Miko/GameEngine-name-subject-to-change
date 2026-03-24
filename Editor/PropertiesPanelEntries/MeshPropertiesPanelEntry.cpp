@@ -125,9 +125,9 @@ bool MeshPropertiesPanelEntry::IsAssignable()
 MeshPropertiesPanelEntry::~MeshPropertiesPanelEntry()
 {
 	if (mesh_path_buffer) {
-		delete mesh_path_buffer;
+		delete[] mesh_path_buffer;
 	}
 	if (material_path_buffer) {
-		delete material_path_buffer;
+		delete[] material_path_buffer;
 	}
 }

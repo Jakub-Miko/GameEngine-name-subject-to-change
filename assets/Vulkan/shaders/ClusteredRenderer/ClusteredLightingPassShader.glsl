@@ -170,8 +170,6 @@ struct GBufferData {
 	vec4 view_space_pos_and_depth;
 };
 
-
-
 vec3 GetFragmentPosition(float depth) {
 	return vec3(light_volume_pos, -1.0) * depth;
 }

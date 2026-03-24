@@ -154,12 +154,12 @@ bool SkeletalMeshPropertiesPanelEntry::IsAssignable()
 SkeletalMeshPropertiesPanelEntry::~SkeletalMeshPropertiesPanelEntry()
 {
 	if (mesh_path_buffer) {
-		delete mesh_path_buffer;
+		delete[] mesh_path_buffer;
 	}
 	if (material_path_buffer) {
-		delete material_path_buffer;
+		delete[] material_path_buffer;
 	}
 	if (default_animation_path) {
-		delete default_animation_path;
+		delete[] default_animation_path;
 	}
 }

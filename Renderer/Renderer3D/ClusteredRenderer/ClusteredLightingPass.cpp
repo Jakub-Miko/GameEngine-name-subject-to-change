@@ -268,6 +268,7 @@ void ClusteredLightingPass::UpdateClusteredPipeline(bool force_update) {
 	if(clustered_config.use_compute_for_clustered_lights->GetValueTyped()) {
 		std::vector<std::string> shader_defines;
 		shader_defines.push_back("COMPUTE_TILE_SIZE=" + std::to_string(clustered_config.compute_tile_size->GetValueTyped()));
+		shader_defines.push_back({"HARD_CODE_CASCADES", HARD_CODE_CASCADES});
 		compute_tile_size = clustered_config.compute_tile_size->GetValueTyped();
 		if(clustered_config.scalarize_lights->GetValueTyped()) shader_defines.push_back("SCALARIZE");
 
@@ -276,10 +277,10 @@ void ClusteredLightingPass::UpdateClusteredPipeline(bool force_update) {
 		data->pipeline_clustered = PipelineManager::Get()->CreatePipeline(compute_pipeline_desc);
 
 		color_texture_desc.usage = TextureUsage::STORAGE_READABLE;
-		auto texture_color = RenderResourceManager::Get()->CreateTexture(color_texture_desc);
+		data->color_storage_texture = RenderResourceManager::Get()->CreateTexture(color_texture_desc);
 
 		RenderFrameBufferDescriptor framebuffer_desc;
-		framebuffer_desc.color_attachments = { {0,texture_color} };
+		framebuffer_desc.color_attachments = { {0,data->color_storage_texture} };
 		framebuffer_desc.depth_stencil_attachment = { 0,data->depth_storage_texture };
 
 		data->output_buffer_resource = RenderResourceManager::Get()->CreateFrameBuffer(framebuffer_desc);
@@ -309,10 +310,10 @@ void ClusteredLightingPass::UpdateClusteredPipeline(bool force_update) {
 		data->pipeline_clustered = PipelineManager::Get()->CreatePipeline(pipeline_desc);
 
 		color_texture_desc.usage = TextureUsage::COLOR_ATTACHMENT_READABLE;
-		auto texture_color = RenderResourceManager::Get()->CreateTexture(color_texture_desc);
+		data->color_storage_texture = RenderResourceManager::Get()->CreateTexture(color_texture_desc);
 
 		RenderFrameBufferDescriptor framebuffer_desc;
-		framebuffer_desc.color_attachments = { {0,texture_color} };
+		framebuffer_desc.color_attachments = { {0,data->color_storage_texture} };
 		framebuffer_desc.depth_stencil_attachment = { 0,data->depth_storage_texture };
 
 		data->output_buffer_resource = RenderResourceManager::Get()->CreateFrameBuffer(framebuffer_desc);
@@ -321,7 +322,7 @@ void ClusteredLightingPass::UpdateClusteredPipeline(bool force_update) {
 	}
 }
 
-void ClusteredLightingPass::RenderLights(RenderPipelineResourceManager& resource_manager,std::shared_ptr<RenderCommandList>  list, const CameraComponent& camera,const render_props& props)
+void ClusteredLightingPass::RenderLights(RenderPipelineResourceManager& resource_manager,std::shared_ptr<RenderCommandList> list, const CameraComponent& camera,const render_props& props)
 {
 	auto& clustered_lights = resource_manager.GetResource<ClusteredLightLists>(input_clustered_lights);
 	auto& point_shadow_maps = resource_manager.GetPersistentResource<std::shared_ptr<RenderResourceStore>>(input_point_shadow_maps);
@@ -397,10 +398,13 @@ void ClusteredLightingPass::RenderLightsWithCompute(RenderPipelineResourceManage
 	list->SetConstantBuffer("conf", data->constant_scene_buf);
 	list->SetStorageBuffer("point_light_buffer", clustered_lights.point_light_buffer);
 	list->SetStorageBuffer("directional_light_buffer", clustered_lights.directional_light_buffer);
+	list->SetStorageBuffer("skylight_buffer", clustered_lights.skylight_buffer);
+	list->SetStorageBuffer("directional_light_buffer", clustered_lights.directional_light_buffer);
 	list->SetStorageBuffer("light_assignment_buffer", clustered_lights.light_assignment_buffer);
 	list->SetStorageBuffer("cluster_buffer", clustered_lights.cluster_buffer);
 	list->SetResourceStore("point_light_shadow_maps", point_shadow_maps);
-	list->SetResourceStore("directional_light_shadow_maps", point_shadow_maps);
+	list->SetResourceStore("directional_light_shadow_maps", directional_shadow_maps);
+	list->SetResourceStore("skylight_reflection_maps", TextureManager::Get()->GetReflectionMapResourceStore());
 
 	list->Dispatch(glm::ceil(data->color_storage_texture->GetBufferDescriptor().width / compute_tile_size),
 		glm::ceil(data->color_storage_texture->GetBufferDescriptor().height / compute_tile_size), 1);
