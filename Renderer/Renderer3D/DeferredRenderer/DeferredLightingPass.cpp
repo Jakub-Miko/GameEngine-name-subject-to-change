@@ -28,7 +28,7 @@ struct VertexLayoutFactory<LightingPassPreset> {
 			VertexLayout* layout_new = new VertexLayout({
 				VertexLayoutElement(RenderPrimitiveType::FLOAT,3, "position"),
 				VertexLayoutElement(RenderPrimitiveType::FLOAT,3, "normal"),
-				VertexLayoutElement(RenderPrimitiveType::FLOAT,3, "tangent"),
+				VertexLayoutElement(RenderPrimitiveType::FLOAT,4, "tangent"),
 				VertexLayoutElement(RenderPrimitiveType::FLOAT,2, "uv")
 				});
 
@@ -76,11 +76,11 @@ void DeferredLightingPass::InitPostProcessingPassData() {
 	pipeline_desc.flags = PipelineFlags::ENABLE_BLEND;
 	pipeline_desc.cull_mode = CullMode::FRONT;
 	pipeline_desc.blend_equation = BlendEquation::ADD;
-	pipeline_desc.layout = VertexLayoutFactory<LightingPassPreset>::GetLayout();
+	pipeline_desc.layout = VertexLayoutFactory<MeshPreset>::GetLayout();
 	pipeline_desc.polygon_render_mode = PrimitivePolygonRenderMode::DEFAULT;
 	pipeline_desc.shader = ShaderManager::Get()->GetShader("shaders/LightingPassShader.glsl");
 	pipeline_desc.framebuffer_format.color_attachemt_formats = {
-		{ TextureFormat::BGRA_SRGB }
+		{ TextureFormat::RGBA_16FLOAT }
 	};
 	data->pipeline = PipelineManager::Get()->CreatePipeline(pipeline_desc);
 
@@ -112,7 +112,7 @@ void DeferredLightingPass::InitPostProcessingPassData() {
 	auto sampler = TextureSampler::CreateSampler(sampler_desc);
 
 	RenderTexture2DDescriptor color_texture_desc;
-	color_texture_desc.format = TextureFormat::BGRA_SRGB;
+	color_texture_desc.format = TextureFormat::RGBA_16FLOAT;
 	color_texture_desc.usage = TextureUsage::COLOR_ATTACHMENT_READABLE;
 	color_texture_desc.height = Application::Get()->GetWindow()->GetProperties().resolution_y;
 	color_texture_desc.width = Application::Get()->GetWindow()->GetProperties().resolution_x;
@@ -156,11 +156,11 @@ void DeferredLightingPass::InitPostProcessingPassData() {
 	data->mat_skylight = MaterialManager::Get()->CreateMaterial("LightingPassSkylightLightProps");
 
 	struct Vertex {
-		Vertex(glm::vec3 pos, glm::vec3 normal = glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3 tangent = glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3 uv = glm::vec3(0.0f))
+		Vertex(glm::vec3 pos, glm::vec3 normal = glm::vec3(0.0f, 0.0f, 1.0f), glm::vec4 tangent = glm::vec4(1.0f, 0.0f, 0.0f,1.0f), glm::vec3 uv = glm::vec3(0.0f))
 			: pos(pos), normal(normal), tangent(tangent), uv(uv) {}
 		glm::vec3 pos;
 		glm::vec3 normal = glm::vec3(0.0f,0.0f,1.0f);
-		glm::vec3 tangent = glm::vec3(1.0f, 0.0f, 0.0f);
+		glm::vec4 tangent = glm::vec4(1.0f, 0.0f, 0.0f,1.0f);
 		glm::vec2 uv = glm::vec3(0.0f);
 	};
 
@@ -302,7 +302,7 @@ void DeferredLightingPass::RenderLights(RenderPipelineResourceManager& resource_
 		data->mat->SetParameter("pixel_size", pixel_size);
 		data->mat->SetParameter("Light_Color", light.GetLightColor());
 		data->mat->SetParameter("light_type", (int)light.type);
-		data->mat_shadowed_point->SetParameter("range", light.GetLightRange());
+		data->mat->SetParameter("range", light.GetLightRange());
 		gbuffer_material->SetMaterial(list);
 		data->mat->SetMaterial(list);
 		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, glm::value_ptr(mvp), sizeof(glm::mat4), 0);

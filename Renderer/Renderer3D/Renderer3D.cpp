@@ -17,6 +17,7 @@ void Renderer3D::Init()
 		SkeletalAnimationManager::Init();
 		instance->RegisterPipeline("DeferredClustered", DeferredClusteredRendererPipeline::CreatePipeline());
 		instance->RegisterPipeline("ForwardClustered", ForwardClusteredRendererPipeline::CreatePipeline());
+		instance->RegisterPipeline("DeferredLegacy", DeferredRenderingPipeline::CreatePipeline());
 		instance->SetActivePipeline("DeferredClustered");
 	}
 }

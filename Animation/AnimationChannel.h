@@ -62,14 +62,17 @@ public:
     static T GetInterpolatedValue(float time, const std::vector<keyframe_type>& keyframes) {
         auto [start, end] = GetSurroundingKeyframes<T>(time, keyframes);
         float t = (time - start.time) / (end.time - start.time);
+        if(end.time - start.time == 0) {
+            t = 1.0f;
+        }
         return KeyFrameInterpolation<T>::Interpolate(start.value, end.value, t);
     }
 
     glm::mat4 GetInterpolatedTransform(float time) const {
         auto transform = glm::mat4(1.0f);
-        transform = glm::translate(transform, GetInterpolatedValue<glm::vec3>(time, position_keyframes));
         transform = glm::toMat4(GetInterpolatedValue<glm::quat>(time, rotation_keyframes)) * transform;
-        transform = glm::scale(transform, GetInterpolatedValue<glm::vec3>(time, scale_keyframes));
+        //transform = glm::scale(glm::mat4(1.0f), GetInterpolatedValue<glm::vec3>(time, scale_keyframes)) * transform;
+        transform = glm::translate(glm::mat4(1.0f), GetInterpolatedValue<glm::vec3>(time, position_keyframes)) * transform;
         return transform;
     }
 

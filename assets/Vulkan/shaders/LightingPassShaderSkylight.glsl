@@ -1,3 +1,4 @@
+/*
 #RootSignature
 {
 	"RootSignature": [
@@ -41,11 +42,11 @@
 	]
 }
 #end
-
-#Vertex //--------------------------------------------------
+*/
+//#Vertex //--------------------------------------------------
 #version 430
 
-layout(location = 0) in vec2 position;
+layout(location = 0) in vec3 position;
 
 layout(set = 0, binding = 0) uniform conf{
 	mat4 inverse_view;
@@ -62,14 +63,14 @@ layout(set = 1, binding = 0) uniform light_props{
 out vec3 light_volume_pos;
 
 void main() {
-	gl_Position = vec4(position,0.0, 1.0);
+	gl_Position = vec4(position, 1.0);
 	light_volume_pos = vec3(inverse_projection * vec4(position.xy,-1.0, 1.0));
 	 
 }
 
 
-#end
-#Fragment //------------------------------------------------
+// #end
+// #Fragment //------------------------------------------------
 #version 430
 
 layout(location = 0) out vec4 color_out;
@@ -122,4 +123,4 @@ void main() {
 	color_out = vec4(color.xyz * Light_Color.xyz * Light_Color.w * (diffuse_contribution + specular_contribution),1.0);
 }
 
-#end
+// #end

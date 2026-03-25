@@ -1,6 +1,7 @@
 #include "DeferredRenderingPipeline.h"
 #include "Renderer3D.h"
 #include "RenderPassBuilder.h"
+#include "ClusteredRenderer/BindlessShadowMappingPass.h"
 #include "CommonRenderPasses/PostProcessingPass.h"
 #include "CommonRenderPasses/RenderSubmissionPass.h"
 #include "DeferredRenderer/DeferredGeometryPass.h"
@@ -16,6 +17,6 @@ std::shared_ptr<RenderPipeline> DeferredRenderingPipeline::CreatePipeline()
 	builder.AddPass(new RenderSubmissionPass("RenderObjects", "SkeletalRenderObjects", "RenderLights", "RenderShadowedDirectionalLights","RenderShadowedPointLights"));
 	builder.AddPass(new DeferredGeometryPass("RenderObjects", "SkeletalRenderObjects","InitialGBuffer", "RenderOutput"));
 	builder.AddPass(new DeferredLightingPass("RenderOutput", "GBufferMaterial" , "RenderLights", "RenderShadowedDirectionalLights", "RenderShadowedPointLights", "ColorBuffer", "ShadowsGeneratedTag", "ShadowCascades"));
-	builder.AddPass(new ShadowMappingPass("RenderShadowedDirectionalLights","RenderShadowedPointLights", "ShadowsGeneratedTag", "ShadowCascades"));
+	builder.AddPass(new BindlessShadowMappingPass("RenderShadowedDirectionalLights","RenderShadowedPointLights", "ShadowsGeneratedTag", "ShadowCascades", "array_store", "cubemap_store"));
 	return std::make_shared<RenderPipeline>(std::move(builder.Build()));
 }

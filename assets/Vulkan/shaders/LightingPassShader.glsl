@@ -1,3 +1,4 @@
+/*
 #RootSignature
 {
 	"RootSignature": [
@@ -43,11 +44,11 @@
 	
 }
 #end
-
-#Vertex //--------------------------------------------------
+*/
+//#Vertex //--------------------------------------------------
 #version 430
 
-layout(location = 0) in vec2 position;
+layout(location = 0) in vec3 position;
 
 layout(set = 0, binding = 0) uniform conf {
 	mat4 mvp_matrix;
@@ -85,15 +86,15 @@ void main() {
 }
 
 
-#end
-#Fragment //------------------------------------------------
+//#end
+// #Fragment //------------------------------------------------
 #version 430
 
 layout(location = 0) out vec4 color_out;
 
 layout(set = 2, binding = 0) uniform sampler2D Color;
 layout(set = 2, binding = 1) uniform sampler2D Normal;
-layout(set = 2, binding = 2) uniform sampler2D Roughness;
+layout(set = 2, binding = 2) uniform sampler2D Material;
 layout(set = 2, binding = 3) uniform sampler2D DepthBuffer;
 
 layout(set = 0, binding = 0) uniform conf {
@@ -126,6 +127,7 @@ vec3 GetFragmentPosition(vec3 coordinates) {
 
 #include <shaders/utils/NormalPacking.glsl>
 #include <shaders/utils/PointAttenuationFalloff.glsl>
+#include <shaders/utils/PBR.glsl>
 
 void main() {
 	vec3 coords = vec3((gl_FragCoord.x * pixel_size.x), (gl_FragCoord.y * pixel_size.y), 0.0);
@@ -141,20 +143,16 @@ void main() {
 
 	vec4 color = vec4(texture(Color, coords.xy).xyz, 1.0);
 	vec3 normal = UnpackNormals(texture(Normal, coords.xy).xy);
-	float roughness = texture(Roughness, coords.xy).x;
-	float attenuation_factor = 1;
+	vec4 material = texture(Material, coords.xy);
+	float roughness = material.y;
+	float metallic = material.z;
 
-	if (light_type == 1) {
-		float distance = length(light_pos - view_space_pos);
-		attenuation_factor *= PointAttenuationFalloff(distance, range);
-	}
+	vec3 light_radiance = Light_Color.xyz * Light_Color.w;
+	float distance = length(light_pos - view_space_pos);
+	light_radiance *= light_type == 1 ? PointAttenuationFalloff(distance, range) : 1.0f;
 
-	float diffuse_contribution = 0.5f * (0.1 + max(0, dot(normal, -light_direction)));
-	float specular_contribution = 0.5f * pow(clamp(dot(normal, (-light_direction + vec3(0,0,-1))/2.0 ),0,1), 1+((1-roughness)*32));
-
-	float contribution = diffuse_contribution + specular_contribution;
-
-	color_out = vec4(color.xyz * Light_Color.xyz * attenuation_factor * Light_Color.w * contribution, 1.0);
+	color_out = vec4(CookTorranceModel(-light_direction, -normalize(view_space_pos), normal,
+									   color.xyz, roughness, metallic) * light_radiance, 1.0);
 }
 
-#end
+//#end
