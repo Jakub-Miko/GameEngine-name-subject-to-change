@@ -144,7 +144,7 @@ void VulkanRenderSurface::Present(RenderPresentEvent *event)
 
 	previous_index = current_index;
 	auto code = vkAcquireNextImageKHR(vk_device, vk_swapchain, 30000000000,present_semaphores[current_index], NULL, &current_index); // timeout 30 seconds
-	if (code == VK_ERROR_OUT_OF_DATE_KHR) {
+	if (code == VK_ERROR_OUT_OF_DATE_KHR || code == VK_SUBOPTIMAL_KHR) {
 		RecreateSwapchain();
 	} else {
 		queue->VkBinarySemaphoreWait(present_semaphores[previous_index]); //Waits until the image is available so rendering can begin on it 
@@ -163,30 +163,43 @@ void VulkanRenderSurface::Present(RenderPresentEvent *event)
 }
 
 void VulkanRenderSurface::CreateSwapchain() {
-	 DEFINE_VK_INSTANCE(context);
+	DEFINE_VK_INSTANCE(context);
     auto vkb_device = context->GetVkbDevice();
     auto vk_device = context->GetVkDevice();
 	auto v_sync = ConfigManager::Get()->GetInt("Vsync") == 1;
+	auto queue  = static_cast<VulkanRenderCommandQueue*>(Renderer::Get()->GetCommandQueue());
 
 	vkb::SwapchainBuilder swapchain_builder(vkb_device,vk_surface);
 	swapchain_builder.add_image_usage_flags(VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 	swapchain_builder.set_desired_min_image_count(FrameManager::Get()->GetLatencyFrames());
 	swapchain_builder.set_desired_present_mode(v_sync ? VK_PRESENT_MODE_MAILBOX_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR);
-	auto swapchain_result = swapchain_builder.build();
-	if (!swapchain_result.has_value()) {
-		throw std::runtime_error(swapchain_result.error().message());
+
+	while(true) {
+		if(vkb_swapchain) {
+			swapchain_builder.set_old_swapchain(vkb_swapchain);
+		}
+		auto swapchain_result = swapchain_builder.build();
+		if (!swapchain_result.has_value()) {
+			throw std::runtime_error(swapchain_result.error().message());
+		}
+
+		vkb_swapchain = swapchain_result.value();
+		vk_swapchain = vkb_swapchain.swapchain;
+
+		auto code = vkAcquireNextImageKHR(vk_device, vk_swapchain, 30000000000,NULL, swapchain_creation_fence, &current_index); // timeout 30 seconds
+		if (code != VK_ERROR_OUT_OF_DATE_KHR) {
+			break;
+		}
 	}
-	vkb_swapchain = swapchain_result.value();
-	vk_swapchain = vkb_swapchain.swapchain;
-	
+
 	auto extent = vkb_swapchain.extent;
 	auto images = vkb_swapchain.get_images().value();
 	auto views = vkb_swapchain.get_image_views().value();
-	
+
 	auto resource_manager = static_cast<VulkanRenderResourceManager*>(RenderResourceManager::Get());
 
 	RenderTexture2DDescriptor swapchain_image_desc;
-	swapchain_image_desc.format = TextureFormat::UNDEFINED; // This image is never accesed by the user so the descriptor contents are not important 
+	swapchain_image_desc.format = TextureFormat::UNDEFINED; // This image is never accesed by the user so the descriptor contents are not important
 	swapchain_image_desc.height = extent.height;
 	swapchain_image_desc.width = extent.width;
 	swapchain_image_desc.sampler = nullptr;
@@ -219,20 +232,13 @@ void VulkanRenderSurface::CreateSwapchain() {
 		auto framebuffer = resource_manager->CreateFrameBuffer(default_framebuf);
 		swapchain_framebuffers.push_back(framebuffer);
 	}
-
-
-	auto queue  = static_cast<VulkanRenderCommandQueue*>(Renderer::Get()->GetCommandQueue());
-	auto code = vkAcquireNextImageKHR(vk_device, vk_swapchain, 30000000000,NULL, swapchain_creation_fence, &current_index); // timeout 30 seconds
-	if (code == VK_ERROR_OUT_OF_DATE_KHR) {
-		throw std::runtime_error{"Could not acquire the first swapchain image.\n"};
-	}
 	vkWaitForFences(context->GetVkDevice(),1, &swapchain_creation_fence, VK_TRUE, 30000000000);
 	vkResetFences(context->GetVkDevice(), 1, &swapchain_creation_fence);
 	vkQueueWaitIdle(*queue->GetVkQueue());
+
 }
 
 void VulkanRenderSurface::RecreateSwapchain() {
-    vkb::destroy_swapchain(vkb_swapchain);
 	swapchain_framebuffers.clear();
 	current_index = 0;
 	previous_index = 0;

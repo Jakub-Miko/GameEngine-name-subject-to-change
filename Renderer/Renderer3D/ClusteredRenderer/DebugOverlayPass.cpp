@@ -80,6 +80,7 @@ void DebugOverlayPass::Setup(RenderPassResourceDefinnition& setup_builder) {
     debug_layer_mode_prop = setup_builder.GetProperties()->SetProperty("Debug overlay mode", MultiChoice( {
         "Cluster grid", "Tiles", "Light count", "Radius", "Depth slice"
     }, "Cluster grid")).second;
+    cluster_grid_resolution = setup_builder.GetProperties()->SetProperty("Cluster grid resolution", glm::uvec3(CLUSTER_GRID_X, CLUSTER_GRID_Y, CLUSTER_GRID_Z)).second;
 }
 
 void DebugOverlayPass::Render(RenderPipelineResourceManager& resource_manager) {
@@ -93,9 +94,11 @@ void DebugOverlayPass::Render(RenderPipelineResourceManager& resource_manager) {
 
     auto& camera = world.GetComponent<CameraComponent>(world.GetPrimaryEntity());
 
+    auto cluster_grid_res = cluster_grid_resolution->GetValueTyped();
+
     ConfigBufferData config_buffer_data = {};
     config_buffer_data.opacity = overlay_opacity_prop->GetValueTyped();
-    config_buffer_data.cluster_grid_size = glm::uvec3(CLUSTER_GRID_X, CLUSTER_GRID_Y, CLUSTER_GRID_Z);
+    config_buffer_data.cluster_grid_size = glm::uvec3(cluster_grid_res.x, cluster_grid_res.y, cluster_grid_res.z);
     config_buffer_data.light_count = clustered_lights.num_of_point_lights;
     config_buffer_data.depth_constant_a = camera.zFar / (camera.zFar - camera.zNear);;
     config_buffer_data.depth_constant_b = (-camera.zFar * camera.zNear) / (camera.zFar - camera.zNear);

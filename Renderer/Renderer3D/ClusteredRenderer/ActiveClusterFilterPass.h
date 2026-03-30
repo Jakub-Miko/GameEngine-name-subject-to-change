@@ -15,7 +15,10 @@ private:
 
     void InitPass();
 
+    void RebuildClusterGrid();
+
     std::string input_depth_buffer;
     std::string output_active_clusters;
+    std::shared_ptr<DynamicProperty<glm::uvec3>> cluster_grid_resolution;
     std::unique_ptr<internal_data> data;
 };

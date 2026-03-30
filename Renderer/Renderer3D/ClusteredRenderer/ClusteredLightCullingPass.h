@@ -48,7 +48,6 @@ struct ClusteredDirectionalLightData {
     uint8_t padding[12];
 };
 
-
 class ClusteredLightCullingPass : public RenderPass {
 public:
     explicit ClusteredLightCullingPass(const std::string& input_global_light_list_name, const std::string& input_shadowed_point_light_list_name,
@@ -66,6 +65,7 @@ private:
     void InitPass();
 
     void UpdatePipeline(bool force = false);
+    void RebuildClusterGrid();
 
     std::string active_cluster_list;
     std::string input_global_light_list_name;
@@ -78,5 +78,7 @@ private:
     std::shared_ptr<DynamicProperty<bool>> box_culling;
     std::shared_ptr<DynamicProperty<bool>> cluster_per_warp;
     std::shared_ptr<DynamicProperty<DynamicPropertyAction>> update_pipeline;
+    std::shared_ptr<DynamicProperty<glm::uvec3>> cluster_grid_resolution;
+    glm::uvec3 current_cluster_grid_resolution;
     std::unique_ptr<internal_data> data;
 };

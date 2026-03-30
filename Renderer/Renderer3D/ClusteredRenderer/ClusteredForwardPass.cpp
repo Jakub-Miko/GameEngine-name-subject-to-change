@@ -223,6 +223,8 @@ void ClusteredForwardPass::Setup(RenderPassResourceDefinnition& setup_builder)
 	setup_builder.AddResource<DependencyTag>(shadow_map_dependency_tag, RenderPassResourceDescriptor_Access::READ);
 	setup_builder.AddResource<std::shared_ptr<RenderFrameBufferResource>>(input_color_buffer, RenderPassResourceDescriptor_Access::READ);
 
+	cluster_grid_resolution = setup_builder.GetProperties()->SetProperty("Cluster grid resolution", glm::uvec3(CLUSTER_GRID_X, CLUSTER_GRID_Y, CLUSTER_GRID_Z)).second;
+
 }
 
 void ClusteredForwardPass::Render(RenderPipelineResourceManager& resource_manager)
@@ -247,12 +249,13 @@ void ClusteredForwardPass::Render(RenderPipelineResourceManager& resource_manage
 	glm::vec2 pixel_size = { 1.0f / Application::Get()->GetWindow()->GetProperties().resolution_x,
 		1.0f / Application::Get()->GetWindow()->GetProperties().resolution_y };
 
+	auto cluster_grid_res = cluster_grid_resolution->GetValueTyped();
 
 	ConfigData config_data = {};
 	config_data.point_light_count = clustered_lights.num_of_point_lights;
 	config_data.directional_light_count = clustered_lights.num_of_directional_lights;
 	config_data.skylight_count = clustered_lights.num_of_skylights;
-	config_data.cluster_grid_size = glm::uvec3(CLUSTER_GRID_X, CLUSTER_GRID_Y, CLUSTER_GRID_Z);
+	config_data.cluster_grid_size = glm::uvec3(cluster_grid_res.x, cluster_grid_res.y, cluster_grid_res.z);
 	config_data.depth_constant_a = camera.zFar / (camera.zFar - camera.zNear);;
 	config_data.depth_constant_b = (-camera.zFar * camera.zNear) / (camera.zFar - camera.zNear);;
 	config_data.far_plane = camera.zFar;

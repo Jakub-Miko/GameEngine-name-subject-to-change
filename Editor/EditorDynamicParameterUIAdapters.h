@@ -9,6 +9,7 @@
 
 #include "Core/DynamicProperties.h"
 #include "Core/DynamicPropertyModuleAdapterBase.h"
+#include "glm/vec3.hpp"
 
 
 template<typename T>
@@ -84,26 +85,28 @@ template<>
 class UIModuleAdapter<float> : public UIModuleAdapterBase {
 public:
     UIModuleAdapter() {}
-    UIModuleAdapter(std::shared_ptr<DynamicProperty<float>> value) : value(value) {}
+    UIModuleAdapter(std::shared_ptr<DynamicProperty<float>> value) : value(value), temp(value->GetValueTyped()) {}
 
     void RenderUI() override;
 
     ~UIModuleAdapter() override {}
 private:
     std::shared_ptr<DynamicProperty<float>> value;
+    float temp = 0.0f;
 };
 
 template<>
 class UIModuleAdapter<uint32_t> : public UIModuleAdapterBase {
 public:
     UIModuleAdapter() {}
-    UIModuleAdapter(std::shared_ptr<DynamicProperty<uint32_t>> value) : value(value) {}
+    UIModuleAdapter(std::shared_ptr<DynamicProperty<uint32_t>> value) : value(value), temp(value->GetValueTyped()) {}
 
     void RenderUI() override;
 
     ~UIModuleAdapter() override {}
 private:
     std::shared_ptr<DynamicProperty<uint32_t>> value;
+    int temp = 0;
 };
 
 template<>
@@ -117,4 +120,18 @@ public:
     ~UIModuleAdapter() override {}
 private:
     std::shared_ptr<DynamicProperty<DynamicPropertyAction>> value;
+};
+
+template<>
+class UIModuleAdapter<glm::uvec3> : public UIModuleAdapterBase {
+public:
+    UIModuleAdapter() {}
+    UIModuleAdapter(std::shared_ptr<DynamicProperty<glm::uvec3>> value) : value(value), temp(value->GetValueTyped()) {}
+
+    void RenderUI() override;
+
+    ~UIModuleAdapter() override {}
+private:
+    std::shared_ptr<DynamicProperty<glm::uvec3>> value;
+    glm::ivec3 temp = glm::vec3(0.0f);
 };

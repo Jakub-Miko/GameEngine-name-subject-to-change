@@ -24,4 +24,5 @@ private:
     std::shared_ptr<DynamicProperty<float>> overlay_opacity_prop;
     std::shared_ptr<DynamicProperty<bool>> enable_debug_overlay_prop;
     std::shared_ptr<DynamicProperty<MultiChoice>> debug_layer_mode_prop;
+    std::shared_ptr<DynamicProperty<glm::uvec3>> cluster_grid_resolution;
 };

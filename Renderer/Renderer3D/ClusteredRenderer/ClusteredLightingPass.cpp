@@ -200,6 +200,7 @@ void ClusteredLightingPass::Setup(RenderPassResourceDefinnition& setup_builder)
 	clustered_config.scalarize_lights = setup_builder.GetProperties()->SetProperty("Scalarize lights", true).second;
 	clustered_config.compute_tile_size = setup_builder.GetProperties()->SetProperty<uint32_t>("Compute tile size", 16).second;
 	clustered_config.needs_update = setup_builder.GetProperties()->SetProperty("Update clustered shading settings", DynamicPropertyAction()).second;
+	cluster_grid_resolution = setup_builder.GetProperties()->SetProperty("Cluster grid resolution", glm::uvec3(CLUSTER_GRID_X, CLUSTER_GRID_Y, CLUSTER_GRID_Z)).second;
 
 	InitPassData();
 }
@@ -337,11 +338,13 @@ void ClusteredLightingPass::RenderLights(RenderPipelineResourceManager& resource
 	glm::vec2 pixel_size = { 1.0f / Application::Get()->GetWindow()->GetProperties().resolution_x,
 		1.0f / Application::Get()->GetWindow()->GetProperties().resolution_y };
 
+	auto cluster_grid_res = cluster_grid_resolution->GetValueTyped();
+
 	ConfigData config_data = {};
 	config_data.point_light_count = clustered_lights.num_of_point_lights;
 	config_data.directional_light_count = clustered_lights.num_of_directional_lights;
 	config_data.skylight_count = clustered_lights.num_of_skylights;
-	config_data.cluster_grid_size = glm::uvec3(CLUSTER_GRID_X, CLUSTER_GRID_Y, CLUSTER_GRID_Z);
+	config_data.cluster_grid_size = glm::uvec3(cluster_grid_res.x, cluster_grid_res.y, cluster_grid_res.z);
 	config_data.depth_constant_a = props.depth_constant_a;
 	config_data.depth_constant_b = props.depth_constant_b;
 	config_data.far_plane = camera.zFar;
@@ -382,10 +385,12 @@ void ClusteredLightingPass::RenderLightsWithCompute(RenderPipelineResourceManage
 	glm::vec2 pixel_size = { 1.0f / Application::Get()->GetWindow()->GetProperties().resolution_x,
 		1.0f / Application::Get()->GetWindow()->GetProperties().resolution_y };
 
+	auto cluster_grid_res = cluster_grid_resolution->GetValueTyped();
+
 	ConfigData config_data = {};
 	config_data.point_light_count = clustered_lights.num_of_point_lights;
 	config_data.directional_light_count = clustered_lights.num_of_directional_lights;
-	config_data.cluster_grid_size = glm::uvec3(CLUSTER_GRID_X, CLUSTER_GRID_Y, CLUSTER_GRID_Z);
+	config_data.cluster_grid_size = glm::uvec3(cluster_grid_res.x, cluster_grid_res.y, cluster_grid_res.z);
 	config_data.depth_constant_a = props.depth_constant_a;
 	config_data.depth_constant_b = props.depth_constant_b;
 	config_data.far_plane = camera.zFar;

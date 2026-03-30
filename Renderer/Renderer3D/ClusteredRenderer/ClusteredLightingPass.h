@@ -50,6 +50,7 @@ private:
 	std::string input_point_shadow_maps;
 	std::string input_directional_shadow_maps;
 	ClusteredPipelineConfig clustered_config;
+	std::shared_ptr<DynamicProperty<glm::uvec3>> cluster_grid_resolution;
 	bool use_compute_for_clustered_lights = false;
 	float compute_tile_size = 16;
 	internal_data* data;

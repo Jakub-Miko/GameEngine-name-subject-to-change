@@ -1,6 +1,9 @@
 #include "EditorDynamicParameterUIAdapters.h"
 #include <imgui.h>
 
+#include "glm/ext/scalar_common.hpp"
+#include "glm/gtc/type_ptr.inl"
+
 
 void UIModuleAdapter<std::string>::RenderUI() {
     if(ImGui::InputText(value->GetName().c_str(), text_buffer.get(), MAX_INPUT_TEXT_SIZE, ImGuiInputTextFlags_EnterReturnsTrue)) {
@@ -28,17 +31,17 @@ void UIModuleAdapter<bool>::RenderUI() {
     }
 }
 
-void UIModuleAdapter<float>::RenderUI() {
-    float val = value->GetValueTyped();
-    if(ImGui::DragFloat(value->GetName().c_str(), &val)) {
-        value->SetValue(val);
+void UIModuleAdapter<float>::RenderUI() {;
+    if(ImGui::DragFloat(value->GetName().c_str(), &temp) && ImGui::IsItemDeactivatedAfterEdit()) {
+        value->SetValue(temp);
+        temp = value->GetValueTyped();
     }
 }
 
 void UIModuleAdapter<uint32_t>::RenderUI() {
-    int val = value->GetValueTyped();
-    if(ImGui::DragInt(value->GetName().c_str(), &val)) {
-        value->SetValue(static_cast<uint32_t>(std::max(0,val)));
+    if(ImGui::DragInt(value->GetName().c_str(), &temp) && ImGui::IsItemDeactivatedAfterEdit()) {
+        value->SetValue(static_cast<uint32_t>(std::max(0,temp)));
+        temp = value->GetValueTyped();
     }
 }
 
@@ -52,5 +55,13 @@ void UIModuleAdapter<DynamicPropertyAction>::RenderUI() {
     }
     if(deactivate) {
         ImGui::EndDisabled();
+    }
+}
+
+void UIModuleAdapter<glm::uvec3>::RenderUI() {
+    if(ImGui::DragInt3(value->GetName().c_str(), glm::value_ptr(temp)) && ImGui::IsItemDeactivatedAfterEdit()) {
+        temp = glm::max(temp, glm::ivec3(0,0,0));
+        value->SetValue(glm::uvec3(temp));
+        temp = glm::ivec3(value->GetValueTyped());
     }
 }

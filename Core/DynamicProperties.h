@@ -5,6 +5,7 @@
 #include "DynamicPropertyCustomTypes.h"
 #include "TypeId.h"
 #include "TypeList.h"
+#include <glm/glm.hpp>
 
 /**
  * @brief This class represents the common capabilities of all dynamic properties.
@@ -12,7 +13,7 @@
 class DynamicPropertyBase {
 public:
 
-    using Types = TypeList<std::string, MultiChoice, bool, float, uint32_t, DynamicPropertyAction>;
+    using Types = TypeList<std::string, MultiChoice, bool, float, uint32_t, DynamicPropertyAction, glm::uvec3>;
 
     virtual std::string GetName() = 0;
     virtual std::string GetTypeName() = 0;

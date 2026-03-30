@@ -49,11 +49,12 @@ ClusteredLightCullingPass::ClusteredLightCullingPass(const std::string& input_gl
 }
 
 void ClusteredLightCullingPass::InitPass() {
+    auto cluster_grid_res = cluster_grid_resolution->GetValueTyped();
     UpdatePipeline(true);
-    RenderBufferDescriptor buffer_desc(CLUSTER_GRID_X * CLUSTER_GRID_Y * CLUSTER_GRID_Z * 2 * sizeof(uint32_t), RenderBufferType::DEFAULT, RenderBufferUsage::STORAGE_BUFFER);
+    RenderBufferDescriptor buffer_desc(cluster_grid_res.x * cluster_grid_res.y * cluster_grid_res.z * 2 * sizeof(uint32_t), RenderBufferType::DEFAULT, RenderBufferUsage::STORAGE_BUFFER);
     data->output_lists.cluster_buffer = RenderResourceManager::Get()->CreateBuffer(buffer_desc);
 
-    buffer_desc.buffer_size = 5000000 * sizeof(uint32_t);
+    buffer_desc.buffer_size = 30 * cluster_grid_res.x * cluster_grid_res.y * cluster_grid_res.z * sizeof(uint32_t);
     data->output_lists.light_assignment_buffer = RenderResourceManager::Get()->CreateBuffer(buffer_desc);
 
     buffer_desc.buffer_size = 5000 * sizeof(ClusteredPointLightData);
@@ -105,6 +106,19 @@ void ClusteredLightCullingPass::UpdatePipeline(bool force) {
     data->pipeline = PipelineManager::Get()->CreatePipeline(pipeline_desc);
 }
 
+void ClusteredLightCullingPass::RebuildClusterGrid() {
+    auto cluster_grid_res = cluster_grid_resolution->GetValueTyped();
+    if(current_cluster_grid_resolution == cluster_grid_res) {
+        return;
+    }
+    RenderBufferDescriptor buffer_desc(cluster_grid_res.x * cluster_grid_res.y * cluster_grid_res.z * 2 * sizeof(uint32_t), RenderBufferType::DEFAULT, RenderBufferUsage::STORAGE_BUFFER);
+    data->output_lists.cluster_buffer = RenderResourceManager::Get()->CreateBuffer(buffer_desc);
+
+    buffer_desc.buffer_size = 30 * cluster_grid_res.x * cluster_grid_res.y * cluster_grid_res.z * sizeof(uint32_t);
+    data->output_lists.light_assignment_buffer = RenderResourceManager::Get()->CreateBuffer(buffer_desc);
+    current_cluster_grid_resolution = cluster_grid_res;
+}
+
 
 void ClusteredLightCullingPass::Setup(RenderPassResourceDefinnition& setup_builder) {
     setup_builder.AddResource<RenderResourceCollection<Entity>>(input_global_light_list_name, RenderPassResourceDescriptor_Access::READ);
@@ -118,12 +132,14 @@ void ClusteredLightCullingPass::Setup(RenderPassResourceDefinnition& setup_build
     frustum_culling_reduction = setup_builder.GetProperties()->SetProperty("Reduce culling spheres on intersecting planes", true).second;
     cluster_per_warp = setup_builder.GetProperties()->SetProperty("Clusters per Warp", true).second;
     update_pipeline = setup_builder.GetProperties()->SetProperty("Update culling pipeline", DynamicPropertyAction()).second;
+    cluster_grid_resolution = setup_builder.GetProperties()->SetProperty("Cluster grid resolution", glm::uvec3(CLUSTER_GRID_X, CLUSTER_GRID_Y, CLUSTER_GRID_Z)).second;
     InitPass();
 }
 
 void ClusteredLightCullingPass::Render(RenderPipelineResourceManager& resource_manager) {
     PROFILE("ClusteredLightCullingPass");
     UpdatePipeline();
+    RebuildClusterGrid();
     auto skylights = Application::GetWorld().GetRegistry().view<SkylightComponent>();
     RenderResourceCollection<Entity> global_light_list[] =  {
         resource_manager.GetResource<RenderResourceCollection<Entity>>(input_global_light_list_name),
@@ -242,12 +258,13 @@ void ClusteredLightCullingPass::Render(RenderPipelineResourceManager& resource_m
     CullingData culling_data = {};
     RenderResourceManager::Get()->UploadDataToBuffer(list, data->allocator_buffer, &culling_data, sizeof(CullingData), 0);
 
+    auto cluster_grid_res = cluster_grid_resolution->GetValueTyped();
 
     ConfigBufferStruct config_buffer_struct = {};
     config_buffer_struct.projection_matrix = camera_props.GetProjectionMatrix();
     config_buffer_struct.view_matrix = glm::inverse(camera_trans.TransformMatrix);
     config_buffer_struct.point_light_count = static_cast<uint32_t>(point_lights.size());
-    config_buffer_struct.cluster_grid_size = glm::uvec3(CLUSTER_GRID_X, CLUSTER_GRID_Y, CLUSTER_GRID_Z);
+    config_buffer_struct.cluster_grid_size = glm::uvec3(cluster_grid_res.x, cluster_grid_res.y, cluster_grid_res.z);
     config_buffer_struct.near_plane = camera_props.zNear;
     config_buffer_struct.far_plane = camera_props.zFar;
     config_buffer_struct.fov = glm::radians(camera_props.fov);
