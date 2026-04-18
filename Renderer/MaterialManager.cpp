@@ -701,7 +701,7 @@ void MaterialManager::LoadMaterialTemplateFile(const std::string& path_in)
 	}
 	nlohmann::json json_object;
 
-	json_object << file;
+	file >> json_object;
 
 	file.close();
 

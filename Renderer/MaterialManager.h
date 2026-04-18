@@ -159,7 +159,8 @@ public:
         if(material_proxy) {
             return material_proxy->GetFilePath();
         } else {
-            return "";
+            static std::string empty_string;
+            return empty_string;
         }
     }
 
@@ -167,7 +168,8 @@ public:
         if(material_proxy) {
             return material_proxy->GetNativeFilePath();
         } else {
-            return "";
+            static std::string empty_string;
+            return empty_string;
         }
     }
 

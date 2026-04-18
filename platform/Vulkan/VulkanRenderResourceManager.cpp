@@ -154,7 +154,7 @@ std::shared_ptr<RenderTexture2DResource> VulkanRenderResourceManager::CreateText
 
 	VmaAllocationCreateInfo alloc_info = {};
 	alloc_info.usage = VmaMemoryUsage::VMA_MEMORY_USAGE_AUTO;
-	alloc_info.flags = NULL;
+	alloc_info.flags = 0;
 
 	VkImage image;
 	VkImageView view;
@@ -280,13 +280,13 @@ std::shared_ptr<RenderTexture2DArrayResource> VulkanRenderResourceManager::Creat
 
 	VmaAllocationCreateInfo alloc_info = {};
 	alloc_info.usage = VmaMemoryUsage::VMA_MEMORY_USAGE_AUTO;
-	alloc_info.flags = NULL;
+	alloc_info.flags = 0;
 
 	VkImage image;
 	VkImageView view;
 	VmaAllocation allocation;
 
-	vmaCreateImage(alloc, &image_info, &alloc_info, &image, &allocation, NULL);
+	vmaCreateImage(alloc, &image_info, &alloc_info, &image, &allocation, nullptr);
 
 	VkImageSubresourceRange range = {};
 	range.baseArrayLayer = 0;
@@ -303,7 +303,7 @@ std::shared_ptr<RenderTexture2DArrayResource> VulkanRenderResourceManager::Creat
 	view_info.subresourceRange = range;
 	view_info.viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
 
-	vkCreateImageView(context->GetVkDevice(), &view_info, NULL, &view);
+	vkCreateImageView(context->GetVkDevice(), &view_info, nullptr, &view);
 
 	VulkanRenderTexture2DArrayResource* new_texture = new VulkanRenderTexture2DArrayResource(buffer_desc, RenderState::UNINITIALIZED);
 
@@ -357,13 +357,13 @@ std::shared_ptr<RenderTexture2DCubemapResource> VulkanRenderResourceManager::Cre
 
 	VmaAllocationCreateInfo alloc_info = {};
 	alloc_info.usage = VmaMemoryUsage::VMA_MEMORY_USAGE_AUTO;
-	alloc_info.flags = NULL;
+	alloc_info.flags = 0;
 
 	VkImage image;
 	VkImageView view;
 	VmaAllocation allocation;
 
-	vmaCreateImage(alloc, &image_info, &alloc_info, &image, &allocation, NULL);
+	vmaCreateImage(alloc, &image_info, &alloc_info, &image, &allocation, nullptr);
 
 	VkImageSubresourceRange range = {};
 	range.baseArrayLayer = 0;
@@ -380,7 +380,7 @@ std::shared_ptr<RenderTexture2DCubemapResource> VulkanRenderResourceManager::Cre
 	view_info.subresourceRange = range;
 	view_info.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
 
-	vkCreateImageView(context->GetVkDevice(), &view_info, NULL, &view);
+	vkCreateImageView(context->GetVkDevice(), &view_info, nullptr, &view);
 
 	VulkanRenderTexture2DCubemapResource* new_texture = new VulkanRenderTexture2DCubemapResource(buffer_desc, RenderState::UNINITIALIZED);
 

@@ -1330,7 +1330,7 @@ void VulkanRenderCommandList::ResetState()
 
 void VulkanRenderCommandList::ResetCommandBuffer()
 {
-	vkResetCommandBuffer(command_buffer, NULL);
+	vkResetCommandBuffer(command_buffer, 0);
 
 	VkCommandBufferBeginInfo begin_info = {};
 	begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;

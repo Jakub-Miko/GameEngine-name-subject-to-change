@@ -8,7 +8,7 @@
 void VulkanRenderCommandAllocator::clear()
 {
 	DEFINE_VK_INSTANCE(context);
-	vkResetCommandPool(context->GetVkDevice(), pool, NULL);
+	vkResetCommandPool(context->GetVkDevice(), pool, 0);
 }
 
 VulkanRenderCommandAllocator::VulkanRenderCommandAllocator(size_t starting_size) : free_command_lists(), allocation_mutex()
@@ -21,7 +21,7 @@ VulkanRenderCommandAllocator::VulkanRenderCommandAllocator(size_t starting_size)
 	info.queueFamilyIndex = context->GetVkbDevice().get_queue_index(vkb::QueueType::graphics).value();
 	info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
-	vkCreateCommandPool(context->GetVkDevice(), &info, NULL, &pool);
+	vkCreateCommandPool(context->GetVkDevice(), &info, nullptr, &pool);
 }
 
 std::shared_ptr<RenderCommandList> VulkanRenderCommandAllocator::GetCommandList()

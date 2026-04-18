@@ -430,7 +430,7 @@ bool PhysicsEngine::CreatePhysicsObject(Entity entity)
 			btCollisionShape* shape = redundant_body->getCollisionShape();
 			bullet_data->world->removeRigidBody(redundant_body);
 			if (redundant_body->getUserPointer()) {
-				delete redundant_body->getUserPointer();
+				delete static_cast<PhysicsObjectInfo*>(redundant_body->getUserPointer());
 			}
 			delete state;
 			delete shape;
@@ -462,7 +462,7 @@ bool PhysicsEngine::CreatePhysicsObject(Entity entity)
 			btCollisionShape* shape = redundant_body->getCollisionShape();
 			bullet_data->world->removeRigidBody(redundant_body);
 			if (redundant_body->getUserPointer()) {
-				delete redundant_body->getUserPointer();
+				delete static_cast<PhysicsObjectInfo*>(redundant_body->getUserPointer());
 			}
 			delete state;
 			delete shape;
@@ -499,7 +499,7 @@ bool PhysicsEngine::CreatePhysicsObject(Entity entity)
 			btCollisionShape* shape = redundant_body->getCollisionShape();
 			bullet_data->world->removeRigidBody(redundant_body);
 			if (redundant_body->getUserPointer()) {
-				delete redundant_body->getUserPointer();
+				delete static_cast<PhysicsObjectInfo*>(redundant_body->getUserPointer());
 			}
 			delete state;
 			delete shape;
@@ -535,7 +535,7 @@ bool PhysicsEngine::CreatePhysicsObject(Entity entity)
 			btCollisionShape* shape = redundant_body->getCollisionShape();
 			bullet_data->world->removeRigidBody(redundant_body);
 			if (redundant_body->getUserPointer()) {
-				delete redundant_body->getUserPointer();
+				delete static_cast<PhysicsObjectInfo*>(redundant_body->getUserPointer());
 			}
 			delete state;
 			delete shape;
@@ -577,7 +577,7 @@ void PhysicsEngine::DestroyPhysicsObject(const PhysicsComponent& physics_comp)
 	btMotionState* state = body->getMotionState();
 	bullet_data->world->removeRigidBody(body);
 	if (body->getUserPointer()) {
-		delete body->getUserPointer();
+		delete static_cast<PhysicsObjectInfo*>(body->getUserPointer());
 	}
 	delete shape;
 	delete state;

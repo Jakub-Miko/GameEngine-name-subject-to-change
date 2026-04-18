@@ -19,6 +19,7 @@ std::shared_ptr<RenderTexture2DResource> RenderFrameBufferDescriptor::GetColorAt
 	if (color_attachments[index].resource->GetResourceType() == RenderResourceType::RenderTexture2DResource) {
 		return std::static_pointer_cast<RenderTexture2DResource>(color_attachments[index].resource);
 	}
+	return nullptr;
 }
 
 std::shared_ptr<RenderTexture2DArrayResource> RenderFrameBufferDescriptor::GetColorAttachmentAsTextureArray(int index) const
@@ -26,6 +27,7 @@ std::shared_ptr<RenderTexture2DArrayResource> RenderFrameBufferDescriptor::GetCo
 	if (color_attachments[index].resource->GetResourceType() == RenderResourceType::RenderTexture2DArrayResource) {
 		return std::static_pointer_cast<RenderTexture2DArrayResource>(color_attachments[index].resource);
 	}
+	return nullptr;
 }
 
 std::shared_ptr<RenderTexture2DCubemapResource> RenderFrameBufferDescriptor::GetColorAttachmentAsTextureCubemap(int index) const
@@ -33,6 +35,7 @@ std::shared_ptr<RenderTexture2DCubemapResource> RenderFrameBufferDescriptor::Get
 	if (color_attachments[index].resource->GetResourceType() == RenderResourceType::RenderTexture2DCubemapResource) {
 		return std::static_pointer_cast<RenderTexture2DCubemapResource>(color_attachments[index].resource);
 	}
+	return nullptr;
 }
 
 std::shared_ptr<RenderTexture2DResource> RenderFrameBufferDescriptor::GetDepthAttachmentAsTexture() const

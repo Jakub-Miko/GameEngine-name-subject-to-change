@@ -111,7 +111,7 @@ std::shared_ptr<Pipeline> VulkanPipelineManager::CreatePipeline(const GraphicsPi
 	depth_stencil.back = stencil_ops;
 	depth_stencil.front = stencil_ops;
 	depth_stencil.stencilTestEnable = (bool)(desc.flags & PipelineFlags::ENABLE_STENCIL_TEST);
-	depth_stencil.flags = NULL;
+	depth_stencil.flags = 0;
 	depth_stencil.minDepthBounds = 0.0f;
 	depth_stencil.maxDepthBounds = 1.0f;
 

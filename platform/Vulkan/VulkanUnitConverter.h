@@ -474,7 +474,7 @@ public:
 	static VmaAllocationCreateFlags BufferTypeToVmaFlags(RenderBufferType mode) {
 		switch (mode) {
 		case RenderBufferType::UPLOAD:				return VmaAllocationCreateFlagBits::VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT;
-		case RenderBufferType::DEFAULT:				return NULL;
+		case RenderBufferType::DEFAULT:				return 0;
 		default:
 			throw std::runtime_error("Conversion failed");
 		}

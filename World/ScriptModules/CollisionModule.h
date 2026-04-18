@@ -8,7 +8,7 @@ extern "C" {
 	/**
 	 * @brief a class representing a CollisionEvent in Lua scripts
 	*/
-	LIBEXP typedef struct CollisionEvent_L {
+	LIBEXP struct CollisionEvent_L {
 		entity collider;
 		int num_collision_points;
 		vec3 collision_points[4];
@@ -65,7 +65,7 @@ public:
 				col_event.collision_points[i] = proxy.GetTableField<vec3>(i);
 			}
 			}, "collision_points");
-
+		return col_event;
 	}
 };
 

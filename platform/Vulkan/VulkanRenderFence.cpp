@@ -42,22 +42,22 @@ VulkanRenderFence::VulkanRenderFence(uint32_t initial_value) : semaphore()
 	VkSemaphoreTypeCreateInfo type_info = {};
 	type_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
 	type_info.initialValue = initial_value;
-	type_info.pNext = NULL;
+	type_info.pNext = nullptr;
 	type_info.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
 
 	VkSemaphoreCreateInfo info = {};
 	info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 	info.pNext = &type_info;
-	info.flags = NULL;
+	info.flags = 0;
 
-	vkCreateSemaphore(context->GetVkDevice(), &info, NULL, &semaphore);
+	vkCreateSemaphore(context->GetVkDevice(), &info, nullptr, &semaphore);
 
 }
 
 VulkanRenderFence::~VulkanRenderFence()
 {
 	DEFINE_VK_INSTANCE(context);
-	vkDestroySemaphore(context->GetVkDevice(), semaphore, NULL);
+	vkDestroySemaphore(context->GetVkDevice(), semaphore, nullptr);
 }
 
 void VulkanRenderFence::Signal(int num)
@@ -66,7 +66,7 @@ void VulkanRenderFence::Signal(int num)
 
 	VkSemaphoreSignalInfo info = {};
 	info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO;
-	info.pNext = NULL;
+	info.pNext = nullptr;
 	info.value = num;
 	info.semaphore = semaphore;
 

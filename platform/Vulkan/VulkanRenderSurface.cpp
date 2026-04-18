@@ -21,7 +21,7 @@ VulkanRenderSurface::VulkanRenderSurface(VkSurfaceKHR surface, bool register_for
 	VkSemaphoreCreateInfo present_semaphore_info;
 	present_semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 	present_semaphore_info.pNext = &present_semaphore_type_info;
-	present_semaphore_info.flags = NULL;
+	present_semaphore_info.flags = 0;
 	
 	VkSemaphoreTypeCreateInfo render_semaphore_type_info;
 	render_semaphore_type_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
@@ -32,7 +32,7 @@ VulkanRenderSurface::VulkanRenderSurface(VkSurfaceKHR surface, bool register_for
 	VkSemaphoreCreateInfo render_semaphore_info;
 	render_semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 	render_semaphore_info.pNext = &render_semaphore_type_info;
-	render_semaphore_info.flags = NULL;
+	render_semaphore_info.flags = 0;
 	
 	VkFence fence;
 	VkFenceCreateInfo info = {};

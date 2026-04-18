@@ -313,7 +313,7 @@ TextRenderer::font_load_future_payload TextRenderer::LoadFontFromFileImpl(const 
             RenderResourceManager::Get()->UploadDataToTexture2D(list, payload.object.font_atlas, (void*)face->glyph->bitmap.buffer, face->glyph->bitmap.width, face->glyph->bitmap.rows, offset_x, offset_y, 0);
         }
 
-        payload.object.glypth_data.push_back(FontObject::GlyphData{ (char)i,offset_x / max_size,offset_y / max_size,face->glyph->advance.x >> 6,face->glyph->bitmap_left,
+        payload.object.glypth_data.push_back(FontObject::GlyphData{ (char)i,offset_x / max_size,offset_y / max_size,(int)face->glyph->advance.x >> 6,face->glyph->bitmap_left,
             face->glyph->bitmap_top, (int)face->glyph->bitmap.width ,(int)face->glyph->bitmap.rows });
 
         offset_x += max_size;
