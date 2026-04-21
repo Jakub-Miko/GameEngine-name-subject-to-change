@@ -3,7 +3,6 @@
 #include <iostream>
 #include <random>
 
-#include "dependencies/OpenAL/fmt-11.1.4/include/fmt/base.h"
 #include "Renderer/RenderResourceManager.h"
 
 #define THREADS_PER_THREADBLOCK 256

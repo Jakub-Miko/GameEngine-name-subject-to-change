@@ -1,7 +1,6 @@
 #include "ClusteredLightCullingPass.h"
 
 #include "Application.h"
-#include "dependencies/OpenAL/fmt-11.1.4/include/fmt/base.h"
 #include "Renderer/PipelineManager.h"
 #include "Renderer/RenderResourceManager.h"
 #include "Renderer/Renderer3D/RenderResourceCollection.h"

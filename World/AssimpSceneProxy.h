@@ -5,11 +5,11 @@
 
 #include "FileManager.h"
 
-class aiNode;
-class aiScene;
-class aiMesh;
-class aiMetadata;
-class aiMetadataEntry;
+struct aiNode;
+struct aiScene;
+struct aiMesh;
+struct aiMetadata;
+struct aiMetadataEntry;
 namespace Assimp {
     class Importer;
 }

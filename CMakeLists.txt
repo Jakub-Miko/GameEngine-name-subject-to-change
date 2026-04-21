@@ -160,7 +160,7 @@ set(ASSIMP_BUILD_ASSIMP_TOOLS off)
 set(ASSIMP_BUILD_TESTS off)
 set(ASSIMP_INSTALL off)
 
-target_link_libraries(EngineCore PUBLIC glfw glew_s glm Profiler MemoryManagement 
+target_link_libraries(EngineCore PUBLIC glfw glm Profiler MemoryManagement 
 TaskSystem LuaEngine RuntimeTypeIdentifier ThreadManager FileManager ConfigManager EnTT::EnTT RuntimeTypeIdentifier JsonParser STB_Image assimp OpenAL ImGuizmo
 Bullet freetype)
 

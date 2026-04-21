@@ -196,7 +196,7 @@ private:
         VulkanCommandListDependencyState state;
         std::optional<render_store_map_t::iterator> store_it;
         int32_t store_version = -1; // The state version of the resource store when the dependency was created.
-        uint32_t next_resource = -1; // Index of the next dirty resource belonging to the same resource store
+        uint32_t next_resource = std::numeric_limits<uint32_t>::max(); // Index of the next dirty resource belonging to the same resource store
     };
 
     individual_resource_map_t::iterator GetNewIndividualResourceRecord(std::shared_ptr<RenderResource> resource);

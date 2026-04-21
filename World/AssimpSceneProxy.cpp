@@ -314,7 +314,7 @@ AssimpSceneProxy::LoadInfo AssimpSceneProxy::LoadScene(World &world)
         } else {
             std::filesystem::create_directory(directory);
         }
-        state.scene_resource_directory = directory;
+        state.scene_resource_directory = directory.string();
     }
 
     Assimp::Importer* importer = new Assimp::Importer;
@@ -635,7 +635,7 @@ std::shared_ptr<Material> AssimpMaterialProxy::LoadMaterial() {
 
     if(serialize) {
         auto filesys_path =  std::filesystem::path(FileManager::Get()->GetPath(native_file_path));
-        mat_resource_path = filesys_path.parent_path();
+        mat_resource_path = filesys_path.parent_path().string();
 
         if(std::filesystem::exists(mat_resource_path)) {
             if(!std::filesystem::is_directory(mat_resource_path)) {
@@ -645,7 +645,7 @@ std::shared_ptr<Material> AssimpMaterialProxy::LoadMaterial() {
             std::filesystem::create_directory(mat_resource_path);
         }
 
-        mat_resource_path = mat_resource_path / filesys_path.stem();
+        mat_resource_path = (mat_resource_path / filesys_path.stem()).string();
 
         if(std::filesystem::exists(mat_resource_path)) {
             if(!std::filesystem::is_directory(mat_resource_path)) {
