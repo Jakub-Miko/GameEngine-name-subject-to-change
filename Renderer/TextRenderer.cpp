@@ -163,12 +163,10 @@ void TextRenderer::TextRenderSystem()
             component.dirty = false;
         }
         list->SetTexture2D("font_atlas", component.font->font_atlas);
-        int res_x = Application::Get()->GetWindow()->GetProperties().resolution_x;
-        int res_y = Application::Get()->GetWindow()->GetProperties().resolution_y;
-
+        auto res = Renderer3D::Get()->GetRenderResolution();
 
         glm::mat4 text_matrix = transform.TransformMatrix;
-        glm::mat4 projection = glm::ortho(0.0f, (float)res_x / (float)res_y, 0.0f, 1.0f);
+        glm::mat4 projection = glm::ortho(0.0f, (float)res.x / (float)res.y, 0.0f, 1.0f);
         text_matrix = projection * text_matrix;
         float font_size = component.GetFontSize();
         RenderResourceManager::Get()->UploadDataToBuffer(list, m_Internal_data->const_buf, glm::value_ptr(text_matrix), sizeof(glm::mat4), 0);

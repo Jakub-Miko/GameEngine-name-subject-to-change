@@ -7,10 +7,10 @@
  * @brief Properties of the window. Descriptor object for window creation.
 */
 struct WindowProperties {
-    int resolution_x = -1;  ///< window resolution x
-    int resolution_y = -1; ///< window resolution y
+    glm::uvec2 resolution = glm::uvec2();
     std::string name = "GameEngine NSTC"; ///< Window name
     bool fullscreen = false; ///< Fullscreen mode
+    bool main_window = false; ///< Whether the window is the main window for displaying the render output without editor.
 };
 
 /**
@@ -29,26 +29,19 @@ public:
     Window(const WindowProperties& props);
     
     /**
-     * @brief First phase of window creation, which handles creating the window.
+     * @brief Initializes the windowing system.
     */
-    virtual void PreInit() = 0;
+    static void Init();
 
     /**
-     * @brief Second phase of window creation, which sets callbacks and binds the the window manager provided resources with the Renderer (i.e. bind the OpenGL context)
-    */
-    virtual void Init() = 0;
+     * @brief Destroys the windowing system.
+     */
+    static void Shutdown();
 
     /**
      * @brief Poll Events from the OS to facilitate for user input;
     */
     virtual void PollEvents() = 0;
-
-    /**
-     * @brief Getter for WindowProperties
-    */
-    const WindowProperties& GetProperties() const {
-        return m_Properties;
-    }
 
     /**
      * @brief Swap front and back buffers to display the rendered frame to the window and allow for the rendering of a new frame
@@ -66,6 +59,14 @@ public:
      * @brief Enables the cursor for the editor mode
     */
     virtual void EnableCursor() = 0;
+
+    glm::uvec2 GetResolution() const {
+        return m_Properties.resolution;
+    }
+
+    virtual glm::ivec2 GetFramebufferResolution() = 0;
+
+    virtual bool IsMinimized() = 0;
 
 #ifdef EDITOR
 
@@ -92,7 +93,7 @@ public:
      * 
      * @return The RenderSurface abstraction associated with this window
      */
-    virtual std::shared_ptr<RenderSurface> GetRenderSurface() const = 0;
+    virtual std::shared_ptr<RenderSurface> GetRenderSurface() = 0;
 
     virtual ~Window() {};
 public:
@@ -102,5 +103,5 @@ public:
     /**
      * @brief Create a Window instance for the current window manager
     */
-    static Window* CreateWindow(const WindowProperties& props = WindowProperties());
+    static std::shared_ptr<Window> CreateWindow(const WindowProperties& props = WindowProperties());
 };

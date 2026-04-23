@@ -268,7 +268,7 @@ void impl_custom_imgui_platform::UpdatePlatformWindows()
 static void ImGui_custom_SwapBuffers(ImGuiViewport* viewport, void*)
 {
     ImGui_ImplGlfw_Data_internal* bd = ImGui_ImplGlfw_GetBackendData();
-    ImGui_ImplGlfw_ViewportData_internal vd = *(ImGui_ImplGlfw_ViewportData_internal*)viewport->PlatformUserData;
+    ImGui_ImplGlfw_ViewportData_internal* vd = (ImGui_ImplGlfw_ViewportData_internal*)viewport->PlatformUserData;
     //glfwMakeContextCurrent(vd.Window);
     //glfwSwapBuffers(vd.Window);
 }
@@ -276,7 +276,7 @@ static void ImGui_custom_SwapBuffers(ImGuiViewport* viewport, void*)
 static void ImGui_custom_RenderWindow(ImGuiViewport* viewport, void*)
 {
     ImGui_ImplGlfw_Data_internal* bd = ImGui_ImplGlfw_GetBackendData();
-    ImGui_ImplGlfw_ViewportData_internal vd = *(ImGui_ImplGlfw_ViewportData_internal*)viewport->PlatformUserData;
+    ImGui_ImplGlfw_ViewportData_internal* vd = (ImGui_ImplGlfw_ViewportData_internal*)viewport->PlatformUserData;
 }
 
 
@@ -299,8 +299,14 @@ void impl_custom_imgui_platform::ImGui_custom_CreateWindow(ImGuiViewport* viewpo
         glfwWindowHint(GLFW_FLOATING, (viewport->Flags & ImGuiViewportFlags_TopMost) ? true : false);
     #endif
         GLFWwindow* share_window = bd->Window;
-        vd->Window = glfwCreateWindow((int)viewport->Size.x, (int)viewport->Size.y, "No Title Yet", NULL, NULL);
-        vd->render_surface = GlfwWindow::CreateSurfaceFromWindow(vd->Window);
+        WindowProperties props = {};
+        props.resolution = { (int)viewport->Size.x, (int)viewport->Size.y };
+        props.fullscreen = false;
+        props.main_window = false;
+        props.name = "ImGUI docked window";
+        auto engine_window = std::make_shared<GlfwWindow>(props);
+        viewport->RendererUserData = new WindowOwnership{ engine_window };
+        vd->Window = engine_window->GetHandle();
         vd->WindowOwned = true;
         viewport->PlatformHandle = (void*)vd->Window;
     #ifdef _WIN32
@@ -341,13 +347,15 @@ static void ImGui_custom_DestroyWindow(ImGuiViewport* viewport)
                 if (bd->KeyOwnerWindows[i] == vd->Window)
                     ImGui_ImplGlfw_KeyCallback(vd->Window, i, 0, GLFW_RELEASE, 0); // Later params are only used for main viewport, on which this function is never called.
 
-            glfwDestroyWindow(vd->Window);
-            delete vd->render_surface;
         }
         vd->Window = NULL;
         IM_DELETE(vd);
     }
+    if (viewport->RendererUserData) {
+        delete (WindowOwnership*)viewport->RendererUserData;
+    }
     viewport->PlatformUserData = viewport->PlatformHandle = NULL;
+    viewport->RendererUserData = NULL;
 }
 
 #endif

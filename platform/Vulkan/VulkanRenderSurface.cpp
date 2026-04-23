@@ -4,8 +4,8 @@
 #include "ConfigManager.h"
 #include "VulkanRenderCommandQueue.h"
 
-VulkanRenderSurface::VulkanRenderSurface(VkSurfaceKHR surface, bool register_for_present) 
-    : vk_surface(surface), vkb_swapchain(), vk_swapchain(), present_semaphores(), swapchain_framebuffers(), present_observer(nullptr)
+VulkanRenderSurface::VulkanRenderSurface(std::weak_ptr<Window> owning_window, VkSurfaceKHR surface, bool register_for_present)
+    : vk_surface(surface), vkb_swapchain(), vk_swapchain(), present_semaphores(), swapchain_framebuffers(), present_observer(nullptr), owning_window(owning_window)
 {
     DEFINE_VK_INSTANCE(context);
     auto vkb_device = context->GetVkbDevice();
@@ -100,7 +100,7 @@ std::shared_ptr<RenderFrameBufferResource> VulkanRenderSurface::GetFrameBufferBy
 
 std::shared_ptr<RenderFrameBufferResource> VulkanRenderSurface::GetCurrentFrameBuffer()
 {
-    return swapchain_framebuffers[current_index];
+    return is_valid ? swapchain_framebuffers[current_index] : nullptr;
 }
 
 int VulkanRenderSurface::GetCurrentFramebufferIndex()
@@ -110,10 +110,15 @@ int VulkanRenderSurface::GetCurrentFramebufferIndex()
 
 void VulkanRenderSurface::Present(RenderPresentEvent *event)
 {
+	if (!is_valid) { // Try surface revalidation to prepare the swapchain for the next frame.
+		is_valid = TryValidateSurface();
+		return;
+	}
+
+    auto queue  = static_cast<VulkanRenderCommandQueue*>(Renderer::Get()->GetCommandQueue());
     auto vk_present_info = static_cast<VulkanRenderPresentEvent*>(event);
     DEFINE_VK_INSTANCE(context);
     auto vk_device = context->GetVkDevice();    
-    auto queue  = static_cast<VulkanRenderCommandQueue*>(Renderer::Get()->GetCommandQueue());
 
 
 	auto frame_buf = std::static_pointer_cast<VulkanRenderFrameBufferResource>(GetCurrentFrameBuffer());
@@ -139,21 +144,25 @@ void VulkanRenderSurface::Present(RenderPresentEvent *event)
 	
 	auto& mutex = queue->GetQueueMutex();
 	mutex.lock();
-    vkQueuePresentKHR(*queue->GetVkQueue(), &info);
+    auto present_result = vkQueuePresentKHR(*queue->GetVkQueue(), &info);
 	mutex.unlock();
 
 	previous_index = current_index;
-	auto code = vkAcquireNextImageKHR(vk_device, vk_swapchain, 30000000000,present_semaphores[current_index], NULL, &current_index); // timeout 30 seconds
-	if (code == VK_ERROR_OUT_OF_DATE_KHR || code == VK_SUBOPTIMAL_KHR) {
+	auto acquire_result = vkAcquireNextImageKHR(vk_device, vk_swapchain, 30000000000,present_semaphores[current_index], NULL, &current_index); // timeout 30 seconds
+	if (present_result == VK_SUBOPTIMAL_KHR || acquire_result == VK_SUBOPTIMAL_KHR) {
 		RecreateSwapchain();
-	} else {
+	}
+	else if (present_result == VK_ERROR_OUT_OF_DATE_KHR || acquire_result == VK_ERROR_OUT_OF_DATE_KHR) {
+		is_valid = false;
+		return;
+	}
+	else {
 		queue->VkBinarySemaphoreWait(present_semaphores[previous_index]); //Waits until the image is available so rendering can begin on it 
 	}
 	
 	auto list_2 = std::static_pointer_cast<VulkanRenderCommandList>(Renderer::Get()->GetRenderCommandList());
 
 	auto attachment = swapchain_framebuffers[current_index]->GetBufferDescriptor().color_attachments[0].resource;
-	
 
 	list_2->SetRenderTarget(swapchain_framebuffers[current_index]);
 	list_2->SetResourceDefaultState(attachment, RenderState::TEXTURE_COLOR_ATTACHMENT);
@@ -162,7 +171,7 @@ void VulkanRenderSurface::Present(RenderPresentEvent *event)
 	queue->ExecuteRenderCommandList(list_2);
 }
 
-void VulkanRenderSurface::CreateSwapchain() {
+bool VulkanRenderSurface::CreateSwapchain() {
 	DEFINE_VK_INSTANCE(context);
     auto vkb_device = context->GetVkbDevice();
     auto vk_device = context->GetVkDevice();
@@ -174,22 +183,20 @@ void VulkanRenderSurface::CreateSwapchain() {
 	swapchain_builder.set_desired_min_image_count(FrameManager::Get()->GetLatencyFrames());
 	swapchain_builder.set_desired_present_mode(v_sync ? VK_PRESENT_MODE_MAILBOX_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR);
 
-	while(true) {
-		if(vkb_swapchain) {
-			swapchain_builder.set_old_swapchain(vkb_swapchain);
-		}
-		auto swapchain_result = swapchain_builder.build();
-		if (!swapchain_result.has_value()) {
-			throw std::runtime_error(swapchain_result.error().message());
-		}
+	if(vkb_swapchain) {
+		swapchain_builder.set_old_swapchain(vkb_swapchain);
+	}
+	auto swapchain_result = swapchain_builder.build();
+	if (!swapchain_result.has_value()) {
+		throw std::runtime_error(swapchain_result.error().message());
+	}
 
-		vkb_swapchain = swapchain_result.value();
-		vk_swapchain = vkb_swapchain.swapchain;
+	vkb_swapchain = swapchain_result.value();
+	vk_swapchain = vkb_swapchain.swapchain;
 
-		auto code = vkAcquireNextImageKHR(vk_device, vk_swapchain, 30000000000,NULL, swapchain_creation_fence, &current_index); // timeout 30 seconds
-		if (code != VK_ERROR_OUT_OF_DATE_KHR) {
-			break;
-		}
+	auto code = vkAcquireNextImageKHR(vk_device, vk_swapchain, 30000000000,NULL, swapchain_creation_fence, &current_index); // timeout 30 seconds
+	if (code == VK_ERROR_OUT_OF_DATE_KHR) {
+		return false;
 	}
 
 	auto extent = vkb_swapchain.extent;
@@ -235,14 +242,46 @@ void VulkanRenderSurface::CreateSwapchain() {
 	vkWaitForFences(context->GetVkDevice(),1, &swapchain_creation_fence, VK_TRUE, 30000000000);
 	vkResetFences(context->GetVkDevice(), 1, &swapchain_creation_fence);
 	vkQueueWaitIdle(*queue->GetVkQueue());
-
+	return true;
 }
 
-void VulkanRenderSurface::RecreateSwapchain() {
+bool VulkanRenderSurface::TryValidateSurface()
+{
+	auto queue = static_cast<VulkanRenderCommandQueue*>(Renderer::Get()->GetCommandQueue());
+	if (CheckSurfaceValidity() && RecreateSwapchain()) { // If this surface was previously invalid and should now be valid recreate the swapchain.
+		auto list_2 = std::static_pointer_cast<VulkanRenderCommandList>(Renderer::Get()->GetRenderCommandList());
+
+		auto attachment = swapchain_framebuffers[current_index]->GetBufferDescriptor().color_attachments[0].resource;
+
+		list_2->SetRenderTarget(swapchain_framebuffers[current_index]);
+		list_2->SetResourceDefaultState(attachment, RenderState::TEXTURE_COLOR_ATTACHMENT);
+		list_2->Clear();
+
+		queue->ExecuteRenderCommandList(list_2);
+		return true;
+	}
+	else {
+		return false;
+	}
+}
+
+bool VulkanRenderSurface::CheckSurfaceValidity()
+{
+	if (auto window = owning_window.lock()) {
+		bool is_minimized = window->IsMinimized();
+		auto framebuffer_res = window->GetFramebufferResolution();
+		return !is_minimized && framebuffer_res.x != 0 && framebuffer_res.y != 0;
+	}
+	else {
+		return false;
+	}
+}
+
+bool VulkanRenderSurface::RecreateSwapchain() {
 	swapchain_framebuffers.clear();
 	current_index = 0;
 	previous_index = 0;
-	CreateSwapchain();
+	return CreateSwapchain();
 }
 
 void VulkanRenderSurface::RegisterForPresent()

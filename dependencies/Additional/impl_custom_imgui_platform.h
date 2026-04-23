@@ -1,5 +1,6 @@
 #pragma once 
 #include <GLFW/glfw3.h>
+#include <platform/GLFW/GlfwWindow.h>
 #include <Renderer/RenderSurface.h>
 #include <memory>
 class ImGuiViewport;
@@ -10,9 +11,13 @@ struct ImGui_ImplGlfw_ViewportData_internal
     bool        WindowOwned;
     int         IgnoreWindowPosEventFrame;
     int         IgnoreWindowSizeEventFrame;
-    RenderSurface* render_surface = nullptr;
+    
     ImGui_ImplGlfw_ViewportData_internal() { Window = NULL; WindowOwned = false; IgnoreWindowSizeEventFrame = IgnoreWindowPosEventFrame = -1; }
     ~ImGui_ImplGlfw_ViewportData_internal() { }
+};
+
+struct WindowOwnership {
+    std::shared_ptr<GlfwWindow> window;
 };
 
 class impl_custom_imgui_platform {

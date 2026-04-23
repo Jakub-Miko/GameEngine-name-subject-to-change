@@ -36,7 +36,7 @@ Application *Application::Get()
     return instance;
 }
 
-Window* Application::GetWindow() const
+std::shared_ptr<Window> Application::GetWindow() const
 {
     return m_Window;
 }
@@ -80,7 +80,8 @@ Application::~Application()
 
     TextureManager::Shutdown();
     MeshManager::Shutdown();
-    delete m_Window;
+    m_Window.reset();
+    Window::Shutdown();
     #ifdef EDITOR
         Editor::Shutdown();
     #endif
@@ -142,11 +143,10 @@ void Application::InitInstance()
     os_api = OSApi::CreateOSApi();
 
     //Create window and Renderer
-    m_Window = Window::CreateWindow();
     Renderer::Create();
+    Window::Init();
 
     //Window and renderer Pre-initialization phase
-    m_Window->PreInit();
     Renderer::Get()->PreInit();
 
     PreInitializeSystems();
@@ -161,7 +161,8 @@ void Application::InitInstance()
     FrameManager::PreInitialize();
 
     //Window and renderer Initialization phase
-    m_Window->Init();
+    bool fullscreen = ConfigManager::Get()->Exists("fullscreen") ? (bool)ConfigManager::Get()->GetInt("fullscreen") : false;
+    m_Window = Window::CreateWindow({ {ConfigManager::Get()->GetInt("resolution_X"), ConfigManager::Get()->GetInt("resolution_Y")}, "GameEngine", fullscreen, true});
     Renderer::Get()->Init();
     MeshManager::Init();
 

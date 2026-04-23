@@ -25,8 +25,8 @@ extern "C" {
      * @lua
     */
     LIBEXP vec2 GetWindowResolution_L() {
-        auto& props = Application::Get()->GetWindow()->GetProperties();
-        return vec2{ (float)props.resolution_x, (float)props.resolution_y };
+        glm::uvec2 res = Renderer3D::Get()->GetRenderResolution();
+        return vec2{ (float)res.x, (float)res.y };
     }
 
     /**

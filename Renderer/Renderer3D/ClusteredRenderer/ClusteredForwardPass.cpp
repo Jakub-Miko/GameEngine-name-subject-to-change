@@ -246,8 +246,9 @@ void ClusteredForwardPass::Render(RenderPipelineResourceManager& resource_manage
 	props.view_matrix = glm::inverse(camera_trans.TransformMatrix);
 	props.output_buffer = resource_manager.GetResource<std::shared_ptr<RenderFrameBufferResource>>(input_color_buffer);
 
-	glm::vec2 pixel_size = { 1.0f / Application::Get()->GetWindow()->GetProperties().resolution_x,
-		1.0f / Application::Get()->GetWindow()->GetProperties().resolution_y };
+	auto res = Renderer3D::Get()->GetRenderResolution();
+	glm::vec2 pixel_size = { 1.0f / res.x,
+		1.0f / res.y };
 
 	auto cluster_grid_res = cluster_grid_resolution->GetValueTyped();
 

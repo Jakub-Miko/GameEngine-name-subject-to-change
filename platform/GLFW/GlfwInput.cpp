@@ -11,9 +11,9 @@
 
 GlfwInput::~GlfwInput()
 {
-	glfwSetKeyCallback(reinterpret_cast<GlfwWindow*>(Application::Get()->GetWindow())->GetHandle(), NULL);
-	glfwSetMouseButtonCallback(reinterpret_cast<GlfwWindow*>(Application::Get()->GetWindow())->GetHandle(), NULL);
-	glfwSetCursorPosCallback(reinterpret_cast<GlfwWindow*>(Application::Get()->GetWindow())->GetHandle(), NULL);
+	glfwSetKeyCallback(std::static_pointer_cast<GlfwWindow>(Application::Get()->GetWindow())->GetHandle(), NULL);
+	glfwSetMouseButtonCallback(std::static_pointer_cast<GlfwWindow>(Application::Get()->GetWindow())->GetHandle(), NULL);
+	glfwSetCursorPosCallback(std::static_pointer_cast<GlfwWindow>(Application::Get()->GetWindow())->GetHandle(), NULL);
 }
 
 GlfwInput::GlfwInput()
@@ -21,18 +21,18 @@ GlfwInput::GlfwInput()
 	last_pos[0] = { 0,0 };
 	last_pos[1] = { 0,0 };
 	last_pos_index = 0;
-	glfwSetKeyCallback(reinterpret_cast<GlfwWindow*>(Application::Get()->GetWindow())->GetHandle(), [](GLFWwindow* window, int key, int scancode, int action, int mods) {
+	glfwSetKeyCallback(std::static_pointer_cast<GlfwWindow>(Application::Get()->GetWindow())->GetHandle(), [](GLFWwindow* window, int key, int scancode, int action, int mods) {
 		KeyPressedEvent ev((KeyCode)key, (KeyPressType)action, (KeyModifiers)mods);
 		Application::Get()->SendEvent(&ev);
 		});
 
-	glfwSetMouseButtonCallback(reinterpret_cast<GlfwWindow*>(Application::Get()->GetWindow())->GetHandle(), [](GLFWwindow* window, int key, int action, int mods) {
+	glfwSetMouseButtonCallback(std::static_pointer_cast<GlfwWindow>(Application::Get()->GetWindow())->GetHandle(), [](GLFWwindow* window, int key, int action, int mods) {
 		MouseButtonPressEvent ev((MouseButtonCode)key, (KeyPressType)action, (KeyModifiers)mods);
 		Application::Get()->SendEvent(&ev);
 		});
 
 	if (ConfigManager::Get()->GetInt("EnableMouseMoveEvent")) {
-		glfwSetCursorPosCallback(reinterpret_cast<GlfwWindow*>(Application::Get()->GetWindow())->GetHandle(), [](GLFWwindow* window, double x, double y) {
+		glfwSetCursorPosCallback(std::static_pointer_cast<GlfwWindow>(Application::Get()->GetWindow())->GetHandle(), [](GLFWwindow* window, double x, double y) {
 			MouseMoveEvent ev(x, y);
 			Application::Get()->SendEvent(&ev);
 			});
@@ -41,7 +41,7 @@ GlfwInput::GlfwInput()
 
 bool GlfwInput::IsKeyPressed_impl(KeyCode key_code)
 {
-	return glfwGetKey(reinterpret_cast<GlfwWindow*>(Application::Get()->GetWindow())->GetHandle(),(int)key_code) == GLFW_PRESS;
+	return glfwGetKey(std::static_pointer_cast<GlfwWindow>(Application::Get()->GetWindow())->GetHandle(),(int)key_code) == GLFW_PRESS;
 }
 
 glm::vec2 GlfwInput::GetMousePositionChange()
@@ -51,13 +51,13 @@ glm::vec2 GlfwInput::GetMousePositionChange()
 
 bool GlfwInput::IsMouseButtonPressed_impl(MouseButtonCode key_code)
 {
-	return glfwGetMouseButton(reinterpret_cast<GlfwWindow*>(Application::Get()->GetWindow())->GetHandle(), (int)key_code) == GLFW_PRESS;
+	return glfwGetMouseButton(std::static_pointer_cast<GlfwWindow>(Application::Get()->GetWindow())->GetHandle(), (int)key_code) == GLFW_PRESS;
 }
 
 glm::vec2 GlfwInput::GetMousePosition_impl()
 {
 	double x, y;
-	glfwGetCursorPos(reinterpret_cast<GlfwWindow*>(Application::Get()->GetWindow())->GetHandle(), &x, &y);
+	glfwGetCursorPos(std::static_pointer_cast<GlfwWindow>(Application::Get()->GetWindow())->GetHandle(), &x, &y);
 	return UnitConverter::ScreenSpaceToNDC(glm::vec2(x, y));
 }
 

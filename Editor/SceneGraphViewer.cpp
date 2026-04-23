@@ -53,7 +53,7 @@ void SceneGraphViewer::Render()
 {
 	auto scene_garph = Application::GetWorld().GetSceneGraph();
 	 
-	ImGui::SetNextWindowSizeConstraints({ (float)Application::Get()->GetWindow()->GetProperties().resolution_x / 6.0f,0 }, { 10000,10000 });
+	ImGui::SetNextWindowSizeConstraints({ (float)Application::Get()->GetWindow()->GetResolution().x / 6.0f,0 }, { 10000,10000 });
 	ImGui::Begin("SceneGraph");
 
 	if (ImGui::IsWindowFocused() && Input::Get()->IsKeyPressed_Editor(KeyCode::KEY_DELETE) && Application::GetWorld().EntityExists(Editor::Get()->GetSelectedEntity())) {

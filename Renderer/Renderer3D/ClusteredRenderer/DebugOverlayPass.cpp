@@ -106,8 +106,9 @@ void DebugOverlayPass::Render(RenderPipelineResourceManager& resource_manager) {
     config_buffer_data.near_plane = camera.zNear;
     config_buffer_data.projection_matrix = camera.GetProjectionMatrix();
     config_buffer_data.mode = debug_layer_mode_prop->GetValueTyped().GetIndex();
-    config_buffer_data.pixel_size = { 1.0f / Application::Get()->GetWindow()->GetProperties().resolution_x,
-        1.0f / Application::Get()->GetWindow()->GetProperties().resolution_y };
+    auto res = Renderer3D::Get()->GetRenderResolution();
+    config_buffer_data.pixel_size = { 1.0f / res.x,
+        1.0f / res.y };
 
     RenderResourceManager::Get()->UploadDataToBuffer(list, data->config_buffer, &config_buffer_data, sizeof(ConfigBufferData), 0);
 
@@ -156,8 +157,9 @@ void DebugOverlayPass::InitPass() {
 
     RenderTexture2DDescriptor output_overlay_desc = {};
     output_overlay_desc.format = TextureFormat::BGRA_SRGB;
-    output_overlay_desc.width = Application::Get()->GetWindow()->GetProperties().resolution_x;
-    output_overlay_desc.height = Application::Get()->GetWindow()->GetProperties().resolution_y;
+    auto res = Renderer3D::Get()->GetRenderResolution();
+    output_overlay_desc.width = res.x;
+    output_overlay_desc.height = res.y;
     output_overlay_desc.usage = TextureUsage::COLOR_ATTACHMENT_READABLE;
     output_overlay_desc.sampler = TextureSampler::CreateSampler(sampler_desc);
 

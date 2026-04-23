@@ -41,7 +41,7 @@ class GameState;
 class Application {
 private:
     static Application* instance; ///< Singleton instance.
-    Window* m_Window; ///< Main application window. Handles communication with the OS.
+    std::shared_ptr<Window> m_Window; ///< Main application window. Handles communication with the OS.
     OSApi* os_api; ///< Abstraction over OS specific operations, which are not handled by the window manager.
     std::vector<std::shared_ptr<ThreadObject>> m_TaskThreads; ///< Threads claimed from ThreadManager to be used by the TaskSystem.
     std::shared_ptr<ThreadObject> m_MainThread; ///< Thread claimed from ThreadManager to be the Main thread.
@@ -69,7 +69,7 @@ public:
     /**
      * @brief Gets the current window.
     */
-    Window* GetWindow() const;
+    std::shared_ptr<Window> GetWindow() const;
 
     /**
      * @brief Gets the OS api abstraction.

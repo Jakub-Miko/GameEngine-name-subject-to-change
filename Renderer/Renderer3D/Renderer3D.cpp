@@ -6,6 +6,7 @@
 #include "DeferredRenderingPipeline.h"
 #include "ForwardClusteredRendererPipeline.h"
 #include "SkeletalAnimations/SkeletalAnimationManager.h"
+#include <ConfigManager.h>
 
 Renderer3D* Renderer3D::instance = nullptr;
 
@@ -69,5 +70,6 @@ void Renderer3D::RemovePipeline(const std::string& name) {
 
 Renderer3D::Renderer3D()
 {
-
+	render_resolution.x = ConfigManager::Get()->GetInt("resolution_X");
+	render_resolution.y = ConfigManager::Get()->GetInt("resolution_Y");
 }

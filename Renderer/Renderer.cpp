@@ -22,6 +22,24 @@ Renderer::Renderer() {
     RenderContext::Create();
 } 
 
+bool Renderer::CheckDefaultRenderSurfaceValidity() {
+    std::lock_guard<std::mutex> lock(default_frame_buffer_mutex);
+    if (default_frame_buffer) {
+        return true;
+    }
+    else {
+        return Application::Get()->GetWindow()->GetRenderSurface()->IsSurfaceValid();
+    }
+}
+
+std::shared_ptr<RenderFrameBufferResource> Renderer::GetDefaultFrameBuffer() {
+    std::lock_guard<std::mutex> lock(default_frame_buffer_mutex);
+    if (!default_frame_buffer) {
+        return Application::Get()->GetWindow()->GetRenderSurface()->GetCurrentFrameBuffer();
+    }
+    return default_frame_buffer;
+}
+
 void Renderer::PreInit() {
     //stbi_set_flip_vertically_on_load(true); // This gets in vulkans way
     if(RenderContext::Get()) {

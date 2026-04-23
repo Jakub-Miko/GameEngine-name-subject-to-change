@@ -182,6 +182,7 @@ unsigned char* LoadWithoutConversion(std::ifstream& file, texture_data texture, 
     }
 
     file.read(data, size);
+    std::getline(file, check);
     file >> check;
     if(check != "end") throw std::runtime_error("Invalid format on file: " + path);
     return (unsigned char*)data;

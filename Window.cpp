@@ -9,13 +9,29 @@ Window::Window(const WindowProperties& props)
 
 }
 
-Window* Window::CreateWindow(const WindowProperties& props) {
+void Window::Init() {
+
+#if defined Vulkan_API
+    GlfwWindow::Init();
+#endif
+
+}
+ 
+void Window::Shutdown() {
+
+#if defined Vulkan_API
+    GlfwWindow::Shutdown();
+#endif
+
+}
+
+std::shared_ptr<Window> Window::CreateWindow(const WindowProperties& props) {
     #ifdef DirectX12
     return new WindowsWindow(props);
     #elif defined OpenGL_API
-    return new GlfwWindow(props);
+    return std::make_shared<GlfwWindow>(props);
     #elif defined Vulkan_API
-    return new GlfwWindow(props);
+    return std::make_shared<GlfwWindow>(props);
     #else
     static_assert(false, "Wrong Window Type");
     #endif

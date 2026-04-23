@@ -619,7 +619,7 @@ Editor::Editor() : viewport(new Viewport), scene_graph(new SceneGraphViewer), pr
 	ImGui::StyleColorsDark();
 	io_1.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
-	ImGui_ImplGlfw_InitForOther(static_cast<GlfwWindow*>(Application::Get()->GetWindow())->GetHandle(), true);
+	ImGui_ImplGlfw_InitForOther(std::static_pointer_cast<GlfwWindow>(Application::Get()->GetWindow())->GetHandle(), true);
 	impl_custom_imgui_platform::init_custom_imgui_platform();
 	impl_custom_imgui_backend::Init();
 	if (std::filesystem::exists("asset:workspace.ini"_path)) {

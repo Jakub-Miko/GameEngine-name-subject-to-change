@@ -229,6 +229,9 @@ void impl_custom_imgui_backend::PreShutdown()
 
 void impl_custom_imgui_backend::DrawData(ImDrawData* draw_data)
 {
+    if (!Renderer::Get()->CheckDefaultRenderSurfaceValidity()) {
+        return;
+    }
     int fb_width = (int)(draw_data->DisplaySize.x * draw_data->FramebufferScale.x);
     int fb_height = (int)(draw_data->DisplaySize.y * draw_data->FramebufferScale.y);
     if (fb_width <= 0 || fb_height <= 0)
@@ -346,7 +349,9 @@ static void ImGui_custom_RenderWindow(ImGuiViewport* viewport, void*)
         list->Clear();
         queue->ExecuteRenderCommandList(list);
     }
-    Renderer::Get()->SetDefaultFrameBuffer(((ImGui_ImplGlfw_ViewportData_internal*)viewport->PlatformUserData)->render_surface->GetCurrentFrameBuffer());
+    auto window = ((ImGui_ImplGlfw_ViewportData_internal*)viewport->PlatformUserData)->Window;
+    auto engine_window = (GlfwWindow*)glfwGetWindowUserPointer(window);
+    Renderer::Get()->SetDefaultFrameBuffer(engine_window->GetRenderSurface()->GetCurrentFrameBuffer());
     impl_custom_imgui_backend::DrawData(viewport->DrawData);
     Renderer::Get()->SetDefaultFrameBuffer();
 }

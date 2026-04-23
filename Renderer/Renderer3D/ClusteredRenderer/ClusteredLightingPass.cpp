@@ -120,8 +120,9 @@ void ClusteredLightingPass::InitPassData() {
 	RenderTexture2DDescriptor depth_desc;
 	depth_desc.format = TextureFormat::DEFAULT_DEPTH;
 	depth_desc.usage = TextureUsage::DEPTH_ATTACHMENT_READABLE;
-	depth_desc.height = Application::Get()->GetWindow()->GetProperties().resolution_y;
-	depth_desc.width = Application::Get()->GetWindow()->GetProperties().resolution_x;
+	auto res = Renderer3D::Get()->GetRenderResolution();
+	depth_desc.width = res.x;
+	depth_desc.height = res.y;
 	depth_desc.sampler = data->sampler;
 
 	data->depth_storage_texture = RenderResourceManager::Get()->CreateTexture(depth_desc);
@@ -262,8 +263,9 @@ void ClusteredLightingPass::UpdateClusteredPipeline(bool force_update) {
 	RenderTexture2DDescriptor color_texture_desc;
 	color_texture_desc.format = TextureFormat::RGBA_16FLOAT;
 	color_texture_desc.usage = TextureUsage::COLOR_ATTACHMENT_READABLE;
-	color_texture_desc.height = Application::Get()->GetWindow()->GetProperties().resolution_y;
-	color_texture_desc.width = Application::Get()->GetWindow()->GetProperties().resolution_x;
+	auto res = Renderer3D::Get()->GetRenderResolution();
+	color_texture_desc.width = res.x;
+	color_texture_desc.height = res.y;
 	color_texture_desc.sampler = data->sampler;
 
 	if(clustered_config.use_compute_for_clustered_lights->GetValueTyped()) {
@@ -335,8 +337,10 @@ void ClusteredLightingPass::RenderLights(RenderPipelineResourceManager& resource
 	list->SetPipeline(data->pipeline_clustered);
 	list->SetRenderTarget(data->output_buffer_resource);
 	gbuffer_material->SetMaterial(list);
-	glm::vec2 pixel_size = { 1.0f / Application::Get()->GetWindow()->GetProperties().resolution_x,
-		1.0f / Application::Get()->GetWindow()->GetProperties().resolution_y };
+
+	auto res = Renderer3D::Get()->GetRenderResolution();
+	glm::vec2 pixel_size = { 1.0f / res.x,
+		1.0f / res.y };
 
 	auto cluster_grid_res = cluster_grid_resolution->GetValueTyped();
 
@@ -382,8 +386,10 @@ void ClusteredLightingPass::RenderLightsWithCompute(RenderPipelineResourceManage
 	list->SetPipeline(data->pipeline_clustered);
 	list->SetStorageTexture("color_out", data->color_storage_texture);
 	gbuffer_material->SetMaterial(list);
-	glm::vec2 pixel_size = { 1.0f / Application::Get()->GetWindow()->GetProperties().resolution_x,
-		1.0f / Application::Get()->GetWindow()->GetProperties().resolution_y };
+
+	auto res = Renderer3D::Get()->GetRenderResolution();
+	glm::vec2 pixel_size = { 1.0f / res.x,
+		1.0f / res.y };
 
 	auto cluster_grid_res = cluster_grid_resolution->GetValueTyped();
 

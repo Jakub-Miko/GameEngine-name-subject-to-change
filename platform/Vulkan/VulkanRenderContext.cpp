@@ -89,6 +89,8 @@ void VulkanRenderContext::Init()
 
 void VulkanRenderContext::PreInit()
 {
+	InstanceInit();
+
 	vkb::PhysicalDeviceSelector selector(vkb_instance);
 	selector.defer_surface_initialization(); // Window is not ready yet
 	VkPhysicalDeviceVulkan12Features features_12 = {};

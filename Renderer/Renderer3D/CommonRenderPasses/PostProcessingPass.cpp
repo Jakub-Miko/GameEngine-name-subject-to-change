@@ -103,6 +103,9 @@ void PostProcessingPass::Setup(RenderPassResourceDefinnition& setup_builder)
 void PostProcessingPass::Render(RenderPipelineResourceManager& resource_manager)
 {
 	PROFILE("PostProcessingPass");
+	if (!Renderer::Get()->CheckDefaultRenderSurfaceValidity()) { // Check if the render surface is ready for rendering
+		return;
+	}
 	auto frame_buffer_texure = resource_manager.GetResource<std::shared_ptr<RenderFrameBufferResource>>(input_framebuffer);
 	auto camera_ent = Application::GetWorld().GetPrimaryEntity();
 	auto& camera_component = Application::GetWorld().GetComponent<CameraComponent>(camera_ent);

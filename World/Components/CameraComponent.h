@@ -21,8 +21,8 @@ class CameraComponent {
 
 public:
     CameraComponent() : fov(45.0f), zNear(0.1), zFar(1000), view_frustum() {
-        auto props = Application::Get()->GetWindow()->GetProperties();
-        aspect_ratio = (float)props.resolution_x / (float)props.resolution_y;
+        auto res = Renderer3D::Get()->GetRenderResolution();
+        aspect_ratio = (float)res.x / (float)res.y;
         projection_matrix = glm::perspective(glm::radians(fov), aspect_ratio, zNear, zFar);
     }
 

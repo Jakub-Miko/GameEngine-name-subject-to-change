@@ -111,18 +111,19 @@ void DeferredLightingPass::InitPostProcessingPassData() {
 
 	auto sampler = TextureSampler::CreateSampler(sampler_desc);
 
+	auto res = Renderer3D::Get()->GetRenderResolution();
 	RenderTexture2DDescriptor color_texture_desc;
 	color_texture_desc.format = TextureFormat::RGBA_16FLOAT;
 	color_texture_desc.usage = TextureUsage::COLOR_ATTACHMENT_READABLE;
-	color_texture_desc.height = Application::Get()->GetWindow()->GetProperties().resolution_y;
-	color_texture_desc.width = Application::Get()->GetWindow()->GetProperties().resolution_x;
+	color_texture_desc.width = res.x;
+	color_texture_desc.height = res.y;
 	color_texture_desc.sampler = sampler;
 
 	RenderTexture2DDescriptor depth_desc;
 	depth_desc.format = TextureFormat::DEFAULT_DEPTH;
 	depth_desc.usage = TextureUsage::DEPTH_ATTACHMENT_READABLE;
-	depth_desc.height = Application::Get()->GetWindow()->GetProperties().resolution_y;
-	depth_desc.width = Application::Get()->GetWindow()->GetProperties().resolution_x;
+	depth_desc.width = res.x;
+	depth_desc.height = res.y;
 	depth_desc.sampler = sampler;
 
 	auto texture_color = RenderResourceManager::Get()->CreateTexture(color_texture_desc);
@@ -296,8 +297,9 @@ void DeferredLightingPass::RenderLights(RenderPipelineResourceManager& resource_
 			index_count = data->sphere_mesh->GetIndexCount();
 		}
 
-		glm::vec2 pixel_size = { 1.0f / Application::Get()->GetWindow()->GetProperties().resolution_x,
-			1.0f / Application::Get()->GetWindow()->GetProperties().resolution_y };
+		auto res = Renderer3D::Get()->GetRenderResolution();
+		glm::vec2 pixel_size = { 1.0f / res.x,
+			1.0f / res.y };
 
 		data->mat->SetParameter("pixel_size", pixel_size);
 		data->mat->SetParameter("Light_Color", light.GetLightColor());
@@ -353,8 +355,9 @@ void DeferredLightingPass::RenderShadowedLightsPoint(RenderPipelineResourceManag
 		auto inverse_view = Application::GetWorld().GetComponent<TransformComponent>(Application::GetWorld().GetPrimaryEntity()).TransformMatrix;
 
 		glm::mat4 light_matrix = shadow.light_view_matrix * inverse_view;
-		glm::vec2 pixel_size = { 1.0f / Application::Get()->GetWindow()->GetProperties().resolution_x,
-			1.0f / Application::Get()->GetWindow()->GetProperties().resolution_y };
+		auto res = Renderer3D::Get()->GetRenderResolution();
+		glm::vec2 pixel_size = { 1.0f / res.x,
+			1.0f / res.y };
 
 		data->mat_shadowed_point->SetParameter("pixel_size", pixel_size);
 		data->mat_shadowed_point->SetParameter("Light_Color", light.GetLightColor());
@@ -416,8 +419,9 @@ void DeferredLightingPass::RenderShadowedLightsDirectional(RenderPipelineResourc
 
 		auto inverse_view = Application::GetWorld().GetComponent<TransformComponent>(Application::GetWorld().GetPrimaryEntity()).TransformMatrix;
 
-		glm::vec2 pixel_size = { 1.0f / Application::Get()->GetWindow()->GetProperties().resolution_x,
-			1.0f / Application::Get()->GetWindow()->GetProperties().resolution_y };
+		auto res = Renderer3D::Get()->GetRenderResolution();
+		glm::vec2 pixel_size = { 1.0f / res.x,
+			1.0f / res.y };
 
 		data->mat_shadowed_directional->SetParameter("pixel_size", pixel_size);
 		data->mat_shadowed_directional->SetParameter("Light_Color", light.GetLightColor());
@@ -489,8 +493,9 @@ void DeferredLightingPass::RenderSkylights(RenderPipelineResourceManager& resour
 
 		auto inverse_view = Application::GetWorld().GetComponent<TransformComponent>(Application::GetWorld().GetPrimaryEntity()).TransformMatrix;
 
-		glm::vec2 pixel_size = { 1.0f / Application::Get()->GetWindow()->GetProperties().resolution_x,
-			1.0f / Application::Get()->GetWindow()->GetProperties().resolution_y };
+		glm::uvec2 res = Renderer3D::Get()->GetRenderResolution();
+		glm::vec2 pixel_size = { 1.0f / res.x,
+			1.0f / res.y };
 
 		list->SetTexture2DCubemap("Diffuse", light.GetReflectionMap()->GetDiffuseMap());
 		list->SetTexture2DCubemap("Specular", light.GetReflectionMap()->GetSpecularMap());

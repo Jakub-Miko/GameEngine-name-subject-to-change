@@ -32,32 +32,33 @@ void GenerateGBufferPass::InitPostProcessingPassData() {
 
 	auto sampler = TextureSampler::CreateSampler(sampler_desc);
 
+	auto res = Renderer3D::Get()->GetRenderResolution();
 	RenderTexture2DDescriptor color_texture_desc;
 	color_texture_desc.format = TextureFormat::RGBA_UNSIGNED_CHAR;
 	color_texture_desc.usage = TextureUsage::COLOR_ATTACHMENT_READABLE;
-	color_texture_desc.height = Application::Get()->GetWindow()->GetProperties().resolution_y;
-	color_texture_desc.width = Application::Get()->GetWindow()->GetProperties().resolution_x;
+	color_texture_desc.width = res.x;
+	color_texture_desc.height = res.y;
 	color_texture_desc.sampler = sampler;
 
 	RenderTexture2DDescriptor color_normal_desc;
 	color_normal_desc.format = TextureFormat::RG_16FLOAT;
 	color_normal_desc.usage = TextureUsage::COLOR_ATTACHMENT_READABLE;
-	color_normal_desc.height = Application::Get()->GetWindow()->GetProperties().resolution_y;
-	color_normal_desc.width = Application::Get()->GetWindow()->GetProperties().resolution_x;
+	color_normal_desc.width = res.x;
+	color_normal_desc.height = res.y;
 	color_normal_desc.sampler = sampler;
 
 	RenderTexture2DDescriptor material_texture_desc;
 	material_texture_desc.format = TextureFormat::RGBA_16FLOAT;
 	material_texture_desc.usage = TextureUsage::COLOR_ATTACHMENT_READABLE;
-	material_texture_desc.height = Application::Get()->GetWindow()->GetProperties().resolution_y;
-	material_texture_desc.width = Application::Get()->GetWindow()->GetProperties().resolution_x;
+	material_texture_desc.width = res.x;
+	material_texture_desc.height = res.y;
 	material_texture_desc.sampler = sampler;
 
 	RenderTexture2DDescriptor depth_desc;
 	depth_desc.format = TextureFormat::DEFAULT_DEPTH;
 	depth_desc.usage = TextureUsage::DEPTH_ATTACHMENT_READABLE | TextureUsage::COPYABLE;
-	depth_desc.height = Application::Get()->GetWindow()->GetProperties().resolution_y;
-	depth_desc.width = Application::Get()->GetWindow()->GetProperties().resolution_x;
+	depth_desc.width = res.x;
+	depth_desc.height = res.y;
 	depth_desc.sampler = sampler;
 
 	auto texture_color_albedo = RenderResourceManager::Get()->CreateTexture(color_texture_desc);
@@ -76,8 +77,8 @@ void GenerateGBufferPass::InitPostProcessingPassData() {
 
 	RenderTexture2DDescriptor id_desc;
 	id_desc.format = TextureFormat::R_UNSIGNED_INT;
-	id_desc.height = Application::Get()->GetWindow()->GetProperties().resolution_y;
-	id_desc.width = Application::Get()->GetWindow()->GetProperties().resolution_x;
+	id_desc.width = res.x;
+	id_desc.height = res.y;
 	id_desc.usage = TextureUsage::COLOR_ATTACHMENT_READABLE | TextureUsage::COPYABLE;
 	id_desc.sampler = sampler;
 	auto id_buffer = RenderResourceManager::Get()->CreateTexture(id_desc);

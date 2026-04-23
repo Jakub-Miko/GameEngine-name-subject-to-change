@@ -5,13 +5,13 @@
 struct GLFWwindow;
 class OpenGLRenderContext;
 
-class GlfwWindow : public Window {
+class GlfwWindow : public Window, public std::enable_shared_from_this<GlfwWindow> {
 public:
     friend class impl_custom_imgui_platform;
     GlfwWindow(const WindowProperties& props);
     
-    virtual void Init() override;
-    virtual void PreInit() override;
+    static void Init();
+    static void Shutdown();
 
     virtual void PollEvents() override;
 
@@ -22,6 +22,10 @@ public:
     virtual void DisableCursor() override;
     virtual void EnableCursor() override;
 
+    virtual glm::ivec2 GetFramebufferResolution() override;
+
+    virtual bool IsMinimized() override;
+
 #ifdef EDITOR
 
     virtual void AdjustWidowToDisabledEditor() override;
@@ -31,11 +35,15 @@ public:
     
 #endif
 
-    static RenderSurface* CreateSurfaceFromWindow(GLFWwindow* window);
+    void InitSurface();
 
-    virtual std::shared_ptr<RenderSurface> GetRenderSurface() const override {
+    virtual std::shared_ptr<RenderSurface> GetRenderSurface() override {
+        if (!window_render_surface) {
+            InitSurface();
+        }
         return window_render_surface;
     }
+
     
     virtual ~GlfwWindow();
     

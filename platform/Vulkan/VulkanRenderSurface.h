@@ -3,6 +3,7 @@
 #include "VulkanRenderResource.h"
 #include <vulkan/vulkan.h>
 #include <VkBootstrap.h>
+#include <Window.h>
 
 class VulkanRenderPresentEvent : public RenderPresentEvent {
 
@@ -11,7 +12,7 @@ class VulkanRenderPresentEvent : public RenderPresentEvent {
 class VulkanRenderSurface : public RenderSurface {
 public:
 
-    VulkanRenderSurface(VkSurfaceKHR surface, bool register_for_present = false);
+    VulkanRenderSurface(std::weak_ptr<Window> owning_window, VkSurfaceKHR surface, bool register_for_present = false);
     VulkanRenderSurface(const VulkanRenderSurface& ref) = delete;
     VulkanRenderSurface& operator=(const VulkanRenderSurface& ref) = delete;
     virtual ~VulkanRenderSurface();
@@ -25,9 +26,20 @@ public:
 
     void RegisterForPresent();
 
-    void RecreateSwapchain();
+    bool RecreateSwapchain();
 
-    void CreateSwapchain();
+    bool CreateSwapchain();
+
+    /**
+     * Used to attemp swapchain recreation to make the surface valid after it went out of date.
+     */
+    bool TryValidateSurface();
+
+    virtual bool IsSurfaceValid() override {
+        return is_valid;
+    };
+
+    bool CheckSurfaceValidity();
 
 private:
 
@@ -40,4 +52,6 @@ private:
     std::unique_ptr<EventObserverBase> present_observer;
     VkFence swapchain_creation_fence;
     uint32_t current_index = 0, previous_index = 0;
+    std::weak_ptr<Window> owning_window;
+    bool is_valid = true;
 };

@@ -272,8 +272,8 @@ void AssimpSceneProxy::LoadCameras(LoadState &state)
         auto camera_imported_ent = fnd->second;
         auto camera_ent = camera_imported_ent.entity;
 
-        auto props = Application::Get()->GetWindow()->GetProperties();
-		float aspect_ratio = (float)props.resolution_x / (float)props.resolution_y;
+        glm::uvec2 res = Renderer3D::Get()->GetRenderResolution();
+		float aspect_ratio = (float)res.x / (float)res.y;
 
         world.SetComponent<CameraComponent>(camera_ent, CameraComponent(glm::degrees(camera->mHorizontalFOV), camera->mClipPlaneNear, camera->mClipPlaneFar, aspect_ratio));
         if(state.serialize) {

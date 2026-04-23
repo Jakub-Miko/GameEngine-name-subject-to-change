@@ -342,13 +342,13 @@ void VulkanRenderCommandList::SetDefaultRenderTarget()
 {
 	DEFINE_VK_INSTANCE(context);
 	OutsideRenderPass(); // if a render pass was active, end it, so we can set a new framebuffer and the next rendering command will resume it
-	auto frame_buffer = Renderer::Get()->GetDefaultFrameBuffer();
-	if(frame_buffer) {
-		current_framebuffer = frame_buffer;
-	} else {
-		auto buffer = Application::Get()->GetWindow()->GetRenderSurface()->GetCurrentFrameBuffer();
-		current_framebuffer = buffer;
+	auto buffer = Renderer::Get()->GetDefaultFrameBuffer();
+	if (!buffer) {
+		throw std::runtime_error(R"(The current default frambuffer from the main window surface is not valid. 
+				The window may be minimized, please check the render surface validity before rendering to the default framebuffer.
+			)");
 	}
+	current_framebuffer = buffer;
 }
 
 void VulkanRenderCommandList::Clear()

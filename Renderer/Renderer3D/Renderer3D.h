@@ -29,6 +29,10 @@ public:
 
     void RemovePipeline(const std::string& name);
 
+    glm::vec2 GetRenderResolution() const {
+        return render_resolution;
+    }
+
     const std::unordered_map<std::string, std::shared_ptr<RenderPipeline>>& GetPipelines() { return rendering_pipelines; }
 
     std::pair<std::string,std::shared_ptr<RenderPipeline>>& GetCurrentPipeline() { return current_pipeline; }
@@ -40,4 +44,5 @@ private:
 private:
     std::unordered_map<std::string, std::shared_ptr<RenderPipeline>> rendering_pipelines;
     std::pair<std::string,std::shared_ptr<RenderPipeline>> current_pipeline;
+    glm::uvec2 render_resolution = glm::uvec2();
 };

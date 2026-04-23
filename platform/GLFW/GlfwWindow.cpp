@@ -18,37 +18,45 @@
 GlfwWindow::GlfwWindow(const WindowProperties& props)
     : Window(props)
 {
-    if (props.resolution_x == -1 || props.resolution_y == -1) {
-        m_Properties.resolution_x = ConfigManager::Get()->GetInt("resolution_X");
-        m_Properties.resolution_y = ConfigManager::Get()->GetInt("resolution_Y");
-        if (ConfigManager::Get()->Exists("fullscreen")) {
-            m_Properties.fullscreen = (bool)ConfigManager::Get()->GetInt("fullscreen");
-        }
-    }
+#ifdef EDITOR
+    int x, y;
+    const GLFWvidmode* monitor = glfwGetVideoMode(glfwGetPrimaryMonitor());
 
+    x = monitor->width;
+    y = monitor->height;
+
+    if(m_Properties.main_window) {
+        m_Window = glfwCreateWindow(x, y, m_Properties.name.c_str(), NULL, NULL);
+        glfwMaximizeWindow(m_Window);
+    }
+    else {
+        m_Window = glfwCreateWindow(m_Properties.resolution.x, m_Properties.resolution.y, m_Properties.name.c_str(), m_Properties.fullscreen ? glfwGetPrimaryMonitor() : NULL, NULL);
+        glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    }
+#else 
+    m_Window = glfwCreateWindow(m_Properties.resolution_x, m_Properties.resolution_y, m_Properties.name.c_str(), m_Properties.fullscreen ? glfwGetPrimaryMonitor() : NULL, NULL);
+    glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+#endif
+
+    glfwSetWindowUserPointer(m_Window, this);
+
+    if (!m_Window)
+    {
+        throw std::runtime_error("Window could not be created.");
+    }
+}
+
+void GlfwWindow::InitSurface() {
+    VkSurfaceKHR vk_surface;
+    DEFINE_VK_INSTANCE(context);
+    if (glfwCreateWindowSurface(context->GetVkInstance(), m_Window, NULL, &vk_surface)) {
+        throw std::runtime_error("Surface could not be created from glfwWindow");
+    }
+    window_render_surface = std::make_shared<VulkanRenderSurface>(weak_from_this(), vk_surface, true);
 }
 
 void GlfwWindow::Init()
 {
-#if defined OpenGL_API
-    auto list = reinterpret_cast<OpenGLRenderCommandList*>(Renderer::Get()->GetRenderCommandList());
-    list->BindOpenGLContext();
-    std::shared_ptr<RenderFence> fence = std::shared_ptr<RenderFence>( Renderer::Get()->GetFence());
-    Renderer::Get()->GetCommandQueue()->ExecuteRenderCommandList( reinterpret_cast<RenderCommandList*>(list) );
-    Renderer::Get()->GetCommandQueue()->Signal(fence, 1);
-    fence->WaitForValue(1);
-    glfwSetDropCallback(m_Window, &DropCallback);
-    RegistorDragAndDropCallback(&DefaultDropCallback);
-#endif
-#ifdef Vulkan_API
-    window_render_surface.reset(GlfwWindow::CreateSurfaceFromWindow(m_Window));
-
-#endif
-}
-
-void GlfwWindow::PreInit()
-{
-    /* Initialize the library */
     if (!glfwInit())
         Application::Get()->Exit();
 #ifdef Vulkan_API
@@ -57,34 +65,14 @@ void GlfwWindow::PreInit()
     uint32_t count;
     const char** extensions = glfwGetRequiredInstanceExtensions(&count);
     context->RequestExtensions(extensions, count);
-    context->InstanceInit(); // we need to initialize the instance here, since we need it to create a surface
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
 #endif
-    //this causes issues on linux since it will automatically maximize all undocked windows.
-    //glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
+}
 
-#ifdef EDITOR
-    int x, y;
-    const GLFWvidmode* monitor = glfwGetVideoMode(glfwGetPrimaryMonitor());
-
-    x = monitor->width;
-    y = monitor->height;
-
-    m_Window = glfwCreateWindow(x, y, m_Properties.name.c_str(), NULL, NULL);
-    glfwMaximizeWindow(m_Window);
-#else 
-    m_Window = glfwCreateWindow(m_Properties.resolution_x, m_Properties.resolution_y, m_Properties.name.c_str(), m_Properties.fullscreen ? glfwGetPrimaryMonitor() : NULL, NULL);
-    glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-#endif
-    
-    if (!m_Window)
-    {
-        glfwTerminate();
-        Application::Get()->Exit();
-    }
-
-
+void GlfwWindow::Shutdown()
+{
+    glfwTerminate();
 }
 
 void GlfwWindow::PollEvents()
@@ -119,21 +107,35 @@ void GlfwWindow::EnableCursor()
     glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 }
 
+bool GlfwWindow::IsMinimized() {
+    bool iconified = glfwGetWindowAttrib(m_Window, GLFW_ICONIFIED);
+    auto res = GetFramebufferResolution();
+    return iconified || res.x == 0 || res.y == 0;
+}
+
+glm::ivec2 GlfwWindow::GetFramebufferResolution() {
+    int x = 0, y = 0;
+    glfwGetFramebufferSize(m_Window, &x, &y);
+    return { x, y };
+}
+
 #ifdef EDITOR
 
 void GlfwWindow::AdjustWidowToDisabledEditor()
 {
     const GLFWvidmode* monitor = glfwGetVideoMode(glfwGetPrimaryMonitor());
-    auto& props = Application::Get()->GetWindow()->GetProperties();
+
     //Maximize is needed on linux to glfwRestoreWindow after fullscreen; without it the window spans the whole screen and
     //is covered by desktop panels. 
     // TODO: implement custom resolution storing and restoration
+
+    glm::vec2 render_res = Renderer3D::Get()->GetRenderResolution();
     glfwMaximizeWindow(m_Window);
     glfwSetWindowAttrib(m_Window, GLFW_RESIZABLE, GLFW_FALSE);
-    glfwSetWindowPos(m_Window, (monitor->width / 2) - (props.resolution_x / 2), (monitor->height / 2) - (props.resolution_y / 2));
-    glfwSetWindowSize(m_Window, props.resolution_x, props.resolution_y);
-    if (props.fullscreen) {
-        glfwSetWindowMonitor(m_Window, glfwGetPrimaryMonitor(), 0, 0, props.resolution_x, props.resolution_y, monitor->refreshRate);
+    glfwSetWindowPos(m_Window, (monitor->width / 2) - (render_res.x / 2), (monitor->height / 2) - (render_res.y / 2));
+    glfwSetWindowSize(m_Window, render_res.x, render_res.y);
+    if (m_Properties.fullscreen) {
+        glfwSetWindowMonitor(m_Window, glfwGetPrimaryMonitor(), 0, 0, render_res.x, render_res.y, monitor->refreshRate);
     }
     glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 }
@@ -141,13 +143,13 @@ void GlfwWindow::AdjustWidowToDisabledEditor()
 void GlfwWindow::AdjustWidowToEnabledEditor()
 {
     const GLFWvidmode* monitor = glfwGetVideoMode(glfwGetPrimaryMonitor());
-    auto& props = Application::Get()->GetWindow()->GetProperties();
-    
+    glm::vec2 render_res = Renderer3D::Get()->GetRenderResolution();
+
     glfwRestoreWindow(m_Window);
-    if (props.fullscreen) {
+    if (m_Properties.fullscreen) {
         int width, height;
         glfwGetWindowSize(m_Window,&width, &height);
-        glfwSetWindowMonitor(m_Window, NULL, (width / 2) - (props.resolution_x / 2), (height / 2) - (props.resolution_y / 2), width, height, monitor->refreshRate);
+        glfwSetWindowMonitor(m_Window, NULL, (width / 2) - (render_res.x / 2), (height / 2) - (render_res.y / 2), width, height, monitor->refreshRate);
     }
     glfwMaximizeWindow(m_Window);
     glfwSetWindowAttrib(m_Window, GLFW_RESIZABLE, GLFW_TRUE);
@@ -158,23 +160,9 @@ void GlfwWindow::AdjustWidowToEnabledEditor()
 
 #endif
 
-RenderSurface* GlfwWindow::CreateSurfaceFromWindow(GLFWwindow *window)
-{
-    VkSurfaceKHR vk_surface;
-    DEFINE_VK_INSTANCE(context);
-    if (glfwCreateWindowSurface(context->GetVkInstance(), window,NULL, &vk_surface)) {
-        glfwTerminate();
-        Application::Get()->Exit();
-    }
-
-    VulkanRenderSurface* surface = new VulkanRenderSurface(vk_surface, true);
-
-    return surface;
-}
-
 GlfwWindow::~GlfwWindow()
 {
-    glfwTerminate();
+    glfwDestroyWindow(m_Window);
 }
 
 void GlfwWindow::DropCallback(GLFWwindow* window, int count, const char** paths)
@@ -184,7 +172,7 @@ void GlfwWindow::DropCallback(GLFWwindow* window, int count, const char** paths)
         paths_vec.push_back(paths[i]);
     }
 
-    static_cast<GlfwWindow*>(Application::Get()->GetWindow())->drop_callback(count, paths_vec);
+    std::static_pointer_cast<GlfwWindow>(Application::Get()->GetWindow())->drop_callback(count, paths_vec);
 }
 
 void GlfwWindow::DefaultDropCallback(int count, std::vector<std::string> paths)

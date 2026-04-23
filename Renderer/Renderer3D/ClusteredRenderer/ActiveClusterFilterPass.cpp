@@ -68,8 +68,8 @@ void ActiveClusterFilterPass::Render(RenderPipelineResourceManager& resource_man
     auto cluster_grid_res = cluster_grid_resolution->GetValueTyped();
 
     ConfigBufferStruct config_buffer_struct = {};
-    auto& window_props = Application::Get()->GetWindow()->GetProperties();
-    config_buffer_struct.window_size = { window_props.resolution_x, window_props.resolution_y };
+    auto res = Renderer3D::Get()->GetRenderResolution();
+    config_buffer_struct.window_size = { res.x, res.y };
     config_buffer_struct.cluster_dimensions = { cluster_grid_res.x, cluster_grid_res.y, cluster_grid_res.z};
     config_buffer_struct.depth_constant_a = camera.zFar / (camera.zFar - camera.zNear);
     config_buffer_struct.depth_constant_b = (-camera.zFar * camera.zNear) / (camera.zFar - camera.zNear);

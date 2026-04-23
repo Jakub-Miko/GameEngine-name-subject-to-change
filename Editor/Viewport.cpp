@@ -19,10 +19,10 @@ Viewport::Viewport()
 {
     TextureSamplerDescritor smp_desc;
 
-    auto window_props = Application::Get()->GetWindow()->GetProperties();
+    glm::uvec2 res = Renderer3D::Get()->GetRenderResolution();
 
-    viewport_resolution_x = window_props.resolution_x;
-    viewport_resolution_y = window_props.resolution_y;
+    viewport_resolution_x = res.x;
+    viewport_resolution_y = res.y;
 
     auto fb_sampler = TextureSampler::CreateSampler(smp_desc);
 
@@ -310,10 +310,9 @@ void Viewport::Render()
             }
             if (Application::GetWorld().HasComponent<UITextComponent>(selected)) {
                 glm::mat4 camera = glm::mat4(1.0f);
-                int res_x = Application::Get()->GetWindow()->GetProperties().resolution_x;
-                int res_y = Application::Get()->GetWindow()->GetProperties().resolution_y;
+                glm::uvec2 res = Renderer3D::Get()->GetRenderResolution();
                 ImGuizmo::SetOrthographic(true);
-                glm::mat4 projection_ui = glm::ortho(0.0f, (float)res_x / (float)res_y, 0.0f, 1.0f);
+                glm::mat4 projection_ui = glm::ortho(0.0f, (float)res.x / (float)res.y, 0.0f, 1.0f);
                 transform[3][2] = 0.0f;
                 ImGuizmo::Manipulate(glm::value_ptr(camera), glm::value_ptr(projection_ui), op, md, glm::value_ptr(transform), glm::value_ptr(delta),
                     snap_enabled ? glm::value_ptr(snap) : nullptr);
@@ -379,10 +378,6 @@ void Viewport::BeginViewportFrameBuffer()
 void Viewport::EndViewportFrameBuffer()
 {
     Renderer::Get()->SetDefaultFrameBuffer();
-    auto queue = Renderer::Get()->GetCommandQueue();
-    auto list = Renderer::Get()->GetRenderCommandList();
-    list->SetDefaultRenderTarget();
-    queue->ExecuteRenderCommandList(list);
 }
 
 void Viewport::SelectEntityOnViewportPos(float x, float y)

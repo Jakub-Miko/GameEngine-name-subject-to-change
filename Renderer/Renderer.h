@@ -40,10 +40,9 @@ public:
 
     void Update(float delta_time);
 
-    std::shared_ptr<RenderFrameBufferResource> GetDefaultFrameBuffer() {
-        std::lock_guard<std::mutex> lock(default_frame_buffer_mutex);
-        return default_frame_buffer;
-    }
+    bool CheckDefaultRenderSurfaceValidity();
+
+    std::shared_ptr<RenderFrameBufferResource> GetDefaultFrameBuffer();
 
     void SetDefaultFrameBuffer(std::shared_ptr<RenderFrameBufferResource> buffer = nullptr) {
         std::lock_guard<std::mutex> lock(default_frame_buffer_mutex);
