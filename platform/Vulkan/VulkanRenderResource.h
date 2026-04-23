@@ -83,13 +83,13 @@ private:
 	virtual void DestroyResource() override;
 
 	VulkanRenderBufferResource(const RenderBufferDescriptor& desc, RenderState initial_state = RenderState::UNINITIALIZED)
-		: RenderBufferResource(desc,initial_state) {
+		: RenderBufferResource(desc,initial_state), buffer(), alloc(), resource_store() {
 		read_timeline = -1;
 		write_timeline = -1;
 	}
 
 	VulkanRenderBufferResource()
-		: RenderBufferResource(RenderBufferDescriptor(), RenderState::UNINITIALIZED) {
+		: RenderBufferResource(RenderBufferDescriptor(), RenderState::UNINITIALIZED), buffer(), alloc(), resource_store() {
 		read_timeline = -1;
 		write_timeline = -1;
 	}
@@ -165,7 +165,7 @@ private:
 	virtual ~VulkanRenderTexture2DResource();
 	virtual void DestroyResource() override;
 	VulkanRenderTexture2DResource(const RenderTexture2DDescriptor& desc, RenderState initial_state = RenderState::UNINITIALIZED)
-		: RenderTexture2DResource(desc, initial_state), views() {
+		: RenderTexture2DResource(desc, initial_state), views(), image(), alloc(), resource_store() {
 
 	}
 	VkImage image;
@@ -216,7 +216,7 @@ public:
 
 private:
 	VulkanRenderTexture2DArrayResource(const RenderTexture2DArrayDescriptor& desc, RenderState initial_state = RenderState::UNINITIALIZED, unsigned int render_id = 0)
-		: RenderTexture2DArrayResource(desc, initial_state), views() {
+		: RenderTexture2DArrayResource(desc, initial_state), views(), image(), alloc(), resource_store() {
 
 	}
 	virtual void DestroyResource() override;
@@ -270,7 +270,7 @@ public:
 
 private:
 	VulkanRenderTexture2DCubemapResource(const RenderTexture2DCubemapDescriptor& desc, RenderState initial_state = RenderState::UNINITIALIZED, unsigned int render_id = 0)
-		: RenderTexture2DCubemapResource(desc, initial_state), views() {
+		: RenderTexture2DCubemapResource(desc, initial_state), views(), image(), alloc(), resource_store() {
 
 	}
 	virtual void DestroyResource() override;

@@ -44,7 +44,7 @@ public:
         for(auto& prop : properties) {
             props.push_back(prop.second);
         }
-        return std::move(props);
+        return props;
     }
 
 private:

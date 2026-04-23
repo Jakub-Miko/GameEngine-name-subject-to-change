@@ -35,12 +35,12 @@ public:
 		}
 	};
 
-	Mesh(Mesh&& other) : index_buffer(other.index_buffer), vertex_buffer(other.vertex_buffer), num_of_indicies(other.num_of_indicies), 
+	Mesh(Mesh&& other) noexcept : index_buffer(other.index_buffer), vertex_buffer(other.vertex_buffer), num_of_indicies(other.num_of_indicies), 
 		status(other.status), bounding_box(other.bounding_box), skeleton(other.skeleton.get()), mesh_proxy(other.mesh_proxy) {
 		other.skeleton.release();
 		other.status = Mesh_status::UNINITIALIZED;
 	};
-	Mesh& operator=(Mesh&& other) {
+	Mesh& operator=(Mesh&& other) noexcept {
 		index_buffer = other.index_buffer;
 		vertex_buffer = other.vertex_buffer;
 		num_of_indicies = other.num_of_indicies;

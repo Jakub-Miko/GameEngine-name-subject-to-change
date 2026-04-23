@@ -31,10 +31,10 @@ enum class ShowPropertyFlags {
 };
 
 struct PropertiesPanel_persistent_data {
-	char* mesh_file_buffer;
-	char* material_file_buffer;
-	char* prefab_path;
-	int buffer_size;
+	char* mesh_file_buffer = nullptr;
+	char* material_file_buffer = nullptr;
+	char* prefab_path = nullptr;
+	int buffer_size = 0;
 	std::vector<std::unique_ptr<PropertiesPanelEntry>> panel_entries;
 	ShowPropertyFlags show_flags = ShowPropertyFlags::NONE;
 };

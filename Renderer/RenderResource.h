@@ -170,9 +170,9 @@ private:
 
 
 struct RenderTexture2DDescriptor {
-	int width, height;
+	int width = 0, height = 0;
 	int mipmap_levels = 1;
-	TextureFormat format;
+	TextureFormat format = TextureFormat::RGBA_32FLOAT;
 	std::shared_ptr<TextureSampler> sampler = nullptr;
 	TextureUsage usage = TextureUsage::DEFAULT;
 };

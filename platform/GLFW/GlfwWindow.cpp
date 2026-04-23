@@ -16,7 +16,7 @@
 #include <Application.h>
 
 GlfwWindow::GlfwWindow(const WindowProperties& props)
-    : Window(props)
+    : Window(props), drop_callback()
 {
 #ifdef EDITOR
     int x, y;

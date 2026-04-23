@@ -180,7 +180,7 @@ private:
 
     struct RenderResourceStoreDependency {
         int32_t store_version = 0;
-        uint32_t first_resource_override = -1;
+        uint32_t first_resource_override = std::numeric_limits<uint32_t>::max();
         uint32_t last_render_pass_used = 0;
     };
 

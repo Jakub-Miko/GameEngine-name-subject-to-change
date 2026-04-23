@@ -8,9 +8,9 @@
  * @note May be used in the future for optimization purposes
 */
 enum class EntityMode : unsigned char {
-	STATIC = 0 << 0,
-	DYNAMIC = 1 << 0,
-	DEFAULT = STATIC
+	STATIC = 0,
+	DYNAMIC = 1,
+	DEFAULT = 0
 };
 
 /**

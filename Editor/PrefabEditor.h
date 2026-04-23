@@ -14,11 +14,11 @@ struct PrefabEditorWindow {
 	Entity last_entity = Entity();
 
 	PrefabEditorWindow() = default;
-	PrefabEditorWindow(PrefabEditorWindow&& other) : entity(other.entity), selected_entity(other.selected_entity), mesh_path(other.mesh_path), buffer_size(other.buffer_size), material_path(other.material_path) {
+	PrefabEditorWindow(PrefabEditorWindow&& other) noexcept : entity(other.entity), selected_entity(other.selected_entity), mesh_path(other.mesh_path), buffer_size(other.buffer_size), material_path(other.material_path) {
 		other.mesh_path = nullptr;
 	}
 
-	PrefabEditorWindow& operator=(PrefabEditorWindow&& other) {
+	PrefabEditorWindow& operator=(PrefabEditorWindow&& other) noexcept {
 		entity = other.entity;
 		selected_entity = other.selected_entity;
 		mesh_path = other.mesh_path;

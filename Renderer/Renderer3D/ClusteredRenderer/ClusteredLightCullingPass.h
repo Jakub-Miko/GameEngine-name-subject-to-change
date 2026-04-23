@@ -15,9 +15,9 @@ struct ClusteredLightLists {
     std::shared_ptr<RenderBufferResource> point_light_buffer;
     std::shared_ptr<RenderBufferResource> directional_light_buffer;
     std::shared_ptr<RenderBufferResource> skylight_buffer;
-    int num_of_point_lights;
-    int num_of_directional_lights;
-    int num_of_skylights;
+    int num_of_point_lights = 0;
+    int num_of_directional_lights = 0;
+    int num_of_skylights = 0;
 };
 
 struct ClusteredPointLightData {

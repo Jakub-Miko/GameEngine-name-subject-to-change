@@ -8,7 +8,7 @@ extern "C" {
 	/**
 	 * @brief a class representing a CollisionEvent in Lua scripts
 	*/
-	LIBEXP struct CollisionEvent_L {
+	struct CollisionEvent_L {
 		entity collider;
 		int num_collision_points;
 		vec3 collision_points[4];

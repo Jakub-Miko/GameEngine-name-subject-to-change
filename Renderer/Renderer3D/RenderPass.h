@@ -19,8 +19,8 @@ enum class RenderPassResourceDescriptor_Access {
 
 struct RenderPassResourceDescriptor {
 	std::string resource_name;
-	RuntimeTagIdType type_id;
-	RenderPassResourceDescriptor_Access desc_access;
+	RuntimeTagIdType type_id = 0;
+	RenderPassResourceDescriptor_Access desc_access = (RenderPassResourceDescriptor_Access)0;
 };
 
 struct PersistentRenderPassResource {

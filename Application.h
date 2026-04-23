@@ -17,13 +17,13 @@
 
 
 #include <Core/Defines.h>
-LIBEXP class TestModular {
+class TestModular {
 public:
     RUNTIME_TAG("TestModular");
-    virtual TestModular* clone() = 0;
-    virtual int GetNumber1() = 0;
-    virtual int GetNumber2() = 0;
-    virtual int GetNumber3() = 0;
+    LIBEXP virtual TestModular* clone() = 0;
+    LIBEXP virtual int GetNumber1() = 0;
+    LIBEXP virtual int GetNumber2() = 0;
+    LIBEXP virtual int GetNumber3() = 0;
 
 };
 

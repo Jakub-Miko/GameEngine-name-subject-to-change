@@ -19,7 +19,7 @@ private:
 	void Terminate();
 	friend class EventSubject;
 	EventSubject* subject = nullptr;
-	int index;
+	int index = 0;
 };
 
 template<typename Event_Type,typename func_type>

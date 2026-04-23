@@ -161,9 +161,9 @@ struct RootSignatureDescriptor {
 };
 
 struct RootMappingEntry {
-	RootMappingEntry() {}
+	RootMappingEntry() : parameter_id(0) {}
 	RootMappingEntry(uint32_t parameter_id) : parameter_id(parameter_id) {}
-	uint32_t parameter_id;
+	uint32_t parameter_id = 0;
 };
 
 class RootSignature {

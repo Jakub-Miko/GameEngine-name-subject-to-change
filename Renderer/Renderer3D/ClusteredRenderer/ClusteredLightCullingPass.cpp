@@ -42,7 +42,8 @@ ClusteredLightCullingPass::ClusteredLightCullingPass(const std::string& input_gl
         const std::string& output_clustered_light_lists_name, const std::string& active_cluster_list)
     : input_global_light_list_name(input_global_light_list_name), output_clustered_light_lists_name(output_clustered_light_lists_name),
     data(new internal_data), active_cluster_list(active_cluster_list), input_shadowed_point_light_list_name(input_shadowed_point_light_list_name),
-    input_directional_shadow_cascades(input_directional_shadow_cascades), input_shadowed_directional_light_list_name(input_shadowed_directional_light_list_name)
+    input_directional_shadow_cascades(input_directional_shadow_cascades), input_shadowed_directional_light_list_name(input_shadowed_directional_light_list_name),
+    current_cluster_grid_resolution()
 {
 
 }
