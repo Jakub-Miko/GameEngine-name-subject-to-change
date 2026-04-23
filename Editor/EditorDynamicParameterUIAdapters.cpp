@@ -15,7 +15,8 @@ void UIModuleAdapter<std::string>::RenderUI() {
 void UIModuleAdapter<MultiChoice>::RenderUI() {
     int current = value->GetValueTyped().GetIndex();
     std::vector<const char*> choices;
-    for (auto& choice : value->GetValueTyped().GetChoices()) {
+    auto choice_list = value->GetValueTyped().GetChoices();
+    for (auto& choice : choice_list) {
         choices.push_back(choice.c_str());
     }
     if(ImGui::Combo(value->GetName().c_str(), &current, choices.data(), (int)value->GetValueTyped().GetChoices().size())) {

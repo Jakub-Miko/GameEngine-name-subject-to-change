@@ -109,6 +109,9 @@ TextRenderer* TextRenderer::Get()
 
 void TextRenderer::TextRenderSystem()
 {
+    if (!Renderer::Get()->CheckDefaultRenderSurfaceValidity()) {
+        return;
+    }
     auto ui_view = Application::GetWorld().GetRegistry().view<UITextComponent>();
     auto list = Renderer::Get()->GetRenderCommandList();
     auto queue = Renderer::Get()->GetCommandQueue();
