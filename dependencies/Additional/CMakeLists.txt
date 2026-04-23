@@ -9,6 +9,7 @@ file(GLOB IMGUI_FILES "${CMAKE_SOURCE_DIR}/dependencies/imgui/imgui*.cpp" "${CMA
 
 target_sources(IMGUI INTERFACE ${IMGUI_FILES})
 target_include_directories(IMGUI INTERFACE "${CMAKE_SOURCE_DIR}/dependencies/imgui")
+target_compile_definitions(IMGUI INTERFACE "EDITOR")
 
 add_library(ImGuizmo INTERFACE)
 file(GLOB imguizmo_sources "${CMAKE_SOURCE_DIR}/dependencies/ImGuizmo/*.cpp")
