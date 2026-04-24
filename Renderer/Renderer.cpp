@@ -1,6 +1,5 @@
 #include "Renderer.h"
 #include <ThreadManager.h>
-#include <Renderer/TextRenderer.h>
 #include <Application.h>
 #include <World/Components/CameraComponent.h>
 #include <Renderer/Renderer3D/Renderer3D.h>
@@ -78,7 +77,6 @@ void Renderer::Init() {
 void Renderer::PostInit()
 {
     Renderer3D::Init();
-    TextRenderer::Init();
 }
 
 
@@ -94,7 +92,6 @@ RenderFence* Renderer::GetFence()
 
 void Renderer::Shutdown()
 {
-    TextRenderer::Shutdown();
     Renderer3D::PreShutdown();
     std::unique_lock<std::mutex> lock(instance->default_frame_buffer_mutex);
     if (instance->default_frame_buffer) {
@@ -157,6 +154,4 @@ void Renderer::Update(float delta_time)
     Application::GetWorld().GetComponent<TransformComponent>(primary).TransformMatrix = view_matrix;
     
     Renderer3D::Get()->Update(delta_time);
-    TextRenderer::Get()->UpdateLoadedFonts();
-    TextRenderer::Get()->TextRenderSystem();
 }

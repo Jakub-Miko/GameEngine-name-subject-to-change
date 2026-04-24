@@ -626,7 +626,7 @@ void World::SaveScene(const std::string& file_path)
 	auto view_serializable_non_prefabs = m_ECS.view<SerializableComponent>(entt::exclude<PrefabComponent>);
 
 	auto typelist = TypeList<TransformComponent, PrefabComponent, DynamicPropertiesComponent, LabelComponent, MeshComponent, CameraComponent,
-	LightComponent, ShadowCasterComponent, NullComponentType, SkeletalMeshComponent, NullComponentType, UITextComponent, SkylightComponent, AnimationComponent>();
+	LightComponent, ShadowCasterComponent, NullComponentType, SkeletalMeshComponent, NullComponentType, NullComponentType, SkylightComponent, AnimationComponent>();
 
 	archive.Serialize(*this, view_serializable, typelist);
 

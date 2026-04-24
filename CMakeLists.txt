@@ -108,7 +108,6 @@ target_link_libraries(EngineCore PRIVATE glew_s)
 
 endif()
 
-add_subdirectory("./dependencies/FreeType")
 add_subdirectory("./dependencies/glfw")
 
 add_subdirectory("./dependencies/EnTT")
@@ -155,7 +154,7 @@ set(ASSIMP_BUILD_TESTS off)
 set(ASSIMP_INSTALL off)
 
 target_link_libraries(EngineCore PUBLIC glfw glm Profiler MemoryManagement 
-TaskSystem RuntimeTypeIdentifier ThreadManager FileManager ConfigManager EnTT::EnTT RuntimeTypeIdentifier JsonParser STB_Image assimp ImGuizmo freetype)
+TaskSystem RuntimeTypeIdentifier ThreadManager FileManager ConfigManager EnTT::EnTT RuntimeTypeIdentifier JsonParser STB_Image assimp ImGuizmo)
 
 target_compile_definitions(EngineCore PRIVATE BUILDDLL ENGINE_CORE)
 
@@ -181,8 +180,7 @@ endif()
 if(UNIX AND NOT APPLE)
     
 target_link_libraries(EngineCore PUBLIC glfw glm Profiler MemoryManagement 
-TaskSystem RuntimeTypeIdentifier ThreadManager FileManager ConfigManager EnTT RuntimeTypeIdentifier JsonParser STB_Image assimp ImGuizmo
-freetype)
+TaskSystem RuntimeTypeIdentifier ThreadManager FileManager ConfigManager EnTT RuntimeTypeIdentifier JsonParser STB_Image assimp ImGuizmo)
 
 target_compile_definitions(EngineCore PRIVATE "LINUX")
 

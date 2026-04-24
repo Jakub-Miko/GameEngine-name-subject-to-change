@@ -3,7 +3,6 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_internal.h"
 #include <World/Components/CameraComponent.h>
-#include <World/Components/UITextComponent.h>
 #include <Renderer/Renderer.h>
 #include <Renderer/Renderer3D/Renderer3D.h>
 #include <Renderer/RenderResourceManager.h>
@@ -292,21 +291,10 @@ void Viewport::Render()
                 snap = glm::vec3(rotation_snap);
                 break;
             }
-            if (Application::GetWorld().HasComponent<UITextComponent>(selected)) {
-                glm::mat4 camera = glm::mat4(1.0f);
-                glm::uvec2 res = Renderer3D::Get()->GetRenderResolution();
-                ImGuizmo::SetOrthographic(true);
-                glm::mat4 projection_ui = glm::ortho(0.0f, (float)res.x / (float)res.y, 0.0f, 1.0f);
-                transform[3][2] = 0.0f;
-                ImGuizmo::Manipulate(glm::value_ptr(camera), glm::value_ptr(projection_ui), op, md, glm::value_ptr(transform), glm::value_ptr(delta),
-                    snap_enabled ? glm::value_ptr(snap) : nullptr);
-            }
-            else {
-                ImGuizmo::SetOrthographic(false);
-                ImGuizmo::Manipulate(glm::value_ptr(camera_transform), glm::value_ptr(projection), op, md, glm::value_ptr(transform), glm::value_ptr(delta),
-                    snap_enabled ? glm::value_ptr(snap) : nullptr);
-            }
 
+            ImGuizmo::SetOrthographic(false);
+            ImGuizmo::Manipulate(glm::value_ptr(camera_transform), glm::value_ptr(projection), op, md, glm::value_ptr(transform), glm::value_ptr(delta),
+                snap_enabled ? glm::value_ptr(snap) : nullptr);
             if (ImGuizmo::IsUsing()) {
                 glm::mat4 parent = glm::mat4(1.0f);
                 SceneNode* node = Application::GetWorld().GetSceneGraph()->GetSceneGraphNode(selected);

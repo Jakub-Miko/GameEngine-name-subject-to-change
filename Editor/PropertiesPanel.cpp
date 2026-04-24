@@ -13,7 +13,6 @@
 #include <Editor/PropertiesPanelEntries/MeshPropertiesPanelEntry.h>
 #include <Editor/PropertiesPanelEntries/SkeletalMeshPropertiesPanelEntry.h>
 #include <Editor/PropertiesPanelEntries/DynamicPropertiesPanelEntry.h>
-#include <Editor/PropertiesPanelEntries/UITextPropertiesPanelEntry.h>
 #include <Editor/PropertiesPanelEntries/SkyLightPropertiesPanelEntry.h>
 #include <Editor/PropertiesPanelEntries/AnimationPropertiesPanelEntry.h>
 #include <FileManager.h>
@@ -30,7 +29,6 @@ PropertiesPanel::PropertiesPanel()
 	RegisterPanelEntry(MeshPropertiesPanelEntry());
 	RegisterPanelEntry(SkeletalMeshPropertiesPanelEntry());
 	RegisterPanelEntry(DynamicPropertiesPanelEntry());
-	RegisterPanelEntry(UITextPropertiesPanelEntry());
 	RegisterPanelEntry(SkyLightPropertiesPanelEntry());
 	RegisterPanelEntry(AnimationPropertiesPanelEntry());
 }

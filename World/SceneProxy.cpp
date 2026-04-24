@@ -44,7 +44,7 @@ SceneProxy::LoadInfo NativeSceneProxy::LoadScene(World &world)
 	}
 
 	auto typelist = TypeList<TransformComponent, PrefabComponent, DynamicPropertiesComponent, LabelComponent, MeshComponent, CameraComponent,
-	LightComponent, ShadowCasterComponent, NullComponentType, SkeletalMeshComponent, NullComponentType, UITextComponent, SkylightComponent, AnimationComponent>();
+	LightComponent, ShadowCasterComponent, NullComponentType, SkeletalMeshComponent, NullComponentType, NullComponentType, SkylightComponent, AnimationComponent>();
 
 
 	ECS_Input_Archive archive(json["Entities"]);
