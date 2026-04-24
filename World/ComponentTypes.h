@@ -19,7 +19,6 @@
 #include <World/Components/TransformComponent.h>
 #include <World/Components/SkylightComponent.h>
 #include <World/Components/SkeletalMeshComponent.h>
-#include <World/Components/AudioComponent.h>
 #include <Core/TypeList.h>
 #include <World/Components/AnimationComponent.h>
 
@@ -30,4 +29,4 @@
 */
 using Component_Types = TypeList<BoundingVolumeComponent, CameraComponent, ConstructionComponent, DeferredUpdateComponent, DynamicPropertiesComponent, InitializationComponent,
 	KeyPressedScriptComponent, LabelComponent, LightComponent, LoadedComponent, MeshComponent, MousePressedScriptComponent, PrefabComponent, SerializableComponent, SquareComponent,
-	TransformComponent, ShadowCasterComponent, SkeletalMeshComponent, AudioComponent, UITextComponent, SkylightComponent, AnimationComponent>;
+	TransformComponent, ShadowCasterComponent, SkeletalMeshComponent, UITextComponent, SkylightComponent, AnimationComponent>;

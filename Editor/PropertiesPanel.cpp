@@ -11,7 +11,6 @@
 #include <World/Components/ShadowCasterComponent.h>
 #include <World/Components/MeshComponent.h>
 #include <Editor/PropertiesPanelEntries/MeshPropertiesPanelEntry.h>
-#include <Editor/PropertiesPanelEntries/AudioPropertiesPanelEntry.h>
 #include <Editor/PropertiesPanelEntries/SkeletalMeshPropertiesPanelEntry.h>
 #include <Editor/PropertiesPanelEntries/DynamicPropertiesPanelEntry.h>
 #include <Editor/PropertiesPanelEntries/UITextPropertiesPanelEntry.h>
@@ -31,7 +30,6 @@ PropertiesPanel::PropertiesPanel()
 	RegisterPanelEntry(MeshPropertiesPanelEntry());
 	RegisterPanelEntry(SkeletalMeshPropertiesPanelEntry());
 	RegisterPanelEntry(DynamicPropertiesPanelEntry());
-	RegisterPanelEntry(AudioPropertiesPanelEntry());
 	RegisterPanelEntry(UITextPropertiesPanelEntry());
 	RegisterPanelEntry(SkyLightPropertiesPanelEntry());
 	RegisterPanelEntry(AnimationPropertiesPanelEntry());

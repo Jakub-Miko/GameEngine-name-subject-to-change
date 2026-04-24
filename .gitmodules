@@ -20,9 +20,6 @@
 	path = dependencies/imgui
 	url = https://github.com/ocornut/imgui.git
 	branch = docking
-[submodule "dependencies/OpenAL"]
-	path = dependencies/OpenAL
-	url = https://github.com/kcat/openal-soft.git
 [submodule "dependencies/ImGuizmo"]
 	path = dependencies/ImGuizmo
 	url = https://github.com/CedricGuillemet/ImGuizmo.git

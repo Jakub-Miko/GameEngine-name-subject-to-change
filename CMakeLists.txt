@@ -36,8 +36,6 @@ file(GLOB SRCS
 "./States/*.cpp"
 "./World/*.cpp"
 "./World/*/*.cpp"
-"./Audio/*.cpp"
-"./Audio/*/*.cpp"
 "./Animation/*.cpp"
 "./Animation/*/*.cpp"
 "./TestLayers/*.cpp"
@@ -120,8 +118,6 @@ add_subdirectory("./dependencies")
 add_subdirectory("./dependencies/assimp")
 
 add_subdirectory("./dependencies/Additional")
-
-add_subdirectory("./dependencies/OpenAL")
 set(BUILD_SHARED_LIBS off)
 add_subdirectory("./Utilities")
 set(BUILD_SHARED_LIBS on)
@@ -159,7 +155,7 @@ set(ASSIMP_BUILD_TESTS off)
 set(ASSIMP_INSTALL off)
 
 target_link_libraries(EngineCore PUBLIC glfw glm Profiler MemoryManagement 
-TaskSystem RuntimeTypeIdentifier ThreadManager FileManager ConfigManager EnTT::EnTT RuntimeTypeIdentifier JsonParser STB_Image assimp OpenAL ImGuizmo freetype)
+TaskSystem RuntimeTypeIdentifier ThreadManager FileManager ConfigManager EnTT::EnTT RuntimeTypeIdentifier JsonParser STB_Image assimp ImGuizmo freetype)
 
 target_compile_definitions(EngineCore PRIVATE BUILDDLL ENGINE_CORE)
 
@@ -185,7 +181,7 @@ endif()
 if(UNIX AND NOT APPLE)
     
 target_link_libraries(EngineCore PUBLIC glfw glm Profiler MemoryManagement 
-TaskSystem RuntimeTypeIdentifier ThreadManager FileManager ConfigManager EnTT RuntimeTypeIdentifier JsonParser STB_Image assimp OpenAL ImGuizmo
+TaskSystem RuntimeTypeIdentifier ThreadManager FileManager ConfigManager EnTT RuntimeTypeIdentifier JsonParser STB_Image assimp ImGuizmo
 freetype)
 
 target_compile_definitions(EngineCore PRIVATE "LINUX")
