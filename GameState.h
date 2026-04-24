@@ -12,12 +12,6 @@ class GameState {
 public:
 	friend GameStateMachine;
 	/**
-	 * @brief Game state base constructor.
-	 * @param script_path Lua script which allows some GameState logic to be implemented in scripts. If ScriptFlags is NONE script_path can be empty .
-	 * @param ScriptFlags Specifies what events should dispatch the Lua script (i.e. Update, KeyPress, MousePress, Attach, Deattach etc.), default to NONE.
-	*/
-	GameState(const std::string& script_path, SCRIPT_FLAGS ScriptFlags = SCRIPT_FLAGS::NONE) : script_path(script_path), script_event_flags(ScriptFlags) {}
-	/**
 	 * @brief Game state default base constructor
 	 * 
 	 * script_path and ScriptFlags are implicitly empty and NONE respectively.
@@ -55,8 +49,4 @@ public:
 	 * @deprecated not used anymore, may be removed.
 	*/
 	Layer* GetGameLayer();
-
-protected:
-	std::string script_path = ""; ///< Path for the Lua script file associated with the GameState
-	SCRIPT_FLAGS script_event_flags = SCRIPT_FLAGS::NONE; ///< Flags specifying what functionality the Lua script provides.
 };

@@ -6,7 +6,6 @@
 #include <Promise.h>
 #include <Renderer/Renderer.h>
 #include <Input/Input.h>
-#include <World/Systems/ScriptSystem.h>
 #include <Events/KeyPressEvent.h>
 #include <Events/MouseButtonPressEvent.h>
 #include <Events/MouseMoveEvent.h>
@@ -15,31 +14,18 @@
 #include <Audio/AudioSystem.h>
 #include <World/Systems/SquareRenderSystem.h>
 #include <World/Systems/BoxRenderer.h>
-#include <World/Systems/InitializationSystem.h>
 #include <World/Systems/MeshRenderSystem.h>
 #include <World/Systems/AudioUpdateSystem.h>
-#include <World/Systems/KeyPressedScriptSystem.h>
-#include <World/Systems/MousePressedScriptSystem.h>
 #include <Renderer/MeshManager.h>
 #include <Renderer/Renderer3D/SkeletalAnimations/SkeletalAnimationManager.h>
 #include <Renderer/TextureManager.h>
-#include <World/Systems/EntityConstructionSystem.h>
 #include <World/SceneGraph.h>
 
 #include "World/Systems/AnimationSystem.h"
 
 
 void GameLayer::OnEvent(Event* e) {
-    EventDispacher dispatch(e);
-    dispatch.Dispatch<KeyPressedEvent>([this](KeyPressedEvent* e) {
-        KeyPressedScriptSystem(Application::GetWorld(), e);
-        return false;
-        });
 
-    dispatch.Dispatch<MouseButtonPressEvent>([this](MouseButtonPressEvent* e) {
-        MousePressedScriptSystem(Application::GetWorld(), e);
-        return false;
-        });
 }
 
 
@@ -53,16 +39,10 @@ void GameLayer::PreUpdate(float delta_time)
 {
     World& world = Application::GetWorld();
     world.CheckCamera();
-    EntityConstructionSystem(world);
-    ScriptSystemDeferredSet(world);
 }
 
 void GameLayer::OnUpdate(float delta_time) { 
     World& world = Application::GetWorld();
-    world.UpdateSceneScript(delta_time);
-    InitializationSystem(world);
-    ScriptSystemUpdate(world, delta_time);
-    ScriptSystemDeferredCall(world);
     world.SetPrimaryEntitySystem();
     MeshManager::Get()->UpdateLoadedMeshes(); // MultiThread
     AudioSystem::Get()->UpdateLoadedSounds();
@@ -70,7 +50,6 @@ void GameLayer::OnUpdate(float delta_time) {
     AnimationSystem(world, delta_time);
     TextureManager::Get()->UpdateLoadedReflectionMaps();
     world.UpdateTransformMatricies(); // we need to update transforms before and after physics update, so the physics engine knows current possitions of our objects.
-    ScriptSystemCollisionCallback(world);
     world.UpdateTransformMatricies();
     AudioUpdateSystem(world);
     world.DeletionSystem();

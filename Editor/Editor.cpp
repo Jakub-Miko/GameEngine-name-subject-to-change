@@ -14,6 +14,7 @@
 #include "EditorDynamicParameterUIAdapters.h"
 #include "Core/DynamicPropertyProjector.h"
 #include "Core/DynamicPropertyStore.h"
+#include "Events/KeyPressEvent.h"
 
 #ifdef OpenGL
 #include <GLFW/glfw3.h>
@@ -153,8 +154,6 @@ void Editor::Run()
 			if (ImGui::MenuItem("Load Scene")) {
 				ImGui::OpenPopup(load_id);
 			};
-
-			SceneScriptOptions();
 
 			if (ImGui::MenuItem("Empty Scene")) {
 				Application::GetWorld().LoadEmptyScene();
@@ -568,43 +567,6 @@ void Editor::DropCallback(int count, std::vector<std::string> files)
 {
 	Editor::Get()->drop_callback_strings = files;
 	Editor::Get()->are_files_dropped = true;
-}
-
-void Editor::SceneScriptOptions()
-{
-	auto& world = Application::GetWorld();
-	bool has_script = world.HasSceneScript();
-	auto scene = world.GetCurrentSceneProxy();
-	auto& scene_path = scene->GetFilePath() == "" ? "temp_file" : scene->GetFilePath();
-	std::string temp_path = FileManager::Get()->GetTempFilePath(FileManager::Get()->GetPathHash(scene_path) + ".lua");
-	bool temp_file_exist = std::filesystem::exists(temp_path);
-	if (ImGui::MenuItem(has_script ? "Edit scene script" : "Create scene script")) {
-		std::ofstream file(temp_path);
-		if (!file.is_open()) throw std::runtime_error("File " + temp_path + " doesn't exist");
-		if (has_script) {
-			file << world.GetScript();
-		}
-		else {
-			file << "function OnUpdate(delta_time) \n\nend\n";
-		}
-		file.close();
-		Application::Get()->GetOsApi()->OpenFileInDefaultApp(temp_path);
-	}
-	if (temp_file_exist && ImGui::MenuItem("Apply scene script")) {
-		std::string new_script = FileManager::Get()->OpenFileRaw(FileManager::Get()->GetPath(temp_path));
-		if(scene_path != "") {
-			std::string scene_string = FileManager::Get()->OpenFileRaw(scene_path);
-			FileManager::Get()->InsertOrReplaceSection(scene_string, new_script, "Script");
-			std::ofstream file(FileManager::Get()->GetPath(scene_path));
-			if (!file.is_open()) throw std::runtime_error("File " + FileManager::Get()->GetPath(scene_path) + " doesn't exist");
-			file << scene_string;
-			file.close();
-		}
-		Application::GetWorld().ResetLuaEngine();
-		Application::GetWorld().scene_lua_engine.RunString(new_script);
-	}
-
-
 }
 
 Editor::Editor() : viewport(new Viewport), scene_graph(new SceneGraphViewer), properties_panel(new PropertiesPanel), explorer(new FileExplorer), prefab_editor(new PrefabEditor), material_editor(new MaterialEditor), error_messages()

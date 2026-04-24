@@ -1,6 +1,5 @@
 #pragma once
 #include "Layer.h"
-#include <World/Components/ScriptComponent.h>
 
 /**
  * @brief Layer responsible for updating and propagating events to systems required by the Engine.

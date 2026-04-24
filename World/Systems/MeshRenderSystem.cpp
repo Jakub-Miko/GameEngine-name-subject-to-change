@@ -1,7 +1,5 @@
 #include "MeshRenderSystem.h"
 #include <World/System.h>
-#include <World/Systems/ScriptSystemManagement.h>
-#include <World/Components/ScriptComponent.h>
 #include <World/Components/MeshComponent.h>
 #include <World/Systems/BoxRenderer.h>
 #include <Renderer/Renderer3D/Renderer3D.h>

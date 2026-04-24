@@ -7,7 +7,6 @@
 #include <ConfigManager.h>
 #include <Renderer/Renderer.h>
 #include <Renderer/RenderContext.h>
-#include <World/Systems/ScriptSystemManagement.h>
 #include <World/Systems/MeshRenderSystem.h>
 #include <World/Components/MeshComponent.h>
 #include <World/Systems/BoxRenderer.h>
@@ -189,7 +188,7 @@ void Application::InitInstance()
 
 void Application::PreInitializeSystems()
 {
-    ScriptSystemManager::Initialize();
+
 }
 
 void Application::InitializeSystems()
@@ -200,7 +199,6 @@ void Application::InitializeSystems()
 void Application::ShutdownSystems()
 {
     SutdownMeshRenderSystem();
-    ScriptSystemManager::Shutdown();
     GetWorld().GetRegistry().clear<MeshComponent>();
     GetWorld().GetRegistry().clear<LoadingMeshComponent>();
     Delete_Render_Box_data();
@@ -311,7 +309,6 @@ void Application::Update()
 void Application::InitThread()
 {
     if (ThreadManager::IsValidThreadContext()) {
-        ScriptSystemManager::Get()->InitThread();
         Application::Get()->GetAsyncDispather()->RegisterUserThread(std::this_thread::get_id());
     }
     else {

@@ -13,8 +13,6 @@
 #include <World/SceneProxy.h>
 #include <memory>
 #include <utility>
-#include <LuaEngine.h>
-#include <LuaEngineUtilities.h>
 
 class EntityType;
 class World;
@@ -192,12 +190,6 @@ public:
 	 * @see SceneGraph
 	*/
 	void UpdateTransformMatricies();
-
-	/**
-	 * @brief Runs update on a scene specific Lua script
-	 * @param delta_time 
-	*/
-	void UpdateSceneScript(float delta_time);
 
 	/**
 	 * @brief Sets the local translation of the Entity without synchronization
@@ -648,46 +640,11 @@ public:
 	*/
 	void CheckCamera();
 
-	/**
-	 * @brief Check if the current scene has a scene script
-	 * @return 
-	*/
-	bool HasSceneScript() const {
-		return has_script;
-	}
-
-	/**
-	 * @brief Get the current SceneScript String
-	 */
-	const std::string& GetScript() const {
-		return scene_script;
-	}
-
-	/**
-	 * @brief Unloads the old scene script, resets the scene script engine and initializes the new scene script provided.
-	 * 
-	 * @param script The new scene script to replace the old one.
-	 */
-	void ResetSceneScript(const std::string script) {
-		scene_script = script;
-		ResetLuaEngine();
-		scene_lua_engine.RunString(script);
-	}
-
 private:
 	friend class GameLayer;
 #ifdef EDITOR
 	friend class Editor;
 #endif
-	/**
-	 * @brief Binds Engine functionality into the Scene LuaEngine
-	*/
-	void BindLuaFunctions();
-	/**
-	 * @brief Resets the Scene LuaEngine on Scene Load
-	*/
-	void ResetLuaEngine();
-
 
 	/**
 	 * @brief Wrapper for the ComponentInitProxy::OnCreate
@@ -774,10 +731,6 @@ private:
 	Entity set_primary_entity = Entity(); ///< Primary entity to set 
 	Entity primary_entity = Entity(); ///< Current Primary entity 
 	Entity default_camera = Entity(); ///< Default Primary Entity used when Current Primary Entity is not valid
-
-	LuaEngine scene_lua_engine; ///< Scene Script LuaEngine
-	bool has_script = false; ///< Whether current scene has a Script
-	std::string scene_script;
 
 	std::shared_ptr<SceneProxy> current_scene = nullptr; ///< Current Scene load info
 	std::shared_ptr<SceneProxy> load_scene = nullptr; ///< Scene to be loaded info

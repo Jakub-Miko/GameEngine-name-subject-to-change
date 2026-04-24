@@ -21,7 +21,6 @@
 #include <World/Components/LightComponent.h>
 #include <World/Components/SerializableComponent.h>
 #include <World/Components/AudioComponent.h>
-#include <World/Systems/ScriptSystemManagement.h>
 
 EntityManager* EntityManager::instance = nullptr;
 
@@ -55,30 +54,19 @@ Entity EntityManager::CreateEntity(const std::string& file_path, Entity parent)
 Entity EntityManager::CreateEntityInplace(const std::string& file_path, Entity parent)
 {
 	std::string path = FileManager::Get()->GetPath(file_path);
-	auto script_vm = ScriptSystemManager::Get()->TryGetScriptSystemVM();
-
-	if (!script_vm) {
-		ScriptSystemManager::Get()->InitializeScriptSystemVM();
-		script_vm = ScriptSystemManager::Get()->TryGetScriptSystemVM();
-	}
-	
 	
 	EntityTemplate entity_template = EntityManager::Get()->GetEntitySignature(path);
 	World& world = Application::GetWorld();
 	Entity new_ent = world.MakeEmptyEntity();
 	world.SetComponent<PrefabComponent>(new_ent, PrefabComponent(path));
 	world.CreateEntityFromEmpty(new_ent, parent);
-	script_vm->SetEngineInitializationEntity(new_ent, path);
 	world.SetComponent<DynamicPropertiesComponent>(new_ent, DynamicPropertiesComponent(entity_template.properties));
-	script_vm->CallInitializationFunction(path, "OnConstruct");
 	world.SetComponent<InitializationComponent>(new_ent);
 
 	for (auto child : entity_template.children) {
 		EntityTemplate child_entity_template = EntityManager::Get()->GetEntitySignature(child);
 		Entity child_ent = world.CreateEntity(new_ent);
-		script_vm->SetEngineInitializationEntity(child_ent, child);
 		world.SetComponent<DynamicPropertiesComponent>(child_ent, DynamicPropertiesComponent(child_entity_template.properties));
-		script_vm->CallInitializationFunction(child, "OnConstruct");
 		world.SetComponent<InitializationComponent>(child_ent);
 	}
 
@@ -88,30 +76,19 @@ Entity EntityManager::CreateEntityInplace(const std::string& file_path, Entity p
 Entity EntityManager::CreateEntityInplace(Entity base_entity, const std::string& file_path, Entity parent)
 {
 	std::string path = FileManager::Get()->GetPath(file_path);
-	auto script_vm = ScriptSystemManager::Get()->TryGetScriptSystemVM();
-
-	if (!script_vm) {
-		ScriptSystemManager::Get()->InitializeScriptSystemVM();
-		script_vm = ScriptSystemManager::Get()->TryGetScriptSystemVM();
-	}
-
 
 	EntityTemplate entity_template = EntityManager::Get()->GetEntitySignature(path);
 	World& world = Application::GetWorld();
 	Entity new_ent = base_entity;
 	world.SetComponent<PrefabComponent>(new_ent, PrefabComponent(path));
 	world.CreateEntityFromEmpty(new_ent, parent);
-	script_vm->SetEngineInitializationEntity(new_ent, path);
 	world.SetComponent<DynamicPropertiesComponent>(new_ent, DynamicPropertiesComponent(entity_template.properties));
-	script_vm->CallInitializationFunction(path, "OnConstruct");
 	world.SetComponent<InitializationComponent>(new_ent);
 
 	for (auto child : entity_template.children) {
 		EntityTemplate child_entity_template = EntityManager::Get()->GetEntitySignature(child);
 		Entity child_ent = world.CreateEntity(new_ent);
-		script_vm->SetEngineInitializationEntity(child_ent, child);
 		world.SetComponent<DynamicPropertiesComponent>(child_ent, DynamicPropertiesComponent(child_entity_template.properties));
-		script_vm->CallInitializationFunction(child, "OnConstruct");
 		world.SetComponent<InitializationComponent>(child_ent);
 	}
 
@@ -127,95 +104,7 @@ Entity EntityManager::CreateEntity(const std::string& name, const std::string& f
 	return ent;
 }
 
-void EntityManager::AddConstructionScriptToPrefab(const std::string& prefab_name, const std::string& construction_script)
-{
-	auto entity_file = FileManager::Get()->OpenFileRaw(prefab_name);
-	auto root_section = FileManager::Get()->GetFileSectionFromString(entity_file, "Root");
-	auto construct_start = root_section.find("@Entity:Construction_Script");
-	if (construct_start != root_section.npos) {
-		construct_start += strlen("@Entity:Construction_Script");
-		auto construct_end = root_section.find("@Entity",construct_start);
-		root_section = root_section.replace(construct_start, construct_end - construct_start, "\n" + construction_script);
-	}
-	else {
-		root_section.append("@Entity:Construction_Script\n" + construction_script);
-	}
-	FileManager::Get()->InsertOrReplaceSection(entity_file, root_section, "Root");
-	std::ofstream out_stream(FileManager::Get()->GetPath(prefab_name));
-	if (!out_stream.is_open()) throw std::runtime_error("File " + prefab_name + " could not be opened");
-	out_stream << entity_file;
-	out_stream.close();
 
-	ScriptSystemManager::Get()->InvalidateConstructionScript(prefab_name);
-
-	Application::GetWorld().ReloadPrefabs(prefab_name);
-}
-
-void EntityManager::RemoveConstructionScriptToPrefab(const std::string& prefab_name)
-{
-	auto entity_file = FileManager::Get()->OpenFileRaw(prefab_name);
-	auto root_section = FileManager::Get()->GetFileSectionFromString(entity_file, "Root");
-	auto construct_start = root_section.find("@Entity:Construction_Script");
-	if (construct_start != root_section.npos) {
-		construct_start += strlen("@Entity:Construction_Script");
-		auto construct_end = root_section.find("@Entity", construct_start);
-		construct_start -= strlen("@Entity:Construction_Script");
-		root_section = root_section.erase(construct_start, construct_end);
-	
-		FileManager::Get()->InsertOrReplaceSection(entity_file, root_section, "Root");
-		std::ofstream out_stream(FileManager::Get()->GetPath(prefab_name));
-		if (!out_stream.is_open()) throw std::runtime_error("File " + prefab_name + " could not be opened");
-		out_stream << entity_file;
-		out_stream.close();
-
-		Application::GetWorld().ReloadPrefabs(prefab_name);
-	}
-}
-
-void EntityManager::AddInlineScriptToPrefab(const std::string& prefab_name, const std::string& inline_script)
-{
-	auto entity_file = FileManager::Get()->OpenFileRaw(prefab_name);
-	auto root_section = FileManager::Get()->GetFileSectionFromString(entity_file, "Root");
-	auto inline_start = root_section.find("@Entity:Inline_Script");
-	if (inline_start != root_section.npos) {
-		inline_start += strlen("@Entity:Inline_Script");
-		auto inline_end = root_section.find("@Entity", inline_start);
-		root_section = root_section.replace(inline_start, inline_end - inline_start, "\n" + inline_script);
-	}
-	else {
-		root_section.append("@Entity:Inline_Script\n" + inline_script);
-	}
-	FileManager::Get()->InsertOrReplaceSection(entity_file, root_section, "Root");
-	std::ofstream out_stream(FileManager::Get()->GetPath(prefab_name));
-	if (!out_stream.is_open()) throw std::runtime_error("File " + prefab_name + " could not be opened");
-	out_stream << entity_file;
-	out_stream.flush();
-	out_stream.close();
-
-	ScriptSystemManager::Get()->InvalidateInlineScript(prefab_name);
-
-	Application::GetWorld().ReloadPrefabs(prefab_name);
-}
-
-void EntityManager::RemoveInlineScriptToPrefab(const std::string& prefab_name)
-{
-	auto entity_file = FileManager::Get()->OpenFileRaw(prefab_name);
-	auto root_section = FileManager::Get()->GetFileSectionFromString(entity_file, "Root");
-	auto inline_start = root_section.find("@Entity:Inline_Script");
-	if (inline_start != root_section.npos) {
-		inline_start += strlen("@Entity:Inline_Script");
-		auto inline_end = root_section.find("@Entity", inline_start);
-		inline_start -= strlen("@Entity:Inline_Script");
-		root_section = root_section.erase(inline_start, inline_end);
-		FileManager::Get()->InsertOrReplaceSection(entity_file, root_section, "Root");
-		std::ofstream out_stream(FileManager::Get()->GetPath(prefab_name));
-		if (!out_stream.is_open()) throw std::runtime_error("File " + prefab_name + " could not be opened");
-		out_stream << entity_file;
-		out_stream.close();
-
-		Application::GetWorld().ReloadPrefabs(prefab_name);
-	}
-}
 
 Entity EntityManager::CreateEntityInplace(const std::string& name, const std::string& file_path, Entity parent)
 {
@@ -265,12 +154,6 @@ void EntityManager::InitializeFromTemplate(Entity target_entity, Entity template
 void EntityManager::DeserializeEntityPrefab(Entity target_entity, const std::string& file_path, Entity parent)
 {
 	std::string path = FileManager::Get()->GetPath(file_path);
-	auto script_vm = ScriptSystemManager::Get()->TryGetScriptSystemVM();
-
-	if (!script_vm) {
-		ScriptSystemManager::Get()->InitializeScriptSystemVM();
-		script_vm = ScriptSystemManager::Get()->TryGetScriptSystemVM();
-	}
 
 	std::string file_buffer = FileManager::Get()->OpenFileRaw(FileManager::Get()->GetFilePathFromSubPath(path));
 
@@ -290,26 +173,11 @@ void EntityManager::DeserializeEntityPrefab(Entity target_entity, const std::str
 		if (!world.HasComponentSynced<DynamicPropertiesComponent>(new_ent)) {
 			world.SetComponent<DynamicPropertiesComponent>(new_ent, DynamicPropertiesComponent(entity_template.properties));
 		}
-		
-		if (has_construction_script) {
-			script_vm->SetEngineInitializationEntity(new_ent, path);
-			script_vm->CallInitializationFunction(path, "OnConstruct");
-		}
-		if (has_script) {
-			world.SetComponent<InitializationComponent>(new_ent);
-		}
 	}
 	else { // for spawned entities
 		world.SetComponent<PrefabComponent>(new_ent, PrefabComponent(path));
 		world.CreateEntityFromEmpty(new_ent, parent);
 		world.SetComponent<DynamicPropertiesComponent>(new_ent, DynamicPropertiesComponent(entity_template.properties));
-		if (has_construction_script) {
-			script_vm->SetEngineInitializationEntity(new_ent, path);
-			script_vm->CallInitializationFunction(path, "OnConstruct");
-		}
-		if (has_script) {
-			world.SetComponent<InitializationComponent>(new_ent);
-		}
 	}
 
 	for (auto child : entity_template.children) {
@@ -321,12 +189,6 @@ void EntityManager::DeserializeEntityPrefab(Entity target_entity, const std::str
 void EntityManager::DeserializeEntityPrefab_impl(const std::string& path_in, const std::string& original_path, const std::string& local_file_buffer, Entity parent, Entity prefab_parent)
 {
 	auto path = path_in;
-	auto script_vm = ScriptSystemManager::Get()->TryGetScriptSystemVM();
-
-	if (!script_vm) {
-		ScriptSystemManager::Get()->InitializeScriptSystemVM();
-		script_vm = ScriptSystemManager::Get()->TryGetScriptSystemVM();
-	}
 
 	auto& world = Application::GetWorld();
 
@@ -350,14 +212,6 @@ void EntityManager::DeserializeEntityPrefab_impl(const std::string& path_in, con
 
 	if (!world.HasComponentSynced<TransformComponent>(child_ent)) {
 		world.SetComponent<TransformComponent>(child_ent);
-	}
-
-	if (has_construction_script) { /// @warning Line @lineinfo : remove
-		script_vm->SetEngineInitializationEntity(child_ent, path);
-		script_vm->CallInitializationFunction(path, "OnConstruct");
-	}
-	if (has_script) { /// @warning Line @lineinfo : remove
-		world.SetComponent<InitializationComponent>(child_ent);
 	}
 
 	if (world.HasComponentSynced<LabelComponent>(child_ent)) { /// Used to lookup prefab children by name, there must be a better way
@@ -427,7 +281,7 @@ void EntityManager::DeserializeComponents(Entity target_entity, const std::strin
 	nlohmann::json json_object = nlohmann::json::parse(json_string);
 		
 	DeserializeComponent<TransformComponent, PrefabComponent, DynamicPropertiesComponent, LabelComponent, MeshComponent, CameraComponent, LightComponent, 
-		ShadowCasterComponent, ScriptComponent, SkeletalMeshComponent, AudioComponent, UITextComponent, SkylightComponent>(target_entity, json_object);
+		ShadowCasterComponent, SkeletalMeshComponent, AudioComponent, UITextComponent, SkylightComponent>(target_entity, json_object);
 }
 
 
@@ -451,9 +305,6 @@ EntityTemplate EntityManager::ParseEntityTemplate(const std::string& raw_string,
 		ent = auxilary_registry.create();
 		DeserializeComponentsToTemplate(ent, result.component_json);
 		temp.template_entity = Entity((uint32_t)ent);
-	}
-	if (temp.has_inline) {
-		auxilary_registry.emplace<ScriptComponent>(ent, ScriptComponent(path));
 	}
 	return temp;
 }

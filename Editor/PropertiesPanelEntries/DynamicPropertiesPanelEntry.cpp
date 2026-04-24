@@ -5,6 +5,8 @@
 #include <variant>
 #include <type_traits>
 
+#include "World/Components/DynamicPropertiesComponent.h"
+
 template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
 template<class... Ts> overloaded(Ts...)->overloaded<Ts...>;
 
@@ -107,7 +109,7 @@ void DynamicPropertiesPanelEntry::RenderPanel(Entity ent)
 
 bool DynamicPropertiesPanelEntry::IsAvailable(Entity ent)
 {
-	return Application::GetWorld().HasComponent<ScriptComponent>(ent);
+	return false;
 }
 
 bool DynamicPropertiesPanelEntry::IsAssigned(Entity ent)

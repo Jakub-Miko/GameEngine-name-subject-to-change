@@ -1,42 +1,15 @@
 #pragma once 
 #include <stack>
 #include <memory>
-#include <LuaEngine.h>
 #include <unordered_set>
 #include <functional>
+#include <stdexcept>
 #include <string>
+
+#include "Core/RuntimeTag.h"
 
 class GameState;
 class Event;
-
-/**
- * @brief Enum for specifying functionality present in a lua script intended for use by the GameStateMachine.
-*/
-enum class SCRIPT_FLAGS : unsigned char {
-	NONE = 0, ///< Script will be ignored
-	UPDATE = 1, ///< Script containes update behaviour
-	KEY_PRESS = 2, ///< Script containes key press behaviour
-	MOUSE_BUTTON_PRESS = 4, ///< Script containes mouse press behaviour
-	ON_ATTACH = 8, ///< Script contains attach behaviour @see GameState::OnAttach
-	ON_DEATTACH = 16  ///< Script contains deattach behaviour @see GameState::OnDeattach
-};
-
-/**
- * @brief OR operator for combining SCRIPT_FLAGS
-*/
-inline SCRIPT_FLAGS operator | (SCRIPT_FLAGS lhs, SCRIPT_FLAGS rhs)
-{
-	return static_cast<SCRIPT_FLAGS>(static_cast<int>(lhs) | static_cast<int>(rhs));
-}
-
-/**
- * @brief OR operator for appending SCRIPT_FLAGS
-*/
-inline SCRIPT_FLAGS& operator |= (SCRIPT_FLAGS& lhs, SCRIPT_FLAGS rhs)
-{
-	lhs = lhs | rhs;
-	return lhs;
-}
 
 /**
  * @brief A singleton State machine used for managing Game Engine bahaviour specific to certain states, and handling transitions between such states.
@@ -105,7 +78,7 @@ public:
 
 	/**
 	 * @brief Register a GameState subclass under its RuntimeTag, so it can be queried on runtime.
-	 * @tparam T GameState subclass to be registered 
+	 * @tparam T GameState subclass to be registered
 	*/
 	template<typename T>
 	void RegisterState() {
@@ -135,42 +108,12 @@ private:
 	~GameStateMachine();
 
 	/**
-	 * @brief Update the current state script
-	*/
-	void ScriptOnUpdate(float delta_time);
-
-	/**
-	 * @brief Propagate an Event to the current state script
-	 * @param e 
-	*/
-	void ScriptOnEvent(Event* e);
-
-	/**
 	 * @brief Register GameStates subclasses using GameStateMachine::RegisterState
 	*/
 	void RegisterStates();
 
-	/**
-	 * @brief Run the attach script of the current state
-	*/
-	void ScriptOnAttach();
-
-	/**
-	 * @brief Run the deattach script of the current state
-	*/
-	void ScriptOnDeattach();
-
 	std::shared_ptr<GameState> next_state = nullptr; ///< The requested state @see GameStateMachine::UpdateNextState
 	std::shared_ptr<GameState> current_state = nullptr; ///< The current state
 	std::stack<std::shared_ptr<GameState>> m_States; ///< The state history stack
-
-	LuaEngineClass<GameStateMachine> m_LuaEngine; ///< The LuaEngine for running the state scripts.
-	std::unordered_set<std::string> m_Loaded_Modules; ///< Lua Modules loaded into the GameStateMachine::m_LuaEngine
-
 	std::unordered_map<std::string, std::function<std::shared_ptr<GameState>()>> state_map; ///< a Map between RuntimeTags and the GameState subclass constructors of the Registered GameStates
-
-private:
-	void BindLuaFunctions(); ///< function to bind Engine functionality into the GameStateMachine::m_LuaEngine
-	//Lua Bindings
-
 };

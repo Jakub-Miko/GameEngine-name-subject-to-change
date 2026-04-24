@@ -9,16 +9,11 @@
 #include <GameStateMachine.h>
 #include <World/EntityManager.h>
 #include <World/ComponentTypes.h>
-#include <World/Systems/ScriptSystemManagement.h>
-#include <World/ScriptModules/DeferredPropertySetModule.h>
-#include <World/ScriptModules/IOModule.h>
-#include <World/ScriptModules/ApplicationDataModule.h>
-#include <World/ScriptModules/TimeModule.h>
 #ifdef EDITOR
 #include <Editor/Editor.h>
 #endif
 #include <fstream>
-
+#include "World/ComponentTypes.h"
 #include "Animation/AnimationManager.h"
 
 void World::Init()
@@ -26,9 +21,8 @@ void World::Init()
 	m_SpatialIndex.Init(SpatialIndexProperties());
 }
 
-World::World() : m_ECS(), m_SceneGraph(this), load_scene(std::make_shared<NativeSceneProxy>()), deletion_queue(), deletion_mutex(), m_SpatialIndex(), scene_lua_engine()
+World::World() : m_ECS(), m_SceneGraph(this), load_scene(std::make_shared<NativeSceneProxy>()), deletion_queue(), deletion_mutex(), m_SpatialIndex()
 {
-	BindLuaFunctions();
 	RegisterComponents(Component_Types());
 	//if((uint32_t)(m_ECS.create())!=0) throw std::runtime_error("A null Entity could not be reserved");
 }
@@ -43,12 +37,6 @@ void World::UpdateTransformMatricies()
 	m_SceneGraph.CalculateMatricies();
 }
 
-void World::UpdateSceneScript(float delta_time)
-{
-	if (has_script) {
-		scene_lua_engine.TryCall<void>(nullptr,"OnUpdate", delta_time);
-	}
-}
 
 void World::SetEntityTranslation(Entity ent, const glm::vec3& translation)
 {
@@ -382,31 +370,6 @@ void World::CheckCamera()
 	}
 }
 
-void World::BindLuaFunctions()
-{
-
-	std::vector<std::pair<std::string, std::string>> optional_dlls = { {"Engine",FileManager::Get()->GetLibraryPath("EngineCore")} };
-	scene_lua_engine.InitFFI(optional_dlls);
-	scene_lua_engine.RunString(ScriptKeyBindings);
-
-	ModuleBindingProperties props;
-
-	DeferredPropertySetModule().RegisterModule(props);
-	IOModule().RegisterModule(props);
-	ApplicationDataModule().RegisterModule(props);
-	TimeModule().RegisterModule(props);
-
-	scene_lua_engine.RegisterModule(props);
-
-
-}
-
-void World::ResetLuaEngine()
-{
-	scene_lua_engine = LuaEngine();
-	BindLuaFunctions();
-}
-
 void World::SerializePrefabChild(Entity child, std::vector<std::pair<std::string, std::string>>& file_structure)
 {
 	EntityParseResult result;
@@ -442,10 +405,7 @@ void World::SerializePrefabChild(Entity child, std::vector<std::pair<std::string
 void World::LoadSceneSystem()
 {
 	if (load_scene) {
-		
-		if (GameStateMachine::Get()->current_state) {
-			GameStateMachine::Get()->ScriptOnDeattach();
-		}
+
 #ifdef EDITOR
 		Editor::Get()->Reset();
 #endif
@@ -461,17 +421,11 @@ void World::LoadSceneSystem()
 		MeshManager::Get()->ClearMeshCache();
 		SkeletalAnimationManager::Get()->ClearAnimationCache(); 
 		EntityManager::Get()->ClearPrefabCache();
-		ScriptSystemManager::Get()->ResetAllScriptSystemVMs();
 		AnimationManager::Get()->ClearAnimationCache();
 
 
-		ResetLuaEngine();
-
 		auto load_info = load_scene->LoadScene(*this);
 
-		has_script = load_info.has_script;
-		scene_script = load_info.script;
-		scene_lua_engine.RunString(scene_script);
 
 		if (set_primary_entity != Entity()) {
 			if (!HasComponent<CameraComponent>(set_primary_entity)) {
@@ -488,9 +442,6 @@ void World::LoadSceneSystem()
 
 		current_scene = load_scene;
 
-		if (GameStateMachine::Get()->current_state) {
-			GameStateMachine::Get()->ScriptOnAttach();
-		}
 		m_SceneGraph.CalculateMatricies();
 		m_SpatialIndex.Rebuild();
 
@@ -689,11 +640,7 @@ void World::SaveScene(const std::string& file_path)
 		json["primary_entity"] = primary_entity;
 	}
 
-	std::string script = "";
 
-	if (has_script) {
-		script = FileManager::Get()->GetFileSection(FileManager::Get()->GetPath(scene_script), "Script");
-	}
 	std::ofstream file(file_path,std::ios_base::trunc);
 	if (!file.is_open()) {
 		throw std::runtime_error("File could not be opened: " + file_path);
@@ -701,11 +648,6 @@ void World::SaveScene(const std::string& file_path)
 	file << "@Section:Root\n";
 	file << json;
 	file << "\n@EndSection\n";
-	if (!script.empty()) {
-		file << "\n@Section:Script\n";
-		file << script;
-		file << "\n@EndSection\n";
-	}
 
 
 	file.close();

@@ -178,12 +178,6 @@ public:
     */
     Entity CreateEntity(const std::string& name, const std::string& path, Entity parent = Entity());
 
-    void AddConstructionScriptToPrefab(const std::string& prefab_name, const std::string& construction_script);
-    void RemoveConstructionScriptToPrefab(const std::string& prefab_name);
-
-    void AddInlineScriptToPrefab(const std::string& prefab_name, const std::string& inline_script);
-    void RemoveInlineScriptToPrefab(const std::string& prefab_name);
-
     /**
      * @brief Similar to @ref EntityManager::CreateEntityInplace(const std::string&, Entity), but assigns a LabelComponent to the new Entity
      * @param name Name to assign to the LabelComponent
