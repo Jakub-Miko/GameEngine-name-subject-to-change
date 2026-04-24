@@ -24,7 +24,7 @@ if(UNIX)
   add_compile_definitions(UNIX=1)
 endif(UNIX)
 
-set(RENDER_API "" CACHE STRING "")
+set(RENDER_API "Vulkan" CACHE STRING "")
 set(MAX_NUM_OF_BONES "100" CACHE STRING "")
 
 option(ENABLE_PROFILING OFF)
@@ -206,7 +206,3 @@ target_compile_definitions(EngineCore PRIVATE ${RENDER_API} MAX_NUM_OF_BONES=${M
 
 
 target_link_libraries(GameEngine PUBLIC EngineCore)
-
-add_library(TestLib SHARED "./TestModule/TestFunc.cpp")
-target_link_libraries(TestLib PUBLIC EngineCore)
-target_compile_definitions(TestLib PRIVATE BUILDDLL)
