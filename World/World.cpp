@@ -26,7 +26,7 @@ void World::Init()
 	m_SpatialIndex.Init(SpatialIndexProperties());
 }
 
-World::World() : m_ECS(), m_SceneGraph(this), load_scene(std::make_shared<NativeSceneProxy>()), deletion_queue(), deletion_mutex(), m_SpatialIndex(), m_PhysicsEngine(PhysicsEngineProps()), scene_lua_engine()
+World::World() : m_ECS(), m_SceneGraph(this), load_scene(std::make_shared<NativeSceneProxy>()), deletion_queue(), deletion_mutex(), m_SpatialIndex(), scene_lua_engine()
 {
 	BindLuaFunctions();
 	RegisterComponents(Component_Types());
@@ -453,7 +453,6 @@ void World::LoadSceneSystem()
 		m_ECS.clear();
 		m_ECS = entt::registry();
 		m_SceneGraph.clear();
-		m_PhysicsEngine.clear();
 		default_camera = Entity();
 		RegisterComponents(Component_Types());
 		
@@ -674,10 +673,11 @@ void World::SaveScene(const std::string& file_path)
 	entt::snapshot snapshot(m_ECS);
 	auto view_serializable = m_ECS.view<SerializableComponent>();
 	auto view_serializable_non_prefabs = m_ECS.view<SerializableComponent>(entt::exclude<PrefabComponent>);
-	snapshot.component<TransformComponent, PrefabComponent, DynamicPropertiesComponent, LabelComponent,MeshComponent, CameraComponent, LightComponent, ShadowCasterComponent, PhysicsComponent,
-		SkeletalMeshComponent, AudioComponent, UITextComponent, SkylightComponent, AnimationComponent>(archive, view_serializable.begin(), view_serializable.end());
-	//snapshot.component<MeshComponent, CameraComponent, LightComponent>(archive, view_serializable_non_prefabs.begin(), view_serializable_non_prefabs.end());
 
+	auto typelist = TypeList<TransformComponent, PrefabComponent, DynamicPropertiesComponent, LabelComponent, MeshComponent, CameraComponent,
+	LightComponent, ShadowCasterComponent, NullComponentType, SkeletalMeshComponent, AudioComponent, UITextComponent, SkylightComponent, AnimationComponent>();
+
+	archive.Serialize(*this, view_serializable, typelist);
 
 	nlohmann::json json;
 	json["Entities"] = archive.AsJson();

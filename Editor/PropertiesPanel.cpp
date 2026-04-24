@@ -4,7 +4,6 @@
 #include <Editor/Editor.h>
 #include <Application.h>
 #include <World/Components/TransformComponent.h>
-#include <World/Components/PhysicsComponent.h>
 #include <World/Components/BoundingVolumeComponent.h>
 #include <World/Components/LightComponent.h>
 #include <World/Components/PrefabComponent.h>
@@ -241,64 +240,6 @@ void PropertiesPanel::RenderProperties(Entity entity, const PropertiesPanel_pers
 		ImGui::TreePop();
 	}
 
-	if (world.HasComponent<PhysicsComponent>(selected) && ImGui::TreeNode("Physics")) {
-		auto& phys_comp = world.GetComponent<PhysicsComponent>(selected);
-
-		const char* shapes[4] = { "BOUNDING BOX","CONVEX HULL", "CAPSULE OUTER", "CAPSULE INNER" };
-		int current_shape = (int)phys_comp.shape_type;
-		if (ImGui::Combo("Collision Shape", &current_shape, shapes, 4) && current_shape != (int)phys_comp.shape_type) {
-			phys_comp.shape_type = (PhysicsShapeType)current_shape;
-			Application::GetWorld().GetPhysicsEngine().RefreshObject(selected);
-		}
-
-		bool kinematic_checked = phys_comp.is_kinematic;
-		ImGui::Checkbox("Kinematic", &kinematic_checked);
-		if (kinematic_checked != phys_comp.is_kinematic) {
-			phys_comp.is_kinematic = kinematic_checked;
-			if (phys_comp.is_kinematic) {
-				phys_comp.mass = 0.0f;
-			}
-			Application::GetWorld().GetPhysicsEngine().RefreshObject(selected);
-		}
-
-		bool no_response_checked = (bool)(phys_comp.props & PhysicsObjectProperties::DISABLE_COLLISION_RESPONSE);
-		bool no_response_ref = no_response_checked;
-		ImGui::Checkbox("Disable Collisions", &no_response_checked);
-		if (no_response_checked != no_response_ref) {
-			if (no_response_checked) {
-				phys_comp.props = phys_comp.props | PhysicsObjectProperties::DISABLE_COLLISION_RESPONSE;
-			}
-			else {
-				phys_comp.props = phys_comp.props & ~PhysicsObjectProperties::DISABLE_COLLISION_RESPONSE;
-			}
-			Application::GetWorld().GetPhysicsEngine().RefreshObject(selected);
-		}
-
-		bool collision_callback = (bool)(phys_comp.props & PhysicsObjectProperties::RECIEVE_COLLISION_EVENTS);
-		bool collision_callback_toggle = collision_callback;
-		ImGui::Checkbox("SendCollisionEvents", &collision_callback_toggle);
-		if (collision_callback != collision_callback_toggle) {
-			if (collision_callback_toggle) {
-				phys_comp.props = phys_comp.props | PhysicsObjectProperties::RECIEVE_COLLISION_EVENTS;
-			}
-			else {
-				phys_comp.props = phys_comp.props & (~PhysicsObjectProperties::RECIEVE_COLLISION_EVENTS);
-			}
-		}
-
-
-		float mass_input = phys_comp.mass;
-		if (ImGui::DragFloat("Mass", &mass_input)) {
-			if (mass_input != 0.0f) {
-				phys_comp.is_kinematic = false;
-			}
-			phys_comp.mass = mass_input;
-			Application::GetWorld().GetPhysicsEngine().RefreshObject(selected);
-		};
-
-		ImGui::TreePop();
-	}
-
 	if (is_camera && !is_prefab) {
 		if (ImGui::TreeNode("Camera")) {
 			auto& camera = world.GetComponent<CameraComponent>(selected);
@@ -389,7 +330,6 @@ void PropertiesPanel::AddComponent(Entity entity,const PropertiesPanel_persisten
 		bool has_light = world.HasComponent<LightComponent>(entity);
 		bool has_bounds = world.HasComponent<BoundingVolumeComponent>(entity);
 		bool has_shadow = world.HasComponent<ShadowCasterComponent>(entity);
-		bool has_physics = world.HasComponent<PhysicsComponent>(entity);
 		
 
 		if (!has_mesh) {
@@ -464,32 +404,6 @@ void PropertiesPanel::AddComponent(Entity entity,const PropertiesPanel_persisten
 			}
 		}
 
-		if (has_mesh) {
-			if (has_physics) {
-				ImGui::BeginDisabled();
-			}
-			if (ImGui::Button("Add Physics Component")) {
-				PhysicsComponent comp;
-				comp.mass = 0.0f;
-				comp.is_kinematic = true;
-				comp.object_type = PhysicsObjectType::RIGID_BODY;
-				comp.shape_type = PhysicsShapeType::BOUNDING_BOX;
-				world.SetComponent<PhysicsComponent>(entity, comp);
-			}
-			if (has_physics) {
-				ImGui::EndDisabled();
-			}
-			ImGui::SameLine();
-			if (!has_physics) {
-				ImGui::BeginDisabled();
-			}
-			if (ImGui::Button("Remove Physics Component")) {
-				world.RemoveComponent<PhysicsComponent>(entity);
-			}
-			if (!has_physics) {
-				ImGui::EndDisabled();
-			}
-		}
 
 		for (auto& entry : data.panel_entries) {
 

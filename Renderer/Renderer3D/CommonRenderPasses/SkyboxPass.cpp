@@ -7,7 +7,6 @@
 #include "Renderer/PipelineManager.h"
 #include "Renderer/RenderResourceManager.h"
 #include "Renderer/Renderer3D/ClusteredRenderer/ClusteredLightCullingPass.h"
-#include "VHACD/inc/vhacdMesh.h"
 #include "World/Components/CameraComponent.h"
 #include "World/Components/SkylightComponent.h"
 

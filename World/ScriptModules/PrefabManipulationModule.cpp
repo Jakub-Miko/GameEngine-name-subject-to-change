@@ -53,120 +53,6 @@ extern "C" {
 	}
 
 	/**
-	 * @brief Applies a physical force in a direction to a simulated object
-	 * @param name Name of the object to apply the force to 
-	 * @param direction the direction of the applied force
-	 * @lua
-	 */
-	LIBEXP void ApplyForce_L(const char* name, vec3 direction) {
-		Entity ent = GetEntityByName(name);
-		glm::vec3 dir = *reinterpret_cast<glm::vec3*>(&direction);
-		Application::GetWorld().GetPhysicsEngine().ApplyForce(ent, dir);
-	}
-
-	/**
-	 * @brief Sets the linear velocity of a simulated object
-	 * @param name Name of the object to set the linear velocity of 
-	 * @param velocity the direction and magnitude of the velocity to set
-	 * @lua
-	 */
-	LIBEXP void SetLinearVelocity_L(const char* name, vec3 velocity) {
-		Entity ent = GetEntityByName(name);
-		glm::vec3 vel = *reinterpret_cast<glm::vec3*>(&velocity);
-		Application::GetWorld().GetPhysicsEngine().SetLinearVelocity(ent, vel);
-	}
-
-	/**
-	 * @brief Sets the angular velocity of a simulated object
-	 * @param name Name of the object to set the angular velocity of
-	 * @param velocity the direction specifies the axis of rotation and the magnitude specifies angular speed
-	 * @lua
-	 */
-	LIBEXP void SetAngularVelocity_L(const char* name, vec3 velocity) {
-		Entity ent = GetEntityByName(name);
-		glm::vec3 vel = *reinterpret_cast<glm::vec3*>(&velocity);
-		Application::GetWorld().GetPhysicsEngine().SetAngularVelocity(ent, vel);
-	}
-
-	/**
-	 * @brief Gets the linear velocity of a simulated object
-	 * @param name Name of the object to get the linear velocity of
-	 * @return The linear velocity vector
-	 * @lua
-	 */
-	LIBEXP vec3 GetLinearVelocity_L(const char* name) {
-		Entity ent = GetEntityByName(name);
-		glm::vec3 vel = Application::GetWorld().GetPhysicsEngine().GetLinearVelocity(ent);
-		return *reinterpret_cast<vec3*>(&vel);
-	}
-
-	/**
-	 * @brief Gets the angular velocity of a simulated object
-	 * @param name Name of the object to get the angular velocity of
-	 * @return The angular velocity vector
-	 * @lua
-	 */
-	LIBEXP vec3 GetAngularVelocity_L(const char* name) {
-		Entity ent = GetEntityByName(name);
-		glm::vec3 vel = Application::GetWorld().GetPhysicsEngine().GetAngularVelocity(ent);
-		return *reinterpret_cast<vec3*>(&vel);
-	}
-
-	/**
-	 * @brief Sets The linear factor of a simulated object
-	 * 
-	 * The linear factor is basically the multiplier of linear movement, if it is 0 the object will fully resist any linear translation.
-	 * Since it is a vector it can be used to limit the objects translation in certain directions.
-	 * 
-	 * @param name Name of the object to set the linear factor of 
-	 * @param factor The linear factor vector to set
-	 * @lua 
-	 */
-	LIBEXP void SetLinearFactor_L(const char* name, vec3 factor) {
-		Entity ent = GetEntityByName(name);
-		glm::vec3 fact = *reinterpret_cast<glm::vec3*>(&factor);
-		Application::GetWorld().GetPhysicsEngine().SetLinearFactor(ent, fact);
-	}
-
-	/**
-	 * @brief Sets The angular factor of a simulated object
-	 *
-	 * The angular factor is basically the multiplier of angular movement, if it is 0 the object will fully resist any rotation.
-	 * Since it is a vector it can be used to limit the objects rotation around certain axis.
-	 *
-	 * @param name Name of the object to set the angular factor of
-	 * @param factor The angular factor vector to set
-	 * @lua
-	 */
-	LIBEXP void SetAngularFactor_L(const char* name, vec3 factor) {
-		Entity ent = GetEntityByName(name);
-		glm::vec3 fact = *reinterpret_cast<glm::vec3*>(&factor);
-		Application::GetWorld().GetPhysicsEngine().SetAngularFactor(ent, fact);
-	}
-
-	/**
-	 * @brief Sets the mass of a simulated object
-	 * @param name Name of the object to set the mass of
-	 * @param mass The mass to set
-	 * @lua 
-	 */
-	LIBEXP void SetMass_L(const char* name, float mass) {
-		Entity ent = GetEntityByName(name);
-		Application::GetWorld().GetPhysicsEngine().SetMass(ent, mass);
-	}
-
-	/**
-	 * @brief Sets the friction coefficient of a simulated object
-	 * @param name Name of the object to set the friction coefficient of
-	 * @param friction The friction coefficient to set
-	 * @lua 
-	 */
-	LIBEXP void SetFriction_L(const char* name, float friction) {
-		Entity ent = GetEntityByName(name);
-		Application::GetWorld().GetPhysicsEngine().SetFriction(ent, friction);
-	}
-
-	/**
 	 * @brief Sets the local translation of an object 
 	 * @param name Name of the object to set the translation of
 	 * @param translation the translation to set
@@ -386,15 +272,6 @@ void PrefabManipulationModule::OnRegisterModule(ModuleBindingProperties& props)
 	void PlayAnimation_L(const char* name, const char* path);
 	void PlaySound_L(const char* name, const char* path);
 	entity GetEntityByName_L(const char* name);
-	void ApplyForce_L(const char* name, vec3 direction);
-	void SetLinearVelocity_L(const char* name, vec3 velocity);
-	void SetAngularVelocity_L(const char* name, vec3 velocity);
-	void SetLinearFactor_L(const char* name, vec3 factor);
-	void SetAngularFactor_L(const char* name, vec3 factor);
-	void SetMass_L(const char* name, float mass);
-	void SetFriction_L(const char* name, float friction);
-	vec3 GetLinearVelocity_L(const char* name);
-	vec3 GetAngularVelocity_L(const char* name); 
 	vec3 GetChildTranslation_L(const char* name);
 	vec3 GetChildWorldTranslation_L(const char* name);
 	vec3 GetChildScale_L(const char* name);
@@ -414,15 +291,6 @@ void PrefabManipulationModule::OnRegisterModule(ModuleBindingProperties& props)
 		{"PlayAnimation_L","PlayAnimation"},
 		{"PlaySound_L","PlaySound"},
 		{"GetEntityByName_L","GetEntityByName"},
-		{"ApplyForce_L","ApplyForce"},
-		{"SetLinearVelocity_L","SetLinearVelocity"},
-		{"SetAngularVelocity_L","SetAngularVelocity"},
-		{"SetLinearFactor_L","SetLinearFactor"},
-		{"SetAngularFactor_L","SetAngularFactor"},
-		{"SetMass_L","SetMass"},
-		{"SetFriction_L","SetFriction"},
-		{"GetLinearVelocity_L","GetLinearVelocity"},
-		{"GetAngularVelocity_L","GetAngularVelocity"},
 		{"GetChildTranslation_L","GetChildTranslation"},
 		{"GetChildWorldTranslation_L","GetChildWorldTranslation"},
 		{"GetChildScale_L","GetChildScale"},

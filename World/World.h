@@ -5,7 +5,6 @@
 #include <World/EntityTypes.h>
 #include <World/SceneGraph.h>
 #include <World/SpatialIndex.h>
-#include <World/PhysicsEngine.h>
 #include <World/Components/InitializationComponent.h>
 #include <World/Components/LabelComponent.h>
 #include <World/Entity.h>
@@ -645,13 +644,6 @@ public:
 	}
 
 	/**
-	 * @brief Gets the Physiscs engine associated with the world
-	*/
-	PhysicsEngine& GetPhysicsEngine() {
-		return m_PhysicsEngine;
-	}
-
-	/**
 	 * @brief Ensure the Primary entity has a valid CameraComponent and if not reset the Primary entity to a temporary default camera.
 	*/
 	void CheckCamera();
@@ -792,8 +784,7 @@ private:
 	std::mutex deletion_mutex; 
 	std::queue<RemoveEntityRequest> deletion_queue;
 	std::mutex entity_mutex;
-	SceneGraph m_SceneGraph; 
-	PhysicsEngine m_PhysicsEngine; 
+	SceneGraph m_SceneGraph;
 	SpatialIndex m_SpatialIndex; 
 	entt::registry m_ECS;
 };

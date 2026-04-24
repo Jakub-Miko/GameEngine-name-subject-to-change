@@ -99,22 +99,6 @@ void Viewport::Render()
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0,0 });
 
     ImGui::Begin("Viewport Options", nullptr);
-    
-
-    bool phys_active = Application::GetWorld().GetPhysicsEngine().IsPhysicsActive();
-    if (phys_active) ImGui::BeginDisabled();
-    if (ImGui::Button("Enable Simulation")) {
-        Application::GetWorld().GetPhysicsEngine().ActiveMode();
-    }
-    if (phys_active) ImGui::EndDisabled();
-    ImGui::SameLine();
-    if (!phys_active) ImGui::BeginDisabled();
-    if (ImGui::Button("Disable Simulation")) {
-        Application::GetWorld().GetPhysicsEngine().PassiveMode();
-    }
-    if (!phys_active) ImGui::EndDisabled();
-    ImGui::SameLine();
-    ImGui::Separator();
 
     ViewportGizmoMode mode = gizmo_mode;
     if (gizmo_mode == ViewportGizmoMode::TRANSLATION) {

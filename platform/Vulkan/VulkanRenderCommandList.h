@@ -12,8 +12,6 @@
 #include <vulkan/vulkan.h>
 #include <Renderer/RenderResourceStore.h>
 
-#include "dependencies/bullet/examples/ThirdPartyLibs/clsocket/src/Host.h"
-
 enum class VulkanCommandListDependencyType : unsigned char {
     WRITE = 1,
     READ = 2,

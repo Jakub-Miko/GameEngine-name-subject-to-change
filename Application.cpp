@@ -182,7 +182,6 @@ void Application::InitInstance()
 
 #ifdef EDITOR
     Editor::Init();
-    GetWorld().GetPhysicsEngine().PassiveMode();
 #endif
 
 

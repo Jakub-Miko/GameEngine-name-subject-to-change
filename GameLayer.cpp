@@ -70,7 +70,6 @@ void GameLayer::OnUpdate(float delta_time) {
     AnimationSystem(world, delta_time);
     TextureManager::Get()->UpdateLoadedReflectionMaps();
     world.UpdateTransformMatricies(); // we need to update transforms before and after physics update, so the physics engine knows current possitions of our objects.
-    world.GetPhysicsEngine().UpdatePhysics(delta_time);
     ScriptSystemCollisionCallback(world);
     world.UpdateTransformMatricies();
     AudioUpdateSystem(world);

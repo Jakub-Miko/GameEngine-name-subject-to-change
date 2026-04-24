@@ -1,10 +1,6 @@
 #include "DynamicPropertiesPanelEntry.h"
 #include <Application.h>
 #include <World/World.h>
-#include <World/Components/MeshComponent.h>
-#include <World/Components/SkeletalMeshComponent.h>
-#include <World/Components/PhysicsComponent.h>
-#include <World/Components/LightComponent.h>
 #include <imgui.h>
 #include <variant>
 #include <type_traits>

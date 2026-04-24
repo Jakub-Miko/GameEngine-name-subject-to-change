@@ -8,9 +8,6 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/out")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/out")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/out")
-set(BUILD_BULLET2_DEMOS on CACHE BOOL "" FORCE)
-set(BUILD_BULLET_ROBOTICS_EXTRA on CACHE BOOL "" FORCE)
-set(BUILD_BULLET_ROBOTICS_GUI_EXTRA on CACHE BOOL "" FORCE)
 set(BUILD_CPU_DEMOS on CACHE BOOL "" FORCE)
 set(BUILD_OPENGL3_DEMOS on CACHE BOOL "" FORCE)
 set(BUILD_EXTRAS on CACHE BOOL "" FORCE)
@@ -162,8 +159,7 @@ set(ASSIMP_BUILD_TESTS off)
 set(ASSIMP_INSTALL off)
 
 target_link_libraries(EngineCore PUBLIC glfw glm Profiler MemoryManagement 
-TaskSystem LuaEngine RuntimeTypeIdentifier ThreadManager FileManager ConfigManager EnTT::EnTT RuntimeTypeIdentifier JsonParser STB_Image assimp OpenAL ImGuizmo
-Bullet freetype)
+TaskSystem LuaEngine RuntimeTypeIdentifier ThreadManager FileManager ConfigManager EnTT::EnTT RuntimeTypeIdentifier JsonParser STB_Image assimp OpenAL ImGuizmo freetype)
 
 target_compile_definitions(EngineCore PRIVATE BUILDDLL ENGINE_CORE)
 
@@ -190,7 +186,7 @@ if(UNIX AND NOT APPLE)
     
 target_link_libraries(EngineCore PUBLIC glfw glm Profiler MemoryManagement 
 TaskSystem LuaEngine RuntimeTypeIdentifier ThreadManager FileManager ConfigManager EnTT RuntimeTypeIdentifier JsonParser STB_Image assimp OpenAL ImGuizmo
-Bullet freetype)
+freetype)
 
 target_compile_definitions(EngineCore PRIVATE "LINUX")
 

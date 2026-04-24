@@ -9,7 +9,6 @@
 #include "Window.h"
 #include "VulkanUnitConverter.h"
 #include "VulkanRenderSurface.h"
-#include "dependencies/bullet/examples/ExampleBrowser/GwenGUISupport/GwenProfileWindow.h"
 
 PFN_vkCmdPushDescriptorSetKHR vkCmdPushDescriptorSet_KHR = nullptr;
 

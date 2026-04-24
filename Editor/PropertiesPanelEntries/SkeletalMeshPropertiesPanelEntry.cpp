@@ -3,7 +3,6 @@
 #include <World/World.h>
 #include <World/Components/SkeletalMeshComponent.h>
 #include <World/Components/MeshComponent.h>
-#include <World/Components/PhysicsComponent.h>
 #include <World/Components/LightComponent.h>
 #include <imgui.h>
 
@@ -140,9 +139,6 @@ void SkeletalMeshPropertiesPanelEntry::OnRemove(Entity ent)
 {
 	auto& world = Application::GetWorld();
 	world.RemoveComponent<SkeletalMeshComponent>(ent);
-	if (Application::GetWorld().HasComponent<PhysicsComponent>(ent) && !Application::GetWorld().HasComponent<MeshComponent>(ent)) {
-		world.RemoveComponent<PhysicsComponent>(ent);
-	}
 	memcpy(mesh_path_buffer, "Unknown", strlen("Unknown") + 1);
 }
 
