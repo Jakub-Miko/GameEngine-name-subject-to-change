@@ -144,15 +144,15 @@ void VulkanRenderSurface::Present(RenderPresentEvent *event)
 	
 	auto& mutex = queue->GetQueueMutex();
 	mutex.lock();
-    auto present_result = vkQueuePresentKHR(*queue->GetVkQueue(), &info);
+    vkQueuePresentKHR(*queue->GetVkQueue(), &info);
 	mutex.unlock();
 
 	previous_index = current_index;
 	auto acquire_result = vkAcquireNextImageKHR(vk_device, vk_swapchain, 30000000000,present_semaphores[current_index], NULL, &current_index); // timeout 30 seconds
-	if (present_result == VK_SUBOPTIMAL_KHR || acquire_result == VK_SUBOPTIMAL_KHR) {
+	if (acquire_result == VK_SUBOPTIMAL_KHR) {
 		RecreateSwapchain();
 	}
-	else if (present_result == VK_ERROR_OUT_OF_DATE_KHR || acquire_result == VK_ERROR_OUT_OF_DATE_KHR) {
+	else if (acquire_result == VK_ERROR_OUT_OF_DATE_KHR) {
 		is_valid = false;
 		return;
 	}
