@@ -216,6 +216,7 @@ void DeferredLightingPass::Setup(RenderPassResourceDefinnition& setup_builder)
 
 void DeferredLightingPass::Render(RenderPipelineResourceManager& resource_manager)
 {
+	PROFILE("LightingPass");
 	render_props props;
 	auto& gbuffer = resource_manager.GetResource<std::shared_ptr<RenderFrameBufferResource>>(input_gbuffer);
 	auto& world = Application::GetWorld();

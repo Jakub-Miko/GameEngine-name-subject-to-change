@@ -25,21 +25,21 @@ public:
     };
 
     void operator()(std::underlying_type_t<entt::entity> size) {
+        if (!current.empty()) {
+            root.push_back(current);
+        }
         if(skip_indices[current_idx] != 0) {
-            for(int i = 0; i < skip_indices[current_idx]; ++i) {
+            auto count = skip_indices[current_idx];
+            for(int i = 0; i < count; ++i) {
                 auto array = nlohmann::json::array();
                 array.push_back(0); // insert empty entries
                 root.push_back(array);
                 current_idx++;
             }
         }
-        current_idx++;
-        int a = 0;
-        if (!current.empty()) {
-            root.push_back(current);
-        }
         current = nlohmann::json::array();
         current.push_back(size);
+        current_idx++;
     }
 
 
@@ -92,7 +92,6 @@ public:
 private:
     template<typename ViewType, typename ... Args>
     void Serialize_impl(World& world, ViewType view, TypeList<Args...>) {
-        InitSkipList<Args...>();
         entt::snapshot snapshot(world.GetRegistry());
         snapshot.component<Args...>(*this, view.begin(), view.end());
     }
@@ -116,7 +115,7 @@ private:
     void InitSkipList_recursive(int index = 0) {
         skip_indices[index] = std::is_same_v<T, NullComponentType> ? 1 : 0;
         if constexpr (sizeof...(Args) > 0) {
-            InitSkipList_recursive<Args...>(index);
+            InitSkipList_recursive<Args...>(index + 1);
         }
     }
 
