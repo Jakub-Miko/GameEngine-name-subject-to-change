@@ -40,6 +40,12 @@ struct VertexLayoutFactory<LightingPassPreset> {
 
 };
 
+struct LightData {
+	glm::vec4 light_color;
+	float range;
+	uint32_t type;
+	uint32_t padding[2];
+};
 
 struct DeferredLightingPass::internal_data {
 	std::shared_ptr<Pipeline> pipeline;
@@ -50,7 +56,6 @@ struct DeferredLightingPass::internal_data {
 	std::shared_ptr<RenderFrameBufferResource> output_buffer_resource;
 	std::shared_ptr<Mesh> sphere_mesh;
 	std::shared_ptr<Mesh> card_mesh;
-	std::shared_ptr<Material> mat;
 	std::shared_ptr<Material> mat_skylight;
 	std::shared_ptr<Material> mat_shadowed_point;
 	std::shared_ptr<Material> mat_shadowed_directional;
@@ -59,6 +64,7 @@ struct DeferredLightingPass::internal_data {
 	std::shared_ptr<RenderBufferResource> constant_scene_buf_shadowed_point;
 	std::shared_ptr<RenderBufferResource> constant_scene_buf_shadowed_directional;
 	std::shared_ptr<RenderBufferResource> constant_scene_buf_bg;
+	std::shared_ptr<RenderBufferResource> light_data;
 	bool initialized = false;
 };
 
@@ -135,7 +141,7 @@ void DeferredLightingPass::InitPostProcessingPassData() {
 
 	data->output_buffer_resource = RenderResourceManager::Get()->CreateFrameBuffer(framebuffer_desc);
 
-	RenderBufferDescriptor const_desc(sizeof(glm::mat4) * 3 + sizeof(float) * 2, RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
+	RenderBufferDescriptor const_desc(sizeof(glm::mat4) * 3 + sizeof(float) * 2 + sizeof(glm::vec2), RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
 	data->constant_scene_buf = RenderResourceManager::Get()->CreateBuffer(const_desc);
 
 	RenderBufferDescriptor const_desc_shadowed_point(sizeof(glm::mat4) * 3 + sizeof(float) * 2, RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
@@ -150,8 +156,10 @@ void DeferredLightingPass::InitPostProcessingPassData() {
 	RenderBufferDescriptor const_desc_bg(sizeof(glm::mat4) + sizeof(glm::vec4), RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
 	data->constant_scene_buf_bg = RenderResourceManager::Get()->CreateBuffer(const_desc_bg);
 
+	RenderBufferDescriptor light_buffer_desc(5000 * sizeof(LightData), RenderBufferType::DEFAULT, RenderBufferUsage::STORAGE_BUFFER);
+	data->light_data = RenderResourceManager::Get()->CreateBuffer(light_buffer_desc);
+
 	data->sphere_mesh = MeshManager::Get()->LoadMeshFromFileAsync("asset:Sphere.mesh"_path);
-	data->mat = MaterialManager::Get()->CreateMaterial("LightingPassLightMaterial");
 	data->mat_shadowed_point = MaterialManager::Get()->CreateMaterial("LightingPassPointLightMaterial");
 	data->mat_shadowed_directional = MaterialManager::Get()->CreateMaterial("LightingPassDirectionalLightMaterial");
 	data->mat_skylight = MaterialManager::Get()->CreateMaterial("LightingPassSkylightLightProps");
@@ -262,57 +270,64 @@ void DeferredLightingPass::RenderLights(RenderPipelineResourceManager& resource_
 	auto& gbuffer = resource_manager.GetResource<std::shared_ptr<RenderFrameBufferResource>>(input_gbuffer);
 	auto& gbuffer_material = resource_manager.GetResource<std::shared_ptr<Material>>(input_gbuffer_material);
 	auto& world = Application::GetWorld();
-	auto ViewProjection = props.projection * props.view;
-	auto view_matrix = props.view;
 	list->SetPipeline(data->pipeline);
 	list->SetRenderTarget(data->output_buffer_resource);
 	list->SetConstantBuffer("conf", data->constant_scene_buf);
+	list->SetStorageBuffer("light_buffer", data->light_data);
+	gbuffer_material->SetMaterial(list);
 	float depth_constant_a = props.depth_constant_a;
 	float depth_constant_b = props.depth_constant_b;
+	auto res = Renderer3D::Get()->GetRenderResolution();
+	glm::vec2 pixel_size = { 1.0f / res.x,
+		1.0f / res.y };
 	glm::mat4 inverse_projection = glm::inverse(props.projection);
-	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, &depth_constant_a, sizeof(float), sizeof(glm::mat4) * 3);
-	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, &depth_constant_b, sizeof(float), sizeof(glm::mat4) * 3 + sizeof(float));
-	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed_point, &inverse_projection, sizeof(glm::mat4), sizeof(glm::mat4) * 2);
+	glm::mat4 projection = props.projection;
+	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, &depth_constant_a, sizeof(float), sizeof(glm::mat4) * 2);
+	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, &depth_constant_b, sizeof(float), sizeof(glm::mat4) * 2 + sizeof(float));
+	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, &pixel_size, sizeof(glm::vec2), sizeof(glm::mat4) * 2 + 2 * sizeof(float));
+	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, glm::value_ptr(inverse_projection), sizeof(glm::mat4), 0);
+	RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, glm::value_ptr(projection), sizeof(glm::mat4), sizeof(glm::mat4));
+	std::vector<LightData> lights;
+	lights.reserve(geometry.resources.size());
 
 	for (auto& entity : geometry.resources) {
+		auto& light = world.GetComponent<LightComponent>(entity);
+
+		LightData light_data = {};
+		light_data.light_color = light.GetLightColor();
+		light_data.type = (int)light.type;
+		light_data.range = light.GetLightRange();
+
+		lights.push_back(light_data);
+	}
+
+	RenderResourceManager::Get()->UploadDataToBuffer(list, data->light_data, &lights[0], sizeof(LightData) * lights.size(),0);
+
+	for (uint32_t i = 0; i < geometry.resources.size(); i++) {
+		auto& entity = geometry.resources[i];
 		auto& transform_component = world.GetComponent<TransformComponent>(entity);
 		auto transform = transform_component.TransformMatrix;
 		auto& light = world.GetComponent<LightComponent>(entity);
 		size_t index_count = 0;
-		glm::mat4 mvp;
 		glm::mat4 mv_matrix;
 
 		if (light.type == LightType::DIRECTIONAL) {
-			mvp = glm::mat4(1.0f);
-			mv_matrix = view_matrix * transform;
+			mv_matrix = props.view * transform;
 			list->SetVertexBuffer(data->card_mesh->GetVertexBuffer());
 			list->SetIndexBuffer(data->card_mesh->GetIndexBuffer());
 			index_count = data->card_mesh->GetIndexCount();
 		}
 		else if (light.type == LightType::POINT) {
 			glm::mat4 model_sphere = glm::translate(glm::mat4(1.0f), (glm::vec3)transform_component.TransformMatrix[3]) * glm::scale(glm::mat4(1.0), glm::vec3(light.GetLightRange()));
-			mv_matrix = view_matrix * model_sphere;
-			mvp = ViewProjection * model_sphere;
+			mv_matrix = props.view * model_sphere;
 			list->SetVertexBuffer(data->sphere_mesh->GetVertexBuffer());
 			list->SetIndexBuffer(data->sphere_mesh->GetIndexBuffer());
 			index_count = data->sphere_mesh->GetIndexCount();
 		}
 
-		auto res = Renderer3D::Get()->GetRenderResolution();
-		glm::vec2 pixel_size = { 1.0f / res.x,
-			1.0f / res.y };
-
-		data->mat->SetParameter("pixel_size", pixel_size);
-		data->mat->SetParameter("Light_Color", light.GetLightColor());
-		data->mat->SetParameter("light_type", (int)light.type);
-		data->mat->SetParameter("range", light.GetLightRange());
-		gbuffer_material->SetMaterial(list);
-		data->mat->SetMaterial(list);
-		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, glm::value_ptr(mvp), sizeof(glm::mat4), 0);
-		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf, glm::value_ptr(mv_matrix), sizeof(glm::mat4), sizeof(glm::mat4));
+		struct { glm::mat4 mv_matrix; uint32_t light_id;} push_consts = {mv_matrix, i};
+		list->SetPushConstantRange(&push_consts, sizeof(push_consts));
 		list->Draw(index_count);
-
-
 	}
 }
 
