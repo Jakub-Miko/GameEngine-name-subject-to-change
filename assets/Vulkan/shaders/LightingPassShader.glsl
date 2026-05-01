@@ -53,22 +53,16 @@ layout(set = 0, binding = 1) readonly buffer light_data {
 };
 
 out vec3 light_volume_pos;
-out vec3 light_pos;
-out vec3 light_direction_in;
 
 void main() {
 	LightData light = lights[light_id];
 	if (light.type == 0) {
 		gl_Position = vec4(position, 1.0);
 		light_volume_pos = vec3(inverse_projection * vec4(position.xy, -1.0, 1.0));
-		light_pos = vec3(mv_matrix[3]);
-		light_direction_in = normalize(mat3(mv_matrix) * vec3(0.0, 0.0, -1.0));
 	}
 	else {
 		gl_Position = projection_matrix * mv_matrix * vec4(position, 1.0);
 		light_volume_pos = vec3(mv_matrix * vec4(position, 1.0));
-		light_pos = vec3(mv_matrix[3]);
-		light_direction_in = normalize(mat3(mv_matrix) * vec3(0.0, 0.0, -1.0));
 	}
 	
 }
@@ -109,8 +103,6 @@ layout(set = 0, binding = 1) readonly buffer light_data {
 };
 
 in vec3 light_volume_pos;
-in vec3 light_pos;
-in vec3 light_direction_in;
 
 vec3 GetFragmentPosition(vec3 coordinates) {
 	vec3 dir = vec3(light_volume_pos.xy / abs(light_volume_pos.z), -1.0);
@@ -131,10 +123,10 @@ void main() {
 	vec3 view_space_pos = GetFragmentPosition(coords);
 	vec3 light_direction;
 	if (light.type == 0) {
-		light_direction = light_direction_in;
+		light_direction = normalize(mat3(mv_matrix) * vec3(0.0, 0.0, -1.0));
 	}
 	else {
-		light_direction = -normalize(light_pos - view_space_pos);
+		light_direction = -normalize(vec3(mv_matrix[3]) - view_space_pos);
 	}
 
 
@@ -145,7 +137,7 @@ void main() {
 	float metallic = material.z;
 
 	vec3 light_radiance = light.light_color.xyz * light.light_color.w;
-	float distance = length(light_pos - view_space_pos);
+	float distance = length(vec3(mv_matrix[3]) - view_space_pos);
 	light_radiance *= light.type == 1 ? PointAttenuationFalloff(distance, light.range) : 1.0f;
 
 	color_out = vec4(CookTorranceModel(-light_direction, -normalize(view_space_pos), normal,
