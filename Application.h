@@ -53,7 +53,7 @@ private:
     World* world = nullptr; ///< Main world insatnce (currently the only one)
     std::unordered_map<RuntimeTagIdType, EventSubject> event_subjects; ///< Subjects for distributing events to observers across the entire application.
     std::mutex event_subjects_mutex; ///< Mutex for Application::event_subjects
-
+    std::string config_file_path = "../config.json"; ///< Path to the config file.
 public:
 
     Application(const Application& ref) = delete;
@@ -70,7 +70,6 @@ public:
      * @brief Gets the current window.
     */
     std::shared_ptr<Window> GetWindow() const;
-
     /**
      * @brief Gets the OS api abstraction.
     */
@@ -173,7 +172,7 @@ public:
     /**
      * @brief Initialization function of the engine responsible for majority of the engines setup.
     */
-    static void Init();
+    static void Init(std::string config_file = "../config.json");
 
     /**
      * @brief ShutDown function of the engine responsible for majority of the engines shutdown. Runs after gameloop exits.

@@ -106,10 +106,10 @@ Application::Application()
 void Application::InitInstance()
 {
     //Initialize Config store
-    ConfigManager::Init(FileManager::GetWorkDirPath("/../config.json"));
+    ConfigManager::Init(config_file_path);
     
     //Initialize FileManager
-    FileManager::Init();
+    FileManager::Init(std::filesystem::absolute(std::filesystem::path(config_file_path)).parent_path());
    
     //Init GameState
     GameStateMachine::Init();
@@ -316,10 +316,11 @@ void Application::ShutdownThread()
     }
 }
 
-void Application::Init()
+void Application::Init(std::string config_file)
 {
     if (!instance) {
         instance = new Application();
+        instance->config_file_path = config_file;
         instance->InitInstance();
     }
 }
