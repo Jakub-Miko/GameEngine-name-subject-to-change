@@ -21,6 +21,7 @@ public:
 	virtual void StartShutdown()override;
 	virtual ~VulkanRenderContext() override;
 	virtual bool IsVulkanContext() override { return true; };
+	virtual int GetSubgroupSize() override;
 	void InstanceInit();
 
 	VulkanRenderContext(const VulkanRenderContext& ref) = delete;
@@ -65,5 +66,6 @@ private:
 	vkb::Device vkb_device;
 	VmaAllocator allocator;
 	VkPhysicalDeviceDescriptorIndexingProperties indexing_properties;
+	VkPhysicalDeviceSubgroupProperties subgroup_properties;
 	BindlessLimits bindless_limits;
 };

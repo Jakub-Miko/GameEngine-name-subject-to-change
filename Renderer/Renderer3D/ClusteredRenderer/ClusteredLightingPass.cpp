@@ -396,6 +396,7 @@ void ClusteredLightingPass::RenderLightsWithCompute(RenderPipelineResourceManage
 	ConfigData config_data = {};
 	config_data.point_light_count = clustered_lights.num_of_point_lights;
 	config_data.directional_light_count = clustered_lights.num_of_directional_lights;
+	config_data.skylight_count = clustered_lights.num_of_skylights;
 	config_data.cluster_grid_size = glm::uvec3(cluster_grid_res.x, cluster_grid_res.y, cluster_grid_res.z);
 	config_data.depth_constant_a = props.depth_constant_a;
 	config_data.depth_constant_b = props.depth_constant_b;

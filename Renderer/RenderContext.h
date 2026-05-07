@@ -16,6 +16,7 @@ public:
 	virtual bool IsVulkanContext() { return false; };
 
 	virtual void Present() = 0;
+	virtual int GetSubgroupSize() = 0;
 
 	virtual void StartShutdown() = 0;
 	virtual ~RenderContext() {};

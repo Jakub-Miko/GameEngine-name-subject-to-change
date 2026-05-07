@@ -154,6 +154,10 @@ void VulkanRenderContext::PreInit()
 
 	indexing_properties = {};
 	indexing_properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_PROPERTIES;
+	indexing_properties.pNext = &subgroup_properties;
+
+	subgroup_properties = {};
+	subgroup_properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES;
 
 	vkGetPhysicalDeviceProperties2(device.value().physical_device, &properties);
 
@@ -184,6 +188,10 @@ void VulkanRenderContext::StartShutdown()
 VulkanRenderContext::~VulkanRenderContext()
 {
 
+}
+
+int VulkanRenderContext::GetSubgroupSize() {
+	return subgroup_properties.subgroupSize;
 }
 
 void VulkanRenderContext::InstanceInit()

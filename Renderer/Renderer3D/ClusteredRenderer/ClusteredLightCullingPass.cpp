@@ -1,7 +1,7 @@
 #include "ClusteredLightCullingPass.h"
-
 #include "Application.h"
 #include "Renderer/PipelineManager.h"
+#include "Renderer/RenderContext.h"
 #include "Renderer/RenderResourceManager.h"
 #include "Renderer/Renderer3D/RenderResourceCollection.h"
 #include "World/Components/CameraComponent.h"
@@ -274,7 +274,7 @@ void ClusteredLightCullingPass::Render(RenderPipelineResourceManager& resource_m
 
     auto num_of_clusters = config_buffer_struct.cluster_grid_size.x * config_buffer_struct.cluster_grid_size.y * config_buffer_struct.cluster_grid_size.z;
     auto num_of_thread_groups = static_cast<int>(ceil(static_cast<double>(num_of_clusters) / 256.0));
-    auto num_of_threads_with_per_warp_optimization = num_of_thread_groups * 32;
+    auto num_of_threads_with_per_warp_optimization = num_of_thread_groups * RenderContext::Get()->GetSubgroupSize();
 
     list->SetPipeline(data->pipeline);
     list->SetConstantBuffer("config_buffer", data->config_buffer);
