@@ -340,7 +340,7 @@ AssimpSceneProxy::LoadInfo AssimpSceneProxy::LoadScene(World &world)
     state.open_scene = open_scene;
 
     if(!scene) {
-        throw std::runtime_error("Scene could" + path + " not be loaded.\n");
+        throw std::runtime_error("Scene could" + path + " not be loaded:" + importer->GetErrorString() + "\n");
     }
 
     LoadMeshes(state);
@@ -674,13 +674,15 @@ std::shared_ptr<Material> AssimpMaterialProxy::LoadMaterial() {
     }
     aiString texture_path;
     std::string real_path;
-    if(aiGetMaterialTexture(mat, aiTextureType::aiTextureType_DIFFUSE,0, &texture_path) == AI_SUCCESS) {
+    if(aiGetMaterialTexture(mat, aiTextureType_BASE_COLOR, 0, &texture_path) == AI_SUCCESS ||
+            aiGetMaterialTexture(mat, aiTextureType_DIFFUSE, 0, &texture_path) == AI_SUCCESS) {
         real_path = root_path + texture_path.C_Str();
         std::replace(real_path.begin(), real_path.end(), '\\', '/');
         auto proxy = std::make_shared<StbiTextureProxy>(real_path, serialize ? mat_resource_path+ "/diffuse.tex" : "");
         material->SetTexture("Color", proxy);
     }
-    if(aiGetMaterialTexture(mat, aiTextureType::aiTextureType_NORMALS,0, &texture_path) == AI_SUCCESS) {
+    if (aiGetMaterialTexture(mat, aiTextureType_NORMALS, 0, &texture_path) == AI_SUCCESS ||
+            aiGetMaterialTexture(mat, aiTextureType_HEIGHT, 0, &texture_path) == AI_SUCCESS) {
         real_path = root_path + texture_path.C_Str();
         std::replace(real_path.begin(), real_path.end(), '\\', '/');
         auto proxy = std::make_shared<StbiTextureProxy>(real_path, serialize ? mat_resource_path + "/normal.tex" : "");

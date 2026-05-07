@@ -156,7 +156,7 @@ void DeferredLightingPass::InitPostProcessingPassData() {
 	RenderBufferDescriptor const_desc_bg(sizeof(glm::mat4) + sizeof(glm::vec4), RenderBufferType::UPLOAD, RenderBufferUsage::CONSTANT_BUFFER);
 	data->constant_scene_buf_bg = RenderResourceManager::Get()->CreateBuffer(const_desc_bg);
 
-	RenderBufferDescriptor light_buffer_desc(5000 * sizeof(LightData), RenderBufferType::DEFAULT, RenderBufferUsage::STORAGE_BUFFER);
+	RenderBufferDescriptor light_buffer_desc(20000 * sizeof(LightData), RenderBufferType::DEFAULT, RenderBufferUsage::STORAGE_BUFFER);
 	data->light_data = RenderResourceManager::Get()->CreateBuffer(light_buffer_desc);
 
 	data->sphere_mesh = MeshManager::Get()->LoadMeshFromFileAsync("asset:Sphere.mesh"_path);

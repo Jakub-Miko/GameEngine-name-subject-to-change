@@ -10,6 +10,9 @@
 /docs/html
 /dependencies/glew/glew.pc
 /assets/main_sponza
+/assets/LightGrid
+/assets/sun temple
+/assets/necropolis
 /cmake-build-debug
 /CMakeFiles
 /.idea/
