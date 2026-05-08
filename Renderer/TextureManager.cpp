@@ -262,7 +262,7 @@ std::shared_ptr<RenderTexture2DResource> TextureManager::LoadTextureFromFile(
 
 
     //Create the texture, upload data into it and optionally generate mip maps.
-    RenderTexture2DDescriptor texture_desc;
+    RenderTexture2DDescriptor texture_desc = {};
     if(!is_hdr) {
         if(is_vulkan_context) {
             texture_desc.format = TextureFormat::RGBA_UNSIGNED_CHAR;
@@ -283,7 +283,13 @@ std::shared_ptr<RenderTexture2DResource> TextureManager::LoadTextureFromFile(
     }
     texture_desc.height = texture.res_y;
     texture_desc.width = texture.res_x;
+
+    auto calculate_mip_levels = static_cast<int>(std::floor(std::log2f(
+        static_cast<float>(std::max(texture.res_x, texture.res_y))))) + 1;
+
+    texture_desc.mipmap_levels = generate_mips ? calculate_mip_levels : 1;
     texture_desc.sampler = sampler;
+    texture_desc.usage = generate_mips ? TextureUsage::SAMPLE_WRITABLE | TextureUsage::COPYABLE : TextureUsage::SAMPLE_WRITABLE;
 
     auto command_list = Renderer::Get()->GetRenderCommandList(); //TODO:Make sure you dont use too many command lists.
     auto command_queue = Renderer::Get()->GetCommandQueue();

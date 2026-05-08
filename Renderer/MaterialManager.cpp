@@ -352,7 +352,7 @@ void Material::SetTexture(const std::string& name, std::shared_ptr<TextureProxy>
 
 void Material::SetTexture(const std::string& name, const std::string& path)
 {
-	auto proxy = std::make_shared<NativeTextureProxy>(path);
+	auto proxy = std::make_shared<NativeTextureProxy>(path, true);
 	if (TextureManager::Get()->IsTextureAvailable(path)) {
 		SetParameter(name, TextureManager::Get()->LoadTextureFromFile(path, false), proxy);
 	}

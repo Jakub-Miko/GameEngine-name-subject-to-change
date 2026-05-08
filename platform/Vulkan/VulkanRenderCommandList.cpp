@@ -418,6 +418,42 @@ void VulkanRenderCommandList::SetViewport(const RenderViewport& in_viewport)
 
 void VulkanRenderCommandList::GenerateMIPs(std::shared_ptr<RenderTexture2DResource> texture)
 {
+	const auto& desc = texture->GetBufferDescriptor();
+	if(desc.mipmap_levels <= 1) {
+		return;
+	}
+	AddDependency(texture, VulkanCommandListDependencyType::WRITE | VulkanCommandListDependencyType::READ, RenderState::TEXTURE_GENERAL);
+
+	auto image = std::static_pointer_cast<VulkanRenderTexture2DResource>(texture)->GetImage();
+
+	auto calculate_mip_levels = static_cast<uint32_t>(std::floor(std::log2f(
+		static_cast<float>(std::max(desc.width, desc.height))))) + 1;
+
+	if(calculate_mip_levels < desc.mipmap_levels) {
+		throw std::runtime_error("The texture has more mip levels than the maximum allowed by the texture resolution.\n");
+	}
+	auto height = desc.height;
+	auto width = desc.width;
+	for(int i = 1; i < desc.mipmap_levels; i++) {
+		VkImageBlit blit_info = {};
+		blit_info.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		blit_info.srcSubresource.mipLevel = i - 1;
+		blit_info.srcSubresource.baseArrayLayer = 0;
+		blit_info.srcSubresource.layerCount = 1;
+		blit_info.srcOffsets[0] = { 0, 0, 0 };
+		blit_info.srcOffsets[1] = { height, width, 1 };
+		blit_info.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		blit_info.dstSubresource.mipLevel = i;
+		blit_info.dstSubresource.baseArrayLayer = 0;
+		blit_info.dstSubresource.layerCount = 1;
+		blit_info.dstOffsets[0] = { 0, 0, 0 };
+		height = height > 1 ? height / 2 : height;
+		width = width > 1 ? width / 2 : width;
+		blit_info.dstOffsets[1] = { width, height, 1 };
+
+		vkCmdBlitImage(*GetVkCommandBuffer(), image, VK_IMAGE_LAYOUT_GENERAL, image,
+			VK_IMAGE_LAYOUT_GENERAL, 1, &blit_info, VK_FILTER_LINEAR);
+	}
 }
 
 void VulkanRenderCommandList::Draw(uint32_t index_count, bool use_unsined_short_as_index, int index_offset)
