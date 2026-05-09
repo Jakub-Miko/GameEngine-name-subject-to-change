@@ -1,0 +1,18 @@
+{
+    "Vsync": 0,
+    "Latency_Frames": 3,
+    "EnableMouseMoveEvent": 1,
+    "default_scene": "assets/Sponza/Sponza.scene",
+    "local_asset_path": "assets/",
+    "render_api_path": "assets/Vulkan/",
+    "engine_asset_path": "assets/",
+    "temp_path": "temp/",
+    "resolution_X": 2560,
+    "resolution_Y": 1440,
+    "UseRenderer": "ForwardClustered",
+    "fullscreen": 1,
+    "PreloadMaterialTemplates": [
+        "api:GBufferMaterialLayout.json",
+        "api:GeometryMaterial.json"
+    ]
+}
