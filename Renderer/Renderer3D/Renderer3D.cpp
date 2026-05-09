@@ -16,10 +16,26 @@ void Renderer3D::Init()
 		instance = new Renderer3D;
 		MaterialManager::Init();
 		SkeletalAnimationManager::Init();
-		instance->RegisterPipeline("DeferredClustered", DeferredClusteredRendererPipeline::CreatePipeline());
-		instance->RegisterPipeline("ForwardClustered", ForwardClusteredRendererPipeline::CreatePipeline());
-		instance->RegisterPipeline("DeferredLegacy", DeferredRenderingPipeline::CreatePipeline());
-		instance->SetActivePipeline("DeferredClustered");
+		if (ConfigManager::Get()->Exists("UseRenderer")) {
+			auto renderer_config = ConfigManager::Get()->GetString("UseRenderer");
+			if(renderer_config == "ForwardClustered") {
+				instance->RegisterPipeline("ForwardClustered", ForwardClusteredRendererPipeline::CreatePipeline());
+				instance->SetActivePipeline("ForwardClustered");
+			} else if (renderer_config == "DeferredLegacy") {
+				instance->RegisterPipeline("DeferredLegacy", DeferredRenderingPipeline::CreatePipeline());
+				instance->SetActivePipeline("DeferredLegacy");
+			}
+			else  {
+				instance->RegisterPipeline("DeferredClustered", DeferredClusteredRendererPipeline::CreatePipeline());
+				instance->SetActivePipeline("DeferredClustered");
+			}
+		}
+		else {
+			instance->RegisterPipeline("DeferredClustered", DeferredClusteredRendererPipeline::CreatePipeline());
+			instance->RegisterPipeline("ForwardClustered", ForwardClusteredRendererPipeline::CreatePipeline());
+			instance->RegisterPipeline("DeferredLegacy", DeferredRenderingPipeline::CreatePipeline());
+			instance->SetActivePipeline("DeferredClustered");
+		}
 	}
 }
 
