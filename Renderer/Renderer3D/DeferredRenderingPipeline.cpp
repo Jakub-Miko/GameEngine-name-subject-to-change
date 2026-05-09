@@ -5,7 +5,6 @@
 #include "CommonRenderPasses/PostProcessingPass.h"
 #include "CommonRenderPasses/RenderSubmissionPass.h"
 #include "DeferredRenderer/DeferredGeometryPass.h"
-#include "CommonRenderPasses/ShadowMappingPass.h"
 #include "DeferredRenderer/DeferredLightingPass.h"
 #include "DeferredRenderer/GenerateGBufferPass.h"
 

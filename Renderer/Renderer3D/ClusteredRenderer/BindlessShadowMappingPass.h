@@ -4,6 +4,8 @@
 #include <World/Entity.h>
 #include <string>
 
+#define HARD_CODE_CASCADES 5
+
 class RenderCommandList;
 
 class BindlessShadowMappingPass : public RenderPass {

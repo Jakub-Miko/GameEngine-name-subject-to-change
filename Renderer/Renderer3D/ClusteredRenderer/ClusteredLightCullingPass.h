@@ -1,6 +1,6 @@
 #pragma once
 #include "Renderer/Renderer3D/RenderPass.h"
-#include "Renderer/Renderer3D/CommonRenderPasses/ShadowMappingPass.h"
+#include "Renderer/Renderer3D/ClusteredRenderer/BindlessShadowMappingPass.h"
 
 #define CLUSTER_GRID_X 64
 #define CLUSTER_GRID_Y 40

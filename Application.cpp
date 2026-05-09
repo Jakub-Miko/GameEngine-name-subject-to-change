@@ -183,16 +183,13 @@ void Application::PreInitializeSystems()
 
 void Application::InitializeSystems()
 {
-    InitMeshRenderSystem();
 }
 
 void Application::ShutdownSystems()
 {
-    SutdownMeshRenderSystem();
     GetWorld().GetRegistry().clear<MeshComponent>();
     GetWorld().GetRegistry().clear<LoadingMeshComponent>();
     Delete_Render_Box_data();
-
 }
 
 void Application::Exit()
