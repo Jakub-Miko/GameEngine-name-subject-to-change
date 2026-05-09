@@ -434,26 +434,97 @@ void VulkanRenderCommandList::GenerateMIPs(std::shared_ptr<RenderTexture2DResour
 	}
 	auto height = desc.height;
 	auto width = desc.width;
+	VkImageMemoryBarrier barrier{};
+	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	barrier.image = image;
+	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	barrier.subresourceRange.baseArrayLayer = 0;
+	barrier.subresourceRange.layerCount = 1;
+	barrier.subresourceRange.levelCount = 1;
+
+	barrier.subresourceRange.baseMipLevel = 0;
+	barrier.oldLayout = VK_IMAGE_LAYOUT_GENERAL;
+	barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+	barrier.srcAccessMask =  VK_ACCESS_MEMORY_READ_BIT |
+	VK_ACCESS_MEMORY_WRITE_BIT;;
+	barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+	vkCmdPipelineBarrier(*GetVkCommandBuffer(), VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+		0,0, nullptr, 0, nullptr, 1, &barrier);
+
+	barrier.subresourceRange.baseMipLevel = 1;
+	barrier.oldLayout = VK_IMAGE_LAYOUT_GENERAL;
+	barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+	barrier.srcAccessMask =  VK_ACCESS_MEMORY_READ_BIT |
+	VK_ACCESS_MEMORY_WRITE_BIT;;
+	barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+	vkCmdPipelineBarrier(*GetVkCommandBuffer(), VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+		0,0, nullptr, 0, nullptr, 1, &barrier);
 	for(int i = 1; i < desc.mipmap_levels; i++) {
+		if(i > 1) {
+			barrier.subresourceRange.baseMipLevel = i;
+			barrier.oldLayout = VK_IMAGE_LAYOUT_GENERAL;
+			barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+			barrier.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT |
+			VK_ACCESS_MEMORY_WRITE_BIT;
+			barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			vkCmdPipelineBarrier(*GetVkCommandBuffer(), VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+				0,0, nullptr, 0, nullptr, 1, &barrier);
+
+			barrier.subresourceRange.baseMipLevel = i - 1;
+			barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+			barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+			barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+			vkCmdPipelineBarrier(*GetVkCommandBuffer(), VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+				0,0, nullptr, 0, nullptr, 1, &barrier);
+
+			barrier.subresourceRange.baseMipLevel = i - 2;
+			barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+			barrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
+			barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+			barrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
+			vkCmdPipelineBarrier(*GetVkCommandBuffer(), VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+				0,0, nullptr, 0, nullptr, 1, &barrier);
+		}
+
 		VkImageBlit blit_info = {};
 		blit_info.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		blit_info.srcSubresource.mipLevel = i - 1;
 		blit_info.srcSubresource.baseArrayLayer = 0;
 		blit_info.srcSubresource.layerCount = 1;
 		blit_info.srcOffsets[0] = { 0, 0, 0 };
-		blit_info.srcOffsets[1] = { height, width, 1 };
+		blit_info.srcOffsets[1] = { width, height, 1 };
 		blit_info.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		blit_info.dstSubresource.mipLevel = i;
 		blit_info.dstSubresource.baseArrayLayer = 0;
 		blit_info.dstSubresource.layerCount = 1;
 		blit_info.dstOffsets[0] = { 0, 0, 0 };
-		height = height > 1 ? height / 2 : height;
-		width = width > 1 ? width / 2 : width;
+		width = std::max(1, width / 2);
+		height = std::max(1, height / 2);
 		blit_info.dstOffsets[1] = { width, height, 1 };
 
-		vkCmdBlitImage(*GetVkCommandBuffer(), image, VK_IMAGE_LAYOUT_GENERAL, image,
-			VK_IMAGE_LAYOUT_GENERAL, 1, &blit_info, VK_FILTER_LINEAR);
+		vkCmdBlitImage(*GetVkCommandBuffer(), image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, image,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit_info, VK_FILTER_LINEAR);
 	}
+
+	barrier.subresourceRange.baseMipLevel = desc.mipmap_levels - 1;
+	barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+	barrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
+	barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+	barrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
+	vkCmdPipelineBarrier(*GetVkCommandBuffer(), VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+		0,0, nullptr, 0, nullptr, 1, &barrier);
+
+	barrier.subresourceRange.baseMipLevel = desc.mipmap_levels - 2;
+	barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+	barrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
+	barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+	barrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
+	vkCmdPipelineBarrier(*GetVkCommandBuffer(), VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+		0,0, nullptr, 0, nullptr, 1, &barrier);
+
 }
 
 void VulkanRenderCommandList::Draw(uint32_t index_count, bool use_unsined_short_as_index, int index_offset)
