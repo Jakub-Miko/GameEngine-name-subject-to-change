@@ -2,7 +2,7 @@
 
 build:
 	mkdir -p out
-	cd out && cmake .. -DRENDER_API=Vulkan -DEDITOR=On
+	cd out && cmake .. -DRENDER_API=Vulkan -DEDITOR=On -DCMAKE_BUILD_TYPE=Release
 	cd out && cmake --build . --target GameEngine
 
 clean: 
