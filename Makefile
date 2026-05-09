@@ -9,7 +9,7 @@ clean:
 	rm -rf ./out
 
 pack:
-	zip -r GameEngine.zip ./assets ./config*.json ./out/GameEngine ./out/*.so ./README.md
+	zip -r GameEngine.zip ./assets ./config*.json ./out/GameEngine ./out/*.so ./README.md ./THIRD_PARTY_NOTICES.md ./LICENSES/*
 
 pack-windows:
-	zip -r GameEngine.zip ./assets ./config*.json ./out/GameEngine.exe ./out/*.dll ./README.md
+	zip -r GameEngine.zip ./assets ./config*.json ./out/GameEngine.exe ./out/*.dll ./README.md ./THIRD_PARTY_NOTICES.md ./LICENSES/*
