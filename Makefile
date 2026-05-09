@@ -1,4 +1,4 @@
-.PHONY: build pack clean
+.PHONY: build pack pack-windows clean
 
 build:
 	mkdir -p out
@@ -10,3 +10,6 @@ clean:
 
 pack:
 	zip -r GameEngine.zip ./assets ./config.json ./out/GameEngine ./out/*.so
+
+pack-windows:
+	zip -r GameEngine.zip ./assets ./config.json ./out/GameEngine.exe ./out/*.dll

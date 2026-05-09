@@ -109,7 +109,7 @@ void Application::InitInstance()
     ConfigManager::Init(config_file_path);
     
     //Initialize FileManager
-    FileManager::Init(std::filesystem::absolute(std::filesystem::path(config_file_path)).parent_path());
+    FileManager::Init(std::filesystem::absolute(std::filesystem::path(config_file_path)).parent_path().generic_string());
    
     //Init GameState
     GameStateMachine::Init();
