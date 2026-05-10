@@ -27,3 +27,33 @@ Tento projekt využíva nasledujúce knižnice tretích strán. Podrobné znenie
 | **Vulkan-Headers** | Apache 2.0 | [LICENSE-VulkanHeaders.md](./LICENSES/LICENSE-VulkanHeaders.md) |
 
 ---
+
+## Licensie použitých scén
+
+### Scéna Sponza
+**Licensia**: CC BY 4.0
+
+**Autor**: abhayexe
+
+**Odkaz**: https://sketchfab.com/3d-models/sponza-palace-3ee33c1ba0784f91bad6384c7c0e77ed
+
+### Scéna Medieval Necropolis of Sigüenza
+**Licensia**: CC BY-NC 4.0
+
+**Autor**: Global Digital Heritage and GDH-Afrika
+
+**Odkaz**: https://sketchfab.com/3d-models/medieval-necropolis-of-siguenza-e5c32a3a50da4848919fee5512a8e9f2
+
+**Poznámka**: Táto scéna nie je distribuovaná na GitHube, kvôli licenčním dôvodom. 
+Nachádza sa len v elektronickom odovzdaní bakalárskej práce.
+
+### Scéna UE4 Sun Temple
+**Licensia**: CC BY-NC-SA 4.0
+
+**Autor**: Epic Games
+
+**Odkaz**: https://developer.nvidia.com/ue4-sun-temple
+
+**Poznámka**: Táto scéna nie je distribuovaná na GitHube, kvôli licenčním dôvodom. 
+Nachádza sa len v elektronickom odovzdaní bakalárskej práce.
+

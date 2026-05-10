@@ -1,10 +1,20 @@
 # Spustenie a použitie implementácie
 
+>## Scény a assety
+> Na githube sa z licenčńích dôvodov nachádza len scéna Sponza, 
+ostatné scény použité v bakalárskej práci sú obsiahnuté len v elektronickom odovzdaní. 
+
+>## Licencia
+>Kód tohto programu je licensovaný pod MIT licenciou (súbor [LICENSE](LICENSE)). Atribúcia externých zdrojov a
+knižníc spolu s ich licenciami sú opísané v súbore [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
 ## Spustenie implementácie
 
 Aplikáciu je možné spustiť pomocou spustiteľného súboru: `GameEngine`
 
-Engine pri štarte automaticky vyhľadáva konfiguračný súbor `config.json`. Spustiteľný súbor preto musí byť spustený z pracovného adresára, ktorý sa nachádza v ľubovoľnom podadresári adresára obsahujúceho tento súbor.
+Engine pri štarte automaticky vyhľadáva konfiguračný súbor
+`config.json`. Spustiteľný súbor preto musí byť spustený z pracovného
+adresára, ktorého nadradený adresár obsahuje tento súbor.
 
 Typická štruktúra adresárov môže vyzerať nasledovne:
 
