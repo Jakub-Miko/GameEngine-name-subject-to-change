@@ -391,12 +391,14 @@ void VulkanRenderCommandList::Clear()
 	}
 }
 
+//TODO: shouldn't this be a draw dependency ?
 void VulkanRenderCommandList::SetIndexBuffer(std::shared_ptr<RenderBufferResource> buffer)
 {
 	index_buffer = buffer;
 	are_index_vertex_buffers_bound = false;
 }
 
+//TODO: shouldn't this be a draw dependency ?
 void VulkanRenderCommandList::SetVertexBuffer(std::shared_ptr<RenderBufferResource> buffer)
 {
 	vertex_buffer = buffer;
@@ -411,7 +413,6 @@ void VulkanRenderCommandList::SetScissorRect(const RenderScissorRect& in_scissor
 
 void VulkanRenderCommandList::SetViewport(const RenderViewport& in_viewport)
 {
-
 	viewport = in_viewport;
 	is_viewport_defined = false;
 }
