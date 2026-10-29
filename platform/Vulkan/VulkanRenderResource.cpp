@@ -183,7 +183,7 @@ void VulkanRenderFrameBufferResource::RecalculateRenderingInfo()
 	VkRenderingAttachmentInfo attachment_info = {};
 	attachment_info.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
 	attachment_info.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-	attachment_info.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	attachment_info.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD; // TODO: Not optimal give the user a choice. Ensure that LOAD is used when the engine breaks up a pass due to dependencies
 	attachment_info.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 	attachment_info.resolveMode = VK_RESOLVE_MODE_NONE;
 

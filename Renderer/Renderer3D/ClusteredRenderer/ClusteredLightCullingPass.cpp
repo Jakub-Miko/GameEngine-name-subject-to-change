@@ -148,7 +148,7 @@ void ClusteredLightCullingPass::Render(RenderPipelineResourceManager& resource_m
     };
     auto active_clusters = resource_manager.GetResource<std::shared_ptr<RenderBufferResource>>(active_cluster_list);
     auto& shadow_cascades = resource_manager.GetResource<RenderResourceCollection<glm::mat4>>(input_directional_shadow_cascades);
-    if(global_light_list[0].resources.empty() && global_light_list[1].resources.empty()) {
+    if(global_light_list[0].resources.empty() && global_light_list[1].resources.empty() && global_light_list[2].resources.empty()) {
         ClusteredLightLists empty_lists = {};
         resource_manager.SetResource<ClusteredLightLists>(output_clustered_light_lists_name, empty_lists);
         return;
