@@ -181,6 +181,7 @@ void ClusteredLightCullingPass::Render(RenderPipelineResourceManager& resource_m
             {
                 ClusteredPointLightData light_data = {};
                 light_data.range = light.GetLightRange();
+                light_data.area = light.GetLightArea();
                 light_data.Light_Color = light.GetLightColor();
                 if(world.HasComponent<ShadowCasterComponent>(entity)) {
                     auto& shadow = world.GetComponent<ShadowCasterComponent>(entity);
@@ -188,6 +189,7 @@ void ClusteredLightCullingPass::Render(RenderPipelineResourceManager& resource_m
                     if(shadow.shadow_map) {
                         light_data.shadow_index = shadow.shadow_map->GetBufferDescriptor().depth_stencil_attachment.resource->GetResourceStoreIndex();
                         light_data.light_far_plane = shadow.far_plane;
+                        light_data.light_near_plane = shadow.near_plane;
                     } else {
                         light_data.shadow_index = UINT32_MAX;
                     }

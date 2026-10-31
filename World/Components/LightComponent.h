@@ -35,7 +35,7 @@ public:
     LightComponent(float range, const glm::vec4& color = glm::vec4(1.0f)) : color(color), type(LightType::POINT),
                                                                             range(range) {}
 
-    LightComponent(const LightComponent& other) : color(other.color), range(other.range), type(other.type) {}
+    LightComponent(const LightComponent& other) : color(other.color), range(other.range), type(other.type), area(other.area) {}
     static void ChangeType(LightType type, Entity ent);
     static void SetRange(float new_range, Entity ent);
     static void SetLightColor(glm::vec4 color, Entity ent);
@@ -48,16 +48,26 @@ public:
         return color;
     }
 
+    float GetLightArea() const {
+        return area;
+    }
+
+    void SetLightArea(float new_area) {
+        area = new_area;
+    }
+
     LightType type;
 
 private:
     glm::vec4 color;
     float range = 10.0f;
+    float area = 1.0f;
 
     friend void to_json(nlohmann::json& nlohmann_json_j, const LightComponent& nlohmann_json_t) {
         nlohmann_json_j["color"] = nlohmann_json_t.color;
         nlohmann_json_j["type"] = nlohmann_json_t.type;
         nlohmann_json_j["range"] = nlohmann_json_t.range;
+        nlohmann_json_j["area"] = nlohmann_json_t.area;
     }
 
     friend void from_json(const nlohmann::json& nlohmann_json_j, LightComponent& nlohmann_json_t) {
@@ -67,6 +77,9 @@ private:
             nlohmann_json_j.at("range").get_to(nlohmann_json_t.range);
         } else {
             nlohmann_json_t.range = std::sqrt(nlohmann_json_t.color.w / 0.005);
+        }
+        if(nlohmann_json_j.contains("area")) {
+            nlohmann_json_j.at("area").get_to(nlohmann_json_t.area);
         }
     }
 };

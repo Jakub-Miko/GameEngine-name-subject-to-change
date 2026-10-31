@@ -45,6 +45,7 @@ layout(set = 0, binding = 0) uniform conf {
 struct LightData {
 	vec4 light_color;
 	float range;
+	float area;
 	uint type;
 };
 

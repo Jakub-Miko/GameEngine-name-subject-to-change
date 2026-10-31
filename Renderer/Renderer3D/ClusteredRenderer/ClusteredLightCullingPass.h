@@ -24,10 +24,11 @@ struct ClusteredPointLightData {
     glm::mat4 light_matrix;
     glm::vec4 position_and_radius;
     glm::vec4 Light_Color;
-    float range;
+    float range, area;
     uint32_t shadow_index;
     float light_far_plane;
-    uint8_t padding[4];
+    float light_near_plane;
+    uint32_t padding[3];
 };
 
 struct ClusteredSkyLightData {

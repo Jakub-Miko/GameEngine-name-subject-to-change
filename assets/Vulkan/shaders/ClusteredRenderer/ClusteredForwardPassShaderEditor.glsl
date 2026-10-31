@@ -112,7 +112,7 @@ void main() {
 layout(location = 0) out vec4 color_out;
 layout(location = 1) out uint ids_out;
 
-layout(set = 1, binding = 0) uniform samplerCubeShadow PointShadowMaps[];
+layout(set = 1, binding = 0) uniform samplerCube PointShadowMaps[];
 layout(set = 2, binding = 0) uniform sampler2DArrayShadow DirectionalShadowMaps[];
 layout(set = 3, binding = 0) uniform samplerCube SkylightReflectionMaps[];
 
@@ -153,8 +153,10 @@ struct PointLight {
 	vec4 position_and_radius;
 	vec4 Light_Color;
 	float range;
+	float area;
 	uint shadow_index;
 	float light_far_plane;
+	float light_near_plane;
 };
 
 struct DirectionalLight {
@@ -265,11 +267,52 @@ float calculate_shadows_directional(vec3 view_space_pos, uint index, vec3 normal
 }
 
 
+#include <shaders/utils/poisson_disks.glsl>
+
+#define PCSS_SAMPLES 64
+
 float calculate_shadows_point(vec3 view_space_pos, uint index, vec3 normal) {
 	vec3 light_space_pos = (point_lights[index].light_matrix * vec4(view_space_pos, 1.0)).xyz + normal * 0.02;
-	float current_depth = length(light_space_pos) / point_lights[index].light_far_plane;
-	vec4 shadow_coords = vec4(normalize(light_space_pos.xyz) * vec3(1,-1,1), current_depth - 0.0002);
-	return texture(PointShadowMaps[point_lights[index].shadow_index], shadow_coords);
+	float light_size_uv = point_lights[index].area / (point_lights[index].light_near_plane);
+	float receiver_depth = length(light_space_pos);
+	float min_blocker_dist = max(point_lights[index].light_near_plane, point_lights[index].area);
+	float blocker_search_size = light_size_uv * ((receiver_depth - min_blocker_dist) / receiver_depth);
+	blocker_search_size = clamp(blocker_search_size, 0.0, 0.1);
+	float current_depth = receiver_depth / point_lights[index].light_far_plane;
+	vec3 pos = normalize(light_space_pos.xyz);
+	pos.y *= -1;
+	vec3 tangent = normalize(cross(pos, vec3(0,1,0)));
+	vec3 bitangent = cross(pos, tangent);
+	float accum = 0.0;
+	float count = 0;
+	for(int i = 0; i < PCSS_SAMPLES; i++) {
+		float depth = texture(PointShadowMaps[point_lights[index].shadow_index],normalize(pos + (poisson_disks[i].x * tangent + poisson_disks[i].y * bitangent) * blocker_search_size)).x;
+		if(depth < current_depth) {
+			accum += depth * point_lights[index].light_far_plane;
+			count++;
+		}
+	}
+	if(count < 1.0) {
+		return 1.0f;
+	}
+	accum /= count;
+	float search_width = (receiver_depth - accum) / accum;
+	search_width *= light_size_uv * point_lights[index].light_near_plane / receiver_depth;
+
+	count = 0.0f;
+	for(int i = 0; i < PCSS_SAMPLES; i++) {
+		float depth = texture(PointShadowMaps[point_lights[index].shadow_index], normalize(pos + (poisson_disks[i].x * tangent + poisson_disks[i].y * bitangent) * search_width)).x;
+		if(depth > current_depth) {
+			count++;
+		}
+	}
+	if(count < 1.0f) {
+		return 0.0;
+	}
+
+	count /= PCSS_SAMPLES;
+
+	return count;
 }
 
 #include <shaders/utils/NormalPacking.glsl>

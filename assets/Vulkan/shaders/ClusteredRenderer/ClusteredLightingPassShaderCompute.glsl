@@ -85,6 +85,7 @@ struct PointLight {
 	vec4 position_and_radius;
 	vec4 Light_Color;
 	float range;
+	float area;
 	uint shadow_index;
 	float light_far_plane;
 };

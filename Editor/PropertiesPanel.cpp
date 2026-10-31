@@ -181,14 +181,15 @@ void PropertiesPanel::RenderProperties(Entity entity, const PropertiesPanel_pers
 
 	if (world.HasComponent<LightComponent>(selected) && ImGui::TreeNode("Light ")) {
 		bool has_shadow = world.HasComponent<ShadowCasterComponent>(selected);
-		glm::vec4 color = world.GetComponent<LightComponent>(selected).GetLightColor();
+		auto& light_component = world.GetComponent<LightComponent>(selected);
+		glm::vec4 color = light_component.GetLightColor();
 		ImGui::ColorPicker3("Light Color", glm::value_ptr(color));
 		ImGui::DragFloat("Intensity", &glm::value_ptr(color)[3]);
-		if (color != world.GetComponent<LightComponent>(selected).GetLightColor()) {
+		if (color != light_component.GetLightColor()) {
 			LightComponent::SetLightColor(color, selected);
 		}
 		const char* light_types[] = { "DIRECTIONAL", "POINT"};
-		int original = (int)world.GetComponent<LightComponent>(selected).type;
+		int original = (int)light_component.type;
 		int type = original;
 		ImGui::Combo("Light Type", &type, light_types, 2);
 
@@ -196,10 +197,16 @@ void PropertiesPanel::RenderProperties(Entity entity, const PropertiesPanel_pers
 			LightComponent::ChangeType((LightType)type, selected);
 		}
 		if (original == (int)LightType::POINT) {
-			float range = world.GetComponent<LightComponent>(selected).GetLightRange();
+			float range = light_component.GetLightRange();
 			ImGui::DragFloat("Range", &range);
-			if (range != world.GetComponent<LightComponent>(selected).GetLightRange()) {
+			if (range != light_component.GetLightRange()) {
 				LightComponent::SetRange(range, selected);
+			}
+
+			float area = light_component.GetLightArea();
+			ImGui::DragFloat("Area", &area);
+			if (area != light_component.GetLightArea()) {
+				light_component.SetLightArea(area);
 			}
 		}
 

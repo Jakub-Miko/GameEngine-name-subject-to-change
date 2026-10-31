@@ -39,14 +39,6 @@ struct VertexLayoutFactory<LightingPassPreset> {
 
 };
 
-struct LightData {
-	glm::mat4 view_model_matrix;
-	glm::vec4 light_color;
-	float range;
-	int light_type;
-	uint8_t padding[8]; // pad to match 16 byte alignment requirements of vec4 and mat4
-};
-
 struct ConfigData {
 	glm::mat4 projection_matrix;
 	glm::mat4 inverse_view_matrix;
@@ -69,7 +61,6 @@ struct ClusteredLightingPass::internal_data {
 	std::shared_ptr<Mesh> card_mesh;
 	std::shared_ptr<Material> mat_skylight;
 	std::shared_ptr<Material> mat_shadowed_directional;
-	std::shared_ptr<RenderBufferResource> light_list;
 	std::shared_ptr<RenderBufferResource> constant_scene_buf;
 	std::shared_ptr<RenderBufferResource> constant_scene_buf_skylight;
 	std::shared_ptr<RenderBufferResource> constant_scene_buf_shadowed_directional;
@@ -140,9 +131,6 @@ void ClusteredLightingPass::InitPassData() {
 
 	data->mat_shadowed_directional = MaterialManager::Get()->CreateMaterial("LightingPassDirectionalLightMaterial");
 	data->mat_skylight = MaterialManager::Get()->CreateMaterial("LightingPassSkylightLightProps");
-
-	RenderBufferDescriptor light_list_desc(sizeof(LightData) * 100, RenderBufferType::DEFAULT, RenderBufferUsage::STORAGE_BUFFER);
-	data->light_list = RenderResourceManager::Get()->CreateBuffer(light_list_desc);
 
 	struct Vertex {
 		Vertex(glm::vec2 pos)

@@ -43,8 +43,9 @@ struct VertexLayoutFactory<LightingPassPreset> {
 struct LightData {
 	glm::vec4 light_color;
 	float range;
+	float area;
 	uint32_t type;
-	uint32_t padding[2];
+	uint32_t padding[1];
 };
 
 struct DeferredLightingPass::internal_data {
@@ -297,6 +298,7 @@ void DeferredLightingPass::RenderLights(RenderPipelineResourceManager& resource_
 		light_data.light_color = light.GetLightColor();
 		light_data.type = (int)light.type;
 		light_data.range = light.GetLightRange();
+		light_data.area = light.GetLightArea();
 
 		lights.push_back(light_data);
 	}
@@ -379,6 +381,7 @@ void DeferredLightingPass::RenderShadowedLightsPoint(RenderPipelineResourceManag
 		data->mat_shadowed_point->SetParameter("Light_Color", light.GetLightColor());
 		gbuffer_material->SetMaterial(list);
 		data->mat_shadowed_point->SetParameter("range", light.GetLightRange());
+		data->mat_shadowed_point->SetParameter("area", light.GetLightArea());
 		data->mat_shadowed_point->SetMaterial(list);
 		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed_point, glm::value_ptr(mvp), sizeof(glm::mat4), 0);
 		RenderResourceManager::Get()->UploadDataToBuffer(list, data->constant_scene_buf_shadowed_point, glm::value_ptr(mv_matrix), sizeof(glm::mat4), sizeof(glm::mat4));

@@ -34,6 +34,10 @@
 						"type" : "SCALAR"
 					},
 					{
+						"name" : "area",
+						"type" : "SCALAR"
+					},
+					{
 						"name" : "ShadowCubeMap",
 						"type" : "texture_2D_cubemap"
 					}
@@ -65,6 +69,7 @@ layout(set = 1, binding = 0) uniform light_props{
 	vec4 Light_Color;
 	vec2 pixel_size;
 	float range;
+	float area;
 	float light_far_plane;
 };
 
@@ -104,6 +109,7 @@ layout(set = 1, binding = 0) uniform light_props{
 	vec4 Light_Color;
 	vec2 pixel_size;
 	float range;
+	float area;
 	float light_far_plane;
 };
 

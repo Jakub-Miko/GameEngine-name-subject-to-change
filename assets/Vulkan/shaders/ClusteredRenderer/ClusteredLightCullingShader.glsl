@@ -50,8 +50,10 @@ struct Light {
     vec4 position_or_direction_and_radius;
     vec4 Light_Color;
     float range;
+    float area;
     uint shadow_index;
     float light_far_plane;
+    float light_near_plane;
 };
 
 layout(std430, set=0, binding = 1) readonly buffer light_buffer
